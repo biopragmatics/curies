@@ -86,6 +86,11 @@ Contributions, whether filing an issue, making a pull request, or forking, are a
 
 ## 👋 Attribution
 
+### 🙏 Acknowledgements
+
+This package heavily builds on the [trie](https://en.wikipedia.org/wiki/Trie)
+data structure implemented in [`pytrie`](https://github.com/gsakkis/pytrie).
+
 ### ⚖️ License
 
 The code in this package is licensed under the MIT License.
