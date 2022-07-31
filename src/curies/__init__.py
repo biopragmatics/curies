@@ -2,4 +2,8 @@
 
 """Unopinionated conversion between URIs and compact URIs."""
 
-from .api import *  # noqa
+from .api import Converter
+
+__all__ = [
+    "Converter",
+]

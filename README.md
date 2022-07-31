@@ -42,20 +42,36 @@ Unopinionated conversion between URIs and compact URIs.
 
 ## 💪 Getting Started
 
-> TODO show in a very small amount of space the **MOST** useful thing your package can do.
-Make it as short as possible! You have an entire set of docs for later.
+```python
+from curies import Converter
 
+converter = Converter.from_prefix_map({
+   "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+   "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+   "GO": "http://purl.obolibrary.org/obo/GO_",
+   # ... and so on
+   "OBO": "http://purl.obolibrary.org/obo/",
+})
+
+>>> prefix_map.compress("http://purl.obolibrary.org/obo/CHEBI_1")
+'CHEBI:1'
+
+>>> prefix_map.expand("CHEBI:1")
+'http://purl.obolibrary.org/obo/CHEBI_1'
+
+# Unparsable
+>>> assert prefix_map.compress("http://example.com/nope") is None
+>>> assert prefix_map.expand("xxx", "1") is None
+```
 
 ## 🚀 Installation
 
-<!-- Uncomment this section after your first ``tox -e finish``
 The most recent release can be installed from
 [PyPI](https://pypi.org/project/curies/) with:
 
 ```bash
 $ pip install curies
 ```
--->
 
 The most recent code and data can be installed directly from GitHub with:
 
@@ -73,31 +89,6 @@ Contributions, whether filing an issue, making a pull request, or forking, are a
 ### ⚖️ License
 
 The code in this package is licensed under the MIT License.
-
-<!--
-### 📖 Citation
-
-Citation goes here!
--->
-
-<!--
-### 🎁 Support
-
-This project has been supported by the following organizations (in alphabetical order):
-
-- [Harvard Program in Therapeutic Science - Laboratory of Systems Pharmacology](https://hits.harvard.edu/the-program/laboratory-of-systems-pharmacology/)
-
--->
-
-<!--
-### 💰 Funding
-
-This project has been supported by the following grants:
-
-| Funding Body                                             | Program                                                                                                                       | Grant           |
-|----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------|
-| DARPA                                                    | [Automating Scientific Knowledge Extraction (ASKE)](https://www.darpa.mil/program/automating-scientific-knowledge-extraction) | HR00111990009   |
--->
 
 ### 🍪 Cookiecutter
 
