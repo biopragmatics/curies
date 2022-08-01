@@ -27,14 +27,14 @@ class Converter:
         Compression and Expansion:
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
         'CHEBI:1'
-        >>> converter.expand("CHEBI", "1")
+        >>> converter.expand("CHEBI:1")
         'http://purl.obolibrary.org/obo/CHEBI_1'
 
         Example with unparsable URI:
-        >>> converter.compress("http://example.com/nope")
+        >>> converter.compress("http://example.com/missing:0000000")
 
         Example with missing prefix:
-        >>> converter.expand("xxx", "1")
+        >>> converter.expand("missing:0000000")
     """
 
     def __init__(self, *, prefix_map: Mapping[str, str], delimiter: str = ":"):
@@ -126,9 +126,9 @@ class Converter:
         ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
         ...    "GO": "http://purl.obolibrary.org/obo/GO_",
         ... })
-        >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
+        >>> converter.parse_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
         ('CHEBI', '138488')
-        >>> converter.compress("http://example.org/missing:0000000")
+        >>> converter.parse_uri("http://example.org/missing:0000000")
         (None, None)
         """
         try:
