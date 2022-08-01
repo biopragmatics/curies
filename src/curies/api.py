@@ -2,9 +2,9 @@
 
 """Data structures and algorithms for :mod:`curies`."""
 
+from collections import defaultdict
 from typing import List, Mapping, Optional, Tuple, Union
 
-from collections import defaultdict
 import requests
 from pytrie import StringTrie
 
@@ -118,10 +118,7 @@ class Converter:
         dd = defaultdict(list)
         for uri_prefix, prefix in reverse_prefix_map.items():
             dd[prefix].append(uri_prefix)
-        return cls({
-            prefix: sorted(uri_prefixes, key=len)
-            for prefix, uri_prefixes in dd.items()
-        })
+        return cls({prefix: sorted(uri_prefixes, key=len) for prefix, uri_prefixes in dd.items()})
 
     @classmethod
     def from_jsonld(cls, data) -> "Converter":
@@ -226,7 +223,7 @@ class Converter:
         except KeyError:
             return None, None
         else:
-            return prefix, uri[len(value):]
+            return prefix, uri[len(value) :]
 
     def expand(self, curie: str) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
