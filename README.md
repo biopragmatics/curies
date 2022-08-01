@@ -71,12 +71,6 @@ The most recent release can be installed from
 $ pip install curies
 ```
 
-The most recent code and data can be installed directly from GitHub with:
-
-```bash
-$ pip install git+https://github.com/cthoyt/curies.git
-```
-
 ## 👐 Contributing
 
 Contributions, whether filing an issue, making a pull request, or forking, are appreciated. See
