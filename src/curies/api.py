@@ -92,7 +92,7 @@ class Converter:
 
     @classmethod
     def from_jsonld_url(cls, url: str) -> "Converter":
-        """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
+        """Get a remote JSON-LD file then parse with :meth:`Converter.from_jsonld`.
 
         :param url:
             A URL to a JSON-LD file
@@ -111,7 +111,7 @@ class Converter:
 
     @classmethod
     def from_jsonld_github(cls, owner: str, repo: str, *path: str):
-        """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
+        """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld_url`.
 
         :param owner: A github repository owner or organization (e.g., ``biopragmatics``)
         :param repo: The name of the repository (e.g., ``bioregistry``)
