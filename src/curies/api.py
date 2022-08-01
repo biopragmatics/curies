@@ -110,12 +110,14 @@ class Converter:
         return cls.from_jsonld(res.json())
 
     @classmethod
-    def from_jsonld_github(cls, owner: str, repo: str, *path: str):
+    def from_jsonld_github(cls, owner: str, repo: str, *path: str, branch: str = "main"):
         """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld_url`.
 
         :param owner: A github repository owner or organization (e.g., ``biopragmatics``)
         :param repo: The name of the repository (e.g., ``bioregistry``)
         :param path: The file path in the GitHub repository to a JSON-LD context file.
+        :param branch: The branch from which the file should be downloaded. Defaults to ``main``, for old
+            repositories this might need to be changed to ``master``.
         :return:
             A converter
         :raises ValueError:
@@ -130,7 +132,7 @@ class Converter:
         if not path[-1].endswith(".jsonld"):
             raise ValueError("final path argument should end with .jsonld")
         rest = "/".join(path)
-        url = f"https://raw.githubusercontent.com/{owner}/{repo}/main/{rest}"
+        url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
         return cls.from_jsonld_url(url)
 
     def compress(self, uri: str) -> Optional[str]:
