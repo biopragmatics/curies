@@ -183,13 +183,34 @@ class Converter:
         return cls.from_jsonld_url(url)
 
     @classmethod
-    def get_monarch_converter(cls) -> "Converter":
-        """Get the latest Monarch context."""
+    def get_prefixcommons_converter(cls, name: str) -> "Converter":
+        """Get a Prefix Commons-maintained context.
+
+        :param name: The name of the JSON-LD file (e.g., ``monarch_context``).
+            See the full list at https://github.com/prefixcommons/prefixcommons-py/tree/master/prefixcommons/registry.
+        :returns:
+            A converter
+        """
         url = (
             "https://raw.githubusercontent.com/prefixcommons/prefixcommons-py/master/"
-            "prefixcommons/registry/monarch_context.jsonld"
+            f"prefixcommons/registry/{name}.jsonld"
         )
         return cls.from_jsonld_url(url)
+
+    @classmethod
+    def get_monarch_converter(cls) -> "Converter":
+        """Get the Prefix Commons-maintained Monarch context."""
+        return cls.get_prefixcommons_converter("monarch_context")
+
+    @classmethod
+    def get_go_converter(cls) -> "Converter":
+        """Get the Prefix Commons-maintained GO context."""
+        return cls.get_prefixcommons_converter("go_context")
+
+    @classmethod
+    def get_go_obo_converter(cls) -> "Converter":
+        """Get the Prefix Commons-maintained GO/OBO context."""
+        return cls.get_prefixcommons_converter("go_obo_context")
 
     @classmethod
     def get_bioregistry_converter(cls) -> "Converter":
