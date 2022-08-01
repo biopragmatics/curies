@@ -62,6 +62,8 @@ converter = Converter.from_prefix_map({
 >>> assert converter.expand("missing:0000000") is None
 ```
 
+Full documentation is available [here](https://curies.readthedocs.io).
+
 ## 🚀 Installation
 
 The most recent release can be installed from
