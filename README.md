@@ -79,6 +79,15 @@ monarch_converter = Converter.get_monarch_converter()
 
 Full documentation is available [here](https://curies.readthedocs.io).
 
+## 🧑‍🤝‍🧑 Related
+
+Other packages that convert between CURIEs and URIs:
+
+- https://github.com/prefixcommons/prefixcommons-py (Python)
+- https://github.com/prefixcommons/curie-util (Java)
+- https://github.com/geneontology/curie-util-py (Python)
+- https://github.com/geneontology/curie-util-es5 (Node.js)
+
 ## 🚀 Installation
 
 The most recent release can be installed from
