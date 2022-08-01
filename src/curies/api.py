@@ -176,6 +176,30 @@ class Converter:
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
         return cls.from_jsonld_url(url)
 
+    @classmethod
+    def get_obo_converter(cls) -> "Converter":
+        """Get the latest OBO Foundry context."""
+        url = "https://raw.githubusercontent.com/OBOFoundry/OBOFoundry.github.io/master/registry/obo_context.jsonld"
+        return cls.from_jsonld_url(url)
+
+    @classmethod
+    def get_monarch_converter(cls) -> "Converter":
+        """Get the latest Monarch context."""
+        url = (
+            "https://raw.githubusercontent.com/prefixcommons/prefixcommons-py/master/"
+            "prefixcommons/registry/monarch_context.jsonld"
+        )
+        return cls.from_jsonld_url(url)
+
+    @classmethod
+    def get_bioregistry_converter(cls) -> "Converter":
+        """Get the latest Bioregistry context."""
+        url = (
+            "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/"
+            "exports/contexts/bioregistry.context.jsonld"
+        )
+        return cls.from_jsonld_url(url)
+
     def compress(self, uri: str) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
 
