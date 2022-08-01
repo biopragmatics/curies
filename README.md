@@ -68,16 +68,16 @@ converter = Converter.from_prefix_map({
 Several converters can be instantiated from web-based resources:
 
 ```python
-from curies import Converter
+import curies
 
 # Uses the Bioregistry, an integrative, comprehensive registry
-bioregistry_converter = Converter.get_bioregistry_converter()
+bioregistry_converter = curies.get_bioregistry_converter()
 
 # Uses the OBO Foundry, a registry of ontologies
-obo_converter = Converter.get_obo_converter()
+obo_converter = curies.get_obo_converter()
 
 # Uses the Monarch Initative's project-specific context
-monarch_converter = Converter.get_monarch_converter()
+monarch_converter = curies.get_monarch_converter()
 ```
 
 Full documentation is available [here](https://curies.readthedocs.io).
