@@ -38,9 +38,7 @@
     </a>
 </p>
 
-Unopinionated conversion between URIs and compact URIs.
-
-## 💪 Getting Started
+Unopinionated conversion between URIs and compact URIs (CURIEs).
 
 ```python
 from curies import Converter
@@ -53,15 +51,15 @@ converter = Converter.from_prefix_map({
    "OBO": "http://purl.obolibrary.org/obo/",
 })
 
->>> prefix_map.compress("http://purl.obolibrary.org/obo/CHEBI_1")
+>>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
 'CHEBI:1'
 
->>> prefix_map.expand("CHEBI:1")
+>>> converter.expand("CHEBI:1")
 'http://purl.obolibrary.org/obo/CHEBI_1'
 
 # Unparsable
->>> assert prefix_map.compress("http://example.com/nope") is None
->>> assert prefix_map.expand("xxx", "1") is None
+>>> assert converter.compress("http://example.com/missing:0000000") is None
+>>> assert converter.expand("missing:0000000") is None
 ```
 
 ## 🚀 Installation
@@ -71,12 +69,6 @@ The most recent release can be installed from
 
 ```bash
 $ pip install curies
-```
-
-The most recent code and data can be installed directly from GitHub with:
-
-```bash
-$ pip install git+https://github.com/cthoyt/curies.git
 ```
 
 ## 👐 Contributing
