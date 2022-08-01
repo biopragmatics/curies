@@ -58,8 +58,8 @@ converter = Converter.from_prefix_map({
 'http://purl.obolibrary.org/obo/CHEBI_1'
 
 # Unparsable
->>> assert converter.compress("http://example.com/nope") is None
->>> assert converter.expand("xxx", "1") is None
+>>> assert converter.compress("http://example.com/missing:0000000") is None
+>>> assert converter.expand("missing:0000000") is None
 ```
 
 ## 🚀 Installation
