@@ -176,51 +176,6 @@ class Converter:
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
         return cls.from_jsonld_url(url)
 
-    @classmethod
-    def get_obo_converter(cls) -> "Converter":
-        """Get the latest OBO Foundry context."""
-        url = "https://raw.githubusercontent.com/OBOFoundry/OBOFoundry.github.io/master/registry/obo_context.jsonld"
-        return cls.from_jsonld_url(url)
-
-    @classmethod
-    def get_prefixcommons_converter(cls, name: str) -> "Converter":
-        """Get a Prefix Commons-maintained context.
-
-        :param name: The name of the JSON-LD file (e.g., ``monarch_context``).
-            See the full list at https://github.com/prefixcommons/prefixcommons-py/tree/master/prefixcommons/registry.
-        :returns:
-            A converter
-        """
-        url = (
-            "https://raw.githubusercontent.com/prefixcommons/prefixcommons-py/master/"
-            f"prefixcommons/registry/{name}.jsonld"
-        )
-        return cls.from_jsonld_url(url)
-
-    @classmethod
-    def get_monarch_converter(cls) -> "Converter":
-        """Get the Prefix Commons-maintained Monarch context."""
-        return cls.get_prefixcommons_converter("monarch_context")
-
-    @classmethod
-    def get_go_converter(cls) -> "Converter":
-        """Get the Prefix Commons-maintained GO context."""
-        return cls.get_prefixcommons_converter("go_context")
-
-    @classmethod
-    def get_go_obo_converter(cls) -> "Converter":
-        """Get the Prefix Commons-maintained GO/OBO context."""
-        return cls.get_prefixcommons_converter("go_obo_context")
-
-    @classmethod
-    def get_bioregistry_converter(cls) -> "Converter":
-        """Get the latest Bioregistry context."""
-        url = (
-            "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/"
-            "exports/contexts/bioregistry.context.jsonld"
-        )
-        return cls.from_jsonld_url(url)
-
     def compress(self, uri: str) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
 

@@ -5,6 +5,13 @@
 import unittest
 
 from curies.api import Converter
+from curies.sources import (
+    get_bioregistry_converter,
+    get_go_converter,
+    get_go_obo_converter,
+    get_monarch_converter,
+    get_obo_converter,
+)
 from curies.version import get_version
 
 
@@ -45,23 +52,23 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIn("rdf", semweb_converter.data)
 
-        bioregistry_converter = Converter.get_bioregistry_converter()
+        bioregistry_converter = get_bioregistry_converter()
         self.assertIn("chebi", bioregistry_converter.data)
         self.assertNotIn("CHEBI", bioregistry_converter.data)
 
-        obo_converter = Converter.get_obo_converter()
+        obo_converter = get_obo_converter()
         self.assertIn("CHEBI", obo_converter.data)
         self.assertNotIn("chebi", obo_converter.data)
 
-        monarch_converter = Converter.get_monarch_converter()
+        monarch_converter = get_monarch_converter()
         self.assertIn("CHEBI", monarch_converter.data)
         self.assertNotIn("chebi", monarch_converter.data)
 
-        go_converter = Converter.get_go_converter()
+        go_converter = get_go_converter()
         self.assertIn("CHEBI", go_converter.data)
         self.assertNotIn("chebi", go_converter.data)
 
-        go_obo_converter = Converter.get_go_obo_converter()
+        go_obo_converter = get_go_obo_converter()
         self.assertIn("CHEBI", go_obo_converter.data)
         self.assertNotIn("chebi", go_obo_converter.data)
 

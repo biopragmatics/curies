@@ -65,19 +65,28 @@ converter = Converter.from_prefix_map({
 >>> assert converter.expand("missing:0000000") is None
 ```
 
-Several converters can be instantiated from web-based resources:
+A converter can be instantiated from a web-based resource in JSON-LD format:
 
 ```python
 from curies import Converter
 
+url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
+converter = Converter.from_jsonld_url(url)
+```
+
+Several converters can be instantiated from pre-defined web-based resources:
+
+```python
+import curies
+
 # Uses the Bioregistry, an integrative, comprehensive registry
-bioregistry_converter = Converter.get_bioregistry_converter()
+bioregistry_converter = curies.get_bioregistry_converter()
 
 # Uses the OBO Foundry, a registry of ontologies
-obo_converter = Converter.get_obo_converter()
+obo_converter = curies.get_obo_converter()
 
 # Uses the Monarch Initative's project-specific context
-monarch_converter = Converter.get_monarch_converter()
+monarch_converter = curies.get_monarch_converter()
 ```
 
 Full documentation is available [here](https://curies.readthedocs.io).
