@@ -40,10 +40,22 @@ class TestConverter(unittest.TestCase):
             # missing end .jsonld file
             Converter.from_jsonld_github("biopragmatics", "bioregistry")
 
-        converter = Converter.from_jsonld_github(
+        semweb_converter = Converter.from_jsonld_github(
             "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
         )
-        self.assertIn("rdf", converter.data)
+        self.assertIn("rdf", semweb_converter.data)
+
+        bioregistry_converter = Converter.get_bioregistry_converter()
+        self.assertIn("chebi", bioregistry_converter.data)
+        self.assertNotIn("CHEBI", bioregistry_converter.data)
+
+        obo_converter = Converter.get_obo_converter()
+        self.assertIn("CHEBI", obo_converter.data)
+        self.assertNotIn("chebi", obo_converter.data)
+
+        monarch_converter = Converter.get_monarch_converter()
+        self.assertIn("CHEBI", monarch_converter.data)
+        self.assertNotIn("chebi", monarch_converter.data)
 
     def test_reverse_constuctor(self):
         """Test constructing from a reverse prefix map."""
