@@ -45,6 +45,27 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIn("rdf", converter.data)
 
+    def test_reverse_constuctor(self):
+        """Test constructing from a reverse prefix map."""
+        converter = Converter.from_reverse_prefix_map(
+            {
+                "http://purl.obolibrary.org/obo/CHEBI_": "CHEBI",
+                "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=": "CHEBI",
+                "http://purl.obolibrary.org/obo/MONDO_": "MONDO",
+            }
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488", converter.expand("CHEBI:138488")
+        )
+
+        self.assertEqual(
+            "CHEBI:138488", converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
+        )
+        self.assertEqual(
+            "CHEBI:138488",
+            converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488"),
+        )
+
 
 class TestVersion(unittest.TestCase):
     """Trivially test a version."""
