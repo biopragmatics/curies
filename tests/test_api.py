@@ -34,6 +34,17 @@ class TestConverter(unittest.TestCase):
         self.assertIsNone(self.converter.compress("http://example.org/missing:00000"))
         self.assertIsNone(self.converter.expand("missing:00000"))
 
+    def test_remote(self):
+        """Test loading a remote JSON-LD context."""
+        with self.assertRaises(ValueError):
+            # missing end .jsonld file
+            Converter.from_jsonld_github("biopragmatics", "bioregistry")
+
+        converter = Converter.from_jsonld_github(
+            "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
+        )
+        self.assertIn("rdf", converter.data)
+
 
 class TestVersion(unittest.TestCase):
     """Trivially test a version."""

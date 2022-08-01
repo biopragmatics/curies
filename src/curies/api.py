@@ -4,6 +4,7 @@
 
 from typing import Mapping, Optional, Tuple, Union
 
+import requests
 from pytrie import StringTrie
 
 __all__ = [
@@ -88,6 +89,51 @@ class Converter:
             A converter
         """
         return cls.from_prefix_map(data["@context"])
+
+    @classmethod
+    def from_jsonld_url(cls, url: str) -> "Converter":
+        """Get a remote JSON-LD file then parse with :meth:`Converter.from_jsonld`.
+
+        :param url:
+            A URL to a JSON-LD file
+        :return:
+            A converter
+
+        >>> base = "https://raw.githubusercontent.com"
+        >>> url = f"{base}/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
+        >>> converter = Converter.from_jsonld_url(url)
+        >>> "rdf" in converter.data
+        True
+        """
+        res = requests.get(url)
+        res.raise_for_status()
+        return cls.from_jsonld(res.json())
+
+    @classmethod
+    def from_jsonld_github(cls, owner: str, repo: str, *path: str, branch: str = "main"):
+        """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld_url`.
+
+        :param owner: A github repository owner or organization (e.g., ``biopragmatics``)
+        :param repo: The name of the repository (e.g., ``bioregistry``)
+        :param path: The file path in the GitHub repository to a JSON-LD context file.
+        :param branch: The branch from which the file should be downloaded. Defaults to ``main``, for old
+            repositories this might need to be changed to ``master``.
+        :return:
+            A converter
+        :raises ValueError:
+            If the given path doesn't end in a .jsonld file name
+
+        >>> converter = Converter.from_jsonld_github(
+        ...     "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
+        ... )
+        >>> "rdf" in converter.data
+        True
+        """
+        if not path or not path[-1].endswith(".jsonld"):
+            raise ValueError("final path argument should end with .jsonld")
+        rest = "/".join(path)
+        url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
+        return cls.from_jsonld_url(url)
 
     def compress(self, uri: str) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
