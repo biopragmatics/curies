@@ -193,8 +193,11 @@ class Converter:
 
     @classmethod
     def get_bioregistry_converter(cls) -> "Converter":
-        """Get the latest Bioregistry context"""
-        url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/bioregistry.context.jsonld"
+        """Get the latest Bioregistry context."""
+        url = (
+            "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/"
+            "exports/contexts/bioregistry.context.jsonld"
+        )
         return cls.from_jsonld_url(url)
 
     def compress(self, uri: str) -> Optional[str]:
