@@ -65,7 +65,16 @@ converter = Converter.from_prefix_map({
 >>> assert converter.expand("missing:0000000") is None
 ```
 
-Several converters can be instantiated from web-based resources:
+A converter can be instantiated from a web-based resource in JSON-LD format:
+
+```python
+from curies import Converter
+
+url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
+converter = Converter.from_jsonld_url(url)
+```
+
+Several converters can be instantiated from pre-defined web-based resources:
 
 ```python
 import curies
