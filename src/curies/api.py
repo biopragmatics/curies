@@ -129,7 +129,7 @@ class Converter:
         >>> "rdf" in converter.data
         True
         """
-        if not path[-1].endswith(".jsonld"):
+        if not path or not path[-1].endswith(".jsonld"):
             raise ValueError("final path argument should end with .jsonld")
         rest = "/".join(path)
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
