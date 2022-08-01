@@ -38,7 +38,7 @@
     </a>
 </p>
 
-Unopinionated conversion between URIs and compact URIs (CURIEs).
+Idiomatic conversion between URIs and compact URIs (CURIEs).
 
 ```python
 from curies import Converter

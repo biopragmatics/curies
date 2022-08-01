@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Unopinionated conversion between URIs and compact URIs."""
+"""Idiomatic conversion between URIs and compact URIs (CURIEs)."""
 
 from .api import Converter
 from .version import get_version
