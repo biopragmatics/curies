@@ -62,6 +62,21 @@ converter = Converter.from_prefix_map({
 >>> assert converter.expand("missing:0000000") is None
 ```
 
+Several converters can be instantiated from web-based resources:
+
+```python
+from curies import Converter
+
+# Uses the Bioregistry, an integrative, comprehensive registry
+bioregistry_converter = Converter.get_bioregistry_converter()
+
+# Uses the OBO Foundry, a registry of ontologies
+obo_converter = Converter.get_obo_converter()
+
+# Uses the Monarch Initative's project-specific context
+monarch_converter = Converter.get_monarch_converter()
+```
+
 Full documentation is available [here](https://curies.readthedocs.io).
 
 ## 🚀 Installation
