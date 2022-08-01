@@ -2,8 +2,9 @@
 
 """Data structures and algorithms for :mod:`curies`."""
 
-from typing import Mapping, Optional, Tuple, Union
+from typing import List, Mapping, Optional, Tuple, Union
 
+from collections import defaultdict
 import requests
 from pytrie import StringTrie
 
@@ -38,12 +39,18 @@ class Converter:
         >>> converter.expand("missing:0000000")
     """
 
-    def __init__(self, *, prefix_map: Mapping[str, str], delimiter: str = ":"):
+    #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
+    data: Mapping[str, str]
+    #: A prefix trie for efficient parsing of URIs
+    trie: StringTrie
+
+    def __init__(self, data: Mapping[str, List[str]], *, delimiter: str = ":"):
         """Instantiate a converter.
 
-        :param prefix_map:
+        :param data:
             A prefix map where the keys are prefixes (e.g., `chebi`)
-            and the values are URI prefixes (e.g., `http://purl.obolibrary.org/obo/CHEBI_`).
+            and the values are lists of URI prefixes (e.g., `http://purl.obolibrary.org/obo/CHEBI_`)
+            with the first element of the list being the priority URI prefix for expansions.
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
 
@@ -54,8 +61,14 @@ class Converter:
             to instantiate Converter objects.
         """
         self.delimiter = delimiter
-        self.data = dict(prefix_map)
-        self.trie = StringTrie(**{uri_prefix: prefix for prefix, uri_prefix in self.data.items()})
+        self.data = {prefix: uri_prefixes[0] for prefix, uri_prefixes in data.items()}
+        self.trie = StringTrie(
+            {
+                uri_prefix: prefix
+                for prefix, uri_prefixes in data.items()
+                for uri_prefix in uri_prefixes
+            }
+        )
 
     @classmethod
     def from_prefix_map(cls, prefix_map: Mapping[str, str]) -> "Converter":
@@ -77,7 +90,38 @@ class Converter:
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
         'CHEBI:138488'
         """
-        return cls(prefix_map=prefix_map)
+        return cls({prefix: [uri_format] for prefix, uri_format in prefix_map.items()})
+
+    @classmethod
+    def from_reverse_prefix_map(cls, reverse_prefix_map: Mapping[str, str]) -> "Converter":
+        """Get a converter from a reverse prefix map.
+
+        :param reverse_prefix_map:
+            A mapping whose keys are URI prefixes and whose values are the corresponding prefixes.
+            This data structure allow for multiple different URI formats to point to the same
+            prefix.
+        :return:
+            A converter
+
+        >>> converter = Converter.from_reverse_prefix_map({
+        ...     "http://purl.obolibrary.org/obo/CHEBI_": "CHEBI",
+        ...     "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=": "CHEBI",
+        ...     "http://purl.obolibrary.org/obo/MONDO_": "MONDO",
+        ... })
+        >>> converter.expand("CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'CHEBI:138488'
+        >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488")
+        'CHEBI:138488'
+        """
+        dd = defaultdict(list)
+        for uri_prefix, prefix in reverse_prefix_map.items():
+            dd[prefix].append(uri_prefix)
+        return cls({
+            prefix: sorted(uri_prefixes, key=len)
+            for prefix, uri_prefixes in dd.items()
+        })
 
     @classmethod
     def from_jsonld(cls, data) -> "Converter":
@@ -182,7 +226,7 @@ class Converter:
         except KeyError:
             return None, None
         else:
-            return prefix, uri[len(value) :]
+            return prefix, uri[len(value):]
 
     def expand(self, curie: str) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
