@@ -36,6 +36,9 @@
     <a href="https://github.com/cthoyt/curies/blob/main/.github/CODE_OF_CONDUCT.md">
         <img src="https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg" alt="Contributor Covenant"/>
     </a>
+    <a href="https://zenodo.org/badge/latestdoi/519905487">
+        <img src="https://zenodo.org/badge/519905487.svg" alt="DOI">
+    </a>
 </p>
 
 Idiomatic conversion between URIs and compact URIs (CURIEs).
