@@ -4,7 +4,7 @@
 
 import unittest
 
-from curies.api import Converter
+from curies.api import Converter, chain
 from curies.sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -92,6 +92,41 @@ class TestConverter(unittest.TestCase):
             "CHEBI:138488",
             converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488"),
         )
+
+    def test_combine(self):
+        """Test chaining converters."""
+        with self.assertRaises(ValueError):
+            chain([])
+
+        c1 = Converter.from_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+            }
+        )
+        c2 = Converter.from_prefix_map(
+            {
+                "CHEBI": "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
+                "GO": "http://purl.obolibrary.org/obo/GO_",
+                "OBO": "http://purl.obolibrary.org/obo/",
+                # This will get overridden
+                "nope": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
+        converter = chain([c1, c2])
+        self.assertEqual(
+            "CHEBI:138488",
+            converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488"),
+        )
+        self.assertEqual(
+            "CHEBI:138488",
+            converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488"),
+        )
+        self.assertEqual(
+            "GO:0000001",
+            converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
+        )
+        self.assertNotIn("nope", converter.data)
 
 
 class TestVersion(unittest.TestCase):
