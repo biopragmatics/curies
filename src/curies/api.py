@@ -286,5 +286,5 @@ def chain(converters: Sequence[Converter]) -> Converter:
     if not converters:
         raise ValueError
     return Converter.from_reverse_prefix_map(
-        ChainMap(*(converter.reverse_data for converter in converters))
+        ChainMap(*(dict(converter.reverse_data) for converter in converters))
     )
