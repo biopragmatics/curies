@@ -71,11 +71,11 @@ class Converter:
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
-            A mapping whose keys are prefixes and whose values are the corresponding _URI prefixes).
+            A mapping whose keys are prefixes and whose values are the corresponding *URI prefixes*).
 
             .. note::
 
-                It's possible that some _URI prefixes_ (values in this mapping)
+                It's possible that some *URI prefixes* (values in this mapping)
                 partially overlap (e.g.,``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
                 ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
                 be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
@@ -107,8 +107,8 @@ class Converter:
 
             .. note::
 
-                It's possible that some _URI prefixes_ (keys in this mapping)
-                partially overlap (e.g.,``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+                It's possible that some *URI prefixes* (keys in this mapping)
+                partially overlap (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
                 ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
                 be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
                 will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
@@ -257,8 +257,8 @@ class Converter:
 
         .. note::
 
-            If there are partially overlapping _URI prefixes_ in this converter
-            (e.g.,``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+            If there are partially overlapping *URI prefixes* in this converter
+            (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
             ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest
             URI prefix will always be matched. For example, parsing
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
