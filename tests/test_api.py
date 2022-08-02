@@ -109,6 +109,8 @@ class TestConverter(unittest.TestCase):
                 "CHEBI": "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
                 "GO": "http://purl.obolibrary.org/obo/GO_",
                 "OBO": "http://purl.obolibrary.org/obo/",
+                # This will get overridden
+                "nope": "http://purl.obolibrary.org/obo/CHEBI_",
             }
         )
         converter = chain([c1, c2])
@@ -117,9 +119,14 @@ class TestConverter(unittest.TestCase):
             converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488"),
         )
         self.assertEqual(
+            "CHEBI:138488",
+            converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488"),
+        )
+        self.assertEqual(
             "GO:0000001",
             converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
         )
+        self.assertNotIn("nope", converter.data)
 
 
 class TestVersion(unittest.TestCase):
