@@ -2,14 +2,15 @@
 
 """Data structures and algorithms for :mod:`curies`."""
 
-from collections import defaultdict
-from typing import List, Mapping, Optional, Tuple, Union
+from collections import ChainMap, defaultdict
+from typing import List, Mapping, Optional, Sequence, Tuple, Union
 
 import requests
 from pytrie import StringTrie
 
 __all__ = [
     "Converter",
+    "chain",
 ]
 
 
@@ -41,6 +42,8 @@ class Converter:
 
     #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
     data: Mapping[str, str]
+    #: The mapping from URI prefixes to prefixes
+    reverse_data: Mapping[str, str]
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
 
@@ -62,13 +65,12 @@ class Converter:
         """
         self.delimiter = delimiter
         self.data = {prefix: uri_prefixes[0] for prefix, uri_prefixes in data.items()}
-        self.trie = StringTrie(
-            {
-                uri_prefix: prefix
-                for prefix, uri_prefixes in data.items()
-                for uri_prefix in uri_prefixes
-            }
-        )
+        self.reverse_data = {
+            uri_prefix: prefix
+            for prefix, uri_prefixes in data.items()
+            for uri_prefix in uri_prefixes
+        }
+        self.trie = StringTrie(self.reverse_data)
 
     @classmethod
     def from_prefix_map(cls, prefix_map: Mapping[str, str]) -> "Converter":
@@ -270,3 +272,19 @@ class Converter:
         if uri_prefix is None:
             return None
         return uri_prefix + identifier
+
+
+def chain(converters: Sequence[Converter]) -> Converter:
+    """Chain several converters.
+
+    :param converters: A list or tuple of converters
+    :returns:
+        A converter that looks up one at a time in the other converters.
+    :raises ValueError:
+        If there are no converters
+    """
+    if not converters:
+        raise ValueError
+    return Converter.from_reverse_prefix_map(
+        ChainMap(*(converter.reverse_data for converter in converters))
+    )
