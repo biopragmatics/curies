@@ -56,12 +56,6 @@ class Converter:
             with the first element of the list being the priority URI prefix for expansions.
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
-
-        .. warning::
-
-            The ``Converter.__init__`` is subject to change to accommodate more complex
-            prefix map formulations, so it's best to use class methods like :meth:`from_prefix_map`
-            to instantiate Converter objects.
         """
         self.delimiter = delimiter
         self.data = {prefix: uri_prefixes[0] for prefix, uri_prefixes in data.items()}
