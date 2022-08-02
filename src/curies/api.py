@@ -71,7 +71,15 @@ class Converter:
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
-            A mapping whose keys are prefixes and whose values are the corresponding URI prefixes
+            A mapping whose keys are prefixes and whose values are the corresponding _URI prefixes).
+
+            .. note::
+
+                It's possible that some _URI prefixes_ (values in this mapping)
+                partially overlap (e.g.,``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+                ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
+                be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
+                will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
         :returns:
             A converter
 
@@ -96,6 +104,14 @@ class Converter:
             A mapping whose keys are URI prefixes and whose values are the corresponding prefixes.
             This data structure allow for multiple different URI formats to point to the same
             prefix.
+
+            .. note::
+
+                It's possible that some _URI prefixes_ (keys in this mapping)
+                partially overlap (e.g.,``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+                ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
+                be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
+                will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
         :return:
             A converter
 
@@ -238,6 +254,15 @@ class Converter:
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
+
+        .. note::
+
+            If there are partially overlapping _URI prefixes_ in this converter
+            (e.g.,``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest
+            URI prefix will always be matched. For example, parsing
+            ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
+            instead of ``OBO:GO_0032571``.
         """
         prefix, identifier = curie.split(self.delimiter, 1)
         return self.expand_pair(prefix, identifier)

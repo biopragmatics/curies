@@ -65,6 +65,13 @@ converter = Converter.from_prefix_map({
 >>> assert converter.expand("missing:0000000") is None
 ```
 
+When some URI prefixes are partially overlapping (e.g.,
+`http://purl.obolibrary.org/obo/GO_` for `GO` and
+`http://purl.obolibrary.org/obo/` for ``OBO``), the longest
+URI prefix will always be matched. For example, parsing
+`http://purl.obolibrary.org/obo/GO_0032571`
+will return `GO:0032571` instead of `OBO:GO_0032571`.
+
 A converter can be instantiated from a web-based resource in JSON-LD format:
 
 ```python
