@@ -3,7 +3,7 @@
 """Data structures and algorithms for :mod:`curies`."""
 
 from collections import ChainMap, defaultdict
-from typing import List, Mapping, Optional, Sequence, Tuple, Union
+from typing import List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import requests
 from pytrie import StringTrie
@@ -187,6 +187,10 @@ class Converter:
         rest = "/".join(path)
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
         return cls.from_jsonld_url(url)
+
+    def get_prefixes(self) -> Set[str]:
+        """Get the set of prefixes covered by this converter."""
+        return set(self.data)
 
     def compress(self, uri: str) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
