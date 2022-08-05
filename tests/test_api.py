@@ -31,6 +31,8 @@ class TestConverter(unittest.TestCase):
 
     def test_convert(self):
         """Test compression."""
+        self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())
+
         for curie, uri in [
             ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
             ("OBO:unnamespaced", "http://purl.obolibrary.org/obo/unnamespaced"),
