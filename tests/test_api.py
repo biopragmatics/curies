@@ -4,7 +4,10 @@
 
 import unittest
 
+import pandas as pd
+
 from curies.api import Converter, chain
+from curies.bulk import df_curies_to_uris, df_uris_to_curies
 from curies.sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -129,6 +132,19 @@ class TestConverter(unittest.TestCase):
             converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
         )
         self.assertNotIn("nope", converter.data)
+
+    def test_df(self):
+        """Test dataframe bulk processing."""
+        rows = [
+            ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
+        ]
+        df = pd.DataFrame(rows, columns=["curie", "uri"])
+        df_curies_to_uris(self.converter, df, "curie")
+        self.assertTrue((df.curie == df.uri).all())
+
+        df = pd.DataFrame(rows, columns=["curie", "uri"])
+        df_uris_to_curies(self.converter, df, "uri")
+        self.assertTrue((df.curie == df.uri).all())
 
 
 class TestVersion(unittest.TestCase):
