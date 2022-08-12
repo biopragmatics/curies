@@ -1,6 +1,6 @@
 """Bulk processing utilities."""
 
-from typing import TYPE_CHECKING, Iterable, TypeVar
+from typing import TYPE_CHECKING, Any, Iterable, Sequence, Tuple, TypeVar
 
 from .api import Converter
 
@@ -39,15 +39,17 @@ def df_curies_to_uris(converter: Converter, df: "pandas.DataFrame", column: str)
     df[column] = df[column].map(converter.expand)
 
 
-def stream_uris_to_curies(converter: Converter, records: Iterable[X], idx: int) -> Iterable[X]:
+def stream_uris_to_curies(
+    converter: Converter, records: Iterable[Sequence[Any]], idx: int
+) -> Iterable[Tuple[Any, ...]]:
     """Convert all URIs in the given position (either index or key) to CURIEs."""
     for record in records:
-        record[idx] = converter.compress(record[idx])
-        yield record
+        yield *record[:idx], converter.compress(record[idx]), *record[idx + 1 :]
 
 
-def stream_curies_to_uris(converter: Converter, records: Iterable[X], idx: int) -> Iterable[X]:
+def stream_curies_to_uris(
+    converter: Converter, records: Iterable[Sequence[Any]], idx: int
+) -> Iterable[Tuple[Any, ...]]:
     """Convert all CURIEs in the given position (either index or key) to URIs."""
     for record in records:
-        record[idx] = converter.expand(record[idx])
-        yield record
+        yield *record[:idx], converter.expand(record[idx]), *record[idx + 1 :]
