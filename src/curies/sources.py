@@ -13,6 +13,11 @@ __all__ = [
     "get_go_obo_converter",
 ]
 
+MONARCH_URL = (
+    "https://github.com/monarch-initiative/mondo-ingest/blob/"
+    "4f03c3682b24a1541f9fbd9442e7dfbb27a4b43b/src/ontology/config/context.json"
+)
+
 
 def get_obo_converter() -> Converter:
     """Get the latest OBO Foundry context."""
@@ -37,7 +42,7 @@ def get_prefixcommons_converter(name: str) -> Converter:
 
 def get_monarch_converter() -> Converter:
     """Get the Prefix Commons-maintained Monarch context."""
-    return get_prefixcommons_converter("monarch_context")
+    return Converter.from_jsonld_url(MONARCH_URL)
 
 
 def get_go_converter() -> Converter:
