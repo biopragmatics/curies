@@ -3,15 +3,36 @@
 """Data structures and algorithms for :mod:`curies`."""
 
 from collections import ChainMap, defaultdict
-from typing import List, Mapping, Optional, Sequence, Set, Tuple, Union
+import csv
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import requests
 from pytrie import StringTrie
+
+if TYPE_CHECKING:
+    import pandas
 
 __all__ = [
     "Converter",
     "chain",
 ]
+
+
+X = TypeVar("X")
 
 
 class Converter:
@@ -295,6 +316,68 @@ class Converter:
         if uri_prefix is None:
             return None
         return uri_prefix + identifier
+
+    def pd_compress(
+        self,
+        df: "pandas.DataFrame",
+        column: Union[str, int],
+        target_column: Union[None, str, int] = None,
+    ) -> None:
+        """Convert all URIs in the given column to CURIEs.
+
+        :param df: A pandas DataFrame
+        :param column: The column in the dataframe containing URIs to convert to CURIEs.
+        :param target_column: The column to put the results in. Defaults to input column.
+        """
+        df[column if target_column is None else target_column] = df[column].map(self.compress)
+
+    def pd_expand(
+        self,
+        df: "pandas.DataFrame",
+        column: Union[str, int],
+        target_column: Union[None, str, int] = None,
+    ) -> None:
+        """Convert all CURIEs in the given column to URIs.
+
+        :param df: A pandas DataFrame
+        :param column: The column in the dataframe containing CURIEs to convert to URIs.
+        :param target_column: The column to put the results in. Defaults to input column.
+        """
+        df[column if target_column is None else target_column] = df[column].map(self.expand)
+
+    def file_compress(self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True):
+        """Convert all URIs in the given column of a CSV file to CURIEs.
+
+        :param path: A pandas DataFrame
+        :param column: The column in the dataframe containing URIs to convert to CURIEs.
+        :param sep: The delimiter of the CSV file, defaults to tab
+        """
+        self._file_helper(self.compress, path=path, column=column, sep=sep, header=header)
+
+    def file_expand(self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True):
+        """Convert all CURIEs in the given column of a CSV file to URIs.
+
+        :param path: A pandas DataFrame
+        :param column: The column in the dataframe containing CURIEs to convert to URIs.
+        :param sep: The delimiter of the CSV file, defaults to tab
+        """
+        self._file_helper(self.expand, path=path, column=column, sep=sep, header=header)
+
+    def _file_helper(self, f, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True):
+        path = Path(path).expanduser().resolve()
+        rows = []
+        delimiter = sep or "\t"
+        with path.open() as file:
+            reader = csv.reader(file, delimiter=delimiter)
+            header = next(reader) if header else None
+            for row in reader:
+                row[column] = f(row[column])
+                rows.append(row)
+        with path.open("w") as file_out:
+            writer = csv.writer(file_out, delimiter=delimiter)
+            if header:
+                writer.writerow(header)
+            writer.writerows(rows)
 
 
 def chain(converters: Sequence[Converter]) -> Converter:

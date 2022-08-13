@@ -3,16 +3,11 @@
 """Trivial version test."""
 
 import unittest
+from pathlib import Path
 
 import pandas as pd
-
+from tempfile import TemporaryDirectory
 from curies.api import Converter, chain
-from curies.bulk import (
-    df_curies_to_uris,
-    df_uris_to_curies,
-    stream_curies_to_uris,
-    stream_uris_to_curies,
-)
 from curies.sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -138,24 +133,38 @@ class TestConverter(unittest.TestCase):
         )
         self.assertNotIn("nope", converter.data)
 
-    def test_bulk(self):
-        """Test bulk processing."""
+    def test_df_bulk(self):
+        """Test bulk processing in pandas dataframes."""
         rows = [
             ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
         ]
         df = pd.DataFrame(rows, columns=["curie", "uri"])
-        df_curies_to_uris(self.converter, df, "curie")
+        self.converter.pd_expand(df, "curie")
         self.assertTrue((df.curie == df.uri).all())
 
         df = pd.DataFrame(rows, columns=["curie", "uri"])
-        df_uris_to_curies(self.converter, df, "uri")
+        self.converter.pd_compress(df, "curie")
         self.assertTrue((df.curie == df.uri).all())
 
-        rows = list(stream_curies_to_uris(self.converter, list(rows), 0))
-        self.assertEqual("http://purl.obolibrary.org/obo/CHEBI_1", rows[0][0])
+    def test_file_bulk(self):
+        """Test bulk processing of files."""
+        with TemporaryDirectory() as directory:
+            path = Path(directory).joinpath("test.tsv")
+            rows = [
+                ("curie", "uri"),
+                ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
+            ]
+            with path.open("w") as file:
+                for row in rows:
+                    print(*row, sep="\t", file=file)
 
-        rows = list(stream_uris_to_curies(self.converter, list(rows), 1))
-        self.assertEqual("CHEBI:1", rows[0][1])
+            self.converter.file_expand(path, 0)
+            lines = [line.strip().split('\t') for line in path.read_text().splitlines()]
+            self.assertEqual("http://purl.obolibrary.org/obo/CHEBI_1", lines[1][0])
+
+            self.converter.file_compress(path, 0)
+            lines = [line.strip().split('\t') for line in path.read_text().splitlines()]
+            self.assertEqual("CHEBI:1", lines[1][0])
 
 
 class TestVersion(unittest.TestCase):
