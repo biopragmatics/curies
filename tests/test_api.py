@@ -144,7 +144,7 @@ class TestConverter(unittest.TestCase):
         self.assertTrue((df.curie == df.uri).all())
 
         df = pd.DataFrame(rows, columns=["curie", "uri"])
-        self.converter.pd_compress(df, "curie")
+        self.converter.pd_compress(df, "uri")
         self.assertTrue((df.curie == df.uri).all())
 
     def test_file_bulk(self):
