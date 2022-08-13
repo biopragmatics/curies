@@ -157,7 +157,7 @@ class TestConverter(unittest.TestCase):
             ]
             with path.open("w") as file:
                 for row in rows:
-                    print(*row, sep="\t", file=file)
+                    print(*row, sep="\t", file=file)  # noqa:T201
 
             self.converter.file_expand(path, 0)
             lines = [line.strip().split("\t") for line in path.read_text().splitlines()]

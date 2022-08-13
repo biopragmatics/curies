@@ -337,6 +337,7 @@ class Converter:
         :param path: A pandas DataFrame
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
         :param sep: The delimiter of the CSV file, defaults to tab
+        :param header: Does the file have a header row?
         """
         self._file_helper(self.compress, path=path, column=column, sep=sep, header=header)
 
@@ -348,6 +349,7 @@ class Converter:
         :param path: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
         :param sep: The delimiter of the CSV file, defaults to tab
+        :param header: Does the file have a header row?
         """
         self._file_helper(self.expand, path=path, column=column, sep=sep, header=header)
 
