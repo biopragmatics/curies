@@ -4,9 +4,10 @@
 
 import unittest
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pandas as pd
-from tempfile import TemporaryDirectory
+
 from curies.api import Converter, chain
 from curies.sources import (
     get_bioregistry_converter,
@@ -159,11 +160,11 @@ class TestConverter(unittest.TestCase):
                     print(*row, sep="\t", file=file)
 
             self.converter.file_expand(path, 0)
-            lines = [line.strip().split('\t') for line in path.read_text().splitlines()]
+            lines = [line.strip().split("\t") for line in path.read_text().splitlines()]
             self.assertEqual("http://purl.obolibrary.org/obo/CHEBI_1", lines[1][0])
 
             self.converter.file_compress(path, 0)
-            lines = [line.strip().split('\t') for line in path.read_text().splitlines()]
+            lines = [line.strip().split("\t") for line in path.read_text().splitlines()]
             self.assertEqual("CHEBI:1", lines[1][0])
 
 

@@ -2,23 +2,10 @@
 
 """Data structures and algorithms for :mod:`curies`."""
 
-from collections import ChainMap, defaultdict
 import csv
+from collections import ChainMap, defaultdict
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import requests
 from pytrie import StringTrie
@@ -30,9 +17,6 @@ __all__ = [
     "Converter",
     "chain",
 ]
-
-
-X = TypeVar("X")
 
 
 class Converter:
@@ -345,7 +329,9 @@ class Converter:
         """
         df[column if target_column is None else target_column] = df[column].map(self.expand)
 
-    def file_compress(self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True):
+    def file_compress(
+        self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
+    ):
         """Convert all URIs in the given column of a CSV file to CURIEs.
 
         :param path: A pandas DataFrame
@@ -354,7 +340,9 @@ class Converter:
         """
         self._file_helper(self.compress, path=path, column=column, sep=sep, header=header)
 
-    def file_expand(self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True):
+    def file_expand(
+        self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
+    ):
         """Convert all CURIEs in the given column of a CSV file to URIs.
 
         :param path: A pandas DataFrame
@@ -363,7 +351,9 @@ class Converter:
         """
         self._file_helper(self.expand, path=path, column=column, sep=sep, header=header)
 
-    def _file_helper(self, f, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True):
+    def _file_helper(
+        self, f, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
+    ):
         path = Path(path).expanduser().resolve()
         rows = []
         delimiter = sep or "\t"
