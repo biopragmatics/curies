@@ -97,7 +97,7 @@ monarch_converter = curies.get_monarch_converter()
 ```
 
 Apply in bulk to a `pandas.DataFrame` with `Converter.pd_expand` and
-`Converter.pd_compres`:
+`Converter.pd_compress`:
 
 ```python
 import curies
@@ -110,7 +110,7 @@ obo_converter.pd_expand(df, column=0)
 ```
 
 Apply in bulk to a CSV file with `Converter.file_expand` and 
-`Converter.file_compress`:
+`Converter.file_compress` (defaults to using tab separator):
 
 ```python
 import curies
