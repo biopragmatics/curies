@@ -56,27 +56,27 @@ class TestConverter(unittest.TestCase):
         semweb_converter = Converter.from_jsonld_github(
             "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
         )
-        self.assertIn("rdf", semweb_converter.data)
+        self.assertIn("rdf", semweb_converter.prefix_map)
 
         bioregistry_converter = get_bioregistry_converter()
-        self.assertIn("chebi", bioregistry_converter.data)
-        self.assertNotIn("CHEBI", bioregistry_converter.data)
+        self.assertIn("chebi", bioregistry_converter.prefix_map)
+        self.assertNotIn("CHEBI", bioregistry_converter.prefix_map)
 
         obo_converter = get_obo_converter()
-        self.assertIn("CHEBI", obo_converter.data)
-        self.assertNotIn("chebi", obo_converter.data)
+        self.assertIn("CHEBI", obo_converter.prefix_map)
+        self.assertNotIn("chebi", obo_converter.prefix_map)
 
         monarch_converter = get_monarch_converter()
-        self.assertIn("CHEBI", monarch_converter.data)
-        self.assertNotIn("chebi", monarch_converter.data)
+        self.assertIn("CHEBI", monarch_converter.prefix_map)
+        self.assertNotIn("chebi", monarch_converter.prefix_map)
 
         go_converter = get_go_converter()
-        self.assertIn("CHEBI", go_converter.data)
-        self.assertNotIn("chebi", go_converter.data)
+        self.assertIn("CHEBI", go_converter.prefix_map)
+        self.assertNotIn("chebi", go_converter.prefix_map)
 
         go_obo_converter = get_go_obo_converter()
-        self.assertIn("CHEBI", go_obo_converter.data)
-        self.assertNotIn("chebi", go_obo_converter.data)
+        self.assertIn("CHEBI", go_obo_converter.prefix_map)
+        self.assertNotIn("chebi", go_obo_converter.prefix_map)
 
     def test_reverse_constuctor(self):
         """Test constructing from a reverse prefix map."""
@@ -132,7 +132,7 @@ class TestConverter(unittest.TestCase):
             "GO:0000001",
             converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
         )
-        self.assertNotIn("nope", converter.data)
+        self.assertNotIn("nope", converter.prefix_map)
 
     def test_df_bulk(self):
         """Test bulk processing in pandas dataframes."""
