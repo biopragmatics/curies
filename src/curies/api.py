@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Set, Tuple,
 import requests
 from pytrie import StringTrie
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     import pandas
 
 __all__ = [
@@ -353,8 +353,9 @@ class Converter:
         """
         self._file_helper(self.expand, path=path, column=column, sep=sep, header=header)
 
+    @staticmethod
     def _file_helper(
-        self, f, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
+        func, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
     ):
         path = Path(path).expanduser().resolve()
         rows = []
@@ -363,7 +364,7 @@ class Converter:
             reader = csv.reader(file_in, delimiter=delimiter)
             _header = next(reader) if header else None
             for row in reader:
-                row[column] = f(row[column])
+                row[column] = func(row[column])
                 rows.append(row)
         with path.open("w") as file_out:
             writer = csv.writer(file_out, delimiter=delimiter)
