@@ -3,6 +3,10 @@
 """Trivial version test."""
 
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import pandas as pd
 
 from curies.api import Converter, chain
 from curies.sources import (
@@ -129,6 +133,52 @@ class TestConverter(unittest.TestCase):
             converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
         )
         self.assertNotIn("nope", converter.data)
+
+    def test_df_bulk(self):
+        """Test bulk processing in pandas dataframes."""
+        rows = [
+            ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
+        ]
+        df = pd.DataFrame(rows, columns=["curie", "uri"])
+        self.converter.pd_expand(df, "curie")
+        self.assertTrue((df.curie == df.uri).all())
+
+        df = pd.DataFrame(rows, columns=["curie", "uri"])
+        self.converter.pd_compress(df, "uri")
+        self.assertTrue((df.curie == df.uri).all())
+
+    def test_file_bulk(self):
+        """Test bulk processing of files."""
+        with TemporaryDirectory() as directory:
+            for rows, header in [
+                (
+                    [
+                        ("curie", "uri"),
+                        ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
+                    ],
+                    True,
+                ),
+                (
+                    [
+                        ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
+                    ],
+                    False,
+                ),
+            ]:
+                path = Path(directory).joinpath("test.tsv")
+                with path.open("w") as file:
+                    for row in rows:
+                        print(*row, sep="\t", file=file)  # noqa:T201
+
+                idx = 1 if header else 0
+
+                self.converter.file_expand(path, 0, header=header)
+                lines = [line.strip().split("\t") for line in path.read_text().splitlines()]
+                self.assertEqual("http://purl.obolibrary.org/obo/CHEBI_1", lines[idx][0])
+
+                self.converter.file_compress(path, 0, header=header)
+                lines = [line.strip().split("\t") for line in path.read_text().splitlines()]
+                self.assertEqual("CHEBI:1", lines[idx][0])
 
 
 class TestVersion(unittest.TestCase):
