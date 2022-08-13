@@ -359,16 +359,16 @@ class Converter:
         path = Path(path).expanduser().resolve()
         rows = []
         delimiter = sep or "\t"
-        with path.open() as file:
-            reader = csv.reader(file, delimiter=delimiter)
-            header = next(reader) if header else None
+        with path.open() as file_in:
+            reader = csv.reader(file_in, delimiter=delimiter)
+            _header = next(reader) if header else None
             for row in reader:
                 row[column] = f(row[column])
                 rows.append(row)
         with path.open("w") as file_out:
             writer = csv.writer(file_out, delimiter=delimiter)
-            if header:
-                writer.writerow(header)
+            if _header:
+                writer.writerow(_header)
             writer.writerows(rows)
 
 
