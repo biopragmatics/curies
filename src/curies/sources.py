@@ -16,7 +16,7 @@ __all__ = [
 
 def get_obo_converter() -> Converter:
     """Get the latest OBO Foundry context."""
-    url = "https://raw.githubusercontent.com/OBOFoundry/OBOFoundry.github.io/master/registry/obo_context.jsonld"
+    url = "http://purl.obolibrary.org/meta/obo_context.jsonld"
     return Converter.from_jsonld_url(url)
 
 
