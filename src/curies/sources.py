@@ -14,8 +14,7 @@ __all__ = [
 ]
 
 MONARCH_URL = (
-    "https://github.com/monarch-initiative/mondo-ingest/blob/"
-    "4f03c3682b24a1541f9fbd9442e7dfbb27a4b43b/src/ontology/config/context.json"
+    "https://raw.githubusercontent.com/monarch-initiative/mondo-ingest/main/src/ontology/config/context.json"
 )
 
 
