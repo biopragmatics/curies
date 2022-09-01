@@ -2,11 +2,16 @@
 
 """Data structures and algorithms for :mod:`curies`."""
 
+import csv
 from collections import ChainMap, defaultdict
-from typing import List, Mapping, Optional, Sequence, Set, Tuple, Union
+from pathlib import Path
+from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import requests
 from pytrie import StringTrie
+
+if TYPE_CHECKING:  # pragma: no cover
+    import pandas
 
 __all__ = [
     "Converter",
@@ -41,9 +46,9 @@ class Converter:
     """
 
     #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
-    data: Mapping[str, str]
+    prefix_map: Mapping[str, str]
     #: The mapping from URI prefixes to prefixes
-    reverse_data: Mapping[str, str]
+    reverse_prefix_map: Mapping[str, str]
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
 
@@ -58,13 +63,13 @@ class Converter:
             The delimiter used for CURIEs. Defaults to a colon.
         """
         self.delimiter = delimiter
-        self.data = {prefix: uri_prefixes[0] for prefix, uri_prefixes in data.items()}
-        self.reverse_data = {
+        self.prefix_map = {prefix: uri_prefixes[0] for prefix, uri_prefixes in data.items()}
+        self.reverse_prefix_map = {
             uri_prefix: prefix
             for prefix, uri_prefixes in data.items()
             for uri_prefix in uri_prefixes
         }
-        self.trie = StringTrie(self.reverse_data)
+        self.trie = StringTrie(self.reverse_prefix_map)
 
     @classmethod
     def from_prefix_map(cls, prefix_map: Mapping[str, str]) -> "Converter":
@@ -155,7 +160,7 @@ class Converter:
         >>> base = "https://raw.githubusercontent.com"
         >>> url = f"{base}/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
         >>> converter = Converter.from_jsonld_url(url)
-        >>> "rdf" in converter.data
+        >>> "rdf" in converter.prefix_map
         True
         """
         res = requests.get(url)
@@ -179,7 +184,7 @@ class Converter:
         >>> converter = Converter.from_jsonld_github(
         ...     "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
         ... )
-        >>> "rdf" in converter.data
+        >>> "rdf" in converter.prefix_map
         True
         """
         if not path or not path[-1].endswith(".jsonld"):
@@ -190,7 +195,7 @@ class Converter:
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""
-        return set(self.data)
+        return set(self.prefix_map)
 
     def compress(self, uri: str) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
@@ -291,10 +296,81 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand_pair("missing", "0000000")
         """
-        uri_prefix = self.data.get(prefix)
+        uri_prefix = self.prefix_map.get(prefix)
         if uri_prefix is None:
             return None
         return uri_prefix + identifier
+
+    def pd_compress(
+        self,
+        df: "pandas.DataFrame",
+        column: Union[str, int],
+        target_column: Union[None, str, int] = None,
+    ) -> None:
+        """Convert all URIs in the given column to CURIEs.
+
+        :param df: A pandas DataFrame
+        :param column: The column in the dataframe containing URIs to convert to CURIEs.
+        :param target_column: The column to put the results in. Defaults to input column.
+        """
+        df[column if target_column is None else target_column] = df[column].map(self.compress)
+
+    def pd_expand(
+        self,
+        df: "pandas.DataFrame",
+        column: Union[str, int],
+        target_column: Union[None, str, int] = None,
+    ) -> None:
+        """Convert all CURIEs in the given column to URIs.
+
+        :param df: A pandas DataFrame
+        :param column: The column in the dataframe containing CURIEs to convert to URIs.
+        :param target_column: The column to put the results in. Defaults to input column.
+        """
+        df[column if target_column is None else target_column] = df[column].map(self.expand)
+
+    def file_compress(
+        self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
+    ):
+        """Convert all URIs in the given column of a CSV file to CURIEs.
+
+        :param path: A pandas DataFrame
+        :param column: The column in the dataframe containing URIs to convert to CURIEs.
+        :param sep: The delimiter of the CSV file, defaults to tab
+        :param header: Does the file have a header row?
+        """
+        self._file_helper(self.compress, path=path, column=column, sep=sep, header=header)
+
+    def file_expand(
+        self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
+    ):
+        """Convert all CURIEs in the given column of a CSV file to URIs.
+
+        :param path: A pandas DataFrame
+        :param column: The column in the dataframe containing CURIEs to convert to URIs.
+        :param sep: The delimiter of the CSV file, defaults to tab
+        :param header: Does the file have a header row?
+        """
+        self._file_helper(self.expand, path=path, column=column, sep=sep, header=header)
+
+    @staticmethod
+    def _file_helper(
+        func, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
+    ):
+        path = Path(path).expanduser().resolve()
+        rows = []
+        delimiter = sep or "\t"
+        with path.open() as file_in:
+            reader = csv.reader(file_in, delimiter=delimiter)
+            _header = next(reader) if header else None
+            for row in reader:
+                row[column] = func(row[column])
+                rows.append(row)
+        with path.open("w") as file_out:
+            writer = csv.writer(file_out, delimiter=delimiter)
+            if _header:
+                writer.writerow(_header)
+            writer.writerows(rows)
 
 
 def chain(converters: Sequence[Converter]) -> Converter:
@@ -309,5 +385,5 @@ def chain(converters: Sequence[Converter]) -> Converter:
     if not converters:
         raise ValueError
     return Converter.from_reverse_prefix_map(
-        ChainMap(*(dict(converter.reverse_data) for converter in converters))
+        ChainMap(*(dict(converter.reverse_prefix_map) for converter in converters))
     )

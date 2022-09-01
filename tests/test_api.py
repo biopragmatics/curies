@@ -3,6 +3,10 @@
 """Trivial version test."""
 
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+import pandas as pd
 
 from curies.api import Converter, chain
 from curies.sources import (
@@ -52,27 +56,27 @@ class TestConverter(unittest.TestCase):
         semweb_converter = Converter.from_jsonld_github(
             "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
         )
-        self.assertIn("rdf", semweb_converter.data)
+        self.assertIn("rdf", semweb_converter.prefix_map)
 
         bioregistry_converter = get_bioregistry_converter()
-        self.assertIn("chebi", bioregistry_converter.data)
-        self.assertNotIn("CHEBI", bioregistry_converter.data)
+        self.assertIn("chebi", bioregistry_converter.prefix_map)
+        self.assertNotIn("CHEBI", bioregistry_converter.prefix_map)
 
         obo_converter = get_obo_converter()
-        self.assertIn("CHEBI", obo_converter.data)
-        self.assertNotIn("chebi", obo_converter.data)
+        self.assertIn("CHEBI", obo_converter.prefix_map)
+        self.assertNotIn("chebi", obo_converter.prefix_map)
 
         monarch_converter = get_monarch_converter()
-        self.assertIn("CHEBI", monarch_converter.data)
-        self.assertNotIn("chebi", monarch_converter.data)
+        self.assertIn("CHEBI", monarch_converter.prefix_map)
+        self.assertNotIn("chebi", monarch_converter.prefix_map)
 
         go_converter = get_go_converter()
-        self.assertIn("CHEBI", go_converter.data)
-        self.assertNotIn("chebi", go_converter.data)
+        self.assertIn("CHEBI", go_converter.prefix_map)
+        self.assertNotIn("chebi", go_converter.prefix_map)
 
         go_obo_converter = get_go_obo_converter()
-        self.assertIn("CHEBI", go_obo_converter.data)
-        self.assertNotIn("chebi", go_obo_converter.data)
+        self.assertIn("CHEBI", go_obo_converter.prefix_map)
+        self.assertNotIn("chebi", go_obo_converter.prefix_map)
 
     def test_reverse_constuctor(self):
         """Test constructing from a reverse prefix map."""
@@ -128,7 +132,53 @@ class TestConverter(unittest.TestCase):
             "GO:0000001",
             converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
         )
-        self.assertNotIn("nope", converter.data)
+        self.assertNotIn("nope", converter.prefix_map)
+
+    def test_df_bulk(self):
+        """Test bulk processing in pandas dataframes."""
+        rows = [
+            ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
+        ]
+        df = pd.DataFrame(rows, columns=["curie", "uri"])
+        self.converter.pd_expand(df, "curie")
+        self.assertTrue((df.curie == df.uri).all())
+
+        df = pd.DataFrame(rows, columns=["curie", "uri"])
+        self.converter.pd_compress(df, "uri")
+        self.assertTrue((df.curie == df.uri).all())
+
+    def test_file_bulk(self):
+        """Test bulk processing of files."""
+        with TemporaryDirectory() as directory:
+            for rows, header in [
+                (
+                    [
+                        ("curie", "uri"),
+                        ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
+                    ],
+                    True,
+                ),
+                (
+                    [
+                        ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
+                    ],
+                    False,
+                ),
+            ]:
+                path = Path(directory).joinpath("test.tsv")
+                with path.open("w") as file:
+                    for row in rows:
+                        print(*row, sep="\t", file=file)  # noqa:T201
+
+                idx = 1 if header else 0
+
+                self.converter.file_expand(path, 0, header=header)
+                lines = [line.strip().split("\t") for line in path.read_text().splitlines()]
+                self.assertEqual("http://purl.obolibrary.org/obo/CHEBI_1", lines[idx][0])
+
+                self.converter.file_compress(path, 0, header=header)
+                lines = [line.strip().split("\t") for line in path.read_text().splitlines()]
+                self.assertEqual("CHEBI:1", lines[idx][0])
 
 
 class TestVersion(unittest.TestCase):

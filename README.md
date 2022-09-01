@@ -96,6 +96,33 @@ obo_converter = curies.get_obo_converter()
 monarch_converter = curies.get_monarch_converter()
 ```
 
+Apply in bulk to a `pandas.DataFrame` with `Converter.pd_expand` and
+`Converter.pd_compress`:
+
+```python
+import curies
+import pandas as pd
+
+df = pd.read_csv(...)
+obo_converter = curies.get_obo_converter()
+obo_converter.pd_compress(df, column=0)
+obo_converter.pd_expand(df, column=0)
+```
+
+Apply in bulk to a CSV file with `Converter.file_expand` and 
+`Converter.file_compress` (defaults to using tab separator):
+
+```python
+import curies
+
+path = ...
+obo_converter = curies.get_obo_converter()
+# modifies file in place
+obo_converter.file_compress(path, column=0)
+# modifies file in place
+obo_converter.file_expand(path, column=0)
+```
+
 Full documentation is available [here](https://curies.readthedocs.io).
 
 ## 🧑‍🤝‍🧑 Related
