@@ -67,8 +67,8 @@ class TestConverter(unittest.TestCase):
         self.assertNotIn("chebi", obo_converter.prefix_map)
 
         monarch_converter = get_monarch_converter()
-        self.assertIn("CHEBI", monarch_converter.prefix_map)
-        self.assertNotIn("chebi", monarch_converter.prefix_map)
+        self.assertIn("EFO", monarch_converter.prefix_map)
+        self.assertNotIn("efo", monarch_converter.prefix_map)
 
         go_converter = get_go_converter()
         self.assertIn("CHEBI", go_converter.prefix_map)

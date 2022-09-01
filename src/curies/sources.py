@@ -13,9 +13,7 @@ __all__ = [
     "get_go_obo_converter",
 ]
 
-MONARCH_URL = (
-    "https://raw.githubusercontent.com/monarch-initiative/mondo-ingest/main/src/ontology/config/context.json"
-)
+MONARCH_URL = "https://raw.githubusercontent.com/monarch-initiative/mondo-ingest/main/src/ontology/config/context.json"
 
 
 def get_obo_converter() -> Converter:
