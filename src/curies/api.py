@@ -373,7 +373,7 @@ class Converter:
             writer.writerows(rows)
 
 
-def chain(converters: Sequence[Converter]) -> Converter:
+def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Converter:
     """Chain several converters.
 
     :param converters: A list or tuple of converters
@@ -384,6 +384,24 @@ def chain(converters: Sequence[Converter]) -> Converter:
     """
     if not converters:
         raise ValueError
+
+    if case_sensitive:
+        l = [
+            {
+                prefix: _norm(prefix)
+                for prefix in converter.get_prefixes()
+            }
+            for converter in converters
+        ]
+
+
+
+
+
     return Converter.from_reverse_prefix_map(
         ChainMap(*(dict(converter.reverse_prefix_map) for converter in converters))
     )
+
+
+def _norm(s: str) -> str:
+    return s.lower().replace("-", "").replace(".", "").replace("_", "").replace(" ", "")
