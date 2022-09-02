@@ -6,7 +6,6 @@ from .api import Converter, DuplicateURIPrefixes, chain
 from .sources import (
     get_bioregistry_converter,
     get_go_converter,
-    get_go_obo_converter,
     get_monarch_converter,
     get_obo_converter,
     get_prefixcommons_converter,
@@ -23,5 +22,4 @@ __all__ = [
     "get_monarch_converter",
     "get_go_converter",
     "get_bioregistry_converter",
-    "get_go_obo_converter",
 ]

@@ -45,11 +45,6 @@ def get_go_converter() -> Converter:
     return get_prefixcommons_converter("go_context")
 
 
-def get_go_obo_converter() -> Converter:
-    """Get the Prefix Commons-maintained GO/OBO context."""
-    return get_prefixcommons_converter("go_obo_context")
-
-
 def get_bioregistry_converter() -> Converter:
     """Get the latest Bioregistry context."""
     url = (

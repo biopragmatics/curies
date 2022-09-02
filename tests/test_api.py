@@ -84,10 +84,6 @@ class TestConverter(unittest.TestCase):
         self.assertIn("CHEBI", go_converter.prefix_map)
         self.assertNotIn("chebi", go_converter.prefix_map)
 
-        go_obo_converter = get_go_obo_converter()
-        self.assertIn("CHEBI", go_obo_converter.prefix_map)
-        self.assertNotIn("chebi", go_obo_converter.prefix_map)
-
     def test_reverse_constuctor(self):
         """Test constructing from a reverse prefix map."""
         converter = Converter.from_reverse_prefix_map(
