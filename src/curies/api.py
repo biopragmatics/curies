@@ -20,6 +20,17 @@ __all__ = [
 ]
 
 
+class DuplicateURIPrefixes(ValueError):
+    """An error raised with constructing a converter with data containing duplicate URI prefixes."""
+
+    def __init__(self, duplicates: List[Tuple[str, str, str]]):
+        self.duplicates = duplicates
+
+    def __str__(self):
+        text = "\n".join("\t".join(duplicate) for duplicate in self.duplicates)
+        return f"Duplicate URIs:\n{text}"
+
+
 class Converter:
     """A cached prefix map data structure.
 
@@ -62,17 +73,16 @@ class Converter:
             with the first element of the list being the priority URI prefix for expansions.
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
-        :raises ValueError: if any prefixes share any URI prefixes
+        :raises DuplicateURIPrefixes: if any prefixes share any URI prefixes
         """
         duplicates = [
             (prefix_1, prefix_2, uri_prefix)
-            for (prefix_1, uri_prefixes_1), (prefix_2, uri_prefixes_2) in itt.combinations(data.items(), 2)
-            for uri_prefix, uri_prefix_2 in itt.product(uri_prefixes_1, uri_prefixes_2)
+            for (prefix_1, uris_1), (prefix_2, uris_2) in itt.combinations(data.items(), 2)
+            for uri_prefix, uri_prefix_2 in itt.product(uris_1, uris_2)
             if uri_prefix == uri_prefix_2
         ]
         if duplicates:
-            text = "\n".join("\t".join(duplicate) for duplicate in duplicates)
-            raise ValueError(f"Duplicate URIs:\n{text}")
+            raise DuplicateURIPrefixes(duplicates)
 
         self.delimiter = delimiter
         self.prefix_map = {prefix: uri_prefixes[0] for prefix, uri_prefixes in data.items()}
