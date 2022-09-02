@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 
-from curies.api import Converter, chain
+from curies.api import Converter, DuplicateURIPrefixes, chain
 from curies.sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -35,7 +35,7 @@ class TestConverter(unittest.TestCase):
 
     def test_invalid(self):
         """Test throwing an error for duplicated URI prefixes."""
-        with self.assertRaises(ValueError):
+        with self.assertRaises(DuplicateURIPrefixes):
             Converter.from_prefix_map(
                 {
                     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
