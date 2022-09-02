@@ -63,10 +63,11 @@ class Converter:
             The delimiter used for CURIEs. Defaults to a colon.
         """
         self.delimiter = delimiter
-        self.prefix_map = {prefix: uri_prefixes[0] for prefix, uri_prefixes in data.items()}
+        self.data = data
+        self.prefix_map = {prefix: uri_prefixes[0] for prefix, uri_prefixes in self.data.items()}
         self.reverse_prefix_map = {
             uri_prefix: prefix
-            for prefix, uri_prefixes in data.items()
+            for prefix, uri_prefixes in self.data.items()
             for uri_prefix in uri_prefixes
         }
         self.trie = StringTrie(self.reverse_prefix_map)
@@ -389,7 +390,24 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
         return Converter.from_reverse_prefix_map(
             ChainMap(*(dict(converter.reverse_prefix_map) for converter in converters))
         )
-    raise NotImplementedError("case insensitive not implemented")
+
+    cf_to_prefix = {}
+    head = {}
+    tails = defaultdict(set)
+    for converter in converters:
+        for prefix, uri_prefixes in converter.data.items():
+            prefix_casefold = prefix.casefold()
+            canonical_prefix = cf_to_prefix.get(prefix_casefold)
+            if canonical_prefix is None:
+                canonical_prefix = cf_to_prefix[prefix_casefold] = prefix
+                head[canonical_prefix] = uri_prefixes[0]
+                tails[canonical_prefix].update(uri_prefixes[1:])
+            else:
+                tails[canonical_prefix].update(uri_prefixes)
+    data = {
+        prefix: [uri_prefix, *sorted(tails.get(prefix, []))] for prefix, uri_prefix in head.items()
+    }
+    return Converter(data)
 
 
 def _norm(s: str) -> str:

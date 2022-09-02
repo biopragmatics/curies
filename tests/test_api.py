@@ -136,25 +136,29 @@ class TestConverter(unittest.TestCase):
 
     def test_combine_ci(self):
         """Test combining case insensitive."""
-        c1 = Converter.from_prefix_map(
+        c1 = Converter(
             {
-                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                "CHEBI": [
+                    "http://purl.obolibrary.org/obo/CHEBI_",
+                    "https://bioregistry.io/chebi:",
+                ],
             }
         )
-        c2 = Converter.from_prefix_map(
+        c2 = Converter.from_reverse_prefix_map(
             {
-                "chebi": "http://identifiers.org/chebi/",
+                "http://identifiers.org/chebi/": "chebi",
+                "http://identifiers.org/chebi:": "chebi",
             }
         )
         converter = chain([c1, c2], case_sensitive=False)
-        self.assertEqual(
-            "CHEBI:138488",
-            converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488"),
-        )
-        self.assertEqual(
-            "CHEBI:138488",
-            converter.compress("http://identifiers.org/chebi/138488"),
-        )
+        self.assertEqual({"CHEBI"}, converter.get_prefixes())
+        for url in [
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            "http://identifiers.org/chebi/138488",
+            "http://identifiers.org/chebi:138488",
+            "https://bioregistry.io/chebi:138488",
+        ]:
+            self.assertEqual("CHEBI:138488", converter.compress(url))
         # use the first prefix map for expansions
         self.assertEqual(
             "http://purl.obolibrary.org/obo/CHEBI_138488",
