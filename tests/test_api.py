@@ -33,6 +33,16 @@ class TestConverter(unittest.TestCase):
             }
         )
 
+    def test_invalid(self):
+        """Test throwing an error for duplicated URI prefixes."""
+        with self.assertRaises(ValueError):
+            Converter.from_prefix_map(
+                {
+                    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                    "nope": "http://purl.obolibrary.org/obo/CHEBI_",
+                }
+            )
+
     def test_convert(self):
         """Test compression."""
         self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())
@@ -54,9 +64,9 @@ class TestConverter(unittest.TestCase):
             Converter.from_jsonld_github("biopragmatics", "bioregistry")
 
         semweb_converter = Converter.from_jsonld_github(
-            "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
+            "biopragmatics", "bioregistry", "exports", "contexts", "spar.context.jsonld"
         )
-        self.assertIn("rdf", semweb_converter.prefix_map)
+        self.assertIn("bido", semweb_converter.prefix_map)
 
         bioregistry_converter = get_bioregistry_converter()
         self.assertIn("chebi", bioregistry_converter.prefix_map)

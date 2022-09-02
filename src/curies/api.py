@@ -3,6 +3,7 @@
 """Data structures and algorithms for :mod:`curies`."""
 
 import csv
+import itertools as itt
 from collections import ChainMap, defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Set, Tuple, Union
@@ -61,7 +62,18 @@ class Converter:
             with the first element of the list being the priority URI prefix for expansions.
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
+        :raises ValueError: if any prefixes share any URI prefixes
         """
+        duplicates = [
+            (prefix_1, prefix_2, uri_prefix)
+            for (prefix_1, uri_prefixes_1), (prefix_2, uri_prefixes_2) in itt.combinations(data.items(), 2)
+            for uri_prefix, uri_prefix_2 in itt.product(uri_prefixes_1, uri_prefixes_2)
+            if uri_prefix == uri_prefix_2
+        ]
+        if duplicates:
+            text = "\n".join("\t".join(duplicate) for duplicate in duplicates)
+            raise ValueError(f"Duplicate URIs:\n{text}")
+
         self.delimiter = delimiter
         self.prefix_map = {prefix: uri_prefixes[0] for prefix, uri_prefixes in data.items()}
         self.reverse_prefix_map = {
