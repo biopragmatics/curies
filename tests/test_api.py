@@ -134,6 +134,33 @@ class TestConverter(unittest.TestCase):
         )
         self.assertNotIn("nope", converter.prefix_map)
 
+    def test_combine_ci(self):
+        """Test combining case insensitive."""
+        c1 = Converter.from_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
+        c2 = Converter.from_prefix_map(
+            {
+                "chebi": "http://identifiers.org/chebi/",
+            }
+        )
+        converter = chain([c1, c2], case_sensitive=False)
+        self.assertEqual(
+            "CHEBI:138488",
+            converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488"),
+        )
+        self.assertEqual(
+            "CHEBI:138488",
+            converter.compress("http://identifiers.org/chebi/138488"),
+        )
+        # use the first prefix map for expansions
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand("CHEBI:138488"),
+        )
+
     def test_df_bulk(self):
         """Test bulk processing in pandas dataframes."""
         rows = [

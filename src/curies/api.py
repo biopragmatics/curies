@@ -377,6 +377,7 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     """Chain several converters.
 
     :param converters: A list or tuple of converters
+    :param case_sensitive: If false, will not allow case-sensitive duplicates
     :returns:
         A converter that looks up one at a time in the other converters.
     :raises ValueError:
@@ -384,23 +385,11 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     """
     if not converters:
         raise ValueError
-
     if case_sensitive:
-        l = [
-            {
-                prefix: _norm(prefix)
-                for prefix in converter.get_prefixes()
-            }
-            for converter in converters
-        ]
-
-
-
-
-
-    return Converter.from_reverse_prefix_map(
-        ChainMap(*(dict(converter.reverse_prefix_map) for converter in converters))
-    )
+        return Converter.from_reverse_prefix_map(
+            ChainMap(*(dict(converter.reverse_prefix_map) for converter in converters))
+        )
+    raise NotImplementedError("case insensitive not implemented")
 
 
 def _norm(s: str) -> str:
