@@ -104,35 +104,41 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(ValueError):
             chain([])
 
-        c1 = Converter.from_prefix_map(
+        c1 = Converter(
             {
-                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-                "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+                "CHEBI": ["http://purl.obolibrary.org/obo/CHEBI_", "https://bioregistry.io/chebi:"],
+                "MONDO": ["http://purl.obolibrary.org/obo/MONDO_"],
             }
         )
-        c2 = Converter.from_prefix_map(
+        c2 = Converter(
             {
-                "CHEBI": "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
-                "GO": "http://purl.obolibrary.org/obo/GO_",
-                "OBO": "http://purl.obolibrary.org/obo/",
+                "CHEBI": [
+                    "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
+                    "http://identifiers.org/chebi/",
+                ],
+                "GO": ["http://purl.obolibrary.org/obo/GO_"],
+                "OBO": ["http://purl.obolibrary.org/obo/"],
                 # This will get overridden
-                "nope": "http://purl.obolibrary.org/obo/CHEBI_",
+                "nope": ["http://purl.obolibrary.org/obo/CHEBI_"],
             }
         )
         converter = chain([c1, c2])
-        self.assertEqual(
-            "CHEBI:138488",
-            converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488"),
-        )
-        self.assertEqual(
-            "CHEBI:138488",
-            converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488"),
-        )
+        for url in [
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            "https://bioregistry.io/chebi:138488",
+            "http://identifiers.org/chebi/138488",
+            "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488",
+        ]:
+            self.assertEqual("CHEBI:138488", converter.compress(url))
         self.assertEqual(
             "GO:0000001",
             converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
         )
-        self.assertNotIn("nope", converter.prefix_map)
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand("CHEBI:138488"),
+        )
+        self.assertNotIn("nope", converter.get_prefixes())
 
     def test_combine_ci(self):
         """Test combining case insensitive."""
