@@ -16,6 +16,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 __all__ = [
     "Converter",
+    "DuplicateURIPrefixes",
     "chain",
 ]
 
@@ -24,9 +25,10 @@ class DuplicateURIPrefixes(ValueError):
     """An error raised with constructing a converter with data containing duplicate URI prefixes."""
 
     def __init__(self, duplicates: List[Tuple[str, str, str]]):
+        """Initialize the error."""
         self.duplicates = duplicates
 
-    def __str__(self):
+    def __str__(self) -> str:  # noqa:D105
         text = "\n".join("\t".join(duplicate) for duplicate in self.duplicates)
         return f"Duplicate URIs:\n{text}"
 
