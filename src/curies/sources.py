@@ -10,7 +10,6 @@ __all__ = [
     "get_monarch_converter",
     "get_go_converter",
     "get_bioregistry_converter",
-    "get_go_obo_converter",
 ]
 
 
@@ -45,15 +44,10 @@ def get_go_converter() -> Converter:
     return get_prefixcommons_converter("go_context")
 
 
-def get_go_obo_converter() -> Converter:
-    """Get the Prefix Commons-maintained GO/OBO context."""
-    return get_prefixcommons_converter("go_obo_context")
-
-
 def get_bioregistry_converter() -> Converter:
     """Get the latest Bioregistry context."""
     url = (
         "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/"
-        "exports/contexts/bioregistry.context.jsonld"
+        "exports/contexts/reverse_prefix_map.json"
     )
-    return Converter.from_jsonld_url(url)
+    return Converter.from_reverse_prefix_map_url(url)

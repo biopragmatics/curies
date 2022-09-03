@@ -3,6 +3,7 @@
 """Data structures and algorithms for :mod:`curies`."""
 
 import csv
+import itertools as itt
 from collections import ChainMap, defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Set, Tuple, Union
@@ -15,8 +16,30 @@ if TYPE_CHECKING:  # pragma: no cover
 
 __all__ = [
     "Converter",
+    "DuplicateURIPrefixes",
     "chain",
 ]
+
+
+class DuplicateURIPrefixes(ValueError):
+    """An error raised with constructing a converter with data containing duplicate URI prefixes."""
+
+    def __init__(self, duplicates: List[Tuple[str, str, str]]):
+        """Initialize the error."""
+        self.duplicates = duplicates
+
+    def __str__(self) -> str:  # noqa:D105
+        text = "\n".join("\t".join(duplicate) for duplicate in self.duplicates)
+        return f"Duplicate URIs:\n{text}"
+
+
+def _get_duplicates(data: Mapping[str, List[str]]) -> List[Tuple[str, str, str]]:
+    return [
+        (prefix_1, prefix_2, uri_prefix)
+        for (prefix_1, uris_1), (prefix_2, uris_2) in itt.combinations(data.items(), 2)
+        for uri_prefix, uri_prefix_2 in itt.product(uris_1, uris_2)
+        if uri_prefix == uri_prefix_2
+    ]
 
 
 class Converter:
@@ -52,16 +75,23 @@ class Converter:
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
 
-    def __init__(self, data: Mapping[str, List[str]], *, delimiter: str = ":"):
+    def __init__(self, data: Mapping[str, List[str]], *, delimiter: str = ":", strict: bool = True):
         """Instantiate a converter.
 
         :param data:
             A prefix map where the keys are prefixes (e.g., `chebi`)
             and the values are lists of URI prefixes (e.g., `http://purl.obolibrary.org/obo/CHEBI_`)
             with the first element of the list being the priority URI prefix for expansions.
+        :param strict:
+            If true, raises issues on duplicate URI prefixes
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
+        :raises DuplicateURIPrefixes: if any prefixes share any URI prefixes
         """
+        duplicates = _get_duplicates(data)
+        if duplicates and strict:
+            raise DuplicateURIPrefixes(duplicates)
+
         self.delimiter = delimiter
         self.data = data
         self.prefix_map = {prefix: uri_prefixes[0] for prefix, uri_prefixes in self.data.items()}
@@ -137,6 +167,19 @@ class Converter:
         for uri_prefix, prefix in reverse_prefix_map.items():
             dd[prefix].append(uri_prefix)
         return cls({prefix: sorted(uri_prefixes, key=len) for prefix, uri_prefixes in dd.items()})
+
+    @classmethod
+    def from_reverse_prefix_map_url(cls, url: str) -> "Converter":
+        """Get a remote reverse prefix map JSON file then parse with :meth:`Converter.from_reverse_prefix_map`.
+
+        :param url:
+            A URL to a reverse prefix map JSON file
+        :return:
+            A converter
+        """
+        res = requests.get(url)
+        res.raise_for_status()
+        return cls.from_reverse_prefix_map(res.json())
 
     @classmethod
     def from_jsonld(cls, data) -> "Converter":
