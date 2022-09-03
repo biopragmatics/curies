@@ -429,20 +429,16 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     """
     if not converters:
         raise ValueError
-    if case_sensitive:
-        return Converter.from_reverse_prefix_map(
-            ChainMap(*(dict(converter.reverse_prefix_map) for converter in converters))
-        )
 
     cf_to_prefix = {}
     head = {}
     tails = defaultdict(set)
     for converter in converters:
         for prefix, uri_prefixes in converter.data.items():
-            prefix_casefold = prefix.casefold()
-            canonical_prefix = cf_to_prefix.get(prefix_casefold)
+            key = prefix if case_sensitive else prefix.casefold()
+            canonical_prefix = cf_to_prefix.get(key)
             if canonical_prefix is None:
-                canonical_prefix = cf_to_prefix[prefix_casefold] = prefix
+                canonical_prefix = cf_to_prefix[key] = prefix
                 head[canonical_prefix] = uri_prefixes[0]
                 tails[canonical_prefix].update(uri_prefixes[1:])
             else:
