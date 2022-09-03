@@ -34,28 +34,28 @@ class Record:
     uri_prefix_synonyms: List[str] = field(default_factory=list)
 
     @property
-    def _all_prefixes(self):
+    def _all_prefixes(self) -> List[str]:
         return [self.prefix, *self.prefix_synonyms]
 
     @property
-    def _all_uri_prefixes(self):
+    def _all_uri_prefixes(self) -> List[str]:
         return [self.uri_prefix, *self.uri_prefix_synonyms]
 
 
 class DuplicateURIPrefixes(ValueError):
     """An error raised with constructing a converter with data containing duplicate URI prefixes."""
 
-    def __init__(self, duplicates: List[Tuple[str, str, str]]):
+    def __init__(self, duplicates: List[Tuple[Record, Record, str]]):
         """Initialize the error."""
         self.duplicates = duplicates
 
     def __str__(self) -> str:  # noqa:D105
-        text = "\n".join("\t".join(duplicate) for duplicate in self.duplicates)
+        text = "\n".join("\t".join(map(str, duplicate)) for duplicate in self.duplicates)
         return f"Duplicate URIs:\n{text}"
 
 
 def _get_duplicate_uri_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
-    rv = [
+    return [
         (record_1, record_2, uri_prefix)
         for record_1, record_2 in itt.combinations(records, 2)
         for uri_prefix, up2 in itt.product(record_1._all_uri_prefixes, record_2._all_uri_prefixes)
@@ -64,7 +64,7 @@ def _get_duplicate_uri_prefixes(records: List[Record]) -> List[Tuple[Record, Rec
 
 
 def _get_duplicate_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
-    rv = [
+    return [
         (record_1, record_2, prefix)
         for record_1, record_2 in itt.combinations(records, 2)
         for prefix, p2 in itt.product(record_1._all_prefixes, record_2._all_prefixes)
