@@ -339,7 +339,7 @@ class Converter:
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""
-        return set(self.prefix_map)
+        return {record.prefix for record in self.records}
 
     def compress(self, uri: str) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
@@ -539,45 +539,42 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     else:
         norm_func = str.casefold
 
-    key_to_canonical: Dict[str, str] = {}
-    #: A mapping from the canonical key to the primary URI expansion
-    canonical_prefix_map: Dict[str, str] = {}
+    key_to_pair: Dict[str, str] = {}
     #: A mapping from the canonical key to the secondary URI expansions
     uri_prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
     #: A mapping from the canonical key to the secondary prefixes
     prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
     for converter in converters:
         for record in converter.records:
-            canonical_prefix = norm_func(record.prefix)
-            canonical = key_to_canonical.get(canonical_prefix)
-            if canonical is None:
-                canonical = key_to_canonical[canonical_prefix] = record.prefix
-                canonical_prefix_map[canonical] = record.uri_prefix
-                uri_prefix_tails[canonical].update(record.uri_prefix_synonyms)
-                prefix_tails[canonical].update(record.prefix_synonyms)
+            key = norm_func(record.prefix)
+            if key not in key_to_pair:
+                key_to_pair[key] = record.prefix, record.uri_prefix
+                uri_prefix_tails[key].update(record.uri_prefix_synonyms)
+                prefix_tails[key].update(record.prefix_synonyms)
             else:
-                uri_prefix_tails[canonical].add(record.uri_prefix)
-                uri_prefix_tails[canonical].update(record.uri_prefix_synonyms)
-                prefix_tails[canonical].add(record.prefix)
-                prefix_tails[canonical].update(record.prefix_synonyms)
+                uri_prefix_tails[key].add(record.uri_prefix)
+                uri_prefix_tails[key].update(record.uri_prefix_synonyms)
+                prefix_tails[key].add(record.prefix)
+                prefix_tails[key].update(record.prefix_synonyms)
 
     # clean up potential duplicates from merging
-    for canonical, uri_prefixes in uri_prefix_tails.items():
-        uri_prefix = canonical_prefix_map[canonical]
+    for key, uri_prefixes in uri_prefix_tails.items():
+        uri_prefix = key_to_pair[key][1]
         if uri_prefix in uri_prefixes:
             uri_prefixes.remove(uri_prefix)
-    for canonical, prefixes in prefix_tails.items():
-        if canonical in prefixes:
-            prefixes.remove(canonical)
+    for key, prefixes in prefix_tails.items():
+        prefix = key_to_pair[key][0]
+        if prefix in prefixes:
+            prefixes.remove(prefix)
 
-    records = []
-    for canonical_prefix, canonical_uri_prefix in canonical_prefix_map.items():
-        records.append(
+    return Converter(
+        [
             Record(
-                prefix=canonical_prefix,
-                uri_prefix=canonical_uri_prefix,
-                prefix_synonyms=sorted(prefix_tails[canonical_prefix]),
-                uri_prefix_synonyms=sorted(uri_prefix_tails[canonical_prefix]),
+                prefix=prefix,
+                uri_prefix=uri_prefix,
+                prefix_synonyms=sorted(prefix_tails[key]),
+                uri_prefix_synonyms=sorted(uri_prefix_tails[key]),
             )
-        )
-    return Converter(records)
+            for key, (prefix, uri_prefix) in key_to_pair.items()
+        ]
+    )
