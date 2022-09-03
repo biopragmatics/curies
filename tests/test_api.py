@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 
-from curies.api import Converter, DuplicateURIPrefixes, chain
+from curies.api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
 from curies.sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -40,6 +40,13 @@ class TestConverter(unittest.TestCase):
                     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
                     "nope": "http://purl.obolibrary.org/obo/CHEBI_",
                 }
+            )
+        with self.assertRaises(DuplicatePrefixes):
+            Converter(
+                [
+                    Record(prefix="chebi", uri_prefix="https://bioregistry.io/chebi:"),
+                    Record(prefix="chebi", uri_prefix="http://purl.obolibrary.org/obo/CHEBI_"),
+                ],
             )
 
     def test_convert(self):
@@ -123,11 +130,9 @@ class TestConverter(unittest.TestCase):
                 ],
                 "GO": ["http://purl.obolibrary.org/obo/GO_"],
                 "OBO": ["http://purl.obolibrary.org/obo/"],
-                # This will get overridden
-                "nope": ["http://purl.obolibrary.org/obo/CHEBI_"],
             }
         )
-        converter = chain([c1, c2])
+        converter = chain([c1, c2], case_sensitive=True)
         for url in [
             "http://purl.obolibrary.org/obo/CHEBI_138488",
             "https://bioregistry.io/chebi:138488",

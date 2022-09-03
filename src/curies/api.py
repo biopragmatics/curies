@@ -39,7 +39,9 @@ class Record:
                 raise ValueError(f"Duplicate of canonical prefix `{self.prefix}` in synonyms")
         for ups in self.uri_prefix_synonyms:
             if ups == self.uri_prefix:
-                raise ValueError(f"Duplicate of canonical URI prefix `{self.uri_prefix}` in synonyms")
+                raise ValueError(
+                    f"Duplicate of canonical URI prefix `{self.uri_prefix}` in synonyms"
+                )
 
     @property
     def _all_prefixes(self) -> List[str]:
@@ -50,18 +52,32 @@ class Record:
         return [self.uri_prefix, *self.uri_prefix_synonyms]
 
 
-class DuplicateURIPrefixes(ValueError):
-    """An error raised with constructing a converter with data containing duplicate URI prefixes."""
+class DuplicateValueError(ValueError):
+    """An error raised with constructing a converter with data containing duplicate values."""
 
     def __init__(self, duplicates: List[Tuple[Record, Record, str]]):
         """Initialize the error."""
         self.duplicates = duplicates
 
-    def __str__(self) -> str:  # noqa:D105
+    def _str(self):
         s = ""
         for r1, r2, p in self.duplicates:
             s += f"\n{p}:\n\t{r1}\n\t{r2}\n"
-        return f"Duplicate URIs:\n{s}"
+        return s
+
+
+class DuplicateURIPrefixes(DuplicateValueError):
+    """An error raised with constructing a converter with data containing duplicate URI prefixes."""
+
+    def __str__(self) -> str:  # noqa:D105
+        return f"Duplicate URI prefixes:\n{self._str()}"
+
+
+class DuplicatePrefixes(DuplicateValueError):
+    """An error raised with constructing a converter with data containing duplicate prefixes."""
+
+    def __str__(self) -> str:  # noqa:D105
+        return f"Duplicate prefixes:\n{self._str()}"
 
 
 def _get_duplicate_uri_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
@@ -87,7 +103,7 @@ def _get_prefix_map(records: List[Record]) -> Mapping[str, str]:
     for record in records:
         rv[record.prefix] = record.uri_prefix
         for prefix_synonym in record.prefix_synonyms:
-            rc[prefix_synonym] = record.uri_prefix
+            rv[prefix_synonym] = record.uri_prefix
     return rv
 
 
@@ -153,7 +169,7 @@ class Converter:
                 raise DuplicateURIPrefixes(duplicate_uri_prefixes)
             duplicate_prefixes = _get_duplicate_prefixes(records)
             if duplicate_prefixes:
-                raise DuplicateURIPrefixes(duplicate_prefixes)
+                raise DuplicatePrefixes(duplicate_prefixes)
 
         self.delimiter = delimiter
         self.records = records
@@ -372,7 +388,7 @@ class Converter:
         except KeyError:
             return None, None
         else:
-            return prefix, uri[len(value):]
+            return prefix, uri[len(value) :]
 
     def expand(self, curie: str) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
@@ -501,6 +517,10 @@ class Converter:
             writer.writerows(rows)
 
 
+def _f(x):
+    return x
+
+
 def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Converter:
     """Chain several converters.
 
@@ -514,6 +534,11 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     if not converters:
         raise ValueError
 
+    if case_sensitive:
+        norm_func = _f
+    else:
+        norm_func = str.casefold
+
     key_to_canonical: Dict[str, str] = {}
     #: A mapping from the canonical key to the primary URI expansion
     canonical_prefix_map: Dict[str, str] = {}
@@ -523,10 +548,10 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
     for converter in converters:
         for record in converter.records:
-            key = record.prefix if case_sensitive else record.prefix.casefold()
-            canonical = key_to_canonical.get(key)
+            canonical_prefix = norm_func(record.prefix)
+            canonical = key_to_canonical.get(canonical_prefix)
             if canonical is None:
-                canonical = key_to_canonical[key] = record.prefix
+                canonical = key_to_canonical[canonical_prefix] = record.prefix
                 canonical_prefix_map[canonical] = record.uri_prefix
                 uri_prefix_tails[canonical].update(record.uri_prefix_synonyms)
                 prefix_tails[canonical].update(record.prefix_synonyms)
@@ -537,27 +562,22 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
                 prefix_tails[canonical].update(record.prefix_synonyms)
 
     # clean up potential duplicates from merging
-    for key, uri_prefixes in uri_prefix_tails.items():
-        uri_prefix = canonical_prefix_map[key_to_canonical[key]]
+    for canonical, uri_prefixes in uri_prefix_tails.items():
+        uri_prefix = canonical_prefix_map[canonical]
         if uri_prefix in uri_prefixes:
             uri_prefixes.remove(uri_prefix)
-    for key, prefixes in prefix_tails.items():
-        prefix = key_to_canonical[key]
-        if prefix in prefixes:
-            prefixes.remove(prefix)
+    for canonical, prefixes in prefix_tails.items():
+        if canonical in prefixes:
+            prefixes.remove(canonical)
 
     records = []
-    for key, canonical_uri_prefix in canonical_prefix_map.items():
+    for canonical_prefix, canonical_uri_prefix in canonical_prefix_map.items():
         records.append(
             Record(
-                prefix=key_to_canonical[key],
+                prefix=canonical_prefix,
                 uri_prefix=canonical_uri_prefix,
-                prefix_synonyms=sorted(prefix_tails[key]),
-                uri_prefix_synonyms=sorted(uri_prefix_tails[key]),
+                prefix_synonyms=sorted(prefix_tails[canonical_prefix]),
+                uri_prefix_synonyms=sorted(uri_prefix_tails[canonical_prefix]),
             )
         )
     return Converter(records)
-
-
-def _norm(s: str) -> str:
-    return s.lower().replace("-", "").replace(".", "").replace("_", "").replace(" ", "")
