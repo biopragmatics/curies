@@ -32,22 +32,39 @@ class TestConverter(unittest.TestCase):
             }
         )
 
-    def test_invalid(self):
+    def test_invalid_record(self):
+        """Test throwing an error for invalid records."""
+        with self.assertRaises(ValueError):
+            Record(
+                prefix="chebi",
+                uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                prefix_synonyms=["chebi"],
+            )
+        with self.assertRaises(ValueError):
+            Record(
+                prefix="chebi",
+                uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                uri_prefix_synonyms=["http://purl.obolibrary.org/obo/CHEBI_"],
+            )
+
+    def test_invalid_records(self):
         """Test throwing an error for duplicated URI prefixes."""
-        with self.assertRaises(DuplicateURIPrefixes):
+        with self.assertRaises(DuplicateURIPrefixes) as e:
             Converter.from_prefix_map(
                 {
                     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
                     "nope": "http://purl.obolibrary.org/obo/CHEBI_",
                 }
             )
-        with self.assertRaises(DuplicatePrefixes):
+            self.assertIsInstance(str(e.exception), str)
+        with self.assertRaises(DuplicatePrefixes) as e:
             Converter(
                 [
                     Record(prefix="chebi", uri_prefix="https://bioregistry.io/chebi:"),
                     Record(prefix="chebi", uri_prefix="http://purl.obolibrary.org/obo/CHEBI_"),
                 ],
             )
+            self.assertIsInstance(str(e.exception), str)
 
     def test_convert(self):
         """Test compression."""
