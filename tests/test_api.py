@@ -8,7 +8,7 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 
-from curies.api import Converter, DuplicateURIPrefixes, chain
+from curies.api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
 from curies.sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -32,15 +32,48 @@ class TestConverter(unittest.TestCase):
             }
         )
 
-    def test_invalid(self):
+    def test_invalid_record(self):
+        """Test throwing an error for invalid records."""
+        with self.assertRaises(ValueError):
+            Record(
+                prefix="chebi",
+                uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                prefix_synonyms=["chebi"],
+            )
+        with self.assertRaises(ValueError):
+            Record(
+                prefix="chebi",
+                uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                uri_prefix_synonyms=["http://purl.obolibrary.org/obo/CHEBI_"],
+            )
+
+    def test_invalid_records(self):
         """Test throwing an error for duplicated URI prefixes."""
-        with self.assertRaises(DuplicateURIPrefixes):
+        with self.assertRaises(DuplicateURIPrefixes) as e:
             Converter.from_prefix_map(
                 {
                     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
                     "nope": "http://purl.obolibrary.org/obo/CHEBI_",
                 }
             )
+        self.assertIsInstance(str(e.exception), str)
+        with self.assertRaises(DuplicatePrefixes) as e:
+            Converter(
+                [
+                    Record(prefix="chebi", uri_prefix="https://bioregistry.io/chebi:"),
+                    Record(prefix="chebi", uri_prefix="http://purl.obolibrary.org/obo/CHEBI_"),
+                ],
+            )
+        self.assertIsInstance(str(e.exception), str)
+
+        # No failure
+        Converter.from_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                "nope": "http://purl.obolibrary.org/obo/CHEBI_",
+            },
+            strict=False,
+        )
 
     def test_convert(self):
         """Test compression."""
@@ -109,35 +142,71 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(ValueError):
             chain([])
 
-        c1 = Converter.from_prefix_map(
+        c1 = Converter.from_priority_prefix_map(
             {
-                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-                "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+                "CHEBI": ["http://purl.obolibrary.org/obo/CHEBI_", "https://bioregistry.io/chebi:"],
+                "MONDO": ["http://purl.obolibrary.org/obo/MONDO_"],
             }
         )
-        c2 = Converter.from_prefix_map(
+        c2 = Converter.from_priority_prefix_map(
             {
-                "CHEBI": "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
-                "GO": "http://purl.obolibrary.org/obo/GO_",
-                "OBO": "http://purl.obolibrary.org/obo/",
-                # This will get overridden
-                "nope": "http://purl.obolibrary.org/obo/CHEBI_",
+                "CHEBI": [
+                    "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
+                    "http://identifiers.org/chebi/",
+                    "http://purl.obolibrary.org/obo/CHEBI_",
+                ],
+                "GO": ["http://purl.obolibrary.org/obo/GO_"],
+                "OBO": ["http://purl.obolibrary.org/obo/"],
             }
         )
-        converter = chain([c1, c2])
-        self.assertEqual(
-            "CHEBI:138488",
-            converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488"),
-        )
-        self.assertEqual(
-            "CHEBI:138488",
-            converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488"),
-        )
+        converter = chain([c1, c2], case_sensitive=True)
+        for url in [
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            "https://bioregistry.io/chebi:138488",
+            "http://identifiers.org/chebi/138488",
+            "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488",
+        ]:
+            self.assertEqual("CHEBI:138488", converter.compress(url))
         self.assertEqual(
             "GO:0000001",
             converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
         )
-        self.assertNotIn("nope", converter.prefix_map)
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand("CHEBI:138488"),
+        )
+        self.assertNotIn("nope", converter.get_prefixes())
+
+    def test_combine_ci(self):
+        """Test combining case insensitive."""
+        c1 = Converter.from_priority_prefix_map(
+            {
+                "CHEBI": [
+                    "http://purl.obolibrary.org/obo/CHEBI_",
+                    "https://bioregistry.io/chebi:",
+                ],
+            }
+        )
+        c2 = Converter.from_reverse_prefix_map(
+            {
+                "http://identifiers.org/chebi/": "chebi",
+                "http://identifiers.org/chebi:": "chebi",
+            }
+        )
+        converter = chain([c1, c2], case_sensitive=False)
+        self.assertEqual({"CHEBI"}, converter.get_prefixes())
+        for url in [
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            "http://identifiers.org/chebi/138488",
+            "http://identifiers.org/chebi:138488",
+            "https://bioregistry.io/chebi:138488",
+        ]:
+            self.assertEqual("CHEBI:138488", converter.compress(url))
+        # use the first prefix map for expansions
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand("CHEBI:138488"),
+        )
 
     def test_df_bulk(self):
         """Test bulk processing in pandas dataframes."""
