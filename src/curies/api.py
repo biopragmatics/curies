@@ -5,6 +5,7 @@
 import csv
 import itertools as itt
 from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
@@ -21,6 +22,26 @@ __all__ = [
 ]
 
 
+@dataclass
+class Record:
+    """A record of some prefixes and their associated URI prefixes."""
+
+    #: The canonical prefix, used in the reverse prefix map
+    prefix: str
+    #: The canonical URI prefix, used in the forward prefix map
+    uri_prefix: str
+    prefix_synonyms: List[str] = field(default_factory=list)
+    uri_prefix_synonyms: List[str] = field(default_factory=list)
+
+    @property
+    def _all_prefixes(self):
+        return [self.prefix, *self.prefix_synonyms]
+
+    @property
+    def _all_uri_prefixes(self):
+        return [self.uri_prefix, *self.uri_prefix_synonyms]
+
+
 class DuplicateURIPrefixes(ValueError):
     """An error raised with constructing a converter with data containing duplicate URI prefixes."""
 
@@ -33,13 +54,40 @@ class DuplicateURIPrefixes(ValueError):
         return f"Duplicate URIs:\n{text}"
 
 
-def _get_duplicates(data: Mapping[str, List[str]]) -> List[Tuple[str, str, str]]:
-    return [
-        (prefix_1, prefix_2, uri_prefix)
-        for (prefix_1, uris_1), (prefix_2, uris_2) in itt.combinations(data.items(), 2)
-        for uri_prefix, uri_prefix_2 in itt.product(uris_1, uris_2)
-        if uri_prefix == uri_prefix_2
+def _get_duplicate_uri_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
+    rv = [
+        (record_1, record_2, uri_prefix)
+        for record_1, record_2 in itt.combinations(records, 2)
+        for uri_prefix, up2 in itt.product(record_1._all_uri_prefixes, record_2._all_uri_prefixes)
+        if uri_prefix == up2
     ]
+
+
+def _get_duplicate_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
+    rv = [
+        (record_1, record_2, prefix)
+        for record_1, record_2 in itt.combinations(records, 2)
+        for prefix, p2 in itt.product(record_1._all_prefixes, record_2._all_prefixes)
+        if prefix == p2
+    ]
+
+
+def _get_prefix_map(records: List[Record]) -> Mapping[str, str]:
+    rv = {}
+    for record in records:
+        rv[record.prefix] = record.uri_prefix
+        for prefix_synonym in record.prefix_synonyms:
+            rc[prefix_synonym] = record.uri_prefix
+    return rv
+
+
+def _get_reverse_prefix_map(records: List[Record]) -> Mapping[str, str]:
+    rv = {}
+    for record in records:
+        rv[record.uri_prefix] = record.prefix
+        for uri_prefix_synonym in record.uri_prefix_synonyms:
+            rv[uri_prefix_synonym] = record.prefix
+    return rv
 
 
 class Converter:
@@ -75,10 +123,10 @@ class Converter:
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
 
-    def __init__(self, data: Mapping[str, List[str]], *, delimiter: str = ":", strict: bool = True):
+    def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True):
         """Instantiate a converter.
 
-        :param data:
+        :param records:
             A prefix map where the keys are prefixes (e.g., `chebi`)
             and the values are lists of URI prefixes (e.g., `http://purl.obolibrary.org/obo/CHEBI_`)
             with the first element of the list being the priority URI prefix for expansions.
@@ -88,19 +136,31 @@ class Converter:
             The delimiter used for CURIEs. Defaults to a colon.
         :raises DuplicateURIPrefixes: if any prefixes share any URI prefixes
         """
-        duplicates = _get_duplicates(data)
-        if duplicates and strict:
-            raise DuplicateURIPrefixes(duplicates)
+        if strict:
+            duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
+            if duplicate_uri_prefixes:
+                raise DuplicateURIPrefixes(duplicate_uri_prefixes)
+            duplicate_prefixes = _get_duplicate_prefixes(records)
+            if duplicate_prefixes:
+                raise DuplicateURIPrefixes(duplicate_prefixes)
 
         self.delimiter = delimiter
-        self.data = data
-        self.prefix_map = {prefix: uri_prefixes[0] for prefix, uri_prefixes in self.data.items()}
-        self.reverse_prefix_map = {
-            uri_prefix: prefix
-            for prefix, uri_prefixes in self.data.items()
-            for uri_prefix in uri_prefixes
-        }
+        self.records = records
+        self.prefix_map = _get_prefix_map(records)
+        self.reverse_prefix_map = _get_reverse_prefix_map(records)
         self.trie = StringTrie(self.reverse_prefix_map)
+
+    @classmethod
+    def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs) -> "Converter":
+        return cls(
+            [
+                Record(
+                    prefix=prefix, uri_prefix=uri_prefixes[0], uri_prefix_synonyms=uri_prefixes[1:]
+                )
+                for prefix, uri_prefixes in data.items()
+            ],
+            **kwargs,
+        )
 
     @classmethod
     def from_prefix_map(cls, prefix_map: Mapping[str, str]) -> "Converter":
@@ -130,7 +190,12 @@ class Converter:
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
         'CHEBI:138488'
         """
-        return cls({prefix: [uri_format] for prefix, uri_format in prefix_map.items()})
+        return cls(
+            [
+                Record(prefix=prefix, uri_prefix=uri_prefix)
+                for prefix, uri_prefix in prefix_map.items()
+            ]
+        )
 
     @classmethod
     def from_reverse_prefix_map(cls, reverse_prefix_map: Mapping[str, str]) -> "Converter":
@@ -166,7 +231,15 @@ class Converter:
         dd = defaultdict(list)
         for uri_prefix, prefix in reverse_prefix_map.items():
             dd[prefix].append(uri_prefix)
-        return cls({prefix: sorted(uri_prefixes, key=len) for prefix, uri_prefixes in dd.items()})
+        records = []
+        for prefix, uri_prefixes in dd.items():
+            uri_prefix, *uri_prefix_synonyms = sorted(uri_prefixes, key=len)
+            records.append(
+                Record(
+                    prefix=prefix, uri_prefix=uri_prefix, uri_prefix_synonyms=uri_prefix_synonyms
+                )
+            )
+        return cls(records)
 
     @classmethod
     def from_reverse_prefix_map_url(cls, url: str) -> "Converter":
@@ -450,9 +523,7 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     for key, uri_prefixes in tails.items():
         uri_prefixes.remove(head[key])
 
-    data = {
-        prefix: [uri_prefix, *sorted(tails[prefix])] for prefix, uri_prefix in head.items()
-    }
+    data = {prefix: [uri_prefix, *sorted(tails[prefix])] for prefix, uri_prefix in head.items()}
     return Converter(data)
 
 

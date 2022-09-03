@@ -109,13 +109,13 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(ValueError):
             chain([])
 
-        c1 = Converter(
+        c1 = Converter.from_priority_prefix_map(
             {
                 "CHEBI": ["http://purl.obolibrary.org/obo/CHEBI_", "https://bioregistry.io/chebi:"],
                 "MONDO": ["http://purl.obolibrary.org/obo/MONDO_"],
             }
         )
-        c2 = Converter(
+        c2 = Converter.from_priority_prefix_map(
             {
                 "CHEBI": [
                     "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
@@ -147,7 +147,7 @@ class TestConverter(unittest.TestCase):
 
     def test_combine_ci(self):
         """Test combining case insensitive."""
-        c1 = Converter(
+        c1 = Converter.from_priority_prefix_map(
             {
                 "CHEBI": [
                     "http://purl.obolibrary.org/obo/CHEBI_",
