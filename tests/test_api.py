@@ -8,11 +8,10 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 
-from curies.api import Converter, chain
+from curies.api import Converter, DuplicateURIPrefixes, chain
 from curies.sources import (
     get_bioregistry_converter,
     get_go_converter,
-    get_go_obo_converter,
     get_monarch_converter,
     get_obo_converter,
 )
@@ -32,6 +31,16 @@ class TestConverter(unittest.TestCase):
                 "OBO": "http://purl.obolibrary.org/obo/",
             }
         )
+
+    def test_invalid(self):
+        """Test throwing an error for duplicated URI prefixes."""
+        with self.assertRaises(DuplicateURIPrefixes):
+            Converter.from_prefix_map(
+                {
+                    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                    "nope": "http://purl.obolibrary.org/obo/CHEBI_",
+                }
+            )
 
     def test_convert(self):
         """Test compression."""
@@ -73,10 +82,6 @@ class TestConverter(unittest.TestCase):
         go_converter = get_go_converter()
         self.assertIn("CHEBI", go_converter.prefix_map)
         self.assertNotIn("chebi", go_converter.prefix_map)
-
-        go_obo_converter = get_go_obo_converter()
-        self.assertIn("CHEBI", go_obo_converter.prefix_map)
-        self.assertNotIn("chebi", go_obo_converter.prefix_map)
 
     def test_reverse_constuctor(self):
         """Test constructing from a reverse prefix map."""

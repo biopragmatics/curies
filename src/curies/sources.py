@@ -10,7 +10,6 @@ __all__ = [
     "get_monarch_converter",
     "get_go_converter",
     "get_bioregistry_converter",
-    "get_go_obo_converter",
 ]
 
 
@@ -43,11 +42,6 @@ def get_monarch_converter() -> Converter:
 def get_go_converter() -> Converter:
     """Get the Prefix Commons-maintained GO context."""
     return get_prefixcommons_converter("go_context")
-
-
-def get_go_obo_converter() -> Converter:
-    """Get the Prefix Commons-maintained GO/OBO context."""
-    return get_prefixcommons_converter("go_obo_context")
 
 
 def get_bioregistry_converter() -> Converter:
