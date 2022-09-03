@@ -33,6 +33,15 @@ class DuplicateURIPrefixes(ValueError):
         return f"Duplicate URIs:\n{text}"
 
 
+def _get_duplicates(data: Mapping[str, List[str]]) -> List[Tuple[str, str, str]]:
+    return [
+        (prefix_1, prefix_2, uri_prefix)
+        for (prefix_1, uris_1), (prefix_2, uris_2) in itt.combinations(data.items(), 2)
+        for uri_prefix, uri_prefix_2 in itt.product(uris_1, uris_2)
+        if uri_prefix == uri_prefix_2
+    ]
+
+
 class Converter:
     """A cached prefix map data structure.
 
@@ -77,12 +86,7 @@ class Converter:
             The delimiter used for CURIEs. Defaults to a colon.
         :raises DuplicateURIPrefixes: if any prefixes share any URI prefixes
         """
-        duplicates = [
-            (prefix_1, prefix_2, uri_prefix)
-            for (prefix_1, uris_1), (prefix_2, uris_2) in itt.combinations(data.items(), 2)
-            for uri_prefix, uri_prefix_2 in itt.product(uris_1, uris_2)
-            if uri_prefix == uri_prefix_2
-        ]
+        duplicates = _get_duplicates(data)
         if duplicates:
             raise DuplicateURIPrefixes(duplicates)
 
