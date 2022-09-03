@@ -430,21 +430,28 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     if not converters:
         raise ValueError
 
-    cf_to_prefix = {}
+    key_to_canonical = {}
+    #: A mapping from the canonical key to the primary URI expansion
     head = {}
+    #: A mapping from the canonical key to the secondary URI expansions
     tails = defaultdict(set)
     for converter in converters:
         for prefix, uri_prefixes in converter.data.items():
             key = prefix if case_sensitive else prefix.casefold()
-            canonical_prefix = cf_to_prefix.get(key)
-            if canonical_prefix is None:
-                canonical_prefix = cf_to_prefix[key] = prefix
-                head[canonical_prefix] = uri_prefixes[0]
-                tails[canonical_prefix].update(uri_prefixes[1:])
+            canonical = key_to_canonical.get(key)
+            if canonical is None:
+                canonical = key_to_canonical[key] = prefix
+                head[canonical] = uri_prefixes[0]
+                tails[canonical].update(uri_prefixes[1:])
             else:
-                tails[canonical_prefix].update(uri_prefixes)
+                tails[canonical].update(uri_prefixes)
+
+    # Make sure none of the tails have the head in them
+    for key, uri_prefixes in tails.items():
+        uri_prefixes.remove(head[key])
+
     data = {
-        prefix: [uri_prefix, *sorted(tails.get(prefix, []))] for prefix, uri_prefix in head.items()
+        prefix: [uri_prefix, *sorted(tails[prefix])] for prefix, uri_prefix in head.items()
     }
     return Converter(data)
 
