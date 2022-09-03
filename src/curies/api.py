@@ -4,7 +4,7 @@
 
 import csv
 import itertools as itt
-from collections import ChainMap, defaultdict
+from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
