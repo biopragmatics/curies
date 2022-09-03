@@ -33,6 +33,14 @@ class Record:
     prefix_synonyms: List[str] = field(default_factory=list)
     uri_prefix_synonyms: List[str] = field(default_factory=list)
 
+    def __post_init__(self):
+        for ps in self.prefix_synonyms:
+            if ps == self.prefix:
+                raise ValueError(f"Duplicate of canonical prefix `{self.prefix}` in synonyms")
+        for ups in self.uri_prefix_synonyms:
+            if ups == self.uri_prefix:
+                raise ValueError(f"Duplicate of canonical URI prefix `{self.uri_prefix}` in synonyms")
+
     @property
     def _all_prefixes(self) -> List[str]:
         return [self.prefix, *self.prefix_synonyms]
@@ -50,8 +58,10 @@ class DuplicateURIPrefixes(ValueError):
         self.duplicates = duplicates
 
     def __str__(self) -> str:  # noqa:D105
-        text = "\n".join("\t".join(map(str, duplicate)) for duplicate in self.duplicates)
-        return f"Duplicate URIs:\n{text}"
+        s = ""
+        for r1, r2, p in self.duplicates:
+            s += f"\n{p}:\n\t{r1}\n\t{r2}\n"
+        return f"Duplicate URIs:\n{s}"
 
 
 def _get_duplicate_uri_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
@@ -362,7 +372,7 @@ class Converter:
         except KeyError:
             return None, None
         else:
-            return prefix, uri[len(value) :]
+            return prefix, uri[len(value):]
 
     def expand(self, curie: str) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
@@ -506,32 +516,44 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
 
     key_to_canonical: Dict[str, str] = {}
     #: A mapping from the canonical key to the primary URI expansion
-    head: Dict[str, str] = {}
+    canonical_prefix_map: Dict[str, str] = {}
     #: A mapping from the canonical key to the secondary URI expansions
-    tails: DefaultDict[str, Set[str]] = defaultdict(set)
+    uri_prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
+    #: A mapping from the canonical key to the secondary prefixes
+    prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
     for converter in converters:
         for record in converter.records:
             key = record.prefix if case_sensitive else record.prefix.casefold()
             canonical = key_to_canonical.get(key)
             if canonical is None:
                 canonical = key_to_canonical[key] = record.prefix
-                head[canonical] = record.uri_prefix
-                tails[canonical].update(record.uri_prefix_synonyms)
+                canonical_prefix_map[canonical] = record.uri_prefix
+                uri_prefix_tails[canonical].update(record.uri_prefix_synonyms)
+                prefix_tails[canonical].update(record.prefix_synonyms)
             else:
-                tails[canonical].add(record.uri_prefix)
-                tails[canonical].update(record.uri_prefix_synonyms)
+                uri_prefix_tails[canonical].add(record.uri_prefix)
+                uri_prefix_tails[canonical].update(record.uri_prefix_synonyms)
+                prefix_tails[canonical].add(record.prefix)
+                prefix_tails[canonical].update(record.prefix_synonyms)
 
-    # Make sure none of the tails have the head in them
-    for key, uri_prefixes in tails.items():
-        uri_prefixes.difference_update({head[key]})
+    # clean up potential duplicates from merging
+    for key, uri_prefixes in uri_prefix_tails.items():
+        uri_prefix = canonical_prefix_map[key_to_canonical[key]]
+        if uri_prefix in uri_prefixes:
+            uri_prefixes.remove(uri_prefix)
+    for key, prefixes in prefix_tails.items():
+        prefix = key_to_canonical[key]
+        if prefix in prefixes:
+            prefixes.remove(prefix)
 
     records = []
-    for prefix, uri_prefix in head.items():
+    for key, canonical_uri_prefix in canonical_prefix_map.items():
         records.append(
             Record(
-                prefix=prefix,
-                uri_prefix=uri_prefix,
-                uri_prefix_synonyms=sorted(tails[prefix]),
+                prefix=key_to_canonical[key],
+                uri_prefix=canonical_uri_prefix,
+                prefix_synonyms=sorted(prefix_tails[key]),
+                uri_prefix_synonyms=sorted(uri_prefix_tails[key]),
             )
         )
     return Converter(records)
