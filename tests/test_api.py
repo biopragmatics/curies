@@ -56,7 +56,7 @@ class TestConverter(unittest.TestCase):
                     "nope": "http://purl.obolibrary.org/obo/CHEBI_",
                 }
             )
-            self.assertIsInstance(str(e.exception), str)
+        self.assertIsInstance(str(e.exception), str)
         with self.assertRaises(DuplicatePrefixes) as e:
             Converter(
                 [
@@ -64,7 +64,7 @@ class TestConverter(unittest.TestCase):
                     Record(prefix="chebi", uri_prefix="http://purl.obolibrary.org/obo/CHEBI_"),
                 ],
             )
-            self.assertIsInstance(str(e.exception), str)
+        self.assertIsInstance(str(e.exception), str)
 
     def test_convert(self):
         """Test compression."""
@@ -144,6 +144,7 @@ class TestConverter(unittest.TestCase):
                 "CHEBI": [
                     "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
                     "http://identifiers.org/chebi/",
+                    "http://purl.obolibrary.org/obo/CHEBI_",
                 ],
                 "GO": ["http://purl.obolibrary.org/obo/GO_"],
                 "OBO": ["http://purl.obolibrary.org/obo/"],
