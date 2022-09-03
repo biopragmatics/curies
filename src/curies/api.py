@@ -7,7 +7,7 @@ import itertools as itt
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import TYPE_CHECKING, DefaultDict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 import requests
 from pytrie import StringTrie
@@ -136,6 +136,7 @@ class Converter:
             The delimiter used for CURIEs. Defaults to a colon.
         :raises DuplicateURIPrefixes: if any prefixes share any URI prefixes
         """
+        assert all(isinstance(r, Record) for r in records)
         if strict:
             duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
             if duplicate_uri_prefixes:
@@ -503,28 +504,37 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     if not converters:
         raise ValueError
 
-    key_to_canonical = {}
+    key_to_canonical: Dict[str, str] = {}
     #: A mapping from the canonical key to the primary URI expansion
-    head = {}
+    head: Dict[str, str] = {}
     #: A mapping from the canonical key to the secondary URI expansions
-    tails = defaultdict(set)
+    tails: DefaultDict[str, Set[str]] = defaultdict(set)
     for converter in converters:
-        for prefix, uri_prefixes in converter.data.items():
-            key = prefix if case_sensitive else prefix.casefold()
+        for record in converter.records:
+            key = record.prefix if case_sensitive else record.prefix.casefold()
             canonical = key_to_canonical.get(key)
             if canonical is None:
-                canonical = key_to_canonical[key] = prefix
-                head[canonical] = uri_prefixes[0]
-                tails[canonical].update(uri_prefixes[1:])
+                canonical = key_to_canonical[key] = record.prefix
+                head[canonical] = record.uri_prefix
+                tails[canonical].update(record.uri_prefix_synonyms)
             else:
-                tails[canonical].update(uri_prefixes)
+                tails[canonical].add(record.uri_prefix)
+                tails[canonical].update(record.uri_prefix_synonyms)
 
     # Make sure none of the tails have the head in them
     for key, uri_prefixes in tails.items():
-        uri_prefixes.remove(head[key])
+        uri_prefixes.difference_update({head[key]})
 
-    data = {prefix: [uri_prefix, *sorted(tails[prefix])] for prefix, uri_prefix in head.items()}
-    return Converter(data)
+    records = []
+    for prefix, uri_prefix in head.items():
+        records.append(
+            Record(
+                prefix=prefix,
+                uri_prefix=uri_prefix,
+                uri_prefix_synonyms=sorted(tails[prefix]),
+            )
+        )
+    return Converter(records)
 
 
 def _norm(s: str) -> str:
