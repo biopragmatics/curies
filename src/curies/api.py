@@ -162,6 +162,19 @@ class Converter:
         return cls({prefix: sorted(uri_prefixes, key=len) for prefix, uri_prefixes in dd.items()})
 
     @classmethod
+    def from_reverse_prefix_map_url(cls, url: str) -> "Converter":
+        """Get a remote reverse prefix map JSON file then parse with :meth:`Converter.from_reverse_prefix_map`.
+
+        :param url:
+            A URL to a reverse prefix map JSON file
+        :return:
+            A converter
+        """
+        res = requests.get(url)
+        res.raise_for_status()
+        return cls.from_reverse_prefix_map(res.json())
+
+    @classmethod
     def from_jsonld(cls, data) -> "Converter":
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
