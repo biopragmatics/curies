@@ -12,7 +12,6 @@ from curies.api import Converter, DuplicateURIPrefixes, chain
 from curies.sources import (
     get_bioregistry_converter,
     get_go_converter,
-    get_go_obo_converter,
     get_monarch_converter,
     get_obo_converter,
 )
