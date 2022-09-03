@@ -75,19 +75,21 @@ class Converter:
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
 
-    def __init__(self, data: Mapping[str, List[str]], *, delimiter: str = ":"):
+    def __init__(self, data: Mapping[str, List[str]], *, delimiter: str = ":", strict: bool = True):
         """Instantiate a converter.
 
         :param data:
             A prefix map where the keys are prefixes (e.g., `chebi`)
             and the values are lists of URI prefixes (e.g., `http://purl.obolibrary.org/obo/CHEBI_`)
             with the first element of the list being the priority URI prefix for expansions.
+        :param strict:
+            If true, raises issues on duplicate URI prefixes
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
         :raises DuplicateURIPrefixes: if any prefixes share any URI prefixes
         """
         duplicates = _get_duplicates(data)
-        if duplicates:
+        if duplicates and strict:
             raise DuplicateURIPrefixes(duplicates)
 
         self.delimiter = delimiter

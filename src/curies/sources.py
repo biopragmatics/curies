@@ -10,7 +10,6 @@ __all__ = [
     "get_monarch_converter",
     "get_go_converter",
     "get_bioregistry_converter",
-    "get_go_obo_converter",
 ]
 
 
