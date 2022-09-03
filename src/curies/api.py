@@ -211,7 +211,7 @@ class Converter:
         )
 
     @classmethod
-    def from_prefix_map(cls, prefix_map: Mapping[str, str]) -> "Converter":
+    def from_prefix_map(cls, prefix_map: Mapping[str, str], **kwargs) -> "Converter":
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
@@ -224,6 +224,7 @@ class Converter:
                 ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
                 be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
                 will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
+        :param kwargs: Keyword arguments to pass to :func:`Converter.__init__`
         :returns:
             A converter
 
@@ -242,7 +243,8 @@ class Converter:
             [
                 Record(prefix=prefix, uri_prefix=uri_prefix)
                 for prefix, uri_prefix in prefix_map.items()
-            ]
+            ],
+            **kwargs,
         )
 
     @classmethod

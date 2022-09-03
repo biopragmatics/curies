@@ -66,6 +66,15 @@ class TestConverter(unittest.TestCase):
             )
         self.assertIsInstance(str(e.exception), str)
 
+        # No failure
+        Converter.from_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                "nope": "http://purl.obolibrary.org/obo/CHEBI_",
+            },
+            strict=False,
+        )
+
     def test_convert(self):
         """Test compression."""
         self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())
