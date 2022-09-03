@@ -7,7 +7,18 @@ import itertools as itt
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, DefaultDict, List, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    DefaultDict,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import requests
 from pytrie import StringTrie
@@ -153,16 +164,14 @@ class Converter:
         """Instantiate a converter.
 
         :param records:
-            A prefix map where the keys are prefixes (e.g., `chebi`)
-            and the values are lists of URI prefixes (e.g., `http://purl.obolibrary.org/obo/CHEBI_`)
-            with the first element of the list being the priority URI prefix for expansions.
+            A list of records
         :param strict:
             If true, raises issues on duplicate URI prefixes
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
-        :raises DuplicateURIPrefixes: if any prefixes share any URI prefixes
+        :raises DuplicatePrefixes: if any records share any synonyms
+        :raises DuplicateURIPrefixes: if any records share any URI prefixes
         """
-        assert all(isinstance(r, Record) for r in records)
         if strict:
             duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
             if duplicate_uri_prefixes:
@@ -179,6 +188,15 @@ class Converter:
 
     @classmethod
     def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs) -> "Converter":
+        """Get a converter from a priority prefix map.
+
+        :param data:
+            A prefix map where the keys are prefixes (e.g., `chebi`)
+            and the values are lists of URI prefixes (e.g., `http://purl.obolibrary.org/obo/CHEBI_`)
+            with the first element of the list being the priority URI prefix for expansions.
+        :param kwargs: Keyword arguments to pass to the parent class's init
+        :returns: A converter
+        """
         return cls(
             [
                 Record(
@@ -539,7 +557,7 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     else:
         norm_func = str.casefold
 
-    key_to_pair: Dict[str, str] = {}
+    key_to_pair: Dict[str, Tuple[str, str]] = {}
     #: A mapping from the canonical key to the secondary URI expansions
     uri_prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
     #: A mapping from the canonical key to the secondary prefixes
