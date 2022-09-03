@@ -28,6 +28,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 __all__ = [
     "Converter",
+    "Record",
+    "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "chain",
 ]
@@ -45,6 +47,7 @@ class Record:
     uri_prefix_synonyms: List[str] = field(default_factory=list)
 
     def __post_init__(self):
+        """Check the integrity of the record."""
         for ps in self.prefix_synonyms:
             if ps == self.prefix:
                 raise ValueError(f"Duplicate of canonical prefix `{self.prefix}` in synonyms")
