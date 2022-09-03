@@ -63,9 +63,9 @@ class TestConverter(unittest.TestCase):
             Converter.from_jsonld_github("biopragmatics", "bioregistry")
 
         semweb_converter = Converter.from_jsonld_github(
-            "biopragmatics", "bioregistry", "exports", "contexts", "spar.context.jsonld"
+            "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
         )
-        self.assertIn("bido", semweb_converter.prefix_map)
+        self.assertIn("rdf", semweb_converter.prefix_map)
 
         bioregistry_converter = get_bioregistry_converter()
         self.assertIn("chebi", bioregistry_converter.prefix_map)
