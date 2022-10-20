@@ -53,7 +53,7 @@ def get_bioregistry_converter(web: bool = False, **kwargs) -> Converter:
     if not web:
         try:
             import bioregistry
-        except ImportError:
+        except ImportError:  # pragma: no cover
             pass
         else:
             return Converter.from_extended_prefix_map(bioregistry.manager.get_curies_records())
