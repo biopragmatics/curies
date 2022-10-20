@@ -463,10 +463,11 @@ class Converter:
         return cls.from_jsonld_url(url)
 
     @classmethod
-    def from_linkml_context(self, context: "prefixmaps.datamodel.Context") -> "Converter":
+    def from_linkml_context(cls, context: "prefixmaps.datamodel.Context", **kwargs) -> "Converter":
         """Get a converter from the :class:`prefixmaps` package.
 
         :param context: The context object
+        :param kwargs: Keyword arguments to pass to the constructor
         :return:
             A converter
 
@@ -482,8 +483,20 @@ class Converter:
         >>> converter.expand("FlyBase:FBgn123")
         'http://identifiers.org/fb/FBgn123'
         """
-        # TODO improve data structure for this
-        return cls.from_prefix_map(context.as_dict())
+        uri_prefix_synonyms = defaultdict(set)
+        for expansion in context.prefix_expansions:
+            if expansion.status.value == "prefix_alias":
+                uri_prefix_synonyms[expansion.prefix].add(expansion.namespace)
+        records = [
+            Record(
+                prefix=expansion.prefix,
+                uri_prefix=expansion.namespace,
+                uri_prefix_synonyms=sorted(uri_prefix_synonyms[expansion.prefix]),
+            )
+            for expansion in context.prefix_expansions
+            if expansion.canonical()
+        ]
+        return cls(records=records, **kwargs)
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""
