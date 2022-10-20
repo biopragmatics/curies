@@ -20,6 +20,11 @@ from curies.sources import (
 )
 from curies.version import get_version
 
+try:
+    import prefixmaps
+except ImportError:
+    prefixmaps = None
+
 
 class TestConverter(unittest.TestCase):
     """Test the converter class."""
@@ -287,6 +292,33 @@ class TestConverter(unittest.TestCase):
                 self.converter.file_compress(path, 0, header=header)
                 lines = [line.strip().split("\t") for line in path.read_text().splitlines()]
                 self.assertEqual("CHEBI:1", lines[idx][0])
+
+
+@unittest.skipIf(prefixmaps is None, reason="prefixmaps package is not available")
+class TestLinkML(unittest.TestCase):
+    """Test loading LinkML data."""
+
+    def test_load(self):
+        """Test loading prefixmaps content."""
+        import prefixmaps
+
+        context = prefixmaps.load_context("bioportal")
+        converter = Converter.from_linkml_context(context)
+        # bioportal,WIKIPATHWAYS,http://vocabularies.wikipathways.org/wp#,canonical
+        # bioportal,WIKIPATHWAYS,http://vocabularies.wikipathways.org/wpTypes#,prefix_alias
+        self.assertIn("WIKIPATHWAYS", converter.prefix_map)
+        self.assertIn("http://vocabularies.wikipathways.org/wp#", set(converter.reverse_prefix_map))
+        self.assertEqual(
+            "WIKIPATHWAYS",
+            converter.reverse_prefix_map["http://vocabularies.wikipathways.org/wp#"],
+        )
+        self.assertIn(
+            "http://vocabularies.wikipathways.org/wpTypes#", set(converter.reverse_prefix_map)
+        )
+        self.assertEqual(
+            "WIKIPATHWAYS",
+            converter.reverse_prefix_map["http://vocabularies.wikipathways.org/wpTypes#"],
+        )
 
 
 class TestVersion(unittest.TestCase):

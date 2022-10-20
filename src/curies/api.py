@@ -4,6 +4,7 @@
 
 import csv
 import itertools as itt
+import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -34,6 +35,8 @@ __all__ = [
     "DuplicateURIPrefixes",
     "chain",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -483,18 +486,51 @@ class Converter:
         >>> converter.expand("FlyBase:FBgn123")
         'http://identifiers.org/fb/FBgn123'
         """
+        rpm = defaultdict(set)
+        for expansion in context.prefix_expansions:
+            if expansion.canonical():
+                rpm[expansion.namespace].add(expansion.prefix)
+
+        # Because there are no guarantees on bijectivity among expansions
+        # labeled as canonical, this promotes the shortest one.
+        prefix_map = {}
+        prefix_synonyms = defaultdict(set)
+        for uri_prefix, prefixes in rpm.items():
+            prefix, *secondary = sorted(prefixes)
+            prefix_map[prefix] = uri_prefix
+            prefix_synonyms[prefix].update(secondary)
+
+        # Get URI prefix synonyms. This means that the same prefix has secondary
+        # URI prefixes. See bioportal.csv in the prefixmaps package for an example,
+        # specfically look for WIKIPATHWAYS
         uri_prefix_synonyms = defaultdict(set)
         for expansion in context.prefix_expansions:
-            if expansion.status.value == "prefix_alias":
+            if expansion.status.value != "prefix_alias":
+                continue
+            elif expansion.prefix not in prefix_map:
+                logger.warning("prefix_alias refers to missing prefix: %s", expansion)
+                continue
+            else:
                 uri_prefix_synonyms[expansion.prefix].add(expansion.namespace)
+
+        reverse_prefix_map = {uri_prefix: prefix for prefix, uri_prefix in prefix_map.items()}
+        for expansion in context.prefix_expansions:
+            if expansion.status.value != "namespace_alias":
+                continue
+            primary_prefix = reverse_prefix_map.get(expansion.namespace)
+            if not primary_prefix:
+                logger.warning(f"Missing primary prefix for {expansion}")
+                continue
+            prefix_synonyms[primary_prefix].add(expansion.prefix)
+
         records = [
             Record(
-                prefix=expansion.prefix,
-                uri_prefix=expansion.namespace,
+                prefix=prefix,
+                prefix_synonyms=sorted(prefix_synonyms[expansion.prefix]),
+                uri_prefix=uri_prefix,
                 uri_prefix_synonyms=sorted(uri_prefix_synonyms[expansion.prefix]),
             )
-            for expansion in context.prefix_expansions
-            if expansion.canonical()
+            for prefix, uri_prefix in prefix_map.items()
         ]
         return cls(records=records, **kwargs)
 
@@ -739,3 +775,12 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
             for key, (prefix, uri_prefix) in key_to_pair.items()
         ]
     )
+
+
+if __name__ == "__main__":
+    from prefixmaps import load_context
+
+    context = load_context("bioportal")
+    for e in context.prefix_expansions:
+        if e.prefix in {"INVERSEROLES", "ISO-15926-2_2003"}:
+            print(e)
