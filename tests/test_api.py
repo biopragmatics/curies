@@ -10,6 +10,7 @@ import pandas as pd
 
 from curies.api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
 from curies.sources import (
+    BIOREGISTRY_CONTEXTS,
     get_bioregistry_converter,
     get_go_converter,
     get_monarch_converter,
@@ -104,6 +105,10 @@ class TestConverter(unittest.TestCase):
         self.assertIn("chebi", bioregistry_converter.prefix_map)
         self.assertNotIn("CHEBI", bioregistry_converter.prefix_map)
 
+        c = Converter.from_reverse_prefix_map_url(f"{BIOREGISTRY_CONTEXTS}/bioregistry.rpm.json")
+        self.assertIn("chebi", c.prefix_map)
+        self.assertNotIn("CHEBI", c.prefix_map)
+
         obo_converter = get_obo_converter()
         self.assertIn("CHEBI", obo_converter.prefix_map)
         self.assertNotIn("chebi", obo_converter.prefix_map)
@@ -116,7 +121,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn("CHEBI", go_converter.prefix_map)
         self.assertNotIn("chebi", go_converter.prefix_map)
 
-    def test_reverse_constuctor(self):
+    def test_reverse_constructor(self):
         """Test constructing from a reverse prefix map."""
         converter = Converter.from_reverse_prefix_map(
             {

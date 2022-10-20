@@ -12,6 +12,10 @@ __all__ = [
     "get_bioregistry_converter",
 ]
 
+BIOREGISTRY_CONTEXTS = (
+    "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts"
+)
+
 
 def get_obo_converter() -> Converter:
     """Get the latest OBO Foundry context."""
@@ -46,8 +50,5 @@ def get_go_converter() -> Converter:
 
 def get_bioregistry_converter() -> Converter:
     """Get the latest Bioregistry context."""
-    url = (
-        "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/"
-        "exports/contexts/reverse_prefix_map.json"
-    )
-    return Converter.from_reverse_prefix_map_url(url)
+    url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
+    return Converter.from_extended_prefix_map_url(url)
