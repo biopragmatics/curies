@@ -48,7 +48,14 @@ def get_go_converter() -> Converter:
     return get_prefixcommons_converter("go_context")
 
 
-def get_bioregistry_converter() -> Converter:
+def get_bioregistry_converter(web: bool = False, **kwargs) -> Converter:
     """Get the latest Bioregistry context."""
+    if not web:
+        try:
+            import bioregistry
+        except ImportError:
+            pass
+        else:
+            return Converter.from_extended_prefix_map(bioregistry.manager.get_curies_records())
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
-    return Converter.from_extended_prefix_map_url(url)
+    return Converter.from_extended_prefix_map_url(url, **kwargs)

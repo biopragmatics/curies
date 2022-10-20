@@ -101,7 +101,7 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIn("rdf", semweb_converter.prefix_map)
 
-        bioregistry_converter = get_bioregistry_converter()
+        bioregistry_converter = get_bioregistry_converter(web=True)
         self.assertIn("chebi", bioregistry_converter.prefix_map)
         self.assertNotIn("CHEBI", bioregistry_converter.prefix_map)
 
