@@ -25,6 +25,7 @@ from pytrie import StringTrie
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
+    import prefixmaps.datamodel
 
 __all__ = [
     "Converter",
@@ -460,6 +461,29 @@ class Converter:
         rest = "/".join(path)
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
         return cls.from_jsonld_url(url)
+
+    @classmethod
+    def from_linkml_context(self, context: "prefixmaps.datamodel.Context") -> "Converter":
+        """Get a converter from the :class:`prefixmaps` package.
+
+        :param context: The context object
+        :return:
+            A converter
+
+        >>> from prefixmaps import load_context
+        >>> context = load_context("obo")
+        >>> converter = Converter.from_linkml_context(context)
+        >>> converter.expand("CHEBI:1")
+        'http://purl.obolibrary.org/obo/CHEBI_1'
+        >>> converter.expand("GEO:1")
+        'http://purl.obolibrary.org/obo/GEO_1'
+        >>> converter.expand("owl:Class")
+        'http://www.w3.org/2002/07/owl#Class'
+        >>> converter.expand("FlyBase:FBgn123")
+        'http://identifiers.org/fb/FBgn123'
+        """
+        # TODO improve data structure for this
+        return cls.from_prefix_map(context.as_dict())
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""
