@@ -135,7 +135,7 @@ class Converter:
 
     .. code-block::
 
-        Construct a prefix map:
+        # Construct a prefix map:
         >>> converter = Converter.from_prefix_map({
         ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
@@ -143,16 +143,16 @@ class Converter:
         ...    "OBO": "http://purl.obolibrary.org/obo/",
         ... })
 
-        Compression and Expansion:
+        # Compression and Expansion:
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
         'CHEBI:1'
         >>> converter.expand("CHEBI:1")
         'http://purl.obolibrary.org/obo/CHEBI_1'
 
-        Example with unparsable URI:
+        # Example with unparsable URI:
         >>> converter.compress("http://example.com/missing:0000000")
 
-        Example with missing prefix:
+        # Example with missing prefix:
         >>> converter.expand("missing:0000000")
     """
 
@@ -207,6 +207,9 @@ class Converter:
         Across the whole list of dictionaries, there should be uniqueness within
         the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
         within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
+
+        >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.epm.json"
+        >>> converter = Converter.from_extended_prefix_map_url(url)
         """
         res = requests.get(url)
         res.raise_for_status()
@@ -231,6 +234,36 @@ class Converter:
         Across the whole list of dictionaries, there should be uniqueness within
         the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
         within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
+
+        >>> epm = [
+        ...     {
+        ...         "prefix": "CHEBI",
+        ...         "prefix_synonyms": ["chebi", "ChEBI"],
+        ...         "uri_prefix": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "uri_prefix_synonyms": ["https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:"],
+        ...     },
+        ...     {
+        ...         "prefix": "GO",
+        ...         "uri_prefix": "http://purl.obolibrary.org/obo/GO_",
+        ...     },
+        ... ]
+        >>> converter = Converter.from_extended_prefix_map(epm)
+
+        # Canonical prefix
+        >>> converter.expand("CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+        # Prefix synoynm
+        >>> converter.expand("chebi:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+        # Canonical URI prefix
+        >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'CHEBI:138488'
+
+        # URI prefix synoynm
+        >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
+        'CHEBI:138488'
         """
         records = [record if isinstance(record, Record) else Record(**record) for record in records]
         return cls(records=records, **kwargs)
@@ -241,10 +274,26 @@ class Converter:
 
         :param data:
             A prefix map where the keys are prefixes (e.g., `chebi`)
-            and the values are lists of URI prefixes (e.g., `http://purl.obolibrary.org/obo/CHEBI_`)
+            and the values are lists of URI prefixes (e.g., ``http://purl.obolibrary.org/obo/CHEBI_``)
             with the first element of the list being the priority URI prefix for expansions.
         :param kwargs: Keyword arguments to pass to the parent class's init
         :returns: A converter
+
+        >>> priority_prefix_map = {
+        ...     "CHEBI": [
+        ...         "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+        ...     ],
+        ...     "GO": ["http://purl.obolibrary.org/obo/GO_"],
+        ...     "obo": ["http://purl.obolibrary.org/obo/"],
+        ... }
+        >>> converter = Converter.from_priority_prefix_map(priority_prefix_map)
+        >>> converter.expand("CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'CHEBI:138488'
+        >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
+        'CHEBI:138488'
         """
         return cls(
             [
@@ -266,7 +315,7 @@ class Converter:
             .. note::
 
                 It's possible that some *URI prefixes* (values in this mapping)
-                partially overlap (e.g.,``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+                partially overlap (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
                 ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
                 be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
                 will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
@@ -345,6 +394,11 @@ class Converter:
             A URL to a reverse prefix map JSON file
         :return:
             A converter
+
+        >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.rpm.json"
+        >>> converter = Converter.from_reverse_prefix_map_url(url)
+        >>> "chebi" in Converter.prefix_map
+        True
         """
         res = requests.get(url)
         res.raise_for_status()
@@ -395,7 +449,8 @@ class Converter:
             If the given path doesn't end in a .jsonld file name
 
         >>> converter = Converter.from_jsonld_github(
-        ...     "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
+        ...     "biopragmatics", "bioregistry", "exports",
+        ...     "contexts", "semweb.context.jsonld",
         ... )
         >>> "rdf" in converter.prefix_map
         True
