@@ -190,6 +190,52 @@ class Converter:
         self.trie = StringTrie(self.reverse_prefix_map)
 
     @classmethod
+    def from_extended_prefix_map_url(cls, url: str, **kwargs) -> "Converter":
+        """Get a converter from a remote JSON file containing an extended prefix map.
+
+        :param url: The URL of a JSON file containiing dictionaries corresponding to the :class:`Record` schema
+        :param kwargs: Keyword arguments to pass to the parent class's init
+        :returns: A converter
+
+        An extended prefix map is a list of dictionaries containing four keys:
+
+        1. A ``prefix`` string
+        2. A ``uri_prefix`` string
+        3. An optional list of strings ``prefix_synonyms``
+        4. An optional list of strings ``uri_prefix_synonyms``
+
+        Across the whole list of dictionaries, there should be uniqueness within
+        the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
+        within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
+        """
+        res = requests.get(url)
+        res.raise_for_status()
+        return cls.from_extended_prefix_map(res.json(), **kwargs)
+
+    @classmethod
+    def from_extended_prefix_map(cls, records, **kwargs) -> "Converter":
+        """Get a converter from a list of dictionaries by creating records out of them.
+
+        :param records: An iterable of :class:`Record` objects or dictionaries that will
+            get converted into record objects
+        :param kwargs: Keyword arguments to pass to the parent class's init
+        :returns: A converter
+
+        An extended prefix map is a list of dictionaries containing four keys:
+
+        1. A ``prefix`` string
+        2. A ``uri_prefix`` string
+        3. An optional list of strings ``prefix_synonyms``
+        4. An optional list of strings ``uri_prefix_synonyms``
+
+        Across the whole list of dictionaries, there should be uniqueness within
+        the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
+        within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
+        """
+        records = [record if isinstance(record, Record) else Record(**record) for record in records]
+        return cls(records=records, **kwargs)
+
+    @classmethod
     def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs) -> "Converter":
         """Get a converter from a priority prefix map.
 

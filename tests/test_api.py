@@ -2,14 +2,17 @@
 
 """Trivial version test."""
 
+import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pandas as pd
+from bioregistry.export.prefix_maps import EXTENDED_PREFIX_MAP_PATH
 
 from curies.api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
 from curies.sources import (
+    BIOREGISTRY_CONTEXTS,
     get_bioregistry_converter,
     get_go_converter,
     get_monarch_converter,
@@ -100,9 +103,13 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIn("rdf", semweb_converter.prefix_map)
 
-        bioregistry_converter = get_bioregistry_converter()
-        self.assertIn("chebi", bioregistry_converter.prefix_map)
-        self.assertNotIn("CHEBI", bioregistry_converter.prefix_map)
+        for web in [True, False]:
+            bioregistry_converter = get_bioregistry_converter(web=web)
+            self.assert_bioregistry_converter(bioregistry_converter)
+
+        c = Converter.from_reverse_prefix_map_url(f"{BIOREGISTRY_CONTEXTS}/bioregistry.rpm.json")
+        self.assertIn("chebi", c.prefix_map)
+        self.assertNotIn("CHEBI", c.prefix_map)
 
         obo_converter = get_obo_converter()
         self.assertIn("CHEBI", obo_converter.prefix_map)
@@ -116,7 +123,34 @@ class TestConverter(unittest.TestCase):
         self.assertIn("CHEBI", go_converter.prefix_map)
         self.assertNotIn("chebi", go_converter.prefix_map)
 
-    def test_reverse_constuctor(self):
+    def assert_bioregistry_converter(self, converter: Converter) -> None:
+        """Assert the bioregistry converter has the right stuff in it."""
+        records = {records.prefix: records for records in converter.records}
+        self.assertIn("chebi", records)
+        record = records["chebi"]
+        self.assertIsInstance(record, Record)
+        self.assertEqual("chebi", record.prefix)
+        self.assertIn("CHEBI", record.prefix_synonyms)
+        self.assertIn("ChEBI", record.prefix_synonyms)
+
+        self.assertIn("chebi", converter.prefix_map)
+        # Synonyms that are non-conflicting also get added
+        self.assertIn("CHEBI", converter.prefix_map)
+        chebi_uri = converter.prefix_map["chebi"]
+        self.assertIn(chebi_uri, converter.reverse_prefix_map)
+        self.assertEqual("chebi", converter.reverse_prefix_map[chebi_uri])
+
+    @unittest.skipUnless(
+        EXTENDED_PREFIX_MAP_PATH.is_file(),
+        reason="missing local, editable installation of the Bioregistry",
+    )
+    def test_bioregistry_editable(self):
+        """Test loading the bioregistry extended prefix map locally."""
+        records = json.loads(EXTENDED_PREFIX_MAP_PATH.read_text())
+        converter = Converter.from_extended_prefix_map(records)
+        self.assert_bioregistry_converter(converter)
+
+    def test_reverse_constructor(self):
         """Test constructing from a reverse prefix map."""
         converter = Converter.from_reverse_prefix_map(
             {
