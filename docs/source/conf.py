@@ -227,6 +227,9 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     "https://docs.python.org/3/": None,
+    "bioregistry": ("https://bioregistry.readthedocs.io/en/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+    # TODO add prefixmaps if it ever becomes available (see https://github.com/linkml/prefixmaps/issues/12)
 }
 
 autoclass_content = "both"
