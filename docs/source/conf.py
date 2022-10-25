@@ -27,7 +27,7 @@ copyright = f"{date.today().year}, Charles Tapley Hoyt"
 author = "Charles Tapley Hoyt"
 
 # The full version, including alpha/beta/rc tags.
-release = "0.4.0-dev"
+release = "0.4.1-dev"
 
 # The short X.Y version.
 parsed_version = re.match(
@@ -227,6 +227,9 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     "https://docs.python.org/3/": None,
+    "bioregistry": ("https://bioregistry.readthedocs.io/en/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+    # TODO add prefixmaps if it ever becomes available (see https://github.com/linkml/prefixmaps/issues/12)
 }
 
 autoclass_content = "both"

@@ -252,19 +252,15 @@ class Converter:
         ...     },
         ... ]
         >>> converter = Converter.from_extended_prefix_map(epm)
-
         # Canonical prefix
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-
         # Prefix synoynm
         >>> converter.expand("chebi:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-
         # Canonical URI prefix
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
         'CHEBI:138488'
-
         # URI prefix synoynm
         >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
         'CHEBI:138488'
