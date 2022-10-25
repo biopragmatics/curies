@@ -754,12 +754,3 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
             for key, (prefix, uri_prefix) in key_to_pair.items()
         ]
     )
-
-
-if __name__ == "__main__":
-    from prefixmaps import load_context
-
-    context = load_context("bioportal")
-    for e in context.prefix_expansions:
-        if e.prefix in {"INVERSEROLES", "ISO-15926-2_2003"}:
-            print(e)
