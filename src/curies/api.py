@@ -26,7 +26,7 @@ from pytrie import StringTrie
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
-    import prefixmaps.datamodel
+    import prefixmaps
 
 __all__ = [
     "Converter",
@@ -466,8 +466,8 @@ class Converter:
         return cls.from_jsonld_url(url)
 
     @classmethod
-    def from_linkml_context(cls, context: "prefixmaps.datamodel.Context", **kwargs) -> "Converter":
-        """Get a converter from the :class:`prefixmaps` package.
+    def from_linkml_context(cls, context: "prefixmaps.Context", **kwargs) -> "Converter":
+        """Get a converter from the :mod:`prefixmaps` package.
 
         :param context: The context object
         :param kwargs: Keyword arguments to pass to the constructor
@@ -486,8 +486,7 @@ class Converter:
         >>> converter.expand("FlyBase:FBgn123")
         'http://identifiers.org/fb/FBgn123'
         """
-        reverse_prefix_map = {}
-        prefix_map = {}
+        prefix_map, reverse_prefix_map = {}, {}
         for expansion in context.prefix_expansions:
             if expansion.canonical():
                 reverse_prefix_map[expansion.namespace] = expansion.prefix
@@ -506,9 +505,9 @@ class Converter:
         records = [
             Record(
                 prefix=prefix,
-                prefix_synonyms=sorted(prefix_synonyms[expansion.prefix]),
+                prefix_synonyms=sorted(prefix_synonyms[prefix]),
                 uri_prefix=uri_prefix,
-                uri_prefix_synonyms=sorted(uri_prefix_synonyms[expansion.prefix]),
+                uri_prefix_synonyms=sorted(uri_prefix_synonyms[prefix]),
             )
             for prefix, uri_prefix in prefix_map.items()
         ]

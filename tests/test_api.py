@@ -306,21 +306,32 @@ class TestLinkML(unittest.TestCase):
         """Test loading prefixmaps content."""
         import prefixmaps
 
+        prefix = "WIKIPATHWAYS"
+        uri_prefix_1 = "http://vocabularies.wikipathways.org/wp#"
+        uri_prefix_2 = "http://vocabularies.wikipathways.org/wpTypes#"
+
         context = prefixmaps.load_context("bioportal")
+        context_namespaces = {
+            expansion.namespace
+            for expansion in context.prefix_expansions
+        }
+        self.assertIn(uri_prefix_1, context_namespaces)
+        self.assertIn(uri_prefix_2, context_namespaces)
+
         converter = Converter.from_linkml_context(context)
         # bioportal,WIKIPATHWAYS,http://vocabularies.wikipathways.org/wp#,canonical
-        # bioportal,WIKIPATHWAYS,http://vocabularies.wikipathways.org/wpTypes#,prefix_alias
-        self.assertIn("WIKIPATHWAYS", converter.prefix_map)
-        self.assertIn("http://vocabularies.wikipathways.org/wp#", set(converter.reverse_prefix_map))
-        self.assertEqual(
-            "WIKIPATHWAYS",
-            converter.reverse_prefix_map["http://vocabularies.wikipathways.org/wp#"],
-        )
-        self.assertIn("http://vocabularies.wikipathways.org/wp#", set(converter.reverse_prefix_map))
-        self.assertEqual(
-            "WIKIPATHWAYS",
-            converter.reverse_prefix_map["http://vocabularies.wikipathways.org/wp#"],
-        )
+        # bioportal,WIKIPATHWAYS,,prefix_alias
+
+        # prefix map checks
+        self.assertIn(prefix, converter.prefix_map)
+        self.assertEqual(uri_prefix_1, converter.prefix_map[prefix])
+        self.assertNotIn(uri_prefix_2, converter.prefix_map.values())
+
+        # Reverse prefix map checks
+        self.assertIn(uri_prefix_1, converter.reverse_prefix_map)
+        self.assertIn(uri_prefix_2, converter.reverse_prefix_map)
+        self.assertEqual(prefix, converter.reverse_prefix_map[uri_prefix_1])
+        self.assertEqual(prefix, converter.reverse_prefix_map[uri_prefix_2])
 
 
 class TestVersion(unittest.TestCase):
