@@ -486,42 +486,22 @@ class Converter:
         >>> converter.expand("FlyBase:FBgn123")
         'http://identifiers.org/fb/FBgn123'
         """
-        rpm = defaultdict(set)
+        reverse_prefix_map = {}
+        prefix_map = {}
         for expansion in context.prefix_expansions:
             if expansion.canonical():
-                rpm[expansion.namespace].add(expansion.prefix)
+                reverse_prefix_map[expansion.namespace] = expansion.prefix
+                prefix_map[expansion.prefix] = expansion.namespace
 
-        # Because there are no guarantees on bijectivity among expansions
-        # labeled as canonical, this promotes the shortest one.
-        prefix_map = {}
-        prefix_synonyms = defaultdict(set)
-        for uri_prefix, prefixes in rpm.items():
-            prefix, *secondary = sorted(prefixes)
-            prefix_map[prefix] = uri_prefix
-            prefix_synonyms[prefix].update(secondary)
-
-        # Get URI prefix synonyms. This means that the same prefix has secondary
-        # URI prefixes. See bioportal.csv in the prefixmaps package for an example,
-        # specfically look for WIKIPATHWAYS
         uri_prefix_synonyms = defaultdict(set)
         for expansion in context.prefix_expansions:
-            if expansion.status.value != "prefix_alias":
-                continue
-            elif expansion.prefix not in prefix_map:
-                logger.warning("prefix_alias refers to missing prefix: %s", expansion)
-                continue
-            else:
+            if expansion.status.value == "prefix_alias":
                 uri_prefix_synonyms[expansion.prefix].add(expansion.namespace)
 
-        reverse_prefix_map = {uri_prefix: prefix for prefix, uri_prefix in prefix_map.items()}
+        prefix_synonyms = defaultdict(set)
         for expansion in context.prefix_expansions:
-            if expansion.status.value != "namespace_alias":
-                continue
-            primary_prefix = reverse_prefix_map.get(expansion.namespace)
-            if not primary_prefix:
-                logger.warning(f"Missing primary prefix for {expansion}")
-                continue
-            prefix_synonyms[primary_prefix].add(expansion.prefix)
+            if expansion.status.value == "namespace_alias":
+                prefix_synonyms[reverse_prefix_map[expansion.namespace]].add(expansion.prefix)
 
         records = [
             Record(

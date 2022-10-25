@@ -8,7 +8,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pandas as pd
-from bioregistry.export.prefix_maps import EXTENDED_PREFIX_MAP_PATH
 
 from curies.api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
 from curies.sources import (
@@ -24,6 +23,11 @@ try:
     import prefixmaps
 except ImportError:
     prefixmaps = None
+
+try:
+    from bioregistry.export.prefix_maps import EXTENDED_PREFIX_MAP_PATH
+except:
+    EXTENDED_PREFIX_MAP_PATH = None
 
 
 class TestConverter(unittest.TestCase):
@@ -146,7 +150,7 @@ class TestConverter(unittest.TestCase):
         self.assertEqual("chebi", converter.reverse_prefix_map[chebi_uri])
 
     @unittest.skipUnless(
-        EXTENDED_PREFIX_MAP_PATH.is_file(),
+        isinstance(EXTENDED_PREFIX_MAP_PATH, Path) and EXTENDED_PREFIX_MAP_PATH.is_file(),
         reason="missing local, editable installation of the Bioregistry",
     )
     def test_bioregistry_editable(self):
@@ -312,12 +316,10 @@ class TestLinkML(unittest.TestCase):
             "WIKIPATHWAYS",
             converter.reverse_prefix_map["http://vocabularies.wikipathways.org/wp#"],
         )
-        self.assertIn(
-            "http://vocabularies.wikipathways.org/wpTypes#", set(converter.reverse_prefix_map)
-        )
+        self.assertIn("http://vocabularies.wikipathways.org/wp#", set(converter.reverse_prefix_map))
         self.assertEqual(
             "WIKIPATHWAYS",
-            converter.reverse_prefix_map["http://vocabularies.wikipathways.org/wpTypes#"],
+            converter.reverse_prefix_map["http://vocabularies.wikipathways.org/wp#"],
         )
 
 
