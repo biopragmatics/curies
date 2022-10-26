@@ -4,7 +4,6 @@
 
 import csv
 import itertools as itt
-import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -35,8 +34,6 @@ __all__ = [
     "DuplicateURIPrefixes",
     "chain",
 ]
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass

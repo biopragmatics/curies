@@ -26,7 +26,7 @@ except ImportError:
 
 try:
     from bioregistry.export.prefix_maps import EXTENDED_PREFIX_MAP_PATH
-except:
+except ImportError:
     EXTENDED_PREFIX_MAP_PATH = None
 
 
@@ -311,10 +311,7 @@ class TestLinkML(unittest.TestCase):
         uri_prefix_2 = "http://vocabularies.wikipathways.org/wpTypes#"
 
         context = prefixmaps.load_context("bioportal")
-        context_namespaces = {
-            expansion.namespace
-            for expansion in context.prefix_expansions
-        }
+        context_namespaces = {expansion.namespace for expansion in context.prefix_expansions}
         self.assertIn(uri_prefix_1, context_namespaces)
         self.assertIn(uri_prefix_2, context_namespaces)
 
