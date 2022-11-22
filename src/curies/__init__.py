@@ -11,6 +11,7 @@ from .sources import (
     get_prefixcommons_converter,
 )
 from .version import get_version
+from .web import get_blueprint
 
 __all__ = [
     "Converter",
@@ -24,4 +25,5 @@ __all__ = [
     "get_monarch_converter",
     "get_go_converter",
     "get_bioregistry_converter",
+    "get_blueprint",
 ]

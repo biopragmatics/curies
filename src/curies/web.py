@@ -4,7 +4,7 @@
 
 from typing import TYPE_CHECKING
 
-from curies import Converter
+from .api import Converter
 
 if TYPE_CHECKING:
     import flask
