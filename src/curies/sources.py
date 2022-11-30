@@ -10,8 +10,11 @@ __all__ = [
     "get_monarch_converter",
     "get_go_converter",
     "get_bioregistry_converter",
-    "get_go_obo_converter",
 ]
+
+BIOREGISTRY_CONTEXTS = (
+    "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts"
+)
 
 
 def get_obo_converter() -> Converter:
@@ -47,15 +50,14 @@ def get_go_converter() -> Converter:
     return get_prefixcommons_converter("go_context")
 
 
-def get_go_obo_converter() -> Converter:
-    """Get the Prefix Commons-maintained GO/OBO context."""
-    return get_prefixcommons_converter("go_obo_context")
-
-
-def get_bioregistry_converter() -> Converter:
+def get_bioregistry_converter(web: bool = False, **kwargs) -> Converter:
     """Get the latest Bioregistry context."""
-    url = (
-        "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/"
-        "exports/contexts/bioregistry.context.jsonld"
-    )
-    return Converter.from_jsonld_url(url)
+    if not web:
+        try:
+            import bioregistry
+        except ImportError:  # pragma: no cover
+            pass
+        else:
+            return Converter.from_extended_prefix_map(bioregistry.manager.get_curies_records())
+    url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
+    return Converter.from_extended_prefix_map_url(url, **kwargs)

@@ -3,9 +3,22 @@
 """Data structures and algorithms for :mod:`curies`."""
 
 import csv
-from collections import ChainMap, defaultdict
+import itertools as itt
+from collections import defaultdict
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Mapping, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    DefaultDict,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import requests
 from pytrie import StringTrie
@@ -15,8 +28,106 @@ if TYPE_CHECKING:  # pragma: no cover
 
 __all__ = [
     "Converter",
+    "Record",
+    "DuplicatePrefixes",
+    "DuplicateURIPrefixes",
     "chain",
 ]
+
+
+@dataclass
+class Record:
+    """A record of some prefixes and their associated URI prefixes."""
+
+    #: The canonical prefix, used in the reverse prefix map
+    prefix: str
+    #: The canonical URI prefix, used in the forward prefix map
+    uri_prefix: str
+    prefix_synonyms: List[str] = field(default_factory=list)
+    uri_prefix_synonyms: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        """Check the integrity of the record."""
+        for ps in self.prefix_synonyms:
+            if ps == self.prefix:
+                raise ValueError(f"Duplicate of canonical prefix `{self.prefix}` in synonyms")
+        for ups in self.uri_prefix_synonyms:
+            if ups == self.uri_prefix:
+                raise ValueError(
+                    f"Duplicate of canonical URI prefix `{self.uri_prefix}` in synonyms"
+                )
+
+    @property
+    def _all_prefixes(self) -> List[str]:
+        return [self.prefix, *self.prefix_synonyms]
+
+    @property
+    def _all_uri_prefixes(self) -> List[str]:
+        return [self.uri_prefix, *self.uri_prefix_synonyms]
+
+
+class DuplicateValueError(ValueError):
+    """An error raised with constructing a converter with data containing duplicate values."""
+
+    def __init__(self, duplicates: List[Tuple[Record, Record, str]]):
+        """Initialize the error."""
+        self.duplicates = duplicates
+
+    def _str(self):
+        s = ""
+        for r1, r2, p in self.duplicates:
+            s += f"\n{p}:\n\t{r1}\n\t{r2}\n"
+        return s
+
+
+class DuplicateURIPrefixes(DuplicateValueError):
+    """An error raised with constructing a converter with data containing duplicate URI prefixes."""
+
+    def __str__(self) -> str:  # noqa:D105
+        return f"Duplicate URI prefixes:\n{self._str()}"
+
+
+class DuplicatePrefixes(DuplicateValueError):
+    """An error raised with constructing a converter with data containing duplicate prefixes."""
+
+    def __str__(self) -> str:  # noqa:D105
+        return f"Duplicate prefixes:\n{self._str()}"
+
+
+def _get_duplicate_uri_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
+    return [
+        (record_1, record_2, uri_prefix)
+        for record_1, record_2 in itt.combinations(records, 2)
+        for uri_prefix, up2 in itt.product(record_1._all_uri_prefixes, record_2._all_uri_prefixes)
+        if uri_prefix == up2
+    ]
+
+
+def _get_duplicate_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
+    return [
+        (record_1, record_2, prefix)
+        for record_1, record_2 in itt.combinations(records, 2)
+        for prefix, p2 in itt.product(record_1._all_prefixes, record_2._all_prefixes)
+        if prefix == p2
+    ]
+
+
+def _get_prefix_map(records: List[Record]) -> Mapping[str, str]:
+    rv = {}
+    for record in records:
+        rv[record.prefix] = record.uri_prefix
+        for prefix_synonym in record.prefix_synonyms:
+            rv[prefix_synonym] = record.uri_prefix
+    return rv
+
+
+def _get_reverse_prefix_map(records: List[Record]) -> Mapping[str, str]:
+    rv = {}
+    for record in records:
+        rv[record.uri_prefix] = record.prefix
+        for uri_prefix_synonym in record.uri_prefix_synonyms:
+            rv[uri_prefix_synonym] = record.prefix
+    return rv
 
 
 class Converter:
@@ -24,7 +135,7 @@ class Converter:
 
     .. code-block::
 
-        Construct a prefix map:
+        # Construct a prefix map:
         >>> converter = Converter.from_prefix_map({
         ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
@@ -32,16 +143,16 @@ class Converter:
         ...    "OBO": "http://purl.obolibrary.org/obo/",
         ... })
 
-        Compression and Expansion:
+        # Compression and Expansion:
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
         'CHEBI:1'
         >>> converter.expand("CHEBI:1")
         'http://purl.obolibrary.org/obo/CHEBI_1'
 
-        Example with unparsable URI:
+        # Example with unparsable URI:
         >>> converter.compress("http://example.com/missing:0000000")
 
-        Example with missing prefix:
+        # Example with missing prefix:
         >>> converter.expand("missing:0000000")
     """
 
@@ -52,27 +163,146 @@ class Converter:
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
 
-    def __init__(self, data: Mapping[str, List[str]], *, delimiter: str = ":"):
+    def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True):
         """Instantiate a converter.
 
-        :param data:
-            A prefix map where the keys are prefixes (e.g., `chebi`)
-            and the values are lists of URI prefixes (e.g., `http://purl.obolibrary.org/obo/CHEBI_`)
-            with the first element of the list being the priority URI prefix for expansions.
+        :param records:
+            A list of records
+        :param strict:
+            If true, raises issues on duplicate URI prefixes
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
+        :raises DuplicatePrefixes: if any records share any synonyms
+        :raises DuplicateURIPrefixes: if any records share any URI prefixes
         """
+        if strict:
+            duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
+            if duplicate_uri_prefixes:
+                raise DuplicateURIPrefixes(duplicate_uri_prefixes)
+            duplicate_prefixes = _get_duplicate_prefixes(records)
+            if duplicate_prefixes:
+                raise DuplicatePrefixes(duplicate_prefixes)
+
         self.delimiter = delimiter
-        self.prefix_map = {prefix: uri_prefixes[0] for prefix, uri_prefixes in data.items()}
-        self.reverse_prefix_map = {
-            uri_prefix: prefix
-            for prefix, uri_prefixes in data.items()
-            for uri_prefix in uri_prefixes
-        }
+        self.records = records
+        self.prefix_map = _get_prefix_map(records)
+        self.reverse_prefix_map = _get_reverse_prefix_map(records)
         self.trie = StringTrie(self.reverse_prefix_map)
 
     @classmethod
-    def from_prefix_map(cls, prefix_map: Mapping[str, str]) -> "Converter":
+    def from_extended_prefix_map_url(cls, url: str, **kwargs) -> "Converter":
+        """Get a converter from a remote JSON file containing an extended prefix map.
+
+        :param url: The URL of a JSON file containiing dictionaries corresponding to the :class:`Record` schema
+        :param kwargs: Keyword arguments to pass to the parent class's init
+        :returns: A converter
+
+        An extended prefix map is a list of dictionaries containing four keys:
+
+        1. A ``prefix`` string
+        2. A ``uri_prefix`` string
+        3. An optional list of strings ``prefix_synonyms``
+        4. An optional list of strings ``uri_prefix_synonyms``
+
+        Across the whole list of dictionaries, there should be uniqueness within
+        the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
+        within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
+
+        >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.epm.json"
+        >>> converter = Converter.from_extended_prefix_map_url(url)
+        """
+        res = requests.get(url)
+        res.raise_for_status()
+        return cls.from_extended_prefix_map(res.json(), **kwargs)
+
+    @classmethod
+    def from_extended_prefix_map(cls, records, **kwargs) -> "Converter":
+        """Get a converter from a list of dictionaries by creating records out of them.
+
+        :param records: An iterable of :class:`Record` objects or dictionaries that will
+            get converted into record objects
+        :param kwargs: Keyword arguments to pass to the parent class's init
+        :returns: A converter
+
+        An extended prefix map is a list of dictionaries containing four keys:
+
+        1. A ``prefix`` string
+        2. A ``uri_prefix`` string
+        3. An optional list of strings ``prefix_synonyms``
+        4. An optional list of strings ``uri_prefix_synonyms``
+
+        Across the whole list of dictionaries, there should be uniqueness within
+        the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
+        within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
+
+        >>> epm = [
+        ...     {
+        ...         "prefix": "CHEBI",
+        ...         "prefix_synonyms": ["chebi", "ChEBI"],
+        ...         "uri_prefix": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "uri_prefix_synonyms": ["https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:"],
+        ...     },
+        ...     {
+        ...         "prefix": "GO",
+        ...         "uri_prefix": "http://purl.obolibrary.org/obo/GO_",
+        ...     },
+        ... ]
+        >>> converter = Converter.from_extended_prefix_map(epm)
+        # Canonical prefix
+        >>> converter.expand("CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        # Prefix synoynm
+        >>> converter.expand("chebi:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        # Canonical URI prefix
+        >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'CHEBI:138488'
+        # URI prefix synoynm
+        >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
+        'CHEBI:138488'
+        """
+        records = [record if isinstance(record, Record) else Record(**record) for record in records]
+        return cls(records=records, **kwargs)
+
+    @classmethod
+    def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs) -> "Converter":
+        """Get a converter from a priority prefix map.
+
+        :param data:
+            A prefix map where the keys are prefixes (e.g., `chebi`)
+            and the values are lists of URI prefixes (e.g., ``http://purl.obolibrary.org/obo/CHEBI_``)
+            with the first element of the list being the priority URI prefix for expansions.
+        :param kwargs: Keyword arguments to pass to the parent class's init
+        :returns: A converter
+
+        >>> priority_prefix_map = {
+        ...     "CHEBI": [
+        ...         "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+        ...     ],
+        ...     "GO": ["http://purl.obolibrary.org/obo/GO_"],
+        ...     "obo": ["http://purl.obolibrary.org/obo/"],
+        ... }
+        >>> converter = Converter.from_priority_prefix_map(priority_prefix_map)
+        >>> converter.expand("CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'CHEBI:138488'
+        >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
+        'CHEBI:138488'
+        """
+        return cls(
+            [
+                Record(
+                    prefix=prefix, uri_prefix=uri_prefixes[0], uri_prefix_synonyms=uri_prefixes[1:]
+                )
+                for prefix, uri_prefixes in data.items()
+            ],
+            **kwargs,
+        )
+
+    @classmethod
+    def from_prefix_map(cls, prefix_map: Mapping[str, str], **kwargs) -> "Converter":
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
@@ -81,10 +311,11 @@ class Converter:
             .. note::
 
                 It's possible that some *URI prefixes* (values in this mapping)
-                partially overlap (e.g.,``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+                partially overlap (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
                 ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
                 be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
                 will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
+        :param kwargs: Keyword arguments to pass to :func:`Converter.__init__`
         :returns:
             A converter
 
@@ -99,7 +330,13 @@ class Converter:
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
         'CHEBI:138488'
         """
-        return cls({prefix: [uri_format] for prefix, uri_format in prefix_map.items()})
+        return cls(
+            [
+                Record(prefix=prefix, uri_prefix=uri_prefix)
+                for prefix, uri_prefix in prefix_map.items()
+            ],
+            **kwargs,
+        )
 
     @classmethod
     def from_reverse_prefix_map(cls, reverse_prefix_map: Mapping[str, str]) -> "Converter":
@@ -135,7 +372,33 @@ class Converter:
         dd = defaultdict(list)
         for uri_prefix, prefix in reverse_prefix_map.items():
             dd[prefix].append(uri_prefix)
-        return cls({prefix: sorted(uri_prefixes, key=len) for prefix, uri_prefixes in dd.items()})
+        records = []
+        for prefix, uri_prefixes in dd.items():
+            uri_prefix, *uri_prefix_synonyms = sorted(uri_prefixes, key=len)
+            records.append(
+                Record(
+                    prefix=prefix, uri_prefix=uri_prefix, uri_prefix_synonyms=uri_prefix_synonyms
+                )
+            )
+        return cls(records)
+
+    @classmethod
+    def from_reverse_prefix_map_url(cls, url: str) -> "Converter":
+        """Get a remote reverse prefix map JSON file then parse with :meth:`Converter.from_reverse_prefix_map`.
+
+        :param url:
+            A URL to a reverse prefix map JSON file
+        :return:
+            A converter
+
+        >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.rpm.json"
+        >>> converter = Converter.from_reverse_prefix_map_url(url)
+        >>> "chebi" in Converter.prefix_map
+        True
+        """
+        res = requests.get(url)
+        res.raise_for_status()
+        return cls.from_reverse_prefix_map(res.json())
 
     @classmethod
     def from_jsonld(cls, data) -> "Converter":
@@ -182,7 +445,8 @@ class Converter:
             If the given path doesn't end in a .jsonld file name
 
         >>> converter = Converter.from_jsonld_github(
-        ...     "biopragmatics", "bioregistry", "exports", "contexts", "semweb.context.jsonld"
+        ...     "biopragmatics", "bioregistry", "exports",
+        ...     "contexts", "semweb.context.jsonld",
         ... )
         >>> "rdf" in converter.prefix_map
         True
@@ -195,7 +459,7 @@ class Converter:
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""
-        return set(self.prefix_map)
+        return {record.prefix for record in self.records}
 
     def compress(self, uri: str) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
@@ -373,10 +637,15 @@ class Converter:
             writer.writerows(rows)
 
 
-def chain(converters: Sequence[Converter]) -> Converter:
+def _f(x):
+    return x
+
+
+def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Converter:
     """Chain several converters.
 
     :param converters: A list or tuple of converters
+    :param case_sensitive: If false, will not allow case-sensitive duplicates
     :returns:
         A converter that looks up one at a time in the other converters.
     :raises ValueError:
@@ -384,6 +653,48 @@ def chain(converters: Sequence[Converter]) -> Converter:
     """
     if not converters:
         raise ValueError
-    return Converter.from_reverse_prefix_map(
-        ChainMap(*(dict(converter.reverse_prefix_map) for converter in converters))
+
+    if case_sensitive:
+        norm_func = _f
+    else:
+        norm_func = str.casefold
+
+    key_to_pair: Dict[str, Tuple[str, str]] = {}
+    #: A mapping from the canonical key to the secondary URI expansions
+    uri_prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
+    #: A mapping from the canonical key to the secondary prefixes
+    prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
+    for converter in converters:
+        for record in converter.records:
+            key = norm_func(record.prefix)
+            if key not in key_to_pair:
+                key_to_pair[key] = record.prefix, record.uri_prefix
+                uri_prefix_tails[key].update(record.uri_prefix_synonyms)
+                prefix_tails[key].update(record.prefix_synonyms)
+            else:
+                uri_prefix_tails[key].add(record.uri_prefix)
+                uri_prefix_tails[key].update(record.uri_prefix_synonyms)
+                prefix_tails[key].add(record.prefix)
+                prefix_tails[key].update(record.prefix_synonyms)
+
+    # clean up potential duplicates from merging
+    for key, uri_prefixes in uri_prefix_tails.items():
+        uri_prefix = key_to_pair[key][1]
+        if uri_prefix in uri_prefixes:
+            uri_prefixes.remove(uri_prefix)
+    for key, prefixes in prefix_tails.items():
+        prefix = key_to_pair[key][0]
+        if prefix in prefixes:
+            prefixes.remove(prefix)
+
+    return Converter(
+        [
+            Record(
+                prefix=prefix,
+                uri_prefix=uri_prefix,
+                prefix_synonyms=sorted(prefix_tails[key]),
+                uri_prefix_synonyms=sorted(uri_prefix_tails[key]),
+            )
+            for key, (prefix, uri_prefix) in key_to_pair.items()
+        ]
     )
