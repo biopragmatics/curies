@@ -11,7 +11,7 @@ from .sources import (
     get_prefixcommons_converter,
 )
 from .version import get_version
-from .web import get_blueprint
+from .web import get_fastapi_router, get_flask_blueprint
 
 __all__ = [
     "Converter",
@@ -25,5 +25,7 @@ __all__ = [
     "get_monarch_converter",
     "get_go_converter",
     "get_bioregistry_converter",
-    "get_blueprint",
+    # Web extras
+    "get_flask_blueprint",
+    "get_fastapi_router",
 ]

@@ -2,22 +2,24 @@
 
 """A simple web service for resolving CURIEs."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .api import Converter
 
 if TYPE_CHECKING:
+    import fastapi
     import flask
 
 __all__ = [
-    "get_blueprint",
+    "get_flask_blueprint",
+    "get_fastapi_router",
 ]
 
 #: The code for `Unprocessable Entity <https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422>`_
 FAILURE_CODE = 422
 
 
-def get_blueprint(converter: Converter, **kwargs) -> "flask.Blueprint":
+def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint":
     """Get a blueprint appropriate for mounting on a :class:`flask.Flask` application.
 
     :param converter: A converter
@@ -45,8 +47,36 @@ def get_blueprint(converter: Converter, **kwargs) -> "flask.Blueprint":
     def resolve(prefix: str, identifier: str):
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
-        if location is not None:
-            return redirect(location)
-        return abort(FAILURE_CODE)
+        if location is None:
+            return abort(FAILURE_CODE)
+        return redirect(location)
 
     return blueprint
+
+
+def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRouter":
+    """Get a FastAPI blueprint."""
+    from fastapi import APIRouter, HTTPException, Path
+    from fastapi.responses import RedirectResponse
+
+    api_router = APIRouter(**kwargs)
+
+    @api_router.get("/<prefix>:<identifier>")
+    def resolve(
+        prefix: str = Path(
+            title="Prefix",
+            description="The Bioregistry prefix corresponding to an identifier resource.",
+            example="doid",
+        ),
+        identifier: str = Path(
+            title="Local Unique Identifier",
+            description="The local unique identifier in the identifier resource referenced by the prefix.",
+        ),
+    ):
+        """Resolve a CURIE."""
+        location = converter.expand_pair(prefix, identifier)
+        if location is None:
+            raise HTTPException(status_code=FAILURE_CODE, detail="Could")
+        return RedirectResponse(location)
+
+    return api_router
