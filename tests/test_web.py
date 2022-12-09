@@ -12,9 +12,11 @@ from curies import Converter
 from curies.web import FAILURE_CODE, get_fastapi_router, get_flask_blueprint
 
 
-class TestWebMixin(unittest.TestCase):
+class ConverterMixin(unittest.TestCase):
+    """A mixin that has a converter."""
+
     def setUp(self) -> None:
-        """Set up the test case with a converter, blueprint, and app."""
+        """Set up the test case with a converter."""
         super().setUp()
         self.converter = Converter.from_prefix_map(
             {
@@ -26,7 +28,7 @@ class TestWebMixin(unittest.TestCase):
         )
 
 
-class TestFastAPI(TestWebMixin):
+class TestFastAPI(ConverterMixin):
     """Test building a simple web service with FastAPI."""
 
     def setUp(self) -> None:
@@ -39,11 +41,16 @@ class TestFastAPI(TestWebMixin):
 
     def test_resolve_success(self):
         """Test resolution for a valid CURIE redirects properly."""
-        res = self.client.get("GO:1234567", allow_redirects=False)
+        res = self.client.get("/GO:1234567", allow_redirects=False)
         self.assertEqual(302, res.status_code, msg=res.text)
 
+    def test_resolve_failure(self):
+        """Test resolution for an invalid CURIE aborts with 404."""
+        res = self.client.get("/NOPREFIX:NOIDENTIFIER", allow_redirects=False)
+        self.assertEqual(FAILURE_CODE, res.status_code, msg=res.text)
 
-class TestFlaskBlueprint(TestWebMixin):
+
+class TestFlaskBlueprint(ConverterMixin):
     """Test building a simple web service with Flask."""
 
     def setUp(self) -> None:

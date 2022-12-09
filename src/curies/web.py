@@ -61,7 +61,7 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
     api_router = APIRouter(**kwargs)
 
-    @api_router.get("/<prefix>:<identifier>")
+    @api_router.get("/{prefix}:{identifier}")
     def resolve(
         prefix: str = Path(
             title="Prefix",
@@ -77,6 +77,6 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
         location = converter.expand_pair(prefix, identifier)
         if location is None:
             raise HTTPException(status_code=FAILURE_CODE, detail="Could")
-        return RedirectResponse(location)
+        return RedirectResponse(location, status_code=302)
 
     return api_router
