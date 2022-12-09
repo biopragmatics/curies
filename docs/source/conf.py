@@ -229,7 +229,11 @@ intersphinx_mapping = {
     "https://docs.python.org/3/": None,
     "bioregistry": ("https://bioregistry.readthedocs.io/en/stable/", None),
     "pandas": ("https://pandas.pydata.org/docs/", None),
-    # TODO add prefixmaps if it ever becomes available (see https://github.com/linkml/prefixmaps/issues/12)
+    "flask": ("https://flask.palletsprojects.com/", None),
+    # "fastapi": ("https://fastapi.tiangolo.com/", None),
+    # "gunicorn": ("https://docs.gunicorn.org/", None),
+    # "uvicorn": ("https://www.uvicorn.org/", None),
+    "prefixmaps": ("https://linkml.io/prefixmaps/", None),
 }
 
 autoclass_content = "both"
