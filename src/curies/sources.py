@@ -2,6 +2,8 @@
 
 """External sources of contexts."""
 
+from typing import Any
+
 from .api import Converter
 
 __all__ = [
@@ -19,7 +21,9 @@ BIOREGISTRY_CONTEXTS = (
 
 def get_obo_converter() -> Converter:
     """Get the latest OBO Foundry context."""
-    url = "https://raw.githubusercontent.com/OBOFoundry/OBOFoundry.github.io/master/registry/obo_context.jsonld"
+    # See configuration on https://github.com/OBOFoundry/purl.obolibrary.org/blob/master/www/.htaccess
+    # to see where this PURL points
+    url = "http://purl.obolibrary.org/meta/obo_context.jsonld"
     return Converter.from_jsonld_url(url)
 
 
@@ -48,7 +52,7 @@ def get_go_converter() -> Converter:
     return get_prefixcommons_converter("go_context")
 
 
-def get_bioregistry_converter(web: bool = False, **kwargs) -> Converter:
+def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
     """Get the latest Bioregistry context."""
     if not web:
         try:

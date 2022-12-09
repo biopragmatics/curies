@@ -10,6 +10,6 @@ __all__ = [
 VERSION = "0.4.1-dev"
 
 
-def get_version():
+def get_version() -> str:
     """Get the :mod:`curies` version string, including a git hash."""
     return VERSION
