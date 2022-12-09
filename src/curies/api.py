@@ -9,8 +9,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Any,
+    Callable,
     DefaultDict,
     Dict,
+    Iterable,
     List,
     Mapping,
     Optional,
@@ -46,7 +49,7 @@ class Record:
     prefix_synonyms: List[str] = field(default_factory=list)
     uri_prefix_synonyms: List[str] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Check the integrity of the record."""
         for ps in self.prefix_synonyms:
             if ps == self.prefix:
@@ -69,11 +72,11 @@ class Record:
 class DuplicateValueError(ValueError):
     """An error raised with constructing a converter with data containing duplicate values."""
 
-    def __init__(self, duplicates: List[Tuple[Record, Record, str]]):
+    def __init__(self, duplicates: List[Tuple[Record, Record, str]]) -> None:
         """Initialize the error."""
         self.duplicates = duplicates
 
-    def _str(self):
+    def _str(self) -> str:
         s = ""
         for r1, r2, p in self.duplicates:
             s += f"\n{p}:\n\t{r1}\n\t{r2}\n"
@@ -163,7 +166,7 @@ class Converter:
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
 
-    def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True):
+    def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True) -> None:
         """Instantiate a converter.
 
         :param records:
@@ -190,7 +193,7 @@ class Converter:
         self.trie = StringTrie(self.reverse_prefix_map)
 
     @classmethod
-    def from_extended_prefix_map_url(cls, url: str, **kwargs) -> "Converter":
+    def from_extended_prefix_map_url(cls, url: str, **kwargs: Any) -> "Converter":
         """Get a converter from a remote JSON file containing an extended prefix map.
 
         :param url: The URL of a JSON file containiing dictionaries corresponding to the :class:`Record` schema
@@ -216,7 +219,9 @@ class Converter:
         return cls.from_extended_prefix_map(res.json(), **kwargs)
 
     @classmethod
-    def from_extended_prefix_map(cls, records, **kwargs) -> "Converter":
+    def from_extended_prefix_map(
+        cls, records: Iterable[Union[Record, Dict[str, Any]]], **kwargs: Any
+    ) -> "Converter":
         """Get a converter from a list of dictionaries by creating records out of them.
 
         :param records: An iterable of :class:`Record` objects or dictionaries that will
@@ -261,11 +266,15 @@ class Converter:
         >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
         'CHEBI:138488'
         """
-        records = [record if isinstance(record, Record) else Record(**record) for record in records]
-        return cls(records=records, **kwargs)
+        return cls(
+            records=[
+                record if isinstance(record, Record) else Record(**record) for record in records
+            ],
+            **kwargs,
+        )
 
     @classmethod
-    def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs) -> "Converter":
+    def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs: Any) -> "Converter":
         """Get a converter from a priority prefix map.
 
         :param data:
@@ -302,7 +311,7 @@ class Converter:
         )
 
     @classmethod
-    def from_prefix_map(cls, prefix_map: Mapping[str, str], **kwargs) -> "Converter":
+    def from_prefix_map(cls, prefix_map: Mapping[str, str], **kwargs: Any) -> "Converter":
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
@@ -401,7 +410,7 @@ class Converter:
         return cls.from_reverse_prefix_map(res.json())
 
     @classmethod
-    def from_jsonld(cls, data) -> "Converter":
+    def from_jsonld(cls, data: Dict[str, Any]) -> "Converter":
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
         :param data:
@@ -431,7 +440,9 @@ class Converter:
         return cls.from_jsonld(res.json())
 
     @classmethod
-    def from_jsonld_github(cls, owner: str, repo: str, *path: str, branch: str = "main"):
+    def from_jsonld_github(
+        cls, owner: str, repo: str, *path: str, branch: str = "main"
+    ) -> "Converter":
         """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld_url`.
 
         :param owner: A github repository owner or organization (e.g., ``biopragmatics``)
@@ -595,7 +606,7 @@ class Converter:
 
     def file_compress(
         self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
-    ):
+    ) -> None:
         """Convert all URIs in the given column of a CSV file to CURIEs.
 
         :param path: A pandas DataFrame
@@ -607,7 +618,7 @@ class Converter:
 
     def file_expand(
         self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
-    ):
+    ) -> None:
         """Convert all CURIEs in the given column of a CSV file to URIs.
 
         :param path: A pandas DataFrame
@@ -619,8 +630,12 @@ class Converter:
 
     @staticmethod
     def _file_helper(
-        func, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
-    ):
+        func: Callable[[str], Optional[str]],
+        path: Union[str, Path],
+        column: int,
+        sep: Optional[str] = None,
+        header: bool = True,
+    ) -> None:
         path = Path(path).expanduser().resolve()
         rows = []
         delimiter = sep or "\t"
@@ -628,7 +643,7 @@ class Converter:
             reader = csv.reader(file_in, delimiter=delimiter)
             _header = next(reader) if header else None
             for row in reader:
-                row[column] = func(row[column])
+                row[column] = func(row[column]) or ""
                 rows.append(row)
         with path.open("w") as file_out:
             writer = csv.writer(file_out, delimiter=delimiter)
@@ -637,7 +652,7 @@ class Converter:
             writer.writerows(rows)
 
 
-def _f(x):
+def _f(x: str) -> str:
     return x
 
 
@@ -654,6 +669,7 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     if not converters:
         raise ValueError
 
+    norm_func: Callable[[str], str]
     if case_sensitive:
         norm_func = _f
     else:

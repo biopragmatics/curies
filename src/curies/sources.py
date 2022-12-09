@@ -2,6 +2,8 @@
 
 """External sources of contexts."""
 
+from typing import Any
+
 from .api import Converter
 
 __all__ = [
@@ -50,7 +52,7 @@ def get_go_converter() -> Converter:
     return get_prefixcommons_converter("go_context")
 
 
-def get_bioregistry_converter(web: bool = False, **kwargs) -> Converter:
+def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
     """Get the latest Bioregistry context."""
     if not web:
         try:
