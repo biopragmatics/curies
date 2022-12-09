@@ -9,6 +9,7 @@ from .api import Converter
 if TYPE_CHECKING:
     import fastapi
     import flask
+    from werkzeug.wrappers import Response
 
 __all__ = [
     "get_flask_blueprint",
@@ -43,12 +44,12 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
 
     blueprint = Blueprint("metaresolver", __name__, **kwargs)
 
-    @blueprint.route("/<prefix>:<path:identifier>")
-    def resolve(prefix: str, identifier: str):
+    @blueprint.route("/<prefix>:<path:identifier>")  # type:ignore
+    def resolve(prefix: str, identifier: str) -> "Response":
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
         if location is None:
-            return abort(FAILURE_CODE)
+            return abort(FAILURE_CODE, f"Invalid prefix: {prefix}")
         return redirect(location)
 
     return blueprint
@@ -61,7 +62,7 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
     api_router = APIRouter(**kwargs)
 
-    @api_router.get("/{prefix}:{identifier}")
+    @api_router.get("/{prefix}:{identifier}")  # type:ignore
     def resolve(
         prefix: str = Path(  # noqa:B008
             title="Prefix",
@@ -72,11 +73,11 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
             title="Local Unique Identifier",
             description="The local unique identifier in the identifier resource referenced by the prefix.",
         ),
-    ):
+    ) -> RedirectResponse:
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
         if location is None:
-            raise HTTPException(status_code=FAILURE_CODE, detail="Could")
+            raise HTTPException(status_code=FAILURE_CODE, detail=f"Invalid prefix: {prefix}")
         return RedirectResponse(location, status_code=302)
 
     return api_router
