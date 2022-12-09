@@ -63,12 +63,12 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
     @api_router.get("/{prefix}:{identifier}")
     def resolve(
-        prefix: str = Path(
+        prefix: str = Path(  # noqa:B008
             title="Prefix",
             description="The Bioregistry prefix corresponding to an identifier resource.",
             example="doid",
         ),
-        identifier: str = Path(
+        identifier: str = Path(  # noqa:B008
             title="Local Unique Identifier",
             description="The local unique identifier in the identifier resource referenced by the prefix.",
         ),
