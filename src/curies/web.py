@@ -21,24 +21,49 @@ FAILURE_CODE = 422
 
 
 def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint":
-    """Get a blueprint appropriate for mounting on a :class:`flask.Flask` application.
+    """Get a blueprint for :class:`flask.Flask`.
 
     :param converter: A converter
     :param kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
     :return: A blueprint
 
+    The following is an end-to-end example of using this function to create
+    a small web resolver application.
+
     .. code-block::
 
+        # flask_example.py
         from flask import Flask
+        from curies import Converter, get_flask_blueprint, get_obo_converter
 
-        from curies import Converter
-        from curies.web import get_blueprint
+        # Create a converter
+        converter: Converter = get_obo_converter()
 
-        converter: Converter = ...
-        blueprint = get_blueprint(converter)
+        # Create a blueprint from the converter
+        blueprint = get_flask_blueprint(converter)
+
+        # Create the Flask app and mount the router
         app = Flask(__name__)
         app.register_blueprint(blueprint)
-        app.run()
+
+        if __name__ == "":
+            app.run()
+
+    In the command line, either run your Python file directly, or via with :mod:`gunicorn`:
+
+    .. code-block:: shell
+
+        pip install gunicorn
+        gunicorn --bind 0.0.0.0:5000 flask_example:app
+
+    Test a request in the Python REPL. Note that Flask's development
+    server runs on port 5000 by default.
+
+    .. code-block::
+
+        >>> import requests
+        >>> requests.get("http://localhost:5000/GO:1234567").url
+        'http://amigo.geneontology.org/amigo/term/GO:1234567'
     """
     from flask import Blueprint, abort, redirect
 
@@ -56,7 +81,49 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
 
 
 def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRouter":
-    """Get a FastAPI blueprint."""
+    """Get a router for :class:`fastapi.FastAPI`.
+
+    :param converter: A converter
+    :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
+    :return: A router
+
+    The following is an end-to-end example of using this function to create
+    a small web resolver application.
+
+    Create a python file with your :class:`fastapi.FastAPI` instance:
+
+    .. code-block::
+
+        # fastapi_example.py
+        from fastapi import FastAPI
+        from curies import Converter, get_fastapi_router
+
+        # Create a converter
+        converter = Converter.get_obo_converter()
+
+        # Create a router from the converter
+        router = get_fastapi_router(converter)
+
+        # Create the FastAPI and mount the router
+        app = FastAPI()
+        app.include_router(router)
+
+    In the command line,, run your Python file with :mod:`uvicorn`:
+
+    .. code-block:: shell
+
+        pip install uvicorn
+        uvicorn fastapi_example:app
+
+    Test a request in the Python REPL. Note that :mod:`uvicorn`
+    runs on port 8000 by default.
+
+    .. code-block::
+
+        >>> import requests
+        >>> requests.get("http://localhost:8000/GO:1234567").url
+        'http://amigo.geneontology.org/amigo/term/GO:1234567'
+    """
     from fastapi import APIRouter, HTTPException, Path
     from fastapi.responses import RedirectResponse
 

@@ -17,14 +17,3 @@ The most recent code and data can be installed directly from GitHub with:
 
 .. automodapi:: curies
    :no-inheritance-diagram:
-
-.. toctree::
-   :maxdepth: 2
-
-   web
-
-Indices and Tables
-------------------
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
