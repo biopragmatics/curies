@@ -4,7 +4,6 @@
 
 from .api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
 from .sources import (
-    converters,
     get_bioregistry_converter,
     get_go_converter,
     get_monarch_converter,
