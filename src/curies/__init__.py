@@ -22,7 +22,6 @@ __all__ = [
     "chain",
     "get_version",
     # sources
-    "converters",
     "get_obo_converter",
     "get_prefixcommons_converter",
     "get_monarch_converter",
