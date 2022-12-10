@@ -4,6 +4,7 @@
 
 from .api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
 from .sources import (
+    converters,
     get_bioregistry_converter,
     get_go_converter,
     get_monarch_converter,
@@ -11,7 +12,7 @@ from .sources import (
     get_prefixcommons_converter,
 )
 from .version import get_version
-from .web import get_fastapi_router, get_flask_blueprint
+from .web import get_fastapi_app, get_fastapi_router, get_flask_app, get_flask_blueprint
 
 __all__ = [
     "Converter",
@@ -20,6 +21,8 @@ __all__ = [
     "DuplicatePrefixes",
     "chain",
     "get_version",
+    # sources
+    "converters",
     "get_obo_converter",
     "get_prefixcommons_converter",
     "get_monarch_converter",
@@ -27,5 +30,7 @@ __all__ = [
     "get_bioregistry_converter",
     # Web extras
     "get_flask_blueprint",
+    "get_flask_app",
     "get_fastapi_router",
+    "get_fastapi_app",
 ]

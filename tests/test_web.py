@@ -4,12 +4,10 @@
 
 import unittest
 
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from flask import Flask
 
 from curies import Converter
-from curies.web import FAILURE_CODE, get_fastapi_router, get_flask_blueprint
+from curies.web import FAILURE_CODE, get_fastapi_app, get_flask_app
 
 
 class ConverterMixin(unittest.TestCase):
@@ -34,10 +32,8 @@ class TestFastAPI(ConverterMixin):
     def setUp(self) -> None:
         """Set up the test case with a converter, blueprint, and app."""
         super().setUp()
-        self.app = FastAPI()
+        self.app = get_fastapi_app(self.converter)
         self.client = TestClient(self.app)
-        self.router = get_fastapi_router(self.converter)
-        self.app.include_router(self.router)
 
     def test_resolve_success(self):
         """Test resolution for a valid CURIE redirects properly."""
@@ -56,9 +52,7 @@ class TestFlaskBlueprint(ConverterMixin):
     def setUp(self) -> None:
         """Set up the test case with a converter, blueprint, and app."""
         super().setUp()
-        self.blueprint = get_flask_blueprint(self.converter)
-        self.app = Flask(__name__)
-        self.app.register_blueprint(self.blueprint)
+        self.app = get_flask_app(self.converter)
 
     def test_resolve_success(self):
         """Test resolution for a valid CURIE redirects properly."""
