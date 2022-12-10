@@ -64,8 +64,8 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
     .. code-block::
 
         >>> import requests
-        >>> requests.get("http://localhost:5000/GO:1234567").url
-        'http://amigo.geneontology.org/amigo/term/GO:1234567'
+        >>> requests.get("http://localhost:5000/GO:0032571").url
+        'http://amigo.geneontology.org/amigo/term/GO:0032571'
     """
     from flask import Blueprint, abort, redirect
 
@@ -133,8 +133,8 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
     .. code-block::
 
         >>> import requests
-        >>> requests.get("http://localhost:8000/GO:1234567").url
-        'http://amigo.geneontology.org/amigo/term/GO:1234567'
+        >>> requests.get("http://localhost:8000/GO:0032571").url
+        'http://amigo.geneontology.org/amigo/term/GO:0032571'
     """
     from fastapi import APIRouter, HTTPException, Path
     from fastapi.responses import RedirectResponse
