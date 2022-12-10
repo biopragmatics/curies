@@ -13,7 +13,9 @@ if TYPE_CHECKING:
 
 __all__ = [
     "get_flask_blueprint",
+    "get_flask_app",
     "get_fastapi_router",
+    "get_fastapi_app",
 ]
 
 #: The code for `Unprocessable Entity <https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422>`_
@@ -46,7 +48,7 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
         app = Flask(__name__)
         app.register_blueprint(blueprint)
 
-        if __name__ == "":
+        if __name__ == "__main__":
             app.run()
 
     In the command line, either run your Python file directly, or via with :mod:`gunicorn`:
@@ -78,6 +80,16 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
         return redirect(location)
 
     return blueprint
+
+
+def get_flask_app(converter: Converter) -> "flask.Flask":
+    """Get a flask app."""
+    from flask import Flask
+
+    blueprint = get_flask_blueprint(converter)
+    app = Flask(__name__)
+    app.register_blueprint(blueprint)
+    return app
 
 
 def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRouter":
@@ -148,3 +160,13 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
         return RedirectResponse(location, status_code=302)
 
     return api_router
+
+
+def get_fastapi_app(converter: Converter) -> "fastapi.FastAPI":
+    """Get a FastAPI app."""
+    from fastapi import FastAPI
+
+    router = get_fastapi_router(converter)
+    app = FastAPI()
+    app.include_router(router)
+    return app
