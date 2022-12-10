@@ -162,14 +162,11 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
     return api_router
 
 
-def get_fastapi_app(
-    converter: Converter, fastapi_kwargs=None, router_kwargs=None, include_kwargs=None
-) -> "fastapi.FastAPI":
+def get_fastapi_app(converter: Converter) -> "fastapi.FastAPI":
     """Get a FastAPI app."""
     from fastapi import FastAPI
 
-    router = get_fastapi_router(converter, **(router_kwargs or {}))
-    app = FastAPI(**(fastapi_kwargs or {}))
-    app.include_router(router, **(include_kwargs or {}))
-
+    router = get_fastapi_router(converter)
+    app = FastAPI()
+    app.include_router(router)
     return app
