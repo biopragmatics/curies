@@ -86,14 +86,14 @@ def get_flask_app(
     converter: Converter,
     blueprint_kwargs: Optional[Mapping[str, Any]] = None,
     flask_kwargs: Optional[Mapping[str, Any]] = None,
-    registry_kwargs: Optional[Mapping[str, Any]] = None,
+    register_kwargs: Optional[Mapping[str, Any]] = None,
 ) -> "flask.Flask":
     """Get a Flask app.
 
     :param converter: A converter
     :param blueprint_kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
     :param flask_kwargs: Keyword arguments passed through to :class:`flask.Flask`
-    :param registry_kwargs: Keyword arguments passed through to :meth:`flask.Flask.register_blueprint`
+    :param register_kwargs: Keyword arguments passed through to :meth:`flask.Flask.register_blueprint`
     :return: A Flask app
 
     .. seealso:: This function wraps :func:`get_flask_blueprint`
@@ -136,7 +136,7 @@ def get_flask_app(
 
     blueprint = get_flask_blueprint(converter, **(blueprint_kwargs or {}))
     app = Flask(__name__, **(flask_kwargs or {}))
-    app.register_blueprint(blueprint, **(registry_kwargs or {}))
+    app.register_blueprint(blueprint, **(register_kwargs or {}))
     return app
 
 
