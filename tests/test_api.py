@@ -3,6 +3,7 @@
 """Trivial version test."""
 
 import json
+import tempfile
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -149,6 +150,18 @@ class TestConverter(unittest.TestCase):
         records = json.loads(EXTENDED_PREFIX_MAP_PATH.read_text())
         converter = Converter.from_extended_prefix_map(records)
         self.assert_bioregistry_converter(converter)
+
+    def test_load_path(self):
+        """Test loading from paths."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory).joinpath("pm.json")
+            path.write_text(json.dumps(self.converter.prefix_map))
+
+            c1 = Converter.from_prefix_map(path)
+            self.assertEqual(self.converter.prefix_map, c1.prefix_map)
+
+            c2 = Converter.from_prefix_map(str(path))
+            self.assertEqual(self.converter.prefix_map, c2.prefix_map)
 
     def test_reverse_constructor(self):
         """Test constructing from a reverse prefix map."""
