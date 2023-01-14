@@ -42,7 +42,7 @@ __all__ = [
 ]
 
 X = TypeVar("X")
-StrOr = Union[str, Path, X]
+LocationOr = Union[str, Path, X]
 
 
 @dataclass
@@ -140,7 +140,7 @@ def _get_reverse_prefix_map(records: List[Record]) -> Mapping[str, str]:
     return rv
 
 
-def _prepare(data: StrOr[X]) -> X:
+def _prepare(data: LocationOr[X]) -> X:
     if isinstance(data, Path):
         with data.open() as file:
             return cast(X, json.load(file))
@@ -241,7 +241,7 @@ class Converter:
 
     @classmethod
     def from_extended_prefix_map(
-        cls, records: StrOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
+        cls, records: LocationOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
     ) -> "Converter":
         """Get a converter from a list of dictionaries by creating records out of them.
 
@@ -297,7 +297,7 @@ class Converter:
 
     @classmethod
     def from_priority_prefix_map(
-        cls, data: StrOr[Mapping[str, List[str]]], **kwargs: Any
+        cls, data: LocationOr[Mapping[str, List[str]]], **kwargs: Any
     ) -> "Converter":
         """Get a converter from a priority prefix map.
 
@@ -335,7 +335,9 @@ class Converter:
         )
 
     @classmethod
-    def from_prefix_map(cls, prefix_map: StrOr[Mapping[str, str]], **kwargs: Any) -> "Converter":
+    def from_prefix_map(
+        cls, prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any
+    ) -> "Converter":
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
@@ -372,7 +374,9 @@ class Converter:
         )
 
     @classmethod
-    def from_reverse_prefix_map(cls, reverse_prefix_map: StrOr[Mapping[str, str]]) -> "Converter":
+    def from_reverse_prefix_map(
+        cls, reverse_prefix_map: LocationOr[Mapping[str, str]]
+    ) -> "Converter":
         """Get a converter from a reverse prefix map.
 
         :param reverse_prefix_map:
@@ -433,7 +437,7 @@ class Converter:
         return cls.from_reverse_prefix_map(url)
 
     @classmethod
-    def from_jsonld(cls, data: StrOr[Dict[str, Any]]) -> "Converter":
+    def from_jsonld(cls, data: LocationOr[Dict[str, Any]]) -> "Converter":
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
         :param data:
