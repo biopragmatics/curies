@@ -205,9 +205,10 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
         if location is None:
+            prefixes = ", ".join(sorted(converter.get_prefixes()))
             raise HTTPException(
                 status_code=FAILURE_CODE,
-                detail=f"Invalid prefix: {prefix}. Use one of: {', '.join(sorted(converter.get_prefixes()))}",
+                detail=f"Invalid prefix: {prefix}. Use one of: {prefixes}",
             )
         return RedirectResponse(location, status_code=302)
 
