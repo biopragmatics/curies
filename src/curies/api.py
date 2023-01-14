@@ -5,7 +5,6 @@
 import csv
 import itertools as itt
 import json
-import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -215,31 +214,6 @@ class Converter:
         self.trie = StringTrie(self.reverse_prefix_map)
 
     @classmethod
-    def from_extended_prefix_map_url(cls, url: str, **kwargs: Any) -> "Converter":
-        """Get a converter from a remote JSON file containing an extended prefix map.
-
-        :param url: The URL of a JSON file containiing dictionaries corresponding to the :class:`Record` schema
-        :param kwargs: Keyword arguments to pass to the parent class's init
-        :returns: A converter
-
-        An extended prefix map is a list of dictionaries containing four keys:
-
-        1. A ``prefix`` string
-        2. A ``uri_prefix`` string
-        3. An optional list of strings ``prefix_synonyms``
-        4. An optional list of strings ``uri_prefix_synonyms``
-
-        Across the whole list of dictionaries, there should be uniqueness within
-        the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
-        within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
-
-        >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.epm.json"
-        >>> converter = Converter.from_extended_prefix_map_url(url)
-        """
-        warnings.warn("directly use Converter.from_extended_prefix_map", DeprecationWarning)
-        return cls.from_extended_prefix_map(url, **kwargs)
-
-    @classmethod
     def from_extended_prefix_map(
         cls, records: LocationOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
     ) -> "Converter":
@@ -286,6 +260,11 @@ class Converter:
         # URI prefix synoynm
         >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
         'CHEBI:138488'
+
+        Example from a remote source:
+
+        >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.epm.json"
+        >>> converter = Converter.from_extended_prefix_map(url)
         """
         return cls(
             records=[
@@ -405,6 +384,12 @@ class Converter:
         'CHEBI:138488'
         >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488")
         'CHEBI:138488'
+
+        Altenatively, get content from the internet like
+
+        >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.rpm.json"
+        >>> converter = Converter.from_reverse_prefix_map(url)
+        >>> "chebi" in Converter.prefix_map
         """
         dd = defaultdict(list)
         for uri_prefix, prefix in _prepare(reverse_prefix_map).items():
@@ -420,23 +405,6 @@ class Converter:
         return cls(records)
 
     @classmethod
-    def from_reverse_prefix_map_url(cls, url: str) -> "Converter":
-        """Get a remote reverse prefix map JSON file then parse with :meth:`Converter.from_reverse_prefix_map`.
-
-        :param url:
-            A URL to a reverse prefix map JSON file
-        :return:
-            A converter
-
-        >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.rpm.json"
-        >>> converter = Converter.from_reverse_prefix_map_url(url)
-        >>> "chebi" in Converter.prefix_map
-        True
-        """
-        warnings.warn("directly use Converter.from_reverse_prefix_map", DeprecationWarning)
-        return cls.from_reverse_prefix_map(url)
-
-    @classmethod
     def from_jsonld(cls, data: LocationOr[Dict[str, Any]]) -> "Converter":
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
@@ -444,26 +412,15 @@ class Converter:
             A JSON-LD object
         :return:
             A converter
-        """
-        return cls.from_prefix_map(_prepare(data)["@context"])
 
-    @classmethod
-    def from_jsonld_url(cls, url: str) -> "Converter":
-        """Get a remote JSON-LD file then parse with :meth:`Converter.from_jsonld`.
-
-        :param url:
-            A URL to a JSON-LD file
-        :return:
-            A converter
+        Example from a remote context file:
 
         >>> base = "https://raw.githubusercontent.com"
         >>> url = f"{base}/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
-        >>> converter = Converter.from_jsonld_url(url)
+        >>> converter = Converter.from_jsonld(url)
         >>> "rdf" in converter.prefix_map
-        True
         """
-        warnings.warn("directly use Converter.from_jsonld", DeprecationWarning)
-        return cls.from_jsonld(url)
+        return cls.from_prefix_map(_prepare(data)["@context"])
 
     @classmethod
     def from_jsonld_github(

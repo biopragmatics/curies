@@ -1,7 +1,22 @@
 # -*- coding: utf-8 -*-
 # type:ignore
 
-"""Command line interface for ``curies``."""
+"""This package comes with a built-in CLI for running a resolver web application:
+
+.. code-block::
+
+    $ python -m curies --host 0.0.0.0 --port 8764 bioregistry
+
+The positional argument can be one of the following:
+
+1. A pre-defined prefix map to get from the web (bioregistry, go, obo, monarch, prefixcommons)
+2. A local file path or URL to a prefix map, extended prefix map, or one of several formats. Requires specifying
+   a `--format`.
+
+The framework can be swapped to use Flask (default) or FastAPI with `--framework`. The
+server can be swapped to use Werkzeug (default) or Uvicorn with `--server`. These functionalities
+are also available programmatically (see :func:`get_flask_app` and :func:`get_fastapi_app`).
+"""
 
 import sys
 from typing import Callable, Mapping
@@ -85,7 +100,7 @@ def _run_app(app, server, host, port):
     help="The host where the resolver runs",
 )
 @click.option(
-    "--port", type=int, default=8000, show_default=True, help="The port where the resolver runs"
+    "--port", type=int, default=8764, show_default=True, help="The port where the resolver runs"
 )
 def main(location, host: str, port: int, framework: str, format: str, server: str):
     """Serve a resolver app.
