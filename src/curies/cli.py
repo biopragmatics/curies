@@ -31,17 +31,17 @@ CONVERTERS: Mapping[str, Callable[[], Converter]] = {
 }
 
 
-def _get_app(converter: Converter, backend: str):
-    if backend == "flask":
+def _get_app(converter: Converter, framework: str):
+    if framework == "flask":
         from curies import get_flask_app
 
         return get_flask_app(converter)
-    elif backend == "fastapi":
+    elif framework == "fastapi":
         from curies import get_fastapi_app
 
         return get_fastapi_app(converter)
     else:
-        raise ValueError(f"Unhandled backend: {backend}")
+        raise ValueError(f"Unhandled framework: {framework}")
 
 
 def _run_app(app, server, host, port):
@@ -54,7 +54,7 @@ def _run_app(app, server, host, port):
     elif server == "gunicorn":
         raise NotImplementedError
     else:
-        raise ValueError
+        raise ValueError(f"Unhandled server: {server}")
 
 
 @click.command()
@@ -100,7 +100,7 @@ def main(location, host: str, port: int, framework: str, format: str, server: st
     else:
         converter = LOADERS[format](location)
 
-    app = _get_app(converter, backend=framework)
+    app = _get_app(converter, framework=framework)
     _run_app(app, server=server, host=host, port=port)
 
 
