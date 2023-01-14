@@ -155,6 +155,11 @@ class TestConverter(unittest.TestCase):
         """Test loading from paths."""
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory).joinpath("pm.json")
+            with self.assertRaises(FileNotFoundError):
+                Converter.from_prefix_map(path)
+            with self.assertRaises(FileNotFoundError):
+                Converter.from_prefix_map(str(path))
+
             path.write_text(json.dumps(self.converter.prefix_map))
 
             c1 = Converter.from_prefix_map(path)
