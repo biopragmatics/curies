@@ -65,12 +65,3 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
             return Converter.from_extended_prefix_map(bioregistry.manager.get_curies_records())
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
     return Converter.from_extended_prefix_map_url(url, **kwargs)
-
-
-converters: Mapping[str, Callable[..., Converter]] = {
-    "bioregistry": get_bioregistry_converter,
-    "go": get_go_converter,
-    "monarch": get_monarch_converter,
-    "obo": get_obo_converter,
-    "prefixcommons": get_prefixcommons_converter,
-}

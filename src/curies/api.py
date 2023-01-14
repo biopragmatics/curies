@@ -274,6 +274,12 @@ class Converter:
         )
 
     @classmethod
+    def from_priority_prefix_map_url(cls, url: str, **kwargs: Any) -> "Converter":
+        res = requests.get(url)
+        res.raise_for_status()
+        return cls.from_priority_prefix_map(res.json(), **kwargs)
+
+    @classmethod
     def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs: Any) -> "Converter":
         """Get a converter from a priority prefix map.
 
@@ -309,6 +315,12 @@ class Converter:
             ],
             **kwargs,
         )
+
+    @classmethod
+    def from_prefix_map_url(cls, url: str, **kwargs: Any) -> "Converter":
+        res = requests.get(url)
+        res.raise_for_status()
+        return cls.from_prefix_map(res.json(), **kwargs)
 
     @classmethod
     def from_prefix_map(cls, prefix_map: Mapping[str, str], **kwargs: Any) -> "Converter":
