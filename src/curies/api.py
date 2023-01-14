@@ -14,14 +14,12 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Concatenate,
     DefaultDict,
     Dict,
     Iterable,
     List,
     Mapping,
     Optional,
-    ParamSpec,
     Sequence,
     Set,
     Tuple,
@@ -33,6 +31,7 @@ from typing import (
 
 import requests
 from pytrie import StringTrie
+from typing_extensions import Concatenate, ParamSpec
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
