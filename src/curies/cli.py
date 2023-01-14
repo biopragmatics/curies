@@ -22,7 +22,7 @@ LOADERS = {
     "priority_prefix_map": Converter.from_priority_prefix_map,
 }
 
-CONVERTERS: Mapping[str, Callable[..., Converter]] = {
+CONVERTERS: Mapping[str, Callable[[], Converter]] = {
     "bioregistry": sources.get_bioregistry_converter,
     "go": sources.get_go_converter,
     "monarch": sources.get_monarch_converter,
@@ -69,9 +69,10 @@ def _run_app(app, runner, host, port):
     show_default=True,
 )
 @click.option("--format", type=click.Choice(list(LOADERS)))
-@click.option("--host", default="0.0.0.0")
+@click.option("--host", default="0.0.0.0")  # noqa:S104
 @click.option("--port", type=int, default=8000)
 def main(location, host: str, port: int, backend: str, format: str, runner):
+    """Serve a resolver app."""
     if location in CONVERTERS:
         converter = CONVERTERS[location]()
     elif format is None:
