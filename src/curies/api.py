@@ -4,6 +4,8 @@
 
 import csv
 import itertools as itt
+import json
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -20,7 +22,9 @@ from typing import (
     Sequence,
     Set,
     Tuple,
+    TypeVar,
     Union,
+    cast,
 )
 
 import requests
@@ -36,6 +40,9 @@ __all__ = [
     "DuplicateURIPrefixes",
     "chain",
 ]
+
+X = TypeVar("X")
+LocationOr = Union[str, Path, X]
 
 
 @dataclass
@@ -133,6 +140,21 @@ def _get_reverse_prefix_map(records: List[Record]) -> Mapping[str, str]:
     return rv
 
 
+def _prepare(data: LocationOr[X]) -> X:
+    if isinstance(data, Path):
+        with data.open() as file:
+            return cast(X, json.load(file))
+    elif isinstance(data, str):
+        if any(data.startswith(p) for p in ("https://", "http://", "ftp://")):
+            res = requests.get(data)
+            res.raise_for_status()
+            return cast(X, res.json())
+        with open(data) as file:
+            return cast(X, json.load(file))
+    else:
+        return data
+
+
 class Converter:
     """A cached prefix map data structure.
 
@@ -214,13 +236,12 @@ class Converter:
         >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.epm.json"
         >>> converter = Converter.from_extended_prefix_map_url(url)
         """
-        res = requests.get(url)
-        res.raise_for_status()
-        return cls.from_extended_prefix_map(res.json(), **kwargs)
+        warnings.warn("directly use Converter.from_extended_prefix_map", DeprecationWarning)
+        return cls.from_extended_prefix_map(url, **kwargs)
 
     @classmethod
     def from_extended_prefix_map(
-        cls, records: Iterable[Union[Record, Dict[str, Any]]], **kwargs: Any
+        cls, records: LocationOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
     ) -> "Converter":
         """Get a converter from a list of dictionaries by creating records out of them.
 
@@ -268,19 +289,16 @@ class Converter:
         """
         return cls(
             records=[
-                record if isinstance(record, Record) else Record(**record) for record in records
+                record if isinstance(record, Record) else Record(**record)
+                for record in _prepare(records)
             ],
             **kwargs,
         )
 
     @classmethod
-    def from_priority_prefix_map_url(cls, url: str, **kwargs: Any) -> "Converter":
-        res = requests.get(url)
-        res.raise_for_status()
-        return cls.from_priority_prefix_map(res.json(), **kwargs)
-
-    @classmethod
-    def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs: Any) -> "Converter":
+    def from_priority_prefix_map(
+        cls, data: LocationOr[Mapping[str, List[str]]], **kwargs: Any
+    ) -> "Converter":
         """Get a converter from a priority prefix map.
 
         :param data:
@@ -311,19 +329,15 @@ class Converter:
                 Record(
                     prefix=prefix, uri_prefix=uri_prefixes[0], uri_prefix_synonyms=uri_prefixes[1:]
                 )
-                for prefix, uri_prefixes in data.items()
+                for prefix, uri_prefixes in _prepare(data).items()
             ],
             **kwargs,
         )
 
     @classmethod
-    def from_prefix_map_url(cls, url: str, **kwargs: Any) -> "Converter":
-        res = requests.get(url)
-        res.raise_for_status()
-        return cls.from_prefix_map(res.json(), **kwargs)
-
-    @classmethod
-    def from_prefix_map(cls, prefix_map: Mapping[str, str], **kwargs: Any) -> "Converter":
+    def from_prefix_map(
+        cls, prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any
+    ) -> "Converter":
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
@@ -354,13 +368,15 @@ class Converter:
         return cls(
             [
                 Record(prefix=prefix, uri_prefix=uri_prefix)
-                for prefix, uri_prefix in prefix_map.items()
+                for prefix, uri_prefix in _prepare(prefix_map).items()
             ],
             **kwargs,
         )
 
     @classmethod
-    def from_reverse_prefix_map(cls, reverse_prefix_map: Mapping[str, str]) -> "Converter":
+    def from_reverse_prefix_map(
+        cls, reverse_prefix_map: LocationOr[Mapping[str, str]]
+    ) -> "Converter":
         """Get a converter from a reverse prefix map.
 
         :param reverse_prefix_map:
@@ -391,7 +407,7 @@ class Converter:
         'CHEBI:138488'
         """
         dd = defaultdict(list)
-        for uri_prefix, prefix in reverse_prefix_map.items():
+        for uri_prefix, prefix in _prepare(reverse_prefix_map).items():
             dd[prefix].append(uri_prefix)
         records = []
         for prefix, uri_prefixes in dd.items():
@@ -417,12 +433,11 @@ class Converter:
         >>> "chebi" in Converter.prefix_map
         True
         """
-        res = requests.get(url)
-        res.raise_for_status()
-        return cls.from_reverse_prefix_map(res.json())
+        warnings.warn("directly use Converter.from_reverse_prefix_map", DeprecationWarning)
+        return cls.from_reverse_prefix_map(url)
 
     @classmethod
-    def from_jsonld(cls, data: Dict[str, Any]) -> "Converter":
+    def from_jsonld(cls, data: LocationOr[Dict[str, Any]]) -> "Converter":
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
         :param data:
@@ -430,7 +445,7 @@ class Converter:
         :return:
             A converter
         """
-        return cls.from_prefix_map(data["@context"])
+        return cls.from_prefix_map(_prepare(data)["@context"])
 
     @classmethod
     def from_jsonld_url(cls, url: str) -> "Converter":
@@ -447,9 +462,8 @@ class Converter:
         >>> "rdf" in converter.prefix_map
         True
         """
-        res = requests.get(url)
-        res.raise_for_status()
-        return cls.from_jsonld(res.json())
+        warnings.warn("directly use Converter.from_jsonld", DeprecationWarning)
+        return cls.from_jsonld(url)
 
     @classmethod
     def from_jsonld_github(
@@ -478,7 +492,7 @@ class Converter:
             raise ValueError("final path argument should end with .jsonld")
         rest = "/".join(path)
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
-        return cls.from_jsonld_url(url)
+        return cls.from_jsonld(url)
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""

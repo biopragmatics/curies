@@ -68,7 +68,7 @@ converter = Converter.from_prefix_map({
 When some URI prefixes are partially overlapping (e.g.,
 `http://purl.obolibrary.org/obo/GO_` for `GO` and
 `http://purl.obolibrary.org/obo/` for ``OBO``), the longest
-URI prefix will always be matched. For example, parsing
+URI prefix will always be matched. For example, compressing
 `http://purl.obolibrary.org/obo/GO_0032571`
 will return `GO:0032571` instead of `OBO:GO_0032571`.
 
@@ -133,6 +133,7 @@ Other packages that convert between CURIEs and URIs:
 - https://github.com/prefixcommons/curie-util (Java)
 - https://github.com/geneontology/curie-util-py (Python)
 - https://github.com/geneontology/curie-util-es5 (Node.js)
+- https://github.com/endoli/curie.rs (Rust)
 
 ## 🚀 Installation
 

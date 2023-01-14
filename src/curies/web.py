@@ -2,7 +2,7 @@
 
 """A simple web service for resolving CURIEs."""
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 from .api import Converter
 
@@ -82,13 +82,61 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
     return blueprint
 
 
-def get_flask_app(converter: Converter) -> "flask.Flask":
-    """Get a flask app."""
+def get_flask_app(
+    converter: Converter,
+    blueprint_kwargs: Optional[Mapping[str, Any]] = None,
+    flask_kwargs: Optional[Mapping[str, Any]] = None,
+    register_kwargs: Optional[Mapping[str, Any]] = None,
+) -> "flask.Flask":
+    """Get a Flask app.
+
+    :param converter: A converter
+    :param blueprint_kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
+    :param flask_kwargs: Keyword arguments passed through to :class:`flask.Flask`
+    :param register_kwargs: Keyword arguments passed through to :meth:`flask.Flask.register_blueprint`
+    :return: A Flask app
+
+    .. seealso:: This function wraps :func:`get_flask_blueprint`
+
+    The following is an end-to-end example of using this function to create
+    a small web resolver application.
+
+    .. code-block::
+
+        # flask_example.py
+        from flask import Flask
+        from curies import Converter, get_flask_app, get_obo_converter
+
+        # Create a converter
+        converter: Converter = get_obo_converter()
+
+        # Create the Flask app
+        app: Flask = get_flask_app(converter)
+
+        if __name__ == "__main__":
+            app.run()
+
+    In the command line, either run your Python file directly, or via with :mod:`gunicorn`:
+
+    .. code-block:: shell
+
+        pip install gunicorn
+        gunicorn --bind 0.0.0.0:5000 flask_example:app
+
+    Test a request in the Python REPL. Note that Flask's development
+    server runs on port 5000 by default.
+
+    .. code-block::
+
+        >>> import requests
+        >>> requests.get("http://localhost:5000/GO:0032571").url
+        'http://amigo.geneontology.org/amigo/term/GO:0032571'
+    """
     from flask import Flask
 
-    blueprint = get_flask_blueprint(converter)
-    app = Flask(__name__)
-    app.register_blueprint(blueprint)
+    blueprint = get_flask_blueprint(converter, **(blueprint_kwargs or {}))
+    app = Flask(__name__, **(flask_kwargs or {}))
+    app.register_blueprint(blueprint, **(register_kwargs or {}))
     return app
 
 
@@ -162,11 +210,58 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
     return api_router
 
 
-def get_fastapi_app(converter: Converter) -> "fastapi.FastAPI":
-    """Get a FastAPI app."""
+def get_fastapi_app(
+    converter: Converter,
+    router_kwargs: Optional[Mapping[str, Any]] = None,
+    fastapi_kwargs: Optional[Mapping[str, Any]] = None,
+    include_kwargs: Optional[Mapping[str, Any]] = None,
+) -> "fastapi.FastAPI":
+    """Get a FastAPI app.
+
+    :param converter: A converter
+    :param router_kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
+    :param fastapi_kwargs: Keyword arguments passed through to :class:`fastapi.FastAPI`
+    :param include_kwargs: Keyword arguments passed through to :meth:`fastapi.FastAPI.include_router`
+    :return: A FastAPI app
+
+    .. seealso:: This function wraps :func:`get_fastapi_router`
+
+    The following is an end-to-end example of using this function to create
+    a small web resolver application.
+
+    Create a python file with your :class:`fastapi.FastAPI` instance:
+
+    .. code-block::
+
+        # fastapi_example.py
+        from fastapi import FastAPI
+        from curies import Converter, get_fastapi_app
+
+        # Create a converter
+        converter = Converter.get_obo_converter()
+
+        # Create the FastAPI
+        app: FastAPI = get_fastapi_app(converter)
+
+    In the command line,, run your Python file with :mod:`uvicorn`:
+
+    .. code-block:: shell
+
+        pip install uvicorn
+        uvicorn fastapi_example:app
+
+    Test a request in the Python REPL. Note that :mod:`uvicorn`
+    runs on port 8000 by default.
+
+    .. code-block::
+
+        >>> import requests
+        >>> requests.get("http://localhost:8000/GO:0032571").url
+        'http://amigo.geneontology.org/amigo/term/GO:0032571'
+    """
     from fastapi import FastAPI
 
-    router = get_fastapi_router(converter)
-    app = FastAPI()
-    app.include_router(router)
+    router = get_fastapi_router(converter, **(router_kwargs or {}))
+    app = FastAPI(**(fastapi_kwargs or {}))
+    app.include_router(router, **(include_kwargs or {}))
     return app
