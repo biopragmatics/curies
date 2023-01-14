@@ -3,7 +3,10 @@
 """Data structures and algorithms for :mod:`curies`."""
 
 import csv
+import functools
 import itertools as itt
+import json
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,16 +14,21 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Concatenate,
     DefaultDict,
     Dict,
     Iterable,
     List,
     Mapping,
     Optional,
+    ParamSpec,
     Sequence,
     Set,
     Tuple,
+    Type,
+    TypeVar,
     Union,
+    cast,
 )
 
 import requests
@@ -133,6 +141,36 @@ def _get_reverse_prefix_map(records: List[Record]) -> Mapping[str, str]:
     return rv
 
 
+D = TypeVar("D")
+P = ParamSpec("P")
+
+
+def decorate(
+    func: Callable[Concatenate[Type["Converter"], D, P], "Converter"]
+) -> Callable[Concatenate[Type["Converter"], Union[str, Path, D], P], "Converter"]:
+    @functools.wraps(func)
+    def wrapped(
+        cls: Type["Converter"], data: Union[str, Path, D], **kwargs: P.kwargs
+    ) -> "Converter":
+        if isinstance(data, Path):
+            with data.open() as file:
+                return func(cls, cast(D, json.load(file)), **kwargs)
+        elif isinstance(data, str):
+            if any(data.startswith(p) for p in ("https://", "http://", "ftp://")):
+                res = requests.get(data)
+                res.raise_for_status()
+                return func(cls, cast(D, res.json()), **kwargs)
+            elif Path(data).is_file():
+                with open(data) as file:
+                    return func(cls, cast(D, json.load(file)), **kwargs)
+            else:
+                raise ValueError
+        else:
+            return func(cls, data, **kwargs)
+
+    return wrapped
+
+
 class Converter:
     """A cached prefix map data structure.
 
@@ -214,11 +252,11 @@ class Converter:
         >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.epm.json"
         >>> converter = Converter.from_extended_prefix_map_url(url)
         """
-        res = requests.get(url)
-        res.raise_for_status()
-        return cls.from_extended_prefix_map(res.json(), **kwargs)
+        warnings.warn("directly use Converter.from_extended_prefix_map", DeprecationWarning)
+        return cls.from_extended_prefix_map(url, **kwargs)
 
     @classmethod
+    @decorate
     def from_extended_prefix_map(
         cls, records: Iterable[Union[Record, Dict[str, Any]]], **kwargs: Any
     ) -> "Converter":
@@ -274,6 +312,7 @@ class Converter:
         )
 
     @classmethod
+    @decorate
     def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs: Any) -> "Converter":
         """Get a converter from a priority prefix map.
 
@@ -311,6 +350,7 @@ class Converter:
         )
 
     @classmethod
+    @decorate
     def from_prefix_map(cls, prefix_map: Mapping[str, str], **kwargs: Any) -> "Converter":
         """Get a converter from a simple prefix map.
 
@@ -348,6 +388,7 @@ class Converter:
         )
 
     @classmethod
+    @decorate
     def from_reverse_prefix_map(cls, reverse_prefix_map: Mapping[str, str]) -> "Converter":
         """Get a converter from a reverse prefix map.
 
@@ -405,11 +446,11 @@ class Converter:
         >>> "chebi" in Converter.prefix_map
         True
         """
-        res = requests.get(url)
-        res.raise_for_status()
-        return cls.from_reverse_prefix_map(res.json())
+        warnings.warn("directly use Converter.from_reverse_prefix_map", DeprecationWarning)
+        return cls.from_reverse_prefix_map(url)
 
     @classmethod
+    @decorate
     def from_jsonld(cls, data: Dict[str, Any]) -> "Converter":
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
@@ -435,9 +476,8 @@ class Converter:
         >>> "rdf" in converter.prefix_map
         True
         """
-        res = requests.get(url)
-        res.raise_for_status()
-        return cls.from_jsonld(res.json())
+        warnings.warn("directly use Converter.from_jsonld", DeprecationWarning)
+        return cls.from_jsonld(url)
 
     @classmethod
     def from_jsonld_github(
@@ -466,7 +506,7 @@ class Converter:
             raise ValueError("final path argument should end with .jsonld")
         rest = "/".join(path)
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
-        return cls.from_jsonld_url(url)
+        return cls.from_jsonld(url)
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""
