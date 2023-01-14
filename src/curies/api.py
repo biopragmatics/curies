@@ -144,11 +144,11 @@ D = TypeVar("D")
 P = ParamSpec("P")
 
 
-def decorate(
+def _decorate(
     func: Callable[Concatenate[Type["Converter"], D, P], "Converter"]
 ) -> Callable[Concatenate[Type["Converter"], Union[str, Path, D], P], "Converter"]:
     @functools.wraps(func)
-    def wrapped(
+    def _wrapped(
         cls: Type["Converter"], data: Union[str, Path, D], **kwargs: P.kwargs
     ) -> "Converter":
         if isinstance(data, Path):
@@ -167,7 +167,7 @@ def decorate(
         else:
             return func(cls, data, **kwargs)
 
-    return wrapped
+    return _wrapped
 
 
 class Converter:
@@ -255,7 +255,7 @@ class Converter:
         return cls.from_extended_prefix_map(url, **kwargs)
 
     @classmethod
-    @decorate
+    @_decorate
     def from_extended_prefix_map(
         cls, records: Iterable[Union[Record, Dict[str, Any]]], **kwargs: Any
     ) -> "Converter":
@@ -311,7 +311,7 @@ class Converter:
         )
 
     @classmethod
-    @decorate
+    @_decorate
     def from_priority_prefix_map(cls, data: Mapping[str, List[str]], **kwargs: Any) -> "Converter":
         """Get a converter from a priority prefix map.
 
@@ -349,7 +349,7 @@ class Converter:
         )
 
     @classmethod
-    @decorate
+    @_decorate
     def from_prefix_map(cls, prefix_map: Mapping[str, str], **kwargs: Any) -> "Converter":
         """Get a converter from a simple prefix map.
 
@@ -387,7 +387,7 @@ class Converter:
         )
 
     @classmethod
-    @decorate
+    @_decorate
     def from_reverse_prefix_map(cls, reverse_prefix_map: Mapping[str, str]) -> "Converter":
         """Get a converter from a reverse prefix map.
 
@@ -449,7 +449,7 @@ class Converter:
         return cls.from_reverse_prefix_map(url)
 
     @classmethod
-    @decorate
+    @_decorate
     def from_jsonld(cls, data: Dict[str, Any]) -> "Converter":
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
