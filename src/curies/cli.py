@@ -69,7 +69,7 @@ def _run_app(app, server, host, port):
 @click.option(
     "--server",
     default="werkzeug",
-    type=click.Choice(["uvicorn", "werkzeug", "gunicorn"]),
+    type=click.Choice(["werkzeug", "uvicorn", "gunicorn"]),
     show_default=True,
     help="The web server used to run the app. Note, each requires different packages to be installed.",
 )
