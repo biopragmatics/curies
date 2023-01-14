@@ -31,7 +31,7 @@ CONVERTERS: Mapping[str, Callable[[], Converter]] = {
 }
 
 
-def _get_app(converter, backend):
+def _get_app(converter: Converter, backend: str):
     if backend == "flask":
         from curies import get_flask_app
 
@@ -44,14 +44,14 @@ def _get_app(converter, backend):
         raise ValueError(f"Unhandled backend: {backend}")
 
 
-def _run_app(app, runner, host, port):
-    if runner == "uvicorn":
+def _run_app(app, server, host, port):
+    if server == "uvicorn":
         import uvicorn
 
         uvicorn.run(app, host=host, port=port)
-    elif runner == "werkzeug":
+    elif server == "werkzeug":
         app.run(host=host, port=port)
-    elif runner == "gunicorn":
+    elif server == "gunicorn":
         raise NotImplementedError
     else:
         raise ValueError
@@ -60,19 +60,38 @@ def _run_app(app, runner, host, port):
 @click.command()
 @click.argument("location")
 @click.option(
-    "--backend", default="flask", type=click.Choice(["flask", "fastapi"]), show_default=True
+    "--framework",
+    default="flask",
+    type=click.Choice(["flask", "fastapi"]),
+    show_default=True,
+    help="The framework used to implement the app. Note, each requires different packages to be installed.",
 )
 @click.option(
-    "--runner",
+    "--server",
     default="werkzeug",
     type=click.Choice(["uvicorn", "werkzeug", "gunicorn"]),
     show_default=True,
+    help="The web server used to run the app. Note, each requires different packages to be installed.",
 )
-@click.option("--format", type=click.Choice(list(LOADERS)))
-@click.option("--host", default="0.0.0.0")  # noqa:S104
-@click.option("--port", type=int, default=8000)
-def main(location, host: str, port: int, backend: str, format: str, runner):
-    """Serve a resolver app."""
+@click.option(
+    "--format",
+    type=click.Choice(list(LOADERS)),
+    help="The data structure of the resolver data. Required if not giving a pre-defined converter name.",
+)
+@click.option(
+    "--host",
+    default="0.0.0.0",  # noqa:S104
+    show_default=True,
+    help="The host where the resolver runs",
+)
+@click.option(
+    "--port", type=int, default=8000, show_default=True, help="The port where the resolver runs"
+)
+def main(location, host: str, port: int, framework: str, format: str, server: str):
+    """Serve a resolver app.
+
+    Location can either be the name of a built-in converter, a file path, or a URL.
+    """
     if location in CONVERTERS:
         converter = CONVERTERS[location]()
     elif format is None:
@@ -81,8 +100,8 @@ def main(location, host: str, port: int, backend: str, format: str, runner):
     else:
         converter = LOADERS[format](location)
 
-    app = _get_app(converter, backend=backend)
-    _run_app(app, runner=runner, host=host, port=port)
+    app = _get_app(converter, backend=framework)
+    _run_app(app, server=server, host=host, port=port)
 
 
 if __name__ == "__main__":
