@@ -137,7 +137,7 @@ $ python -m curies --host 0.0.0.0 --port 8000 bioregistry
 
 The positional argument can be one of the following:
 
-1. A pre-defined prefix map to get from the web (bioregistry, go, monarch, prefixcommons)
+1. A pre-defined prefix map to get from the web (bioregistry, go, obo, monarch, prefixcommons)
 2. A local file path or URL to a prefix map, extended prefix map, or one of several formats. Requires specifying
    a `--format`.
 
