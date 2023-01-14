@@ -47,11 +47,11 @@ Idiomatic conversion between URIs and compact URIs (CURIEs).
 from curies import Converter
 
 converter = Converter.from_prefix_map({
-   "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-   "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-   "GO": "http://purl.obolibrary.org/obo/GO_",
-   # ... and so on
-   "OBO": "http://purl.obolibrary.org/obo/",
+    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+    "GO": "http://purl.obolibrary.org/obo/GO_",
+    # ... and so on
+    "OBO": "http://purl.obolibrary.org/obo/",
 })
 
 >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
@@ -72,13 +72,15 @@ URI prefix will always be matched. For example, compressing
 `http://purl.obolibrary.org/obo/GO_0032571`
 will return `GO:0032571` instead of `OBO:GO_0032571`.
 
-A converter can be instantiated from a web-based resource in JSON-LD format:
+All loader function work on local file paths, remote URLs, and pre-loaded
+data structures. For example, a converter can be instantiated from a web-based
+resource in JSON-LD format:
 
 ```python
 from curies import Converter
 
 url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
-converter = Converter.from_jsonld_url(url)
+converter = Converter.from_jsonld(url)
 ```
 
 Several converters can be instantiated from pre-defined web-based resources:
@@ -109,7 +111,7 @@ obo_converter.pd_compress(df, column=0)
 obo_converter.pd_expand(df, column=0)
 ```
 
-Apply in bulk to a CSV file with `Converter.file_expand` and 
+Apply in bulk to a CSV file with `Converter.file_expand` and
 `Converter.file_compress` (defaults to using tab separator):
 
 ```python
@@ -124,6 +126,24 @@ obo_converter.file_expand(path, column=0)
 ```
 
 Full documentation is available [here](https://curies.readthedocs.io).
+
+## CLI Usage
+
+This package comes with a built-in CLI for running a resolver web application:
+
+```shell
+$ python -m curies --host 0.0.0.0 --port 8000 bioregistry 
+```
+
+The positional argument can be one of the following:
+
+1. A pre-defined prefix map to get from the web (bioregistry, go, obo, monarch, prefixcommons)
+2. A local file path or URL to a prefix map, extended prefix map, or one of several formats. Requires specifying
+   a `--format`.
+
+The framework can be swapped to use Flask (default) or FastAPI with `--framework`. The
+server can be swapped to use Werkzeug (default) or Uvicorn with `--server`. These functionalities
+are also available programmatically, see the docs for more information.
 
 ## 🧑‍🤝‍🧑 Related
 
@@ -147,7 +167,8 @@ $ pip install curies
 ## 👐 Contributing
 
 Contributions, whether filing an issue, making a pull request, or forking, are appreciated. See
-[CONTRIBUTING.md](https://github.com/cthoyt/curies/blob/master/.github/CONTRIBUTING.md) for more information on getting involved.
+[CONTRIBUTING.md](https://github.com/cthoyt/curies/blob/master/.github/CONTRIBUTING.md) for more information on getting
+involved.
 
 ## 👋 Attribution
 
@@ -231,4 +252,5 @@ This script does the following:
 4. Push to GitHub. You'll need to make a release going with the commit where the version was bumped.
 5. Bump the version to the next patch. If you made big changes and want to bump the version by minor, you can
    use `tox -e bumpversion minor` after.
+
 </details>
