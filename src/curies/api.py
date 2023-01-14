@@ -35,6 +35,7 @@ if TYPE_CHECKING:  # pragma: no cover
 __all__ = [
     "Converter",
     "Record",
+    "DuplicateValueError",
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "chain",
@@ -426,7 +427,7 @@ class Converter:
     def from_jsonld_github(
         cls, owner: str, repo: str, *path: str, branch: str = "main"
     ) -> "Converter":
-        """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld_url`.
+        """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld`.
 
         :param owner: A github repository owner or organization (e.g., ``biopragmatics``)
         :param repo: The name of the repository (e.g., ``bioregistry``)

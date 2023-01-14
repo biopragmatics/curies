@@ -62,4 +62,4 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
         else:
             return Converter.from_extended_prefix_map(bioregistry.manager.get_curies_records())
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
-    return Converter.from_extended_prefix_map_url(url, **kwargs)
+    return Converter.from_extended_prefix_map(url, **kwargs)

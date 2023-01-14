@@ -2,7 +2,14 @@
 
 """Idiomatic conversion between URIs and compact URIs (CURIEs)."""
 
-from .api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
+from .api import (
+    Converter,
+    DuplicatePrefixes,
+    DuplicateURIPrefixes,
+    DuplicateValueError,
+    Record,
+    chain,
+)
 from .sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -16,6 +23,7 @@ from .web import get_fastapi_app, get_fastapi_router, get_flask_app, get_flask_b
 __all__ = [
     "Converter",
     "Record",
+    "DuplicateValueError",
     "DuplicateURIPrefixes",
     "DuplicatePrefixes",
     "chain",
