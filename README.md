@@ -72,13 +72,15 @@ URI prefix will always be matched. For example, compressing
 `http://purl.obolibrary.org/obo/GO_0032571`
 will return `GO:0032571` instead of `OBO:GO_0032571`.
 
-A converter can be instantiated from a web-based resource in JSON-LD format:
+All loader function work on local file paths, remote URLs, and pre-loaded
+data structures. For example, a converter can be instantiated from a web-based
+resource in JSON-LD format:
 
 ```python
 from curies import Converter
 
 url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
-converter = Converter.from_jsonld_url(url)
+converter = Converter.from_jsonld(url)
 ```
 
 Several converters can be instantiated from pre-defined web-based resources:
