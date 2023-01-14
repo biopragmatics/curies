@@ -1,3 +1,5 @@
+# type:ignore
+
 import json
 import sys
 from pathlib import Path
@@ -5,7 +7,12 @@ from typing import Callable, Mapping
 
 import click
 from more_click import run_app
+
 from curies import Converter, sources
+
+__all__ =[
+    "main",
+]
 
 REMOTE_LOADERS = {
     "jsonld": Converter.from_jsonld_url,
@@ -47,6 +54,7 @@ def _get_app(converter, backend):
 def _run_app(app, runner, host, port):
     if runner == "uvicorn":
         import uvicorn
+
         uvicorn.run(app, host=host, port=port)
     elif runner == "werkzeug":
         app.run(host=host, port=port)
@@ -58,8 +66,15 @@ def _run_app(app, runner, host, port):
 
 @click.command()
 @click.argument("location")
-@click.option("--backend", default="flask", type=click.Choice(["flask", "fastapi"]), show_default=True)
-@click.option("--runner", default="uvicorn", type=click.Choice(["uvicorn", "werkzeug", "gunicorn"]), show_default=True)
+@click.option(
+    "--backend", default="flask", type=click.Choice(["flask", "fastapi"]), show_default=True
+)
+@click.option(
+    "--runner",
+    default="werkzeug",
+    type=click.Choice(["uvicorn", "werkzeug", "gunicorn"]),
+    show_default=True,
+)
 @click.option("--format", type=click.Choice(list(LOCAL_LOADERS)))
 @click.option("--host", default="0.0.0.0")
 @click.option("--port", type=int, default=8000)
@@ -67,7 +82,7 @@ def main(location, host: str, port: int, backend: str, format: str, runner):
     if location in CONVERTERS:
         converter = CONVERTERS[location]()
     elif format is None:
-        click.secho('--format is required with remote data', fg="red")
+        click.secho("--format is required with remote data", fg="red")
         return sys.exit(1)
     elif any(location.startswith(p) for p in ("https://", "http://", "ftp://")):
         converter = REMOTE_LOADERS[format](location)
