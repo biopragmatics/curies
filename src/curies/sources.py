@@ -2,12 +2,11 @@
 
 """External sources of contexts."""
 
-from typing import Any, Callable, Mapping
+from typing import Any
 
 from .api import Converter
 
 __all__ = [
-    "converters",
     # Specific converters
     "get_obo_converter",
     "get_prefixcommons_converter",
