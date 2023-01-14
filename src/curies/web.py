@@ -207,7 +207,7 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
         if location is None:
             raise HTTPException(
                 status_code=FAILURE_CODE,
-                detail=f"Invalid prefix: {prefix}. Use one of: {', '.join(converter)}",
+                detail=f"Invalid prefix: {prefix}. Use one of: {', '.join(sorted(converter.get_prefixes()))}",
             )
         return RedirectResponse(location, status_code=302)
 
