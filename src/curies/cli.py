@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# type:ignore
+
+"""Command line interface for ``curies``."""
+
 import sys
 from typing import Callable, Mapping
 
