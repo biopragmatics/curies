@@ -7,7 +7,6 @@ from typing import Any
 from .api import Converter
 
 __all__ = [
-    # Specific converters
     "get_obo_converter",
     "get_prefixcommons_converter",
     "get_monarch_converter",
