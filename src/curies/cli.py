@@ -1,27 +1,15 @@
-# type:ignore
-
-import json
 import sys
-from pathlib import Path
 from typing import Callable, Mapping
 
 import click
-from more_click import run_app
 
 from curies import Converter, sources
 
-__all__ =[
+__all__ = [
     "main",
 ]
 
-REMOTE_LOADERS = {
-    "jsonld": Converter.from_jsonld_url,
-    "prefix_map": Converter.from_prefix_map_url,
-    "extended_prefix_map": Converter.from_extended_prefix_map_url,
-    "reverse_prefix_map": Converter.from_reverse_prefix_map_url,
-    "priority_prefix_map": Converter.from_priority_prefix_map_url,
-}
-LOCAL_LOADERS = {
+LOADERS = {
     "jsonld": Converter.from_jsonld,
     "prefix_map": Converter.from_prefix_map,
     "extended_prefix_map": Converter.from_extended_prefix_map,
@@ -75,7 +63,7 @@ def _run_app(app, runner, host, port):
     type=click.Choice(["uvicorn", "werkzeug", "gunicorn"]),
     show_default=True,
 )
-@click.option("--format", type=click.Choice(list(LOCAL_LOADERS)))
+@click.option("--format", type=click.Choice(list(LOADERS)))
 @click.option("--host", default="0.0.0.0")
 @click.option("--port", type=int, default=8000)
 def main(location, host: str, port: int, backend: str, format: str, runner):
@@ -84,13 +72,8 @@ def main(location, host: str, port: int, backend: str, format: str, runner):
     elif format is None:
         click.secho("--format is required with remote data", fg="red")
         return sys.exit(1)
-    elif any(location.startswith(p) for p in ("https://", "http://", "ftp://")):
-        converter = REMOTE_LOADERS[format](location)
-    elif Path(location).is_file():
-        with open(location) as file:
-            converter = LOCAL_LOADERS[format](json.load(file))
     else:
-        return sys.exit(1)
+        converter = LOADERS[format](location)
 
     app = _get_app(converter, backend=backend)
     _run_app(app, runner=runner, host=host, port=port)
