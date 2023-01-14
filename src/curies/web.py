@@ -22,6 +22,10 @@ __all__ = [
 FAILURE_CODE = 422
 
 
+def _prefix_list(converter: Converter) -> str:
+    return "".join(f"\n- {p}" for p in sorted(converter.get_prefixes()))
+
+
 def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint":
     """Get a blueprint for :class:`flask.Flask`.
 
@@ -76,7 +80,9 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
         if location is None:
-            return abort(FAILURE_CODE, f"Invalid prefix: {prefix}")
+            return abort(
+                FAILURE_CODE, f"Invalid prefix: {prefix}. Use one of:{_prefix_list(converter)}"
+            )
         return redirect(location)
 
     return blueprint
@@ -204,7 +210,10 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
         if location is None:
-            raise HTTPException(status_code=FAILURE_CODE, detail=f"Invalid prefix: {prefix}")
+            raise HTTPException(
+                status_code=FAILURE_CODE,
+                detail=f"Invalid prefix: {prefix}. Use one of:{_prefix_list(converter)}",
+            )
         return RedirectResponse(location, status_code=302)
 
     return api_router
