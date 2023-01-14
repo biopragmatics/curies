@@ -125,6 +125,24 @@ obo_converter.file_expand(path, column=0)
 
 Full documentation is available [here](https://curies.readthedocs.io).
 
+## CLI Usage
+
+This package comes with a built-in CLI for running a resolver web application:
+
+```shell
+$ python -m curies --host 0.0.0.0 --port 8000 bioregistry 
+```
+
+The positional argument can be one of the following:
+
+1. A pre-defined prefix map to get from the web (bioregistry, go, monarch, prefixcommons)
+2. A local file path to a prefix map, extended prefix map, or one of several formats. Requires specifying a `--format`.
+3. A remote path via URL to a prefix map, extended prefix map, etc. Also requires specifying a `--format`.
+
+The framework can be swapped to use Flask (default) or FastAPI with `--framework`. The
+server can be swapped to use Werkzeug (default) or Uvicorn with `--server`. These functionalities
+are also available programmatically, see the docs for more information.
+
 ## 🧑‍🤝‍🧑 Related
 
 Other packages that convert between CURIEs and URIs:
