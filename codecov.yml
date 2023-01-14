@@ -1,0 +1,3 @@
+ignore:
+  - "src/curies/__main__.py"
+  - "src/curies/cli.py"
