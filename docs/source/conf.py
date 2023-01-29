@@ -234,6 +234,7 @@ intersphinx_mapping = {
     # "gunicorn": ("https://docs.gunicorn.org/", None),
     # "uvicorn": ("https://www.uvicorn.org/", None),
     "prefixmaps": ("https://linkml.io/prefixmaps/", None),
+    "rdflib": ("https://rdflib.readthedocs.io/en/stable/", None),
 }
 
 autoclass_content = "both"
