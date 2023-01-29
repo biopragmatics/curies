@@ -56,15 +56,14 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
     .. code-block:: shell
 
         pip install gunicorn
-        gunicorn --bind 0.0.0.0:5000 flask_example:app
+        gunicorn --bind 0.0.0.0:8764 flask_example:app
 
-    Test a request in the Python REPL. Note that Flask's development
-    server runs on port 5000 by default.
+    Test a request in the Python REPL.
 
     .. code-block::
 
         >>> import requests
-        >>> requests.get("http://localhost:5000/GO:0032571").url
+        >>> requests.get("http://localhost:8764/GO:0032571").url
         'http://amigo.geneontology.org/amigo/term/GO:0032571'
     """
     from flask import Blueprint, abort, redirect
@@ -97,7 +96,11 @@ def get_flask_app(
     :param register_kwargs: Keyword arguments passed through to :meth:`flask.Flask.register_blueprint`
     :return: A Flask app
 
-    .. seealso:: This function wraps :func:`get_flask_blueprint`
+    .. seealso::
+
+        This function wraps :func:`get_flask_blueprint`. If you already have your own Flask
+        app, :func:`get_flask_blueprint` can be used to create a blueprint that you can mount
+        using :meth:`flask.Flask.register_blueprint`.
 
     The following is an end-to-end example of using this function to create
     a small web resolver application.
@@ -117,20 +120,29 @@ def get_flask_app(
         if __name__ == "__main__":
             app.run()
 
-    In the command line, either run your Python file directly, or via with :mod:`gunicorn`:
+    In the command line, either run your Python file directly to use Flask/Werkzeug's
+    built-in development server, or run it with :mod:`gunicorn`:
 
     .. code-block:: shell
 
         pip install gunicorn
-        gunicorn --bind 0.0.0.0:5000 flask_example:app
+        gunicorn --bind 0.0.0.0:8764 flask_example:app
 
-    Test a request in the Python REPL. Note that Flask's development
-    server runs on port 5000 by default.
+    Alternatively, this package contains a CLI in :mod:`curies.cli` that can be used
+    to quickly deploy a resolver based on one of the preset prefix maps, a local
+    prefix map, or a remote one via URL. The one-line equivalent of the example file
+    is:
+
+    .. code-block:: shell
+
+        python -m curies --port 8764 --framework flask --server gunicorn obo
+
+    Finally, test a request in the Python REPL.
 
     .. code-block::
 
         >>> import requests
-        >>> requests.get("http://localhost:5000/GO:0032571").url
+        >>> requests.get("http://localhost:8764/GO:0032571").url
         'http://amigo.geneontology.org/amigo/term/GO:0032571'
     """
     from flask import Flask
@@ -174,15 +186,14 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
     .. code-block:: shell
 
         pip install uvicorn
-        uvicorn fastapi_example:app
+        uvicorn fastapi_example:app --port 8764 --host 0.0.0.0
 
-    Test a request in the Python REPL. Note that :mod:`uvicorn`
-    runs on port 8000 by default.
+    Test a request in the Python REPL.
 
     .. code-block::
 
         >>> import requests
-        >>> requests.get("http://localhost:8000/GO:0032571").url
+        >>> requests.get("http://localhost:8764/GO:0032571").url
         'http://amigo.geneontology.org/amigo/term/GO:0032571'
     """
     from fastapi import APIRouter, HTTPException, Path
@@ -229,7 +240,11 @@ def get_fastapi_app(
     :param include_kwargs: Keyword arguments passed through to :meth:`fastapi.FastAPI.include_router`
     :return: A FastAPI app
 
-    .. seealso:: This function wraps :func:`get_fastapi_router`
+    .. seealso::
+
+        This function wraps :func:`get_fastapi_router`. If you already have your own FastAPI
+        app, :func:`get_fastapi_router` can be used to create a :class:`fastapi.APIRouter`
+        that you can mount using :meth:`fastapi.FastAPI.include_router`.
 
     The following is an end-to-end example of using this function to create
     a small web resolver application.
@@ -253,15 +268,23 @@ def get_fastapi_app(
     .. code-block:: shell
 
         pip install uvicorn
-        uvicorn fastapi_example:app
+        uvicorn fastapi_example:app --port 8764 --host 0.0.0.0
 
-    Test a request in the Python REPL. Note that :mod:`uvicorn`
-    runs on port 8000 by default.
+    Alternatively, this package contains a CLI in :mod:`curies.cli` that can be used
+    to quickly deploy a resolver based on one of the preset prefix maps, a local
+    prefix map, or a remote one via URL. The one-line equivalent of the example file
+    is:
+
+    .. code-block:: shell
+
+        python -m curies --framework fastapi --server uvicorn obo
+
+    Finally, test a request in the Python REPL.
 
     .. code-block::
 
         >>> import requests
-        >>> requests.get("http://localhost:8000/GO:0032571").url
+        >>> requests.get("http://localhost:8764/GO:0032571").url
         'http://amigo.geneontology.org/amigo/term/GO:0032571'
     """
     from fastapi import FastAPI

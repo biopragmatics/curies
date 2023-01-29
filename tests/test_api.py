@@ -108,7 +108,7 @@ class TestConverter(unittest.TestCase):
             bioregistry_converter = get_bioregistry_converter(web=web)
             self.assert_bioregistry_converter(bioregistry_converter)
 
-        c = Converter.from_reverse_prefix_map_url(f"{BIOREGISTRY_CONTEXTS}/bioregistry.rpm.json")
+        c = Converter.from_reverse_prefix_map(f"{BIOREGISTRY_CONTEXTS}/bioregistry.rpm.json")
         self.assertIn("chebi", c.prefix_map)
         self.assertNotIn("CHEBI", c.prefix_map)
 

@@ -24,7 +24,7 @@ def get_obo_converter() -> Converter:
     # See configuration on https://github.com/OBOFoundry/purl.obolibrary.org/blob/master/www/.htaccess
     # to see where this PURL points
     url = "http://purl.obolibrary.org/meta/obo_context.jsonld"
-    return Converter.from_jsonld_url(url)
+    return Converter.from_jsonld(url)
 
 
 def get_prefixcommons_converter(name: str) -> Converter:
@@ -39,7 +39,7 @@ def get_prefixcommons_converter(name: str) -> Converter:
         "https://raw.githubusercontent.com/prefixcommons/prefixcommons-py/master/"
         f"prefixcommons/registry/{name}.jsonld"
     )
-    return Converter.from_jsonld_url(url)
+    return Converter.from_jsonld(url)
 
 
 def get_monarch_converter() -> Converter:
@@ -62,4 +62,4 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
         else:
             return Converter.from_extended_prefix_map(bioregistry.manager.get_curies_records())
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
-    return Converter.from_extended_prefix_map_url(url, **kwargs)
+    return Converter.from_extended_prefix_map(url, **kwargs)

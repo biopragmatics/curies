@@ -132,7 +132,7 @@ Full documentation is available [here](https://curies.readthedocs.io).
 This package comes with a built-in CLI for running a resolver web application:
 
 ```shell
-$ python -m curies --host 0.0.0.0 --port 8000 bioregistry 
+$ python -m curies --host 0.0.0.0 --port 8764 bioregistry 
 ```
 
 The positional argument can be one of the following:
