@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # type:ignore
 
-"""This package comes with a built-in CLI for running a resolver web application:
+"""This package comes with a built-in CLI for running a resolver web application.
 
 .. code-block::
 
