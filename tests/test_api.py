@@ -314,8 +314,17 @@ class TestConverter(unittest.TestCase):
         """Test building a converter from an incremental interface."""
         converter = Converter([])
         for prefix, uri_prefix in self.simple_obo_prefix_map.items():
-            converter.append_prefix(prefix, uri_prefix)
+            converter.add_prefix(prefix, uri_prefix)
         self._assert_convert(converter)
+
+        with self.assertRaises(ValueError):
+            converter.add_prefix("GO", "...")
+        with self.assertRaises(ValueError):
+            converter.add_prefix("...", "http://obolibrary.org/obo/GO_")
+        with self.assertRaises(ValueError):
+            converter.add_prefix("...", "...", uri_prefix_synonyms=["http://obolibrary.org/obo/GO_"])
+        with self.assertRaises(ValueError):
+            converter.add_prefix("...", "...", prefix_synonyms=["GO"])
 
 
 class TestVersion(unittest.TestCase):

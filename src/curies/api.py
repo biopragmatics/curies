@@ -218,17 +218,17 @@ class Converter:
     def _check_record(self, record: Record) -> None:
         """Check if the record can be added."""
         if record.prefix in self.prefix_map:
-            raise
+            raise ValueError
         if record.uri_prefix in self.reverse_prefix_map:
-            raise
+            raise ValueError
         for prefix_synonym in record.prefix_synonyms:
             if prefix_synonym in self.prefix_map:
-                raise
+                raise ValueError
         for uri_prefix_synonym in record.uri_prefix_synonyms:
             if uri_prefix_synonym in self.reverse_prefix_map:
-                raise
+                raise ValueError
 
-    def append(self, record: Record) -> None:
+    def add_record(self, record: Record) -> None:
         """Append a record to the converter."""
         self._check_record(record)
 
@@ -242,7 +242,7 @@ class Converter:
             self.reverse_prefix_map[uri_prefix_synonym] = record.prefix
             self.trie[uri_prefix_synonym] = record.prefix
 
-    def append_prefix(
+    def add_prefix(
         self,
         prefix: str,
         uri_prefix: str,
@@ -256,6 +256,24 @@ class Converter:
         :param prefix_synonyms: An optional collection of synonyms for the prefix such as ``gomf``, ``gocc``, etc.
         :param uri_prefix_synonyms: An optional collections of synonyms for the URI prefix such as
             ``https://bioregistry.io/go:``, ``http://www.informatics.jax.org/searches/GO.cgi?id=GO:``, etc.
+
+        This can be used to add missing namespaces on-the-fly to an existing converter:
+
+        >>> import curies
+        >>> converter = curies.get_obo_converter()
+        >>> converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
+        >>> converter.expand("hgnc:1234")
+        'https://bioregistry.io/hgnc:1234'
+        >>> converter.expand("GO:0032571 ")
+        'http://purl.obolibrary.org/obo/GO_0032571'
+
+        This can also be used to incrementally build up a converter from scratch:
+
+        >>> import curies
+        >>> converter = curies.Converter([])
+        >>> converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
+        >>> converter.expand("hgnc:1234")
+        'https://bioregistry.io/hgnc:1234'
         """
         record = Record(
             prefix=prefix,
@@ -263,7 +281,7 @@ class Converter:
             prefix_synonyms=sorted(prefix_synonyms or []),
             uri_prefix_synonyms=sorted(uri_prefix_synonyms or []),
         )
-        self.append(record)
+        self.add_record(record)
 
     @classmethod
     def from_extended_prefix_map(
