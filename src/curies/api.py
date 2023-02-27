@@ -123,7 +123,7 @@ def _get_duplicate_prefixes(records: List[Record]) -> List[Tuple[Record, Record,
     ]
 
 
-def _get_prefix_map(records: List[Record]) -> Mapping[str, str]:
+def _get_prefix_map(records: List[Record]) -> Dict[str, str]:
     rv = {}
     for record in records:
         rv[record.prefix] = record.uri_prefix
@@ -132,7 +132,7 @@ def _get_prefix_map(records: List[Record]) -> Mapping[str, str]:
     return rv
 
 
-def _get_reverse_prefix_map(records: List[Record]) -> Mapping[str, str]:
+def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
     rv = {}
     for record in records:
         rv[record.uri_prefix] = record.prefix
