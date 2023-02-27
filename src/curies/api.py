@@ -532,9 +532,9 @@ class Converter:
         graph_or_manager: Union["rdflib.Graph", "rdflib.namespace.NamespaceManager"],
         **kwargs: Any,
     ) -> "Converter":
-        """Get a converter from an RDFlib graph or namespace manager.
+        """Get a converter from an RDFLib graph or namespace manager.
 
-        :param graph_or_manager: A RDFlib graph or manager object
+        :param graph_or_manager: A RDFLib graph or manager object
         :param kwargs: Keyword arguments to pass to :meth:`from_prefix_map`
         :return: A converter
 
