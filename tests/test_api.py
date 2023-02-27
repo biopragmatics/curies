@@ -9,6 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pandas as pd
+import rdflib
 from bioregistry.export.prefix_maps import EXTENDED_PREFIX_MAP_PATH
 
 from curies.api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
@@ -342,6 +343,14 @@ class TestConverter(unittest.TestCase):
             )
         with self.assertRaises(ValueError):
             converter.add_prefix("...", "...", prefix_synonyms=["GO"])
+
+    def test_rdflib(self):
+        """Test parsing a converter from an RDFLib object."""
+        graph = rdflib.Graph()
+        for prefix, uri_prefix in self.simple_obo_prefix_map.items():
+            graph.bind(prefix, uri_prefix)
+        converter = Converter.from_rdflib(graph)
+        self._assert_convert(converter)
 
 
 class TestVersion(unittest.TestCase):
