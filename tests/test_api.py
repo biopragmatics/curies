@@ -352,6 +352,9 @@ class TestConverter(unittest.TestCase):
         converter = Converter.from_rdflib(graph)
         self._assert_convert(converter)
 
+        converter_2 = Converter.from_rdflib(graph.namespace_manager)
+        self._assert_convert(converter_2)
+
 
 class TestVersion(unittest.TestCase):
     """Trivially test a version."""

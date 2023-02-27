@@ -538,10 +538,19 @@ class Converter:
         :param kwargs: Keyword arguments to pass to :meth:`from_prefix_map`
         :return: A converter
 
+        In the following example, a :class:`rdflib.Graph` is created, a namespace
+        is bound to it, then a converter is made:
+
         >>> import rdflib, curies
         >>> graph = rdflib.Graph()
         >>> graph.bind("hgnc", "https://bioregistry.io/hgnc:")
         >>> converter = curies.Converter.from_rdflib(graph)
+        >>> converter.expand("hgnc:1234")
+        'https://bioregistry.io/hgnc:1234'
+
+        This also works if you directly start with a :class:`rdflib.namespace.NamespaceManager`:
+
+        >>> converter = curies.Converter.from_rdflib(graph.namespace_manager)
         >>> converter.expand("hgnc:1234")
         'https://bioregistry.io/hgnc:1234'
         """
