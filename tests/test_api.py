@@ -320,9 +320,11 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(ValueError):
             converter.add_prefix("GO", "...")
         with self.assertRaises(ValueError):
-            converter.add_prefix("...", "http://obolibrary.org/obo/GO_")
+            converter.add_prefix("...", "http://purl.obolibrary.org/obo/GO_")
         with self.assertRaises(ValueError):
-            converter.add_prefix("...", "...", uri_prefix_synonyms=["http://obolibrary.org/obo/GO_"])
+            converter.add_prefix(
+                "...", "...", uri_prefix_synonyms=["http://purl.obolibrary.org/obo/GO_"]
+            )
         with self.assertRaises(ValueError):
             converter.add_prefix("...", "...", prefix_synonyms=["GO"])
 

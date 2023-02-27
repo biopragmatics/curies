@@ -218,15 +218,15 @@ class Converter:
     def _check_record(self, record: Record) -> None:
         """Check if the record can be added."""
         if record.prefix in self.prefix_map:
-            raise ValueError
+            raise ValueError(f"new record has duplicate prefix: {record.prefix}")
         if record.uri_prefix in self.reverse_prefix_map:
-            raise ValueError
+            raise ValueError(f"new record has duplicate URI prefix: {record.uri_prefix}")
         for prefix_synonym in record.prefix_synonyms:
             if prefix_synonym in self.prefix_map:
-                raise ValueError
+                raise ValueError(f"new record has duplicate prefix: {prefix_synonym}")
         for uri_prefix_synonym in record.uri_prefix_synonyms:
             if uri_prefix_synonym in self.reverse_prefix_map:
-                raise ValueError
+                raise ValueError(f"new record has duplicate URI prefix: {uri_prefix_synonym}")
 
     def add_record(self, record: Record) -> None:
         """Append a record to the converter."""
@@ -251,10 +251,14 @@ class Converter:
     ) -> None:
         """Append a prefix to the converter.
 
-        :param prefix: The prefix to append, e.g., ``go``
-        :param uri_prefix: The URI prefix to append, e.g., ``http://purl.obolibrary.org/obo/GO_``
-        :param prefix_synonyms: An optional collection of synonyms for the prefix such as ``gomf``, ``gocc``, etc.
-        :param uri_prefix_synonyms: An optional collections of synonyms for the URI prefix such as
+        :param prefix:
+            The prefix to append, e.g., ``go``
+        :param uri_prefix:
+            The URI prefix to append, e.g., ``http://purl.obolibrary.org/obo/GO_``
+        :param prefix_synonyms:
+            An optional collection of synonyms for the prefix such as ``gomf``, ``gocc``, etc.
+        :param uri_prefix_synonyms:
+            An optional collections of synonyms for the URI prefix such as
             ``https://bioregistry.io/go:``, ``http://www.informatics.jax.org/searches/GO.cgi?id=GO:``, etc.
 
         This can be used to add missing namespaces on-the-fly to an existing converter:
