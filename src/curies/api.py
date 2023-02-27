@@ -545,10 +545,8 @@ class Converter:
         >>> converter.expand("hgnc:1234")
         'https://bioregistry.io/hgnc:1234'
         """
-        import rdflib
-
-        if isinstance(graph_or_manager, rdflib.Graph):
-            graph_or_manager = graph_or_manager.namespace_manager
+        # it's required to stringify namespace since it's a rdflib.URIRef
+        # object, which acts funny if not coerced into a string
         prefix_map = {prefix: str(namespace) for prefix, namespace in graph_or_manager.namespaces()}
         return cls.from_prefix_map(prefix_map, **kwargs)
 
