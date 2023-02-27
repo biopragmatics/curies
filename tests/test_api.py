@@ -315,7 +315,22 @@ class TestConverter(unittest.TestCase):
         converter = Converter([])
         for prefix, uri_prefix in self.simple_obo_prefix_map.items():
             converter.add_prefix(prefix, uri_prefix)
+        converter.add_prefix(
+            "hgnc",
+            "https://bioregistry.io/hgnc:",
+            prefix_synonyms=["HGNC"],
+            uri_prefix_synonyms=["https://identifiers.org/hgnc:"],
+        )
         self._assert_convert(converter)
+        self.assertEqual(
+            "hgnc:1234",
+            converter.compress("https://bioregistry.io/hgnc:1234"),
+        )
+        self.assertEqual(
+            "hgnc:1234",
+            converter.compress("https://identifiers.org/hgnc:1234"),
+        )
+        self.assertEqual("https://bioregistry.io/hgnc:1234", converter.expand("HGNC:1234"))
 
         with self.assertRaises(ValueError):
             converter.add_prefix("GO", "...")
