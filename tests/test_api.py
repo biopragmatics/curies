@@ -27,14 +27,13 @@ class TestConverter(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up the converter test case."""
-        self.converter = Converter.from_prefix_map(
-            {
-                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-                "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-                "GO": "http://purl.obolibrary.org/obo/GO_",
-                "OBO": "http://purl.obolibrary.org/obo/",
-            }
-        )
+        self.simple_obo_prefix_map = {
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+            "GO": "http://purl.obolibrary.org/obo/GO_",
+            "OBO": "http://purl.obolibrary.org/obo/",
+        }
+        self.converter = Converter.from_prefix_map(self.simple_obo_prefix_map)
 
     def test_invalid_record(self):
         """Test throwing an error for invalid records."""
@@ -82,16 +81,21 @@ class TestConverter(unittest.TestCase):
     def test_convert(self):
         """Test compression."""
         self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())
+        self._assert_convert(self.converter)
 
+    def _assert_convert(self, converter: Converter):
+        self.assertIn("GO", converter.prefix_map)
+        self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_prefix_map)
+        self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.trie)
         for curie, uri in [
             ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
             ("OBO:unnamespaced", "http://purl.obolibrary.org/obo/unnamespaced"),
         ]:
-            self.assertEqual(curie, self.converter.compress(uri))
-            self.assertEqual(uri, self.converter.expand(curie))
+            self.assertEqual(curie, converter.compress(uri))
+            self.assertEqual(uri, converter.expand(curie))
 
-        self.assertIsNone(self.converter.compress("http://example.org/missing:00000"))
-        self.assertIsNone(self.converter.expand("missing:00000"))
+        self.assertIsNone(converter.compress("http://example.org/missing:00000"))
+        self.assertIsNone(converter.expand("missing:00000"))
 
     def test_remote(self):
         """Test loading a remote JSON-LD context."""
@@ -305,6 +309,39 @@ class TestConverter(unittest.TestCase):
                 self.converter.file_compress(path, 0, header=header)
                 lines = [line.strip().split("\t") for line in path.read_text().splitlines()]
                 self.assertEqual("CHEBI:1", lines[idx][0])
+
+    def test_incremental(self):
+        """Test building a converter from an incremental interface."""
+        converter = Converter([])
+        for prefix, uri_prefix in self.simple_obo_prefix_map.items():
+            converter.add_prefix(prefix, uri_prefix)
+        converter.add_prefix(
+            "hgnc",
+            "https://bioregistry.io/hgnc:",
+            prefix_synonyms=["HGNC"],
+            uri_prefix_synonyms=["https://identifiers.org/hgnc:"],
+        )
+        self._assert_convert(converter)
+        self.assertEqual(
+            "hgnc:1234",
+            converter.compress("https://bioregistry.io/hgnc:1234"),
+        )
+        self.assertEqual(
+            "hgnc:1234",
+            converter.compress("https://identifiers.org/hgnc:1234"),
+        )
+        self.assertEqual("https://bioregistry.io/hgnc:1234", converter.expand("HGNC:1234"))
+
+        with self.assertRaises(ValueError):
+            converter.add_prefix("GO", "...")
+        with self.assertRaises(ValueError):
+            converter.add_prefix("...", "http://purl.obolibrary.org/obo/GO_")
+        with self.assertRaises(ValueError):
+            converter.add_prefix(
+                "...", "...", uri_prefix_synonyms=["http://purl.obolibrary.org/obo/GO_"]
+            )
+        with self.assertRaises(ValueError):
+            converter.add_prefix("...", "...", prefix_synonyms=["GO"])
 
 
 class TestVersion(unittest.TestCase):

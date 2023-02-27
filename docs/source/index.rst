@@ -60,3 +60,26 @@ CURIEs using a combination of :meth:`curies.Converter.expand` and :class:`rdflib
     converter = curies.get_obo_converter()
 
     uri_ref = rdflib.URIRef(converter.expand("CHEBI:138488"))
+
+Incremental Converters
+----------------------
+As suggested in `#13 <https://github.com/cthoyt/curies/issues/33>`_, new prefixes
+can be added to an existing converter like in the following:
+
+.. code-block::
+
+    import curies
+
+    converter = curies.get_obo_converter()
+    converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
+
+Similarly, an empty converter can be instantiated using an empty list
+for the `records` argument and prefixes can be added one at a time
+(note this currently does not allow for adding synonyms separately):
+
+.. code-block::
+
+    import curies
+
+    converter = curies.Converter(records=[])
+    converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")

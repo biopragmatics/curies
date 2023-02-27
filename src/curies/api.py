@@ -12,6 +12,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Collection,
     DefaultDict,
     Dict,
     Iterable,
@@ -122,7 +123,7 @@ def _get_duplicate_prefixes(records: List[Record]) -> List[Tuple[Record, Record,
     ]
 
 
-def _get_prefix_map(records: List[Record]) -> Mapping[str, str]:
+def _get_prefix_map(records: List[Record]) -> Dict[str, str]:
     rv = {}
     for record in records:
         rv[record.prefix] = record.uri_prefix
@@ -131,7 +132,7 @@ def _get_prefix_map(records: List[Record]) -> Mapping[str, str]:
     return rv
 
 
-def _get_reverse_prefix_map(records: List[Record]) -> Mapping[str, str]:
+def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
     rv = {}
     for record in records:
         rv[record.uri_prefix] = record.prefix
@@ -182,9 +183,9 @@ class Converter:
     """
 
     #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
-    prefix_map: Mapping[str, str]
+    prefix_map: Dict[str, str]
     #: The mapping from URI prefixes to prefixes
-    reverse_prefix_map: Mapping[str, str]
+    reverse_prefix_map: Dict[str, str]
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
 
@@ -192,7 +193,7 @@ class Converter:
         """Instantiate a converter.
 
         :param records:
-            A list of records
+            A list of records. If you plan to build a converter incrementally, pass an empty list.
         :param strict:
             If true, raises issues on duplicate URI prefixes
         :param delimiter:
@@ -213,6 +214,78 @@ class Converter:
         self.prefix_map = _get_prefix_map(records)
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
         self.trie = StringTrie(self.reverse_prefix_map)
+
+    def _check_record(self, record: Record) -> None:
+        """Check if the record can be added."""
+        if record.prefix in self.prefix_map:
+            raise ValueError(f"new record has duplicate prefix: {record.prefix}")
+        if record.uri_prefix in self.reverse_prefix_map:
+            raise ValueError(f"new record has duplicate URI prefix: {record.uri_prefix}")
+        for prefix_synonym in record.prefix_synonyms:
+            if prefix_synonym in self.prefix_map:
+                raise ValueError(f"new record has duplicate prefix: {prefix_synonym}")
+        for uri_prefix_synonym in record.uri_prefix_synonyms:
+            if uri_prefix_synonym in self.reverse_prefix_map:
+                raise ValueError(f"new record has duplicate URI prefix: {uri_prefix_synonym}")
+
+    def add_record(self, record: Record) -> None:
+        """Append a record to the converter."""
+        self._check_record(record)
+
+        self.prefix_map[record.prefix] = record.uri_prefix
+        for prefix_synonym in record.prefix_synonyms:
+            self.prefix_map[prefix_synonym] = record.uri_prefix
+
+        self.reverse_prefix_map[record.uri_prefix] = record.prefix
+        self.trie[record.uri_prefix] = record.prefix
+        for uri_prefix_synonym in record.uri_prefix_synonyms:
+            self.reverse_prefix_map[uri_prefix_synonym] = record.prefix
+            self.trie[uri_prefix_synonym] = record.prefix
+
+    def add_prefix(
+        self,
+        prefix: str,
+        uri_prefix: str,
+        prefix_synonyms: Optional[Collection[str]] = None,
+        uri_prefix_synonyms: Optional[Collection[str]] = None,
+    ) -> None:
+        """Append a prefix to the converter.
+
+        :param prefix:
+            The prefix to append, e.g., ``go``
+        :param uri_prefix:
+            The URI prefix to append, e.g., ``http://purl.obolibrary.org/obo/GO_``
+        :param prefix_synonyms:
+            An optional collection of synonyms for the prefix such as ``gomf``, ``gocc``, etc.
+        :param uri_prefix_synonyms:
+            An optional collections of synonyms for the URI prefix such as
+            ``https://bioregistry.io/go:``, ``http://www.informatics.jax.org/searches/GO.cgi?id=GO:``, etc.
+
+        This can be used to add missing namespaces on-the-fly to an existing converter:
+
+        >>> import curies
+        >>> converter = curies.get_obo_converter()
+        >>> converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
+        >>> converter.expand("hgnc:1234")
+        'https://bioregistry.io/hgnc:1234'
+        >>> converter.expand("GO:0032571 ")
+        'http://purl.obolibrary.org/obo/GO_0032571'
+
+        This can also be used to incrementally build up a converter from scratch:
+
+        >>> import curies
+        >>> converter = curies.Converter(records=[])
+        >>> converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
+        >>> converter.expand("hgnc:1234")
+        'https://bioregistry.io/hgnc:1234'
+        """
+        record = Record(
+            prefix=prefix,
+            uri_prefix=uri_prefix,
+            prefix_synonyms=sorted(prefix_synonyms or []),
+            uri_prefix_synonyms=sorted(uri_prefix_synonyms or []),
+        )
+        self.add_record(record)
 
     @classmethod
     def from_extended_prefix_map(
