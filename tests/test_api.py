@@ -81,9 +81,9 @@ class TestConverter(unittest.TestCase):
     def test_convert(self):
         """Test compression."""
         self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())
-        self.assert_convert(self.converter)
+        self._assert_convert(self.converter)
 
-    def assert_convert(self, converter: Converter):
+    def _assert_convert(self, converter: Converter):
         self.assertIn("GO", converter.prefix_map)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_prefix_map)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.trie)
@@ -315,7 +315,7 @@ class TestConverter(unittest.TestCase):
         converter = Converter([])
         for prefix, uri_prefix in self.simple_obo_prefix_map.items():
             converter.append_prefix(prefix, uri_prefix)
-        self.assert_convert(converter)
+        self._assert_convert(converter)
 
 
 class TestVersion(unittest.TestCase):
