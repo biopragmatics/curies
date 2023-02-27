@@ -274,7 +274,7 @@ class Converter:
         This can also be used to incrementally build up a converter from scratch:
 
         >>> import curies
-        >>> converter = curies.Converter([])
+        >>> converter = curies.Converter(records=[])
         >>> converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
         >>> converter.expand("hgnc:1234")
         'https://bioregistry.io/hgnc:1234'
