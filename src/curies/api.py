@@ -142,6 +142,15 @@ def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
     return rv
 
 
+def _get_prefix_synmap(records: List[Record]) -> Dict[str, str]:
+    rv = {}
+    for record in records:
+        rv[record.prefix] = record.prefix
+        for prefix_synonym in record.prefix_synonyms:
+            rv[prefix_synonym] = record.prefix
+    return rv
+
+
 def _prepare(data: LocationOr[X]) -> X:
     if isinstance(data, Path):
         with data.open() as file:
@@ -213,6 +222,7 @@ class Converter:
         self.delimiter = delimiter
         self.records = records
         self.prefix_map = _get_prefix_map(records)
+        self.synonym_to_prefix = _get_prefix_synmap(records)
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
         self.trie = StringTrie(self.reverse_prefix_map)
 
@@ -233,9 +243,12 @@ class Converter:
         """Append a record to the converter."""
         self._check_record(record)
 
+        # TODO test this later
+        # self.records.append(record)
         self.prefix_map[record.prefix] = record.uri_prefix
         for prefix_synonym in record.prefix_synonyms:
             self.prefix_map[prefix_synonym] = record.uri_prefix
+            self.synonym_to_prefix[prefix_synonym] = record.prefix
 
         self.reverse_prefix_map[record.uri_prefix] = record.prefix
         self.trie[record.uri_prefix] = record.prefix
@@ -563,6 +576,10 @@ class Converter:
         """Get the set of prefixes covered by this converter."""
         return {record.prefix for record in self.records}
 
+    def format_curie(self, prefix: str, identifier: str) -> str:
+        """Format a prefix and identifier into a CURIE string."""
+        return f"{prefix}{self.delimiter}{identifier}"
+
     def compress(self, uri: str) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
 
@@ -582,9 +599,9 @@ class Converter:
         >>> converter.compress("http://example.org/missing:0000000")
         """
         prefix, identifier = self.parse_uri(uri)
-        if prefix is not None and identifier is not None:
-            return f"{prefix}{self.delimiter}{identifier}"
-        return None
+        if prefix is None or identifier is None:
+            return None
+        return self.format_curie(prefix, identifier)
 
     def parse_uri(self, uri: str) -> Union[Tuple[str, str], Tuple[None, None]]:
         """Compress a URI to a CURIE pair.
@@ -639,8 +656,13 @@ class Converter:
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
             instead of ``OBO:GO_0032571``.
         """
-        prefix, identifier = curie.split(self.delimiter, 1)
+        prefix, identifier = self.parse_curie(curie)
         return self.expand_pair(prefix, identifier)
+
+    def parse_curie(self, curie: str) -> Tuple[str, str]:
+        """Parse a CURIE."""
+        prefix, identifier = curie.split(self.delimiter, 1)
+        return prefix, identifier
 
     def expand_pair(self, prefix: str, identifier: str) -> Optional[str]:
         """Expand a CURIE pair to a URI.
@@ -666,6 +688,68 @@ class Converter:
         if uri_prefix is None:
             return None
         return uri_prefix + identifier
+
+    def standardize_curie(self, curie: str) -> Optional[str]:
+        """Standardize a CURIE.
+
+        :param curie:
+            A string representing a compact URI
+        :returns:
+            A standardized version of the CURIE in case a prefix synonym was used.
+            Note that this function is idempotent, i.e., if you give an already
+            standard CURIE, it will just return it as is. If the CURIE can't be parsed
+            with respect to the records in the converter, None is returned.
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(prefix="CHEBI", prefix_synonyms=["chebi"], uri_prefix="http://purl.obolibrary.org/obo/CHEBI_"),
+        ... ])
+        >>> converter.standardize_curie("chebi:138488")
+        'CHEBI:138488'
+        >>> converter.standardize_curie("CHEBI:138488")
+        'CHEBI:138488'
+        >>> converter.standardize_curie("NOPE:NOPE") is None
+        True
+        """
+        prefix, identifier = self.parse_curie(curie)
+        norm_prefix = self.synonym_to_prefix.get(prefix)
+        if norm_prefix is None:
+            return None
+        return self.format_curie(norm_prefix, identifier)
+
+    def standardize_uri(self, uri: str) -> Optional[str]:
+        """Standardize a URI.
+
+        :param uri:
+            A string representing a valid uniform resource identifier (URI)
+        :returns:
+            A standardized version of the URI in case a URI prefix synonym was used.
+            Note that this function is idempotent, i.e., if you give an already
+            standard URI, it will just return it as is. If the URI can't be parsed
+            with respect to the records in the converter, None is returned.
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(
+        ...         prefix="CHEBI",
+        ...         uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...         uri_prefix_synonyms=[
+        ...             "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+        ...         ],
+        ...     ),
+        ... ])
+        >>> converter.standardize_uri("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.standardize_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.standardize_uri("NOPE") is None
+        True
+        """
+        prefix, identifier = self.parse_uri(uri)
+        if prefix is None or identifier is None:
+            return None
+        # prefix is ensured to be in self.prefix_map because of successful parse
+        return self.prefix_map[prefix] + identifier
 
     def pd_compress(
         self,

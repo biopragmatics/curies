@@ -194,6 +194,36 @@ class TestConverter(unittest.TestCase):
             converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488"),
         )
 
+    def test_standardize_curie(self):
+        """Test standardize CURIE."""
+        converter = Converter.from_extended_prefix_map(
+            [
+                Record(
+                    prefix="CHEBI",
+                    prefix_synonyms=["chebi"],
+                    uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                    uri_prefix_synonyms=[
+                        "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+                    ],
+                ),
+            ]
+        )
+        self.assertEqual("CHEBI:138488", converter.standardize_curie("chebi:138488"))
+        self.assertEqual("CHEBI:138488", converter.standardize_curie("CHEBI:138488"))
+        self.assertIsNone(converter.standardize_curie("NOPE:NOPE"))
+
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.standardize_uri(
+                "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488"
+            ),
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.standardize_uri("http://purl.obolibrary.org/obo/CHEBI_138488"),
+        )
+        self.assertIsNone(converter.standardize_uri("NOPE"))
+
     def test_combine(self):
         """Test chaining converters."""
         with self.assertRaises(ValueError):
