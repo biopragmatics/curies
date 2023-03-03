@@ -663,7 +663,8 @@ class Converter:
         :returns:
             A standardized version of the CURIE in case a prefix synonym was used.
             Note that this function is idempotent, i.e., if you give an already
-            standard CURIE, it will just return it as is.
+            standard CURIE, it will just return it as is. If the CURIE can't be parsed
+            with respect to the records in the converter, None is returned.
 
         >>> from curies import Converter, Record
         >>> converter = Converter.from_extended_prefix_map([
@@ -681,6 +682,40 @@ class Converter:
         if norm_prefix is None:
             return None
         return self.format_curie(norm_prefix, identifier)
+
+    def standardize_uri(self, uri: str) -> Optional[str]:
+        """Standardize a URI.
+
+        :param uri:
+            A string representing a valid uniform resource identifier (URI)
+        :returns:
+            A standardized version of the URI in case a URI prefix synonym was used.
+            Note that this function is idempotent, i.e., if you give an already
+            standard URI, it will just return it as is. If the URI can't be parsed
+            with respect to the records in the converter, None is returned.
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(
+        ...         prefix="CHEBI",
+        ...         uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...         uri_prefix_synonyms=[
+        ...             "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+        ...         ],
+        ...     ),
+        ... ])
+        >>> converter.standardize_uri("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.standardize_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.standardize_uri("NOPE") is None
+        True
+        """
+        prefix, identifier = self.parse_uri(uri)
+        if prefix is None or identifier is None:
+            return None
+        # prefix is ensured to be in self.prefix_map because of successful parse
+        return self.prefix_map[prefix] + identifier
 
     def pd_compress(
         self,
