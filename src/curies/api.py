@@ -124,12 +124,12 @@ def _get_duplicate_prefixes(records: List[Record]) -> List[Tuple[Record, Record,
 
 
 def _get_prefix_map(records: List[Record]) -> Dict[str, str]:
-    prefix_map = {}
+    rv = {}
     for record in records:
-        prefix_map[record.prefix] = record.uri_prefix
+        rv[record.prefix] = record.uri_prefix
         for prefix_synonym in record.prefix_synonyms:
-            prefix_map[prefix_synonym] = record.uri_prefix
-    return prefix_map
+            rv[prefix_synonym] = record.uri_prefix
+    return rv
 
 
 def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
@@ -142,11 +142,11 @@ def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
 
 
 def _get_prefix_synmap(records: List[Record]) -> Dict[str, str]:
-    rv = {
-        prefix_synonym: record.prefix
-        for record in records
-        for prefix_synonym in record.prefix_synonyms
-    }
+    rv = {}
+    for record in records:
+        rv[record.prefix] = record.prefix
+        for prefix_synonym in record.prefix_synonyms:
+            rv[prefix_synonym] = record.prefix
     return rv
 
 
@@ -540,7 +540,8 @@ class Converter:
         """Get the set of prefixes covered by this converter."""
         return {record.prefix for record in self.records}
 
-    def _format_curie(self, prefix: str, identifier: str) -> str:
+    def format_curie(self, prefix: str, identifier: str) -> str:
+        """Format a prefix and identifier into a CURIE string."""
         return f"{prefix}{self.delimiter}{identifier}"
 
     def compress(self, uri: str) -> Optional[str]:
@@ -564,7 +565,7 @@ class Converter:
         prefix, identifier = self.parse_uri(uri)
         if prefix is None or identifier is None:
             return None
-        return self._format_curie(prefix, identifier)
+        return self.format_curie(prefix, identifier)
 
     def parse_uri(self, uri: str) -> Union[Tuple[str, str], Tuple[None, None]]:
         """Compress a URI to a CURIE pair.
@@ -670,12 +671,14 @@ class Converter:
         'CHEBI:138488'
         >>> converter.standardize_curie("CHEBI:138488")
         'CHEBI:138488'
+        >>> converter.standardize_curie("NOPE:NOPE") is None
+        True
         """
         prefix, identifier = self.parse_curie(curie)
-        prefix = self.synonym_to_prefix.get(prefix)
-        if prefix is None:
+        norm_prefix = self.synonym_to_prefix.get(prefix)
+        if norm_prefix is None:
             return None
-        return self._format_curie(prefix, identifier)
+        return self.format_curie(norm_prefix, identifier)
 
     def pd_compress(
         self,
