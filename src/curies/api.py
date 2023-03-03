@@ -32,6 +32,7 @@ from pytrie import StringTrie
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
+    import rdflib
 
 __all__ = [
     "Converter",
@@ -537,6 +538,39 @@ class Converter:
         rest = "/".join(path)
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
         return cls.from_jsonld(url)
+
+    @classmethod
+    def from_rdflib(
+        cls,
+        graph_or_manager: Union["rdflib.Graph", "rdflib.namespace.NamespaceManager"],
+        **kwargs: Any,
+    ) -> "Converter":
+        """Get a converter from an RDFLib graph or namespace manager.
+
+        :param graph_or_manager: A RDFLib graph or manager object
+        :param kwargs: Keyword arguments to pass to :meth:`from_prefix_map`
+        :return: A converter
+
+        In the following example, a :class:`rdflib.Graph` is created, a namespace
+        is bound to it, then a converter is made:
+
+        >>> import rdflib, curies
+        >>> graph = rdflib.Graph()
+        >>> graph.bind("hgnc", "https://bioregistry.io/hgnc:")
+        >>> converter = curies.Converter.from_rdflib(graph)
+        >>> converter.expand("hgnc:1234")
+        'https://bioregistry.io/hgnc:1234'
+
+        This also works if you directly start with a :class:`rdflib.namespace.NamespaceManager`:
+
+        >>> converter = curies.Converter.from_rdflib(graph.namespace_manager)
+        >>> converter.expand("hgnc:1234")
+        'https://bioregistry.io/hgnc:1234'
+        """
+        # it's required to stringify namespace since it's a rdflib.URIRef
+        # object, which acts funny if not coerced into a string
+        prefix_map = {prefix: str(namespace) for prefix, namespace in graph_or_manager.namespaces()}
+        return cls.from_prefix_map(prefix_map, **kwargs)
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""
