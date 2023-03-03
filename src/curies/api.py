@@ -711,10 +711,11 @@ class Converter:
         >>> converter.standardize_uri("NOPE") is None
         True
         """
-        curie = self.compress(uri)
-        if curie is None:
+        prefix, identifier = self.parse_uri(uri)
+        if prefix is None or identifier is None:
             return None
-        return self.expand(uri)
+        # prefix is ensured to be in self.prefix_map because of successful parse
+        return self.prefix_map[prefix] + identifier
 
     def pd_compress(
         self,
