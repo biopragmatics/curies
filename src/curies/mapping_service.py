@@ -34,12 +34,14 @@ The idea here is that you can write a SPARQL query like the following:
             ?uniprot_protein a up:Protein;
                 up:organism taxon:9606;
                 rdfs:seeAlso ?protein_domain.
+        }
     }
 
-And the service running at the web address XXX (e.g., http://identifiers.org/services/sparql) can handle
-the different IRIs for ``?protein_term`` then spit back triples with the ``owl:sameAs`` predicate mapping
-to other equivalent IRIs. This allows for gluing together multiple services that use different URIs for
-the same entities - in this example, there are two ways of referring to UniProt Proteins:
+The SPARQL endpoint running at the web address XXX takes in the bound values for `?biomodels_protein`
+one at a time and dynamically generates triples with `owl:sameAs` as the predicate mapping and other
+equivalent IRIs (based on the definition of the converter) as the objects. This allows for gluing
+together multiple services that use different URIs for the same entities - in this example, there
+are two ways of referring to UniProt Proteins:
 
 1. The BioModels database example represents a SBML model on insulin-glucose feedback and uses legacy
    Identifiers.org URIs for proteins such as http://identifiers.org/uniprot/P01308.
