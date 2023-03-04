@@ -101,6 +101,7 @@ class TestConverter(unittest.TestCase):
         self.assertIsNone(converter.get_record("nope"))
         self.assertIsNone(converter.get_record("go"), msg="synonym lookup is not allowed here")
         record = converter.get_record("GO")
+        self.assertIsNotNone(record)
         self.assertIsInstance(record, Record)
         self.assertEqual("GO", record.prefix)
 
