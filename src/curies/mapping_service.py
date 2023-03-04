@@ -56,7 +56,7 @@ are two ways of referring to UniProt Proteins:
 import itertools as itt
 from typing import Any, Collection, Iterable, List, Set, Tuple, Union, cast
 
-from rdflib import URIRef, Graph, OWL
+from rdflib import OWL, Graph, URIRef
 
 from .api import Converter
 
@@ -109,7 +109,7 @@ class CURIEServiceGraph(Graph):  # type:ignore
             )
             graph = CURIEServiceGraph(converter=converter)
 
-            res = graph.query('''\\
+            res = graph.query('''
                 SELECT ?o WHERE {
                     VALUES ?s {
                         <http://purl.obolibrary.org/obo/CHEBI_1>
