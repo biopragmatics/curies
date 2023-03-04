@@ -243,8 +243,7 @@ class Converter:
         """Append a record to the converter."""
         self._check_record(record)
 
-        # TODO test this later
-        # self.records.append(record)
+        self.records.append(record)
         self.prefix_map[record.prefix] = record.uri_prefix
         for prefix_synonym in record.prefix_synonyms:
             self.prefix_map[prefix_synonym] = record.uri_prefix

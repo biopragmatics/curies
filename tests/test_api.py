@@ -98,10 +98,11 @@ class TestConverter(unittest.TestCase):
         self.assertIsNone(converter.compress("http://example.org/missing:00000"))
         self.assertIsNone(converter.expand("missing:00000"))
 
+        self.assertLess(0, len(converter.records), msg="converter has no records")
         self.assertIsNone(converter.get_record("nope"))
         self.assertIsNone(converter.get_record("go"), msg="synonym lookup is not allowed here")
         record = converter.get_record("GO")
-        self.assertIsNotNone(record)
+        self.assertIsNotNone(record, msg=f"records: {[r.prefix for r in converter.records]}")
         self.assertIsInstance(record, Record)
         self.assertEqual("GO", record.prefix)
 
