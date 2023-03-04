@@ -77,7 +77,7 @@ Full documentation is available at [curies.readthedocs.io](https://curies.readth
 ### Standardization
 
 The `curies.Converter` data structure supports prefix and URI prefix synonyms.
-The following example loads the [Bioregistry](https://bioregistry.io) and demonstrates
+The following exampl demonstrates
 using these synonyms to support standardizing prefixes, CURIEs, and URIs. Note below,
 the colloquial prefix `gomf`, sometimes used to represent the subspace in the
 [Gene Ontology (GO)](https://obofoundry.org/ontology/go) corresponding to molecular
@@ -105,7 +105,7 @@ converter = Converter([
 'GO'
 >>> converter.standardize_curie('gomf:0032571')
 'GO:0032571'
->>> converter.standardize_uri('0032571')
+>>> converter.standardize_uri('http://amigo.geneontology.org/amigo/term/GO:0032571')
 'http://purl.obolibrary.org/obo/GO_0032571'
 ```
 
