@@ -4,8 +4,10 @@
 
 import unittest
 
+from rdflib import OWL, SKOS
+
 from curies import Converter
-from curies.mapping_service import CURIEServiceGraph
+from curies.mapping_service import CURIEServiceGraph, _prepare_predicates
 
 
 class TestMappingService(unittest.TestCase):
@@ -26,6 +28,14 @@ class TestMappingService(unittest.TestCase):
         )
         self.graph = CURIEServiceGraph(converter=self.converter)
 
+    def test_prepare_predicates(self):
+        """Test preparation of predicates."""
+        self.assertEqual({OWL.sameAs}, _prepare_predicates())
+        self.assertEqual({OWL.sameAs}, _prepare_predicates(OWL.sameAs))
+        self.assertEqual(
+            {OWL.sameAs, SKOS.exactMatch}, _prepare_predicates({OWL.sameAs, SKOS.exactMatch})
+        )
+
     def test_errors(self):
         """Test errors."""
         for sparql in [
@@ -38,7 +48,7 @@ class TestMappingService(unittest.TestCase):
             "?rdfs:seeAlso <http://purl.obolibrary.org/obo/CHEBI_1> }",
         ]:
             with self.subTest(sparql=sparql), self.assertRaises(Exception):
-                self.graph.query(sparql)
+                list(self.graph.query(sparql))
 
     def test_sparql(self):
         """Test a sparql query on the graph."""

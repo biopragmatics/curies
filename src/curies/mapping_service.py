@@ -65,6 +65,14 @@ __all__ = [
 ]
 
 
+def _prepare_predicates(predicates: Union[None, str, Collection[str]] = None) -> Set[URIRef]:
+    if predicates is None:
+        return {OWL.sameAs}
+    if isinstance(predicates, str):
+        return {URIRef(predicates)}
+    return {URIRef(predicate) for predicate in predicates}
+
+
 class CURIEServiceGraph(Graph):  # type:ignore
     """A service that implements identifier mapping based on a converter."""
 
@@ -130,12 +138,7 @@ class CURIEServiceGraph(Graph):  # type:ignore
         ======================================  =================================================
         """
         self.converter = converter
-        if predicates is None:
-            self.predicates = {OWL.sameAs}
-        elif isinstance(predicates, str):
-            self.predicates = {URIRef(predicates)}
-        else:
-            self.predicates = {URIRef(predicate) for predicate in predicates}
+        self.predicates = _prepare_predicates(predicates)
         super().__init__(*args, **kwargs)
 
     def triples(
