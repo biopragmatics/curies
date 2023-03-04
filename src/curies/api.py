@@ -848,6 +848,14 @@ class Converter:
                 writer.writerow(_header)
             writer.writerows(rows)
 
+    def get_record(self, prefix: str) -> Optional[Record]:
+        """Get the record for the prefix."""
+        # TODO better data structure for this
+        for record in self.records:
+            if record.prefix == prefix:
+                return record
+        return None
+
 
 def _f(x: str) -> str:
     return x

@@ -98,6 +98,12 @@ class TestConverter(unittest.TestCase):
         self.assertIsNone(converter.compress("http://example.org/missing:00000"))
         self.assertIsNone(converter.expand("missing:00000"))
 
+        self.assertIsNone(converter.get_record("nope"))
+        self.assertIsNone(converter.get_record("go"), msg="synonym lookup is not allowed here")
+        record = converter.get_record("GO")
+        self.assertIsInstance(record, Record)
+        self.assertEqual("GO", record.prefix)
+
     def test_remote(self):
         """Test loading a remote JSON-LD context."""
         with self.assertRaises(ValueError):
