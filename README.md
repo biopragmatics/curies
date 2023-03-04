@@ -109,6 +109,9 @@ converter = Converter([
 'http://purl.obolibrary.org/obo/GO_0032571'
 ```
 
+Note: non-standard URIs can still be parsed with `converter.parse_uri()` and compressed
+into CURIEs with `converter.compress()`.
+
 ### Loading Prefix Maps
 
 All loader function work on local file paths, remote URLs, and pre-loaded
