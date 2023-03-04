@@ -2,9 +2,11 @@
 
 """External sources of contexts."""
 
-from typing import Any
+from typing import Any, Optional
 
-from .api import Converter
+import requests
+
+from .api import Converter, Record
 
 __all__ = [
     "get_obo_converter",
@@ -63,3 +65,35 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
             return Converter.from_extended_prefix_map(bioregistry.manager.get_curies_records())
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
     return Converter.from_extended_prefix_map(url, **kwargs)
+
+
+MIRIAM_URL = "https://registry.api.identifiers.org/resolutionApi/getResolverDataset"
+
+
+def get_miriam_converter() -> Converter:
+    """Get a prefix map from MIRIAM."""
+    res_json = requests.get(MIRIAM_URL).json()
+    records = []
+    for record in res_json["payload"]["namespaces"]:
+        prefix = record["prefix"]
+        uri_prefix: Optional[str] = None
+        uri_prefix_synonyms = []
+        for resource in record.get("resources", []):
+            if resource.get("deprecated"):
+                continue
+            pattern = resource["urlPattern"]
+            if pattern.count("{$id}") != 1 or not pattern.endswith("{$id}"):
+                continue
+            pattern = pattern[: -len("{$id}")]
+            if resource["official"] and uri_prefix is None:
+                uri_prefix = pattern
+            else:
+                uri_prefix_synonyms.append(pattern)
+        if not uri_prefix:
+            continue
+        records.append(
+            Record(prefix=prefix, uri_prefix=uri_prefix, uri_prefix_synonyms=uri_prefix_synonyms)
+        )
+
+    # FIXME Identifiers.org has duplicate URI prefixes for kegg and several other groups
+    return Converter(records)
