@@ -72,6 +72,45 @@ URI prefix will always be matched. For example, compressing
 `http://purl.obolibrary.org/obo/GO_0032571`
 will return `GO:0032571` instead of `OBO:GO_0032571`.
 
+Full documentation is available at [curies.readthedocs.io](https://curies.readthedocs.io).
+
+### Standardization
+
+The `curies.Converter` data structure supports prefix and URI prefix synonyms.
+The following example loads the [Bioregistry](https://bioregistry.io) and demonstrates
+using these synonyms to support standardizing prefixes, CURIEs, and URIs. Note below,
+the colloquial prefix `gomf`, sometimes used to represent the subspace in the
+[Gene Ontology (GO)](https://obofoundry.org/ontology/go) corresponding to molecular
+functions, is upgraded to the preferred prefix, `GO`.
+
+```python
+from curies import Converter, Record
+
+converter = Converter([
+    Record(
+        prefix="GO",
+        prefix_synonyms=["gomf", "gocc", "gobp", "go", ...],
+        uri_prefix="http://purl.obolibrary.org/obo/GO_",
+        uri_prefix_synonyms=[
+            "http://amigo.geneontology.org/amigo/term/GO:",
+            "https://identifiers.org/GO:",
+            ...
+        ],
+    ),
+    # And so on
+    ...
+])
+
+>>> converter.standardize_prefix("gomf")
+'GO'
+>>> converter.standardize_curie('gomf:0032571')
+'GO:0032571'
+>>> converter.standardize_uri('0032571')
+'http://purl.obolibrary.org/obo/GO_0032571'
+```
+
+### Loading Prefix Maps
+
 All loader function work on local file paths, remote URLs, and pre-loaded
 data structures. For example, a converter can be instantiated from a web-based
 resource in JSON-LD format:
@@ -97,6 +136,8 @@ obo_converter = curies.get_obo_converter()
 # Uses the Monarch Initative's project-specific context
 monarch_converter = curies.get_monarch_converter()
 ```
+
+### Bulk Operations
 
 Apply in bulk to a `pandas.DataFrame` with `Converter.pd_expand` and
 `Converter.pd_compress`:
@@ -125,9 +166,7 @@ obo_converter.file_compress(path, column=0)
 obo_converter.file_expand(path, column=0)
 ```
 
-Full documentation is available [here](https://curies.readthedocs.io).
-
-## CLI Usage
+### CLI Usage
 
 This package comes with a built-in CLI for running a resolver web application:
 
