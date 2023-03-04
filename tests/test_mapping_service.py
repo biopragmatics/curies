@@ -43,15 +43,14 @@ class TestMappingService(unittest.TestCase):
     def test_sparql(self):
         """Test a sparql query on the graph."""
         sparql = """\
-            SELECT DISTINCT ?s ?o
-            WHERE {
+            SELECT DISTINCT ?s ?o WHERE {
                 VALUES ?s {
                     <http://purl.obolibrary.org/obo/CHEBI_1>
                     <http://purl.obolibrary.org/obo/CHEBI_2>
                 }
                 ?s owl:sameAs ?o
             }
-            """
+        """
         rows = {tuple(map(str, row)) for row in self.graph.query(sparql)}
         self.assertEqual(
             {
@@ -76,3 +75,13 @@ class TestMappingService(unittest.TestCase):
             },
             rows,
         )
+
+    def test_missing(self):
+        """Test a sparql query on the graph where the URIs can't be parsed."""
+        sparql = """\
+            SELECT ?s ?o WHERE {
+                VALUES ?s { <http://example.org/1> <http://example.org/1> }
+                ?s owl:sameAs ?o
+            }
+        """
+        self.assertEqual([], list(self.graph.query(sparql)))
