@@ -243,8 +243,7 @@ class Converter:
         """Append a record to the converter."""
         self._check_record(record)
 
-        # TODO test this later
-        # self.records.append(record)
+        self.records.append(record)
         self.prefix_map[record.prefix] = record.uri_prefix
         for prefix_synonym in record.prefix_synonyms:
             self.prefix_map[prefix_synonym] = record.uri_prefix
@@ -689,6 +688,28 @@ class Converter:
             return None
         return uri_prefix + identifier
 
+    def standardize_prefix(self, prefix: str) -> Optional[str]:
+        """Standardize a prefix.
+
+        :param prefix:
+            The prefix of the CURIE
+        :returns:
+            The standardized version of this prefix wrt this converter.
+            If the prefix is not registered in this converter, returns none.
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(prefix="CHEBI", prefix_synonyms=["chebi"], uri_prefix="..."),
+        ... ])
+        >>> converter.standardize_prefix("chebi")
+        'CHEBI'
+        >>> converter.standardize_prefix("CHEBI")
+        'CHEBI:138488'
+        >>> converter.standardize_prefix("NOPE") is None
+        True
+        """
+        return self.synonym_to_prefix.get(prefix)
+
     def standardize_curie(self, curie: str) -> Optional[str]:
         """Standardize a CURIE.
 
@@ -712,7 +733,7 @@ class Converter:
         True
         """
         prefix, identifier = self.parse_curie(curie)
-        norm_prefix = self.synonym_to_prefix.get(prefix)
+        norm_prefix = self.standardize_prefix(prefix)
         if norm_prefix is None:
             return None
         return self.format_curie(norm_prefix, identifier)
@@ -825,6 +846,14 @@ class Converter:
             if _header:
                 writer.writerow(_header)
             writer.writerows(rows)
+
+    def get_record(self, prefix: str) -> Optional[Record]:
+        """Get the record for the prefix."""
+        # TODO better data structure for this
+        for record in self.records:
+            if record.prefix == prefix:
+                return record
+        return None
 
 
 def _f(x: str) -> str:
