@@ -658,13 +658,41 @@ class Converter:
         prefix, identifier = self.parse_curie(curie)
         return self.expand_pair(prefix, identifier)
 
+    def expand_all(self, curie: str) -> Optional[Collection[str]]:
+        """Expand a CURIE pair to all possible URIs.
+
+        :param curie:
+            A string representing a compact URI
+        :returns:
+            A list of URIs that this converter can create for the given CURIE. The
+            first entry is the "standard" URI then others are based on URI prefix
+            synonyms. If the prefix is not registered to this converter, none is
+            returned.
+
+        >>> priority_prefix_map = {
+        ...     "CHEBI": [
+        ...         "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+        ...     ],
+        ... }
+        >>> converter = Converter.from_priority_prefix_map(priority_prefix_map)
+        >>> converter.expand_all("CHEBI:138488")
+        ['http://purl.obolibrary.org/obo/CHEBI_138488', 'https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488']
+        >>> converter.expand_all("NOPE:NOPE") is None
+        True
+        """
+        prefix, identifier = self.parse_curie(curie)
+        if prefix is None or identifier is None:
+            return None
+        return self.expand_pair_all(prefix, identifier)
+
     def parse_curie(self, curie: str) -> Tuple[str, str]:
         """Parse a CURIE."""
         prefix, identifier = curie.split(self.delimiter, 1)
         return prefix, identifier
 
     def expand_pair(self, prefix: str, identifier: str) -> Optional[str]:
-        """Expand a CURIE pair to a URI.
+        """Expand a CURIE pair to the standard URI.
 
         :param prefix:
             The prefix of the CURIE
@@ -687,6 +715,39 @@ class Converter:
         if uri_prefix is None:
             return None
         return uri_prefix + identifier
+
+    def expand_pair_all(self, prefix: str, identifier: str) -> Optional[Collection[str]]:
+        """Expand a CURIE pair to all possible URIs.
+
+        :param prefix:
+            The prefix of the CURIE
+        :param identifier:
+            The local unique identifier of the CURIE
+        :returns:
+            A list of URIs that this converter can create for the given CURIE. The
+            first entry is the "standard" URI then others are based on URI prefix
+            synonyms. If the prefix is not registered to this converter, none is
+            returned.
+
+        >>> priority_prefix_map = {
+        ...     "CHEBI": [
+        ...         "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+        ...     ],
+        ... }
+        >>> converter = Converter.from_priority_prefix_map(priority_prefix_map)
+        >>> converter.expand_pair_all("CHEBI", "138488")
+        ['http://purl.obolibrary.org/obo/CHEBI_138488', 'https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488']
+        >>> converter.expand_pair_all("NOPE", "NOPE") is None
+        True
+        """
+        record = self.get_record(prefix)
+        if record is None:
+            return None
+        rv = [record.uri_prefix + identifier]
+        for uri_prefix_synonyms in record.uri_prefix_synonyms:
+            rv.append(uri_prefix_synonyms + identifier)
+        return rv
 
     def standardize_prefix(self, prefix: str) -> Optional[str]:
         """Standardize a prefix.

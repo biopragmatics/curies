@@ -106,8 +106,18 @@ class TestConverter(unittest.TestCase):
         self.assertIsInstance(record, Record)
         self.assertEqual("GO", record.prefix)
 
-    def test_remote(self):
+    def test_bioregistry(self):
         """Test loading a remote JSON-LD context."""
+        for web in [True, False]:
+            bioregistry_converter = get_bioregistry_converter(web=web)
+            self.assert_bioregistry_converter(bioregistry_converter)
+
+        c = Converter.from_reverse_prefix_map(f"{BIOREGISTRY_CONTEXTS}/bioregistry.rpm.json")
+        self.assertIn("chebi", c.prefix_map)
+        self.assertNotIn("CHEBI", c.prefix_map)
+
+    def test_from_github(self):
+        """Test getting a JSON-LD map from GitHub."""
         with self.assertRaises(ValueError):
             # missing end .jsonld file
             Converter.from_jsonld_github("biopragmatics", "bioregistry")
@@ -117,22 +127,20 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIn("rdf", semweb_converter.prefix_map)
 
-        for web in [True, False]:
-            bioregistry_converter = get_bioregistry_converter(web=web)
-            self.assert_bioregistry_converter(bioregistry_converter)
-
-        c = Converter.from_reverse_prefix_map(f"{BIOREGISTRY_CONTEXTS}/bioregistry.rpm.json")
-        self.assertIn("chebi", c.prefix_map)
-        self.assertNotIn("CHEBI", c.prefix_map)
-
+    def test_obo(self):
+        """Test the OBO converter."""
         obo_converter = get_obo_converter()
         self.assertIn("CHEBI", obo_converter.prefix_map)
         self.assertNotIn("chebi", obo_converter.prefix_map)
 
+    def test_monarch(self):
+        """Test the Monarch converter."""
         monarch_converter = get_monarch_converter()
         self.assertIn("CHEBI", monarch_converter.prefix_map)
         self.assertNotIn("chebi", monarch_converter.prefix_map)
 
+    def test_go_registry(self):
+        """Test the GO registry converter."""
         go_converter = get_go_converter()
         self.assertIn("CHEBI", go_converter.prefix_map)
         self.assertNotIn("chebi", go_converter.prefix_map)
@@ -392,6 +400,24 @@ class TestConverter(unittest.TestCase):
 
         converter_2 = Converter.from_rdflib(graph.namespace_manager)
         self._assert_convert(converter_2)
+
+    def test_expand_all(self):
+        """Test expand all."""
+        priority_prefix_map = {
+            "CHEBI": [
+                "http://purl.obolibrary.org/obo/CHEBI_",
+                "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+            ],
+        }
+        converter = Converter.from_priority_prefix_map(priority_prefix_map)
+        self.assertEqual(
+            [
+                "http://purl.obolibrary.org/obo/CHEBI_138488",
+                "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488",
+            ],
+            converter.expand_all("CHEBI:138488"),
+        )
+        self.assertIsNone(converter.expand_all("NOPE:NOPE"))
 
 
 class TestVersion(unittest.TestCase):
