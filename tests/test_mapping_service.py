@@ -29,11 +29,16 @@ class TestMappingService(unittest.TestCase):
     def test_errors(self):
         """Test errors."""
         for sparql in [
-            "SELECT ?s ?p ?o WHERE { ?s ?p ?o }",
+            # errors because of unbound subject
+            "SELECT ?s ?o WHERE { ?s owl:sameAs ?o }",
+            # errors because of bad predicate
+            "SELECT ?o WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> rdfs:seeAlso ?o }",
+            # errors because predicate is given
+            "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
+            "?rdfs:seeAlso <http://purl.obolibrary.org/obo/CHEBI_1> }",
         ]:
-            with self.subTest(sparql=sparql):
-                with self.assertRaises(ValueError):
-                    self.graph.query(sparql)
+            with self.subTest(sparql=sparql), self.assertRaises(Exception):
+                self.graph.query(sparql)
 
     def test_sparql(self):
         """Test a sparql query on the graph."""

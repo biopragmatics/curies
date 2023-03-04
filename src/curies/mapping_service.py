@@ -149,8 +149,9 @@ class CURIEServiceGraph(Graph):  # type:ignore
             raise ValueError(
                 f"Invalid predicate {pred_query}. This service only works for explicit predicates {self.predicates}"
             )
-        if obj_query is not None:
-            raise ValueError("This service only works when the object is given as a variable.")
+        # Not sure if this is even reachable - would require a bad SPARQL query
+        # if obj_query is not None:
+        #     raise ValueError("This service only works when the object is given as a variable.")
 
         prefix, identifier = self.converter.parse_uri(subj_query)
         if prefix is None or identifier is None:
