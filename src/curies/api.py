@@ -682,8 +682,6 @@ class Converter:
         True
         """
         prefix, identifier = self.parse_curie(curie)
-        if prefix is None or identifier is None:
-            return None
         return self.expand_pair_all(prefix, identifier)
 
     def parse_curie(self, curie: str) -> Tuple[str, str]:
