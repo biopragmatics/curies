@@ -147,10 +147,11 @@ class CURIEServiceGraph(Graph):  # type:ignore
         """Generate triples, overriden to dynamically generate mappings based on this graph's converter."""
         subj_query, pred_query, obj_query = triple
         if subj_query is None:
-            raise ValueError("This service only works for a defined subject.")
+            raise ValueError(f"This service only works for a defined subject.\n\nGot: {triple}")
         if pred_query not in self.predicates:
             raise ValueError(
-                f"Invalid predicate {pred_query}. This service only works for explicit predicates {self.predicates}"
+                f"Invalid predicate {pred_query}. This service only works for explicit "
+                f"predicates {self.predicates}\n\nGot: {triple}"
             )
         # Not sure if this is even reachable - would require a bad SPARQL query
         # if obj_query is not None:
