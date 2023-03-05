@@ -35,7 +35,7 @@ SELECT REDUCED * WHERE {
     ?s owl:sameAs ?o .
 }
 VALUES (?s) {
-    (<http://purl.obolibrary.org/obo/CHEBI_1>) 
+    (<http://purl.obolibrary.org/obo/CHEBI_1>)
     (<http://purl.obolibrary.org/obo/CHEBI_2>)
 }
 """
