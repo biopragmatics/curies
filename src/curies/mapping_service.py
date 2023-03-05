@@ -54,11 +54,14 @@ are two ways of referring to UniProt Proteins:
 """
 
 import itertools as itt
-from typing import Any, Collection, Iterable, List, Set, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
 
 from rdflib import OWL, Graph, URIRef
 
-from .api import Converter
+from curies import Converter
+
+if TYPE_CHECKING:
+    import flask
 
 __all__ = [
     "CURIEServiceGraph",
@@ -168,3 +171,62 @@ class CURIEServiceGraph(Graph):  # type:ignore
         ]
         for obj, pred in itt.product(objects, self.predicates):
             yield subj_query, pred, obj
+
+
+def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint":
+    """Get a blueprint for :class:`flask.Flask`.
+
+    :param converter: A converter
+    :param kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
+    :return: A blueprint
+    """
+    from flask import Blueprint, Response, request
+
+    blueprint = Blueprint("mapping", __name__, **kwargs)
+    graph = CURIEServiceGraph(converter=converter)
+
+    @blueprint.route("/sparql", methods=["GET", "POST"])  # type:ignore
+    def serve_sparql() -> "Response":
+        sparql = (request.args if request.method == "GET" else request.json).get("query")
+        if not sparql:
+            return Response("Missing parameter query", 400)
+
+        print("got sparql\n", sparql)
+        try:
+            results = graph.query(sparql).serialize()
+        except Exception as e:
+            print(e)
+            return Response(f"Internal server error:\n{e}", 500)
+        else:
+            print("results, yay!")
+            return Response(results)
+
+    return blueprint
+
+
+def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
+    """Get a Flask app for the mapping service."""
+    from flask import Flask
+
+    blueprint = get_flask_mapping_blueprint(converter)
+    app = Flask(__name__)
+    app.register_blueprint(blueprint)
+    return app
+
+
+def _main():
+    import os
+
+    path = "/Users/cthoyt/dev/bioregistry/exports/contexts/bioregistry.epm.json"
+    if os.path.exists(path):
+        converter = Converter.from_extended_prefix_map(path)
+    else:
+        import curies
+
+        converter = curies.get_bioregistry_converter()
+    app = get_flask_mapping_app(converter)
+    app.run()
+
+
+if __name__ == "__main__":
+    _main()
