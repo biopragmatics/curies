@@ -65,6 +65,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "CURIEServiceGraph",
+    "get_flask_mapping_blueprint",
+    "get_flask_mapping_app",
 ]
 
 
@@ -187,6 +189,7 @@ def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.B
 
     @blueprint.route("/sparql", methods=["GET", "POST"])  # type:ignore
     def serve_sparql() -> "Response":
+        """Run a SPARQL query and serve the results."""
         sparql = (request.args if request.method == "GET" else request.json).get("query")
         if not sparql:
             return Response("Missing parameter query", 400)
@@ -215,15 +218,15 @@ def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
 
 
 def _main():
-    import os
-
-    path = "/Users/cthoyt/dev/bioregistry/exports/contexts/bioregistry.epm.json"
-    if os.path.exists(path):
-        converter = Converter.from_extended_prefix_map(path)
-    else:
-        import curies
-
-        converter = curies.get_bioregistry_converter()
+    converter = Converter.from_priority_prefix_map({
+        "CHEBI": [
+            "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
+            "http://identifiers.org/chebi/",
+            "http://purl.obolibrary.org/obo/CHEBI_",
+        ],
+        "GO": ["http://purl.obolibrary.org/obo/GO_"],
+        "OBO": ["http://purl.obolibrary.org/obo/"],
+    })
     app = get_flask_mapping_app(converter)
     app.run()
 
