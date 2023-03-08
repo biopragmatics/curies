@@ -83,11 +83,13 @@ class CURIEServiceGraph(Graph):  # type:ignore
 
     converter: Converter
     predicates: Set[URIRef]
+    rdf_graph: Graph
 
     def __init__(
         self,
         *args: Any,
         converter: Converter,
+        rdf_graph: Graph = None,
         predicates: Union[None, str, List[str]] = None,
         **kwargs: Any,
     ) -> None:
@@ -144,6 +146,7 @@ class CURIEServiceGraph(Graph):  # type:ignore
         """
         self.converter = converter
         self.predicates = _prepare_predicates(predicates)
+        self.rdf_graph = rdf_graph;
         super().__init__(*args, **kwargs)
 
     def triples(
@@ -151,28 +154,26 @@ class CURIEServiceGraph(Graph):  # type:ignore
     ) -> Iterable[Tuple[URIRef, URIRef, URIRef]]:
         """Generate triples, overriden to dynamically generate mappings based on this graph's converter."""
         subj_query, pred_query, obj_query = triple
-        if subj_query is None:
-            raise ValueError(f"This service only works for a defined subject.\n\nGot: {triple}")
-        if pred_query not in self.predicates:
-            raise ValueError(
-                f"Invalid predicate {pred_query}. This service only works for explicit "
-                f"predicates {self.predicates}\n\nGot: {triple}"
-            )
-        # Not sure if this is even reachable - would require a bad SPARQL query
-        # if obj_query is not None:
-        #     raise ValueError("This service only works when the object is given as a variable.")
+        if subj_query is not None and pred_query in self.predicates:
+            # Not sure if this is even reachable - would require a bad SPARQL query
+            # if obj_query is not None:
+            #     raise ValueError("This service only works when the object is given as a variable.")
 
-        prefix, identifier = self.converter.parse_uri(subj_query)
-        if prefix is None or identifier is None:
-            # Unhandled IRI gracefully returns no results
-            return
+            prefix, identifier = self.converter.parse_uri(subj_query)
+            if prefix is None or identifier is None:
+                # Unhandled IRI gracefully returns no results
+                return
 
-        objects = [
-            URIRef(obj)
-            for obj in cast(Collection[str], self.converter.expand_pair_all(prefix, identifier))
-        ]
-        for obj, pred in itt.product(objects, self.predicates):
-            yield subj_query, pred, obj
+            objects = [
+                URIRef(obj)
+                for obj in cast(Collection[str], self.converter.expand_pair_all(prefix, identifier))
+            ]
+            for obj, pred in itt.product(objects, self.predicates):
+                yield subj_query, pred, obj
+
+        if self.rdf_graph is not None:
+            for tr in self.rdf_graph.triples(triple):
+                yield tr
 
 
 def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint":

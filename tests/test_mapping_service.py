@@ -4,7 +4,7 @@
 
 import unittest
 
-from rdflib import OWL, SKOS
+from rdflib import OWL, SKOS, Graph
 
 from curies import Converter
 from curies.mapping_service import CURIEServiceGraph, _prepare_predicates
@@ -26,6 +26,12 @@ SELECT DISTINCT ?s ?o WHERE {
         <http://purl.obolibrary.org/obo/CHEBI_2>
     }
     ?s owl:sameAs ?o
+}
+""".rstrip()
+
+SPARQL_SIMPLE_EXAMPLE = """\
+SELECT ?s ?o WHERE {
+    ?s <https://example.org/b> ?o
 }
 """.rstrip()
 
@@ -73,7 +79,15 @@ class TestMappingService(unittest.TestCase):
     def setUp(self) -> None:
         """Set up the converter."""
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
-        self.graph = CURIEServiceGraph(converter=self.converter)
+        rdfgraph = Graph()
+        # work with the graph:
+        data = """
+               PREFIX : <https://example.org/>
+
+               :a :b :c .
+               """
+        rdfgraph.parse(data=data, format="ttl")
+        self.graph = CURIEServiceGraph(converter=self.converter, rdf_graph=rdfgraph)
 
     def test_prepare_predicates(self):
         """Test preparation of predicates."""
@@ -102,6 +116,11 @@ class TestMappingService(unittest.TestCase):
         rows = _stm(self.graph.query(SPARQL_SIMPLE))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         self.assertEqual(EXPECTED, rows)
+
+    def test_sparql_not_conversion(self):
+        """Test a sparql query on the graph that is not about the conversion."""
+        rows = _stm(self.graph.query(SPARQL_SIMPLE_EXAMPLE))
+        self.assertEqual(1, len(rows), msg="One results was returned")
 
     def test_service_sparql(self):
         """Test the SPARQL that gets sent when using this as a service."""
