@@ -59,7 +59,7 @@ from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, U
 from rdflib import OWL, Graph, URIRef
 
 from curies import Converter
-from curies.rdflib_patches import CustomSPARQLProcessor
+from curies.mapping_service.rdflib_custom import CustomSPARQLProcessor
 
 if TYPE_CHECKING:
     import flask
