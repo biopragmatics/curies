@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
 """Tests for the identifier mapping service."""
-
+import json
 import unittest
+from urllib.parse import quote
 
 from rdflib import OWL, SKOS
 
 from curies import Converter
-from curies.mapping_service import CURIEServiceGraph, _prepare_predicates
+from curies.mapping_service import CURIEServiceGraph, _prepare_predicates, get_flask_mapping_app
 from curies.mapping_service.rdflib_custom import CustomSPARQLProcessor
 
 PREFIX_MAP = {
@@ -120,3 +121,24 @@ class TestMappingService(unittest.TestCase):
             }
         """
         self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
+
+
+class TestMappingWeb(unittest.TestCase):
+    """Test the web component of the mapping service."""
+
+    def setUp(self) -> None:
+        """Set up the test case with a converter and app."""
+        self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
+        self.app = get_flask_mapping_app(self.converter)
+
+    def test_query(self):
+        """Test querying the app."""
+        for sparql in [SPARQL_SIMPLE, SPARQL_FROM_SERVICE]:
+            with self.subTest(sparql=sparql), self.app.test_client() as client:
+                res = client.get(f"/sparql?query={quote(sparql)}")
+                self.assertEqual(200, res.status_code, msg=f"Response: {res}")
+                records = {
+                    (record["s"]["value"], record["o"]["value"])
+                    for record in json.loads(res.text)["results"]["bindings"]
+                }
+                self.assertEqual(EXPECTED, records)
