@@ -8,6 +8,7 @@ from rdflib import OWL, SKOS
 
 from curies import Converter
 from curies.mapping_service import CURIEServiceGraph, _prepare_predicates
+from curies.rdflib_custom import CustomSPARQLProcessor
 
 PREFIX_MAP = {
     "CHEBI": [
@@ -74,6 +75,7 @@ class TestMappingService(unittest.TestCase):
         """Set up the converter."""
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
         self.graph = CURIEServiceGraph(converter=self.converter)
+        self.processor = CustomSPARQLProcessor(self.graph)
 
     def test_prepare_predicates(self):
         """Test preparation of predicates."""
@@ -95,17 +97,17 @@ class TestMappingService(unittest.TestCase):
             "?rdfs:seeAlso <http://purl.obolibrary.org/obo/CHEBI_1> }",
         ]:
             with self.subTest(sparql=sparql), self.assertRaises(Exception):
-                list(self.graph.query(sparql))
+                list(self.graph.query(sparql, processor=self.processor))
 
     def test_sparql(self):
         """Test a sparql query on the graph."""
-        rows = _stm(self.graph.query(SPARQL_SIMPLE))
+        rows = _stm(self.graph.query(SPARQL_SIMPLE, processor=self.processor))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         self.assertEqual(EXPECTED, rows)
 
     def test_service_sparql(self):
         """Test the SPARQL that gets sent when using this as a service."""
-        rows = _stm(self.graph.query(SPARQL_FROM_SERVICE))
+        rows = _stm(self.graph.query(SPARQL_FROM_SERVICE, processor=self.processor))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         self.assertEqual(EXPECTED, rows)
 
@@ -117,4 +119,4 @@ class TestMappingService(unittest.TestCase):
                 ?s owl:sameAs ?o
             }
         """
-        self.assertEqual([], list(self.graph.query(sparql)))
+        self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))

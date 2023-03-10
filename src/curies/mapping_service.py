@@ -59,6 +59,7 @@ from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, U
 from rdflib import OWL, Graph, URIRef
 
 from curies import Converter
+from curies.rdflib_patches import CustomSPARQLProcessor
 
 if TYPE_CHECKING:
     import flask
@@ -186,6 +187,7 @@ def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.B
 
     blueprint = Blueprint("mapping", __name__, **kwargs)
     graph = CURIEServiceGraph(converter=converter)
+    processor = CustomSPARQLProcessor(graph=graph)
 
     @blueprint.route("/sparql", methods=["GET", "POST"])  # type:ignore
     def serve_sparql() -> "Response":
@@ -196,7 +198,7 @@ def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.B
 
         print("got sparql\n", sparql)
         try:
-            results = graph.query(sparql).serialize()
+            results = graph.query(sparql, processor=processor).serialize(format="json")
         except Exception as e:
             print(e)
             return Response(f"Internal server error:\n{e}", 500)
@@ -218,15 +220,17 @@ def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
 
 
 def _main():
-    converter = Converter.from_priority_prefix_map({
-        "CHEBI": [
-            "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
-            "http://identifiers.org/chebi/",
-            "http://purl.obolibrary.org/obo/CHEBI_",
-        ],
-        "GO": ["http://purl.obolibrary.org/obo/GO_"],
-        "OBO": ["http://purl.obolibrary.org/obo/"],
-    })
+    converter = Converter.from_priority_prefix_map(
+        {
+            "CHEBI": [
+                "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=",
+                "http://identifiers.org/chebi/",
+                "http://purl.obolibrary.org/obo/CHEBI_",
+            ],
+            "GO": ["http://purl.obolibrary.org/obo/GO_"],
+            "OBO": ["http://purl.obolibrary.org/obo/"],
+        }
+    )
     app = get_flask_mapping_app(converter)
     app.run()
 
