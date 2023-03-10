@@ -7,7 +7,7 @@ import unittest
 from rdflib import OWL, SKOS
 
 from curies import Converter
-from curies.mapping_service.mapping_service import CURIEServiceGraph, _prepare_predicates
+from curies.mapping_service import CURIEServiceGraph, _prepare_predicates
 from curies.mapping_service.rdflib_custom import CustomSPARQLProcessor
 
 PREFIX_MAP = {

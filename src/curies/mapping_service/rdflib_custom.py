@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# type: ignore
+
 """
 Custom re-implementation of RDFLib's algebra, so we can
 more efficiently join values clause first. This all has been done
@@ -63,17 +66,26 @@ __all__ = ["CustomSPARQLProcessor"]
 
 
 class CustomSPARQLProcessor(SPARQLProcessor):
+    """A custom SPARQL processor.
+
+    This processor is verbatim from :class:`rdflib.plugins.sparql.processor.SPARQLProcessor`
+    except it switches in a custom version of :func:`rdflib.plugins.sparql.algebra.translateQuery`
+    which in turn is verbatim other than switching out a custom version of
+    :func:`rdflib.plugins.sparql.algebra.translate`, which in turn is verbatim other than changing
+    the join order for VALUES clauses.
+    """
+
     def query(self, query, initBindings=None, initNs=None, base=None, DEBUG=False):
         if not isinstance(query, Query):
             parsetree = parseQuery(query)
-            query = translateQuery(parsetree, base, initNs or {})
+            query = _custom_translate_query(parsetree, base, initNs or {})
         return evalQuery(self.graph, query, initBindings or {}, base)
 
 
-def translateQuery(
+def _custom_translate_query(
     q: ParseResults,
     base: Optional[str] = None,
-    initNs: Optional[Mapping[str, str]] = None,
+    init_ns: Optional[Mapping[str, str]] = None,
 ) -> Query:
     """
     Translate a query-parsetree to a SPARQL Algebra Expression
@@ -83,12 +95,12 @@ def translateQuery(
 
     # We get in: (prologue, query)
 
-    prologue = translatePrologue(q[0], base, initNs)
+    prologue = translatePrologue(q[0], base, init_ns)
 
     # absolutize/resolve prefixes
     q[1] = traverse(q[1], visitPost=functools.partial(translatePName, prologue=prologue))
 
-    P, PV = translate(q[1])
+    P, PV = _custom_translate(q[1])
     datasetClause = q[1].datasetClause
     if q[1].name == "ConstructQuery":
         template = triples(q[1].template) if q[1].template else None
@@ -104,7 +116,7 @@ def translateQuery(
     return Query(prologue, res)
 
 
-def translate(q: CompValue) -> Tuple[CompValue, List[Variable]]:
+def _custom_translate(q: CompValue) -> Tuple[CompValue, List[Variable]]:
     """
     http://www.w3.org/TR/sparql11-query/#convertSolMod
     """
