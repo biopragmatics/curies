@@ -76,10 +76,17 @@ class CustomSPARQLProcessor(SPARQLProcessor):
     """
 
     def query(self, query, initBindings=None, initNs=None, base=None, DEBUG=False):
+        """Evaluate a SPARQL query on this processor's graph."""
         if not isinstance(query, Query):
             parsetree = parseQuery(query)
             query = _custom_translate_query(parsetree, base, initNs or {})
         return evalQuery(self.graph, query, initBindings or {}, base)
+
+
+# The following code was copied verbatim from
+# https://github.com/RDFLib/rdflib/blob/a146e0a066df3f85176226c9e826bd181389049c/rdflib/plugins/sparql/algebra.py#L920-L954
+# except for changing calls to ``translate()`` (part of RDFLib) to
+# ``_custom_translate()`` (see custom implementation below)
 
 
 def _custom_translate_query(
@@ -114,6 +121,10 @@ def _custom_translate_query(
     _traverseAgg(res, _addVars)
 
     return Query(prologue, res)
+
+
+# The following code was copied with minor modifications (noted in caps) from
+# https://github.com/RDFLib/rdflib/blob/a146e0a066df3f85176226c9e826bd181389049c/rdflib/plugins/sparql/algebra.py#L630-L767
 
 
 def _custom_translate(q: CompValue) -> Tuple[CompValue, List[Variable]]:
