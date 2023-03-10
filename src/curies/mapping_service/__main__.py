@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-"""A small demo mapping serivce."""
+"""A small demo mapping service."""
 
 from curies import Converter
 from curies.mapping_service import get_flask_mapping_app
 
 
-def _main():
+def _main() -> None:
     converter = Converter.from_priority_prefix_map(
         {
             "CHEBI": [
