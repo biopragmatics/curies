@@ -18,7 +18,9 @@ __all__ = ["JervenSPARQLProcessor"]
 class JervenSPARQLProcessor(SPARQLProcessor):
     """A custom SPARQL processor that optimizes the query based on https://github.com/RDFLib/rdflib/pull/2257."""
 
-    def query(self, strOrQuery: Union[str, Query], initBindings=None, initNs=None, base=None, DEBUG=False):
+    def query(
+        self, strOrQuery: Union[str, Query], initBindings=None, initNs=None, base=None, DEBUG=False
+    ):
         """Evaluate a SPARQL query on this processor's graph."""
         if not isinstance(strOrQuery, Query):
             parsetree = parseQuery(strOrQuery)
