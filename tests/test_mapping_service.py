@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """Tests for the identifier mapping service."""
+
 import json
 import unittest
 from urllib.parse import quote
@@ -9,7 +10,7 @@ from rdflib import OWL, SKOS
 
 from curies import Converter
 from curies.mapping_service import CURIEServiceGraph, _prepare_predicates, get_flask_mapping_app
-from curies.mapping_service.rdflib_custom import CustomSPARQLProcessor
+from curies.mapping_service.rdflib_custom import JervenSPARQLProcessor
 
 PREFIX_MAP = {
     "CHEBI": [
@@ -76,7 +77,7 @@ class TestMappingService(unittest.TestCase):
         """Set up the converter."""
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
         self.graph = CURIEServiceGraph(converter=self.converter)
-        self.processor = CustomSPARQLProcessor(self.graph)
+        self.processor = JervenSPARQLProcessor(self.graph)
 
     def test_prepare_predicates(self):
         """Test preparation of predicates."""
@@ -95,22 +96,22 @@ class TestMappingService(unittest.TestCase):
             "SELECT ?o WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> rdfs:seeAlso ?o }",
             # errors because predicate is given
             "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
-            "?rdfs:seeAlso <http://purl.obolibrary.org/obo/CHEBI_1> }",
+            "rdfs:seeAlso <http://purl.obolibrary.org/obo/CHEBI_1> }",
         ]:
-            with self.subTest(sparql=sparql), self.assertRaises(Exception):
-                list(self.graph.query(sparql, processor=self.processor))
+            with self.subTest(sparql=sparql):
+                self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
 
     def test_sparql(self):
         """Test a sparql query on the graph."""
         rows = _stm(self.graph.query(SPARQL_SIMPLE, processor=self.processor))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
-        self.assertEqual(EXPECTED, rows)
+        self.assertEqual(sorted(EXPECTED), sorted(rows))
 
     def test_service_sparql(self):
         """Test the SPARQL that gets sent when using this as a service."""
         rows = _stm(self.graph.query(SPARQL_FROM_SERVICE, processor=self.processor))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
-        self.assertEqual(EXPECTED, rows)
+        self.assertEqual(sorted(EXPECTED), sorted(rows))
 
     def test_missing(self):
         """Test a sparql query on the graph where the URIs can't be parsed."""
