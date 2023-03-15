@@ -161,10 +161,8 @@ class CURIEServiceGraph(Graph):  # type:ignore
             if prefix is None or identifier is None:
                 return
             subjects = [
-                URIRef(subject)
-                for subject in cast(
-                    Collection[str], self.converter.expand_pair_all(prefix, identifier)
-                )
+                URIRef(sub)
+                for sub in cast(Collection[str], self.converter.expand_pair_all(prefix, identifier))
             ]
             for subj, pred in itt.product(subjects, self.predicates):
                 yield subj, pred, obj_query
@@ -201,12 +199,8 @@ def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.B
         sparql = (request.args if request.method == "GET" else request.json).get("query")
         if not sparql:
             return Response("Missing parameter query", 400)
-        try:
-            results = graph.query(sparql, processor=processor).serialize(format="json")
-        except Exception as e:
-            return Response(f"Internal server error:\n{e}", 500)
-        else:
-            return Response(results)
+        results = graph.query(sparql, processor=processor).serialize(format="json")
+        return Response(results)
 
     return blueprint
 

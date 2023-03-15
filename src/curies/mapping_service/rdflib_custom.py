@@ -20,18 +20,16 @@ class JervenSPARQLProcessor(SPARQLProcessor):
 
     def query(
         self,
-        strOrQuery: Union[str, Query],  # noqa:N803
-        initBindings=None,
-        initNs=None,
+        query: Union[str, Query],
+        initBindings=None,  # noqa:N803
+        initNs=None,  # noqa:N803
         base=None,
         DEBUG=False,
     ):
         """Evaluate a SPARQL query on this processor's graph."""
-        if not isinstance(strOrQuery, Query):
-            parsetree = parseQuery(strOrQuery)
-            query = translateQuery(parsetree, base, initNs)
-        else:
-            query = strOrQuery
+        if isinstance(query, str):
+            parse_tree = parseQuery(query)
+            query = translateQuery(parse_tree, base, initNs)
         query.algebra = _optimize_node(query.algebra)
         return evalQuery(self.graph, query, initBindings or {}, base)
 
@@ -43,10 +41,7 @@ def _optimize_node(comp_value: CompValue) -> CompValue:
         and comp_value.p1.name != "ToMultiSet"
         and comp_value.p2.name == "ToMultiSet"
     ):
-        p1, p2 = comp_value.p2, comp_value.p1
-        #  print("left", comp_value.p1)
-        #  print("right", comp_value.p2)
-        comp_value.update(p1=p1, p2=p2)
+        comp_value.update(p1=comp_value.p2, p2=comp_value.p1)
     for inner_comp_value in comp_value.values():
         if isinstance(inner_comp_value, CompValue):
             _optimize_node(inner_comp_value)
