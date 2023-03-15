@@ -19,7 +19,12 @@ class JervenSPARQLProcessor(SPARQLProcessor):
     """A custom SPARQL processor that optimizes the query based on https://github.com/RDFLib/rdflib/pull/2257."""
 
     def query(
-        self, strOrQuery: Union[str, Query], initBindings=None, initNs=None, base=None, DEBUG=False
+        self,
+        strOrQuery: Union[str, Query],  # noqa:N803
+        initBindings=None,
+        initNs=None,
+        base=None,
+        DEBUG=False,
     ):
         """Evaluate a SPARQL query on this processor's graph."""
         if not isinstance(strOrQuery, Query):
@@ -32,13 +37,17 @@ class JervenSPARQLProcessor(SPARQLProcessor):
 
 
 # From Jerven's PR to RDFLib (https://github.com/RDFLib/rdflib/pull/2257)
-def _optimize_node(cv: CompValue) -> CompValue:
-    if cv.name == "Join" and cv.p1.name != "ToMultiSet" and cv.p2.name == "ToMultiSet":
-        p1, p2 = cv.p2, cv.p1
-        print("left", cv.p1)
-        print("right", cv.p2)
-        cv.update(p1=p1, p2=p2)
-    for k, v in cv.items():
-        if isinstance(v, CompValue):
-            _optimize_node(v)
-    return cv
+def _optimize_node(comp_value: CompValue) -> CompValue:
+    if (
+        comp_value.name == "Join"
+        and comp_value.p1.name != "ToMultiSet"
+        and comp_value.p2.name == "ToMultiSet"
+    ):
+        p1, p2 = comp_value.p2, comp_value.p1
+        #  print("left", comp_value.p1)
+        #  print("right", comp_value.p2)
+        comp_value.update(p1=p1, p2=p2)
+    for inner_comp_value in comp_value.values():
+        if isinstance(inner_comp_value, CompValue):
+            _optimize_node(inner_comp_value)
+    return comp_value
