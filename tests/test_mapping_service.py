@@ -4,9 +4,11 @@
 
 import json
 import unittest
+from typing import Iterable, Set, Tuple
 from urllib.parse import quote
 
 from rdflib import OWL, SKOS
+from rdflib.query import ResultRow
 
 from curies import Converter
 from curies.mapping_service import CURIEServiceGraph, _prepare_predicates, get_flask_mapping_app
@@ -65,9 +67,8 @@ EXPECTED = {
 }
 
 
-def _stm(rows):
-    # set tuple map
-    return {tuple(map(str, row)) for row in rows}
+def _stm(rows: Iterable[ResultRow]) -> Set[Tuple[str, str]]:
+    return {(str(row.s), str(row.o)) for row in rows}
 
 
 class TestMappingService(unittest.TestCase):
