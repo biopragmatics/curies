@@ -58,7 +58,7 @@ from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, U
 
 from rdflib import OWL, Graph, URIRef
 
-from .rdflib_custom import CustomSPARQLProcessor  # type: ignore
+from .rdflib_custom_postprocessor import JervenSPARQLProcessor  # type: ignore
 from ..api import Converter
 
 if TYPE_CHECKING:
@@ -187,7 +187,7 @@ def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.B
 
     blueprint = Blueprint("mapping", __name__, **kwargs)
     graph = CURIEServiceGraph(converter=converter)
-    processor = CustomSPARQLProcessor(graph=graph)
+    processor = JervenSPARQLProcessor(graph=graph)
 
     @blueprint.route("/sparql", methods=["GET", "POST"])  # type:ignore
     def serve_sparql() -> "Response":
