@@ -83,3 +83,8 @@ for the `records` argument and prefixes can be added one at a time
 
     converter = curies.Converter(records=[])
     converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
+
+Identifier Mapping Service
+--------------------------
+.. automodapi:: curies.mapping_service
+   :no-inheritance-diagram:
