@@ -62,6 +62,7 @@ from .rdflib_custom import JervenSPARQLProcessor  # type: ignore
 from ..api import Converter
 
 if TYPE_CHECKING:
+    import fastapi
     import flask
 
 __all__ = [
@@ -180,10 +181,13 @@ class CURIEServiceGraph(Graph):  # type:ignore
             return  # too much specification? maybe just return one triple then?
 
 
-def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint":
+def get_flask_mapping_blueprint(
+    converter: Converter, route: str = "/sparql", **kwargs: Any
+) -> "flask.Blueprint":
     """Get a blueprint for :class:`flask.Flask`.
 
     :param converter: A converter
+    :param route: The route of the SPARQL service (relative to the base of the Blueprint)
     :param kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
     :return: A blueprint
     """
@@ -193,7 +197,7 @@ def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.B
     graph = CURIEServiceGraph(converter=converter)
     processor = JervenSPARQLProcessor(graph=graph)
 
-    @blueprint.route("/sparql", methods=["GET", "POST"])  # type:ignore
+    @blueprint.route(route, methods=["GET", "POST"])  # type:ignore
     def serve_sparql() -> "Response":
         """Run a SPARQL query and serve the results."""
         sparql = (request.args if request.method == "GET" else request.json).get("query")
@@ -203,6 +207,30 @@ def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.B
         return Response(results)
 
     return blueprint
+
+
+def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRouter":
+    """Get a router for :class:`fastapi.FastAPI`.
+
+    :param converter: A converter
+    :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
+    :return: A router
+    """
+    from fastapi import APIRouter, Path, Response
+
+    api_router = APIRouter(**kwargs)
+    graph = CURIEServiceGraph(converter=converter)
+    processor = JervenSPARQLProcessor(graph=graph)
+
+    @api_router.get("/sparql")  # type:ignore
+    def resolve(
+        query: str = Path(title="Query", description="The SPARQL query to run"),
+    ) -> Response:
+        """Run a SPARQL query and serve the results."""
+        results = graph.query(query, processor=processor).serialize(format="json")
+        return Response(results, media_type="application/json")
+
+    return api_router
 
 
 def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
