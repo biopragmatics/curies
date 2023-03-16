@@ -51,6 +51,56 @@ are two ways of referring to UniProt Proteins:
 
     - Jerven Bolleman's implementation of this service in Java: https://github.com/JervenBolleman/sparql-identifiers
     - Vincent Emonet's `SPARQL endpoint for RDFLib generator <https://github.com/vemonet/rdflib-endpoint>`_
+
+The following is an end-to-end example of using this function to create
+a small URI mapping application.
+
+.. code-block::
+
+    # flask_example.py
+    from flask import Flask
+    from curies import Converter, get_bioregistry_converter
+    from curies.mapping_service import get_flask_mapping_app
+
+    # Create a converter
+    converter: Converter = get_bioregistry_converter()
+
+    # Create the Flask app from the converter
+    app: Flask = get_flask_mapping_app(converter)
+
+    if __name__ == "__main__":
+        app.run()
+
+In the command line, either run your Python file directly, or via with :mod:`gunicorn`:
+
+.. code-block:: shell
+
+    pip install gunicorn
+    gunicorn --bind 0.0.0.0:8764 flask_example:app
+
+Test a request in the Python REPL.
+
+.. code-block::
+
+    import requests
+    sparql = '''
+        SELECT ?s ?o WHERE {
+            VALUES ?s { <http://purl.obolibrary.org/obo/CHEBI_2> }
+            ?s owl:sameAs ?o
+        }
+    '''
+    >>> res = requests.get("http://localhost:8764/sparql", params={"query": sparql})
+
+Test a request using a service, e.g. with :meth:`rdflib.Graph.query`
+
+.. code-block:: sparql
+
+    SELECT ?s ?o WHERE {
+        VALUES ?s { <http://purl.obolibrary.org/obo/CHEBI_2> }
+        SERVICE <http://localhost:8764/sparql> {
+            ?s owl:sameAs ?child_mapped .
+        }
+    }
 """
 
 import itertools as itt
@@ -58,16 +108,20 @@ from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, U
 
 from rdflib import OWL, Graph, URIRef
 
-from .rdflib_custom import JervenSPARQLProcessor  # type: ignore
+from .rdflib_custom import MappingServiceSPARQLProcessor  # type: ignore
 from ..api import Converter
 
 if TYPE_CHECKING:
+    import fastapi
     import flask
 
 __all__ = [
-    "CURIEServiceGraph",
+    "MappingServiceGraph",
+    "MappingServiceSPARQLProcessor",
     "get_flask_mapping_blueprint",
     "get_flask_mapping_app",
+    "get_fastapi_router",
+    "get_fastapi_mapping_app",
 ]
 
 
@@ -79,7 +133,7 @@ def _prepare_predicates(predicates: Union[None, str, Collection[str]] = None) ->
     return {URIRef(predicate) for predicate in predicates}
 
 
-class CURIEServiceGraph(Graph):  # type:ignore
+class MappingServiceGraph(Graph):  # type:ignore
     """A service that implements identifier mapping based on a converter."""
 
     converter: Converter
@@ -180,20 +234,23 @@ class CURIEServiceGraph(Graph):  # type:ignore
             return  # too much specification? maybe just return one triple then?
 
 
-def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint":
+def get_flask_mapping_blueprint(
+    converter: Converter, route: str = "/sparql", **kwargs: Any
+) -> "flask.Blueprint":
     """Get a blueprint for :class:`flask.Flask`.
 
     :param converter: A converter
+    :param route: The route of the SPARQL service (relative to the base of the Blueprint)
     :param kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
     :return: A blueprint
     """
     from flask import Blueprint, Response, request
 
     blueprint = Blueprint("mapping", __name__, **kwargs)
-    graph = CURIEServiceGraph(converter=converter)
-    processor = JervenSPARQLProcessor(graph=graph)
+    graph = MappingServiceGraph(converter=converter)
+    processor = MappingServiceSPARQLProcessor(graph=graph)
 
-    @blueprint.route("/sparql", methods=["GET", "POST"])  # type:ignore
+    @blueprint.route(route, methods=["GET", "POST"])  # type:ignore
     def serve_sparql() -> "Response":
         """Run a SPARQL query and serve the results."""
         sparql = (request.args if request.method == "GET" else request.json).get("query")
@@ -205,6 +262,48 @@ def get_flask_mapping_blueprint(converter: Converter, **kwargs: Any) -> "flask.B
     return blueprint
 
 
+def get_fastapi_router(
+    converter: Converter, route: str = "/sparql", **kwargs: Any
+) -> "fastapi.APIRouter":
+    """Get a router for :class:`fastapi.FastAPI`.
+
+    :param converter: A converter
+    :param route: The route of the SPARQL service (relative to the base of the API router)
+    :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
+    :return: A router
+    """
+    from fastapi import APIRouter, Query, Response
+    from pydantic import BaseModel
+
+    class QueryModel(BaseModel):  # type:ignore
+        """A model representing the body in POST queries."""
+
+        query: str
+
+    api_router = APIRouter(**kwargs)
+    graph = MappingServiceGraph(converter=converter)
+    processor = MappingServiceSPARQLProcessor(graph=graph)
+
+    def _resolve(sparql: str) -> Response:
+        results = graph.query(sparql, processor=processor)
+        # TODO enable different serializations
+        return Response(results.serialize(format="json"), media_type="application/json")
+
+    @api_router.get(route)  # type:ignore
+    def resolve_get(
+        query: str = Query(title="Query", description="The SPARQL query to run"),  # noqa:B008
+    ) -> Response:
+        """Run a SPARQL query and serve the results."""
+        return _resolve(query)
+
+    @api_router.post(route)  # type:ignore
+    def resolve_post(query: QueryModel) -> Response:
+        """Run a SPARQL query and serve the results."""
+        return _resolve(query.query)
+
+    return api_router
+
+
 def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
     """Get a Flask app for the mapping service."""
     from flask import Flask
@@ -212,4 +311,18 @@ def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
     blueprint = get_flask_mapping_blueprint(converter)
     app = Flask(__name__)
     app.register_blueprint(blueprint)
+    return app
+
+
+def get_fastapi_mapping_app(converter: Converter) -> "fastapi.FastAPI":
+    """Get a FastAPI app.
+
+    :param converter: A converter
+    :return: A FastAPI app
+    """
+    from fastapi import FastAPI
+
+    router = get_fastapi_router(converter)
+    app = FastAPI()
+    app.include_router(router)
     return app
