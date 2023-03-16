@@ -107,6 +107,7 @@ import itertools as itt
 from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
 
 from rdflib import OWL, Graph, URIRef
+from rdflib.term import _is_valid_uri
 
 from .rdflib_custom import MappingServiceSPARQLProcessor  # type: ignore
 from ..api import Converter
@@ -201,37 +202,29 @@ class MappingServiceGraph(Graph):  # type:ignore
         self.predicates = _prepare_predicates(predicates)
         super().__init__(*args, **kwargs)
 
+    def _expand_pair_all(self, uri_in: str) -> List[URIRef]:
+        prefix, identifier = self.converter.parse_uri(uri_in)
+        if prefix is None or identifier is None:
+            return []
+        uris = cast(Collection[str], self.converter.expand_pair_all(prefix, identifier))
+        # do _is_valid_uri check because some configurations e.g. from Bioregistry might
+        # produce invalid URIs e.g., containing spaces
+        return [URIRef(uri) for uri in uris if _is_valid_uri(uri)]
+
     def triples(
         self, triple: Tuple[URIRef, URIRef, URIRef]
     ) -> Iterable[Tuple[URIRef, URIRef, URIRef]]:
         """Generate triples, overriden to dynamically generate mappings based on this graph's converter."""
         subj_query, pred_query, obj_query = triple
-        if pred_query not in self.predicates:
-            return
-        if subj_query is None and obj_query is None:
-            return  # can't generate based on this
-        if subj_query is None and obj_query is not None:
-            prefix, identifier = self.converter.parse_uri(obj_query)
-            if prefix is None or identifier is None:
-                return
-            subjects = [
-                URIRef(sub)
-                for sub in cast(Collection[str], self.converter.expand_pair_all(prefix, identifier))
-            ]
-            for subj, pred in itt.product(subjects, self.predicates):
-                yield subj, pred, obj_query
-        elif subj_query is not None and obj_query is None:
-            prefix, identifier = self.converter.parse_uri(subj_query)
-            if prefix is None or identifier is None:
-                return
-            objects = [
-                URIRef(obj)
-                for obj in cast(Collection[str], self.converter.expand_pair_all(prefix, identifier))
-            ]
-            for obj, pred in itt.product(objects, self.predicates):
-                yield subj_query, pred, obj
-        else:  # subj_query is not None and obj_query is not None
-            return  # too much specification? maybe just return one triple then?
+        if pred_query in self.predicates:
+            if subj_query is None and obj_query is not None:
+                subjects = self._expand_pair_all(obj_query)
+                for subj, pred in itt.product(subjects, self.predicates):
+                    yield subj, pred, obj_query
+            elif subj_query is not None and obj_query is None:
+                objects = self._expand_pair_all(subj_query)
+                for obj, pred in itt.product(objects, self.predicates):
+                    yield subj_query, pred, obj
 
 
 def get_flask_mapping_blueprint(

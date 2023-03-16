@@ -151,6 +151,22 @@ class TestMappingService(unittest.TestCase):
         """
         self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
 
+    def test_safe_expand(self):
+        """Test that expansion to invalid prefixes doesn't happen."""
+        ppm = {
+            "CHEBI": [
+                "http://purl.obolibrary.org/obo/CHEBI_",
+                "http://identifiers.org/chebi/",
+                "http://identifiers.org/chebi/nope nope:",
+            ],
+        }
+        converter = Converter.from_priority_prefix_map(ppm)
+        graph = MappingServiceGraph(converter=converter)
+        self.assertEqual(
+            {"http://purl.obolibrary.org/obo/CHEBI_1", "http://identifiers.org/chebi/1"},
+            set(map(str, graph._expand_pair_all("http://purl.obolibrary.org/obo/CHEBI_1"))),
+        )
+
 
 class ConverterMixin(unittest.TestCase):
     """A mixin that has a converter."""
