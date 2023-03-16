@@ -212,10 +212,13 @@ def get_flask_mapping_blueprint(
     return blueprint
 
 
-def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRouter":
+def get_fastapi_router(
+    converter: Converter, route: str = "/sparql", **kwargs: Any
+) -> "fastapi.APIRouter":
     """Get a router for :class:`fastapi.FastAPI`.
 
     :param converter: A converter
+    :param route: The route of the SPARQL service (relative to the base of the API router)
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
     :return: A router
     """
@@ -235,14 +238,14 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
         # TODO enable different serializations
         return Response(results.serialize(format="json"), media_type="application/json")
 
-    @api_router.get("/sparql")  # type:ignore
+    @api_router.get(route)  # type:ignore
     def resolve_get(
         query: str = Query(title="Query", description="The SPARQL query to run"),  # noqa:B008
     ) -> Response:
         """Run a SPARQL query and serve the results."""
         return _resolve(query)
 
-    @api_router.post("/sparql")  # type:ignore
+    @api_router.post(route)  # type:ignore
     def resolve_post(
         query: str = Body(title="Query", description="The SPARQL query to run"),  # noqa:B008
     ) -> Response:
