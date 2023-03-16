@@ -239,7 +239,7 @@ class TestFastAPIMappingApp(ConverterMixin):
         self.assertEqual(
             200,
             res.status_code,
-            msg=f"\nRequest: {res.request.body}\nResponse: {res}\n\n{res.json()}",
+            msg=f"Response: {res}",
         )
         records = {
             (record["s"]["value"], record["o"]["value"])
