@@ -56,7 +56,6 @@ are two ways of referring to UniProt Proteins:
 import itertools as itt
 from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
 
-import pyparsing
 from rdflib import OWL, Graph, URIRef
 
 from .rdflib_custom import JervenSPARQLProcessor  # type: ignore
@@ -222,7 +221,7 @@ def get_fastapi_router(
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
     :return: A router
     """
-    from fastapi import APIRouter, HTTPException, Query, Response
+    from fastapi import APIRouter, Query, Response
     from pydantic import BaseModel
 
     class QueryModel(BaseModel):  # type:ignore
@@ -235,12 +234,7 @@ def get_fastapi_router(
     processor = JervenSPARQLProcessor(graph=graph)
 
     def _resolve(sparql: str) -> Response:
-        try:
-            results = graph.query(sparql, processor=processor)
-        except pyparsing.exceptions.ParseException as e:
-            raise HTTPException(
-                status_code=422, detail=f"Invalid SPARQL given:\n\n{sparql}\n\nError:\n{str(e)}"
-            )
+        results = graph.query(sparql, processor=processor)
         # TODO enable different serializations
         return Response(results.serialize(format="json"), media_type="application/json")
 
