@@ -170,16 +170,6 @@ class ConverterMixin(unittest.TestCase):
         }
         self.assertEqual(EXPECTED, records)
 
-    def assert_post_sparql_results(self, client, sparql):
-        """Test a sparql query returns expected values."""
-        res = client.post("/sparql", data={"query": sparql})
-        self.assertEqual(200, res.status_code, msg=f"Response: {res}\n\n{res.text}")
-        records = {
-            (record["s"]["value"], record["o"]["value"])
-            for record in json.loads(res.text)["results"]["bindings"]
-        }
-        self.assertEqual(EXPECTED, records)
-
 
 class TestFlaskMappingWeb(ConverterMixin):
     """Test the Flask-based mapping service."""
@@ -188,6 +178,18 @@ class TestFlaskMappingWeb(ConverterMixin):
         """Set up the test case with a converter and app."""
         super().setUp()
         self.app = get_flask_mapping_app(self.converter)
+
+    def assert_post_sparql_results(self, client, sparql):
+        """Test a sparql query returns expected values."""
+        res = client.post("/sparql", json={"query": sparql})
+        self.assertEqual(
+            200, res.status_code, msg=f"\nRequest: {res.request}\nResponse: {res}\n\n{res.json}"
+        )
+        records = {
+            (record["s"]["value"], record["o"]["value"])
+            for record in json.loads(res.text)["results"]["bindings"]
+        }
+        self.assertEqual(EXPECTED, records)
 
     def test_get_missing_query(self):
         """Test error on missing query parameter."""
@@ -230,6 +232,20 @@ class TestFastAPIMappingApp(ConverterMixin):
         super().setUp()
         self.app = get_fastapi_mapping_app(self.converter)
         self.client = TestClient(self.app)
+
+    def assert_post_sparql_results(self, client, sparql):
+        """Test a sparql query returns expected values."""
+        res = client.post("/sparql", json={"query": sparql})
+        self.assertEqual(
+            200,
+            res.status_code,
+            msg=f"\nRequest: {res.request.body}\nResponse: {res}\n\n{res.json()}",
+        )
+        records = {
+            (record["s"]["value"], record["o"]["value"])
+            for record in res.json()["results"]["bindings"]
+        }
+        self.assertEqual(EXPECTED, records)
 
     def test_get_missing_query(self):
         """Test error on missing query parameter."""

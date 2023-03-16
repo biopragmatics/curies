@@ -222,7 +222,13 @@ def get_fastapi_router(
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
     :return: A router
     """
-    from fastapi import APIRouter, Body, HTTPException, Query, Response
+    from fastapi import APIRouter, HTTPException, Query, Response
+    from pydantic import BaseModel
+
+    class QueryModel(BaseModel):  # type:ignore
+        """A model representing the body in POST queries."""
+
+        query: str
 
     api_router = APIRouter(**kwargs)
     graph = CURIEServiceGraph(converter=converter)
@@ -246,11 +252,9 @@ def get_fastapi_router(
         return _resolve(query)
 
     @api_router.post(route)  # type:ignore
-    def resolve_post(
-        query: str = Body(title="Query", description="The SPARQL query to run"),  # noqa:B008
-    ) -> Response:
+    def resolve_post(query: QueryModel) -> Response:
         """Run a SPARQL query and serve the results."""
-        return _resolve(query)
+        return _resolve(query.query)
 
     return api_router
 
