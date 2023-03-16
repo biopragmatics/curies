@@ -192,6 +192,60 @@ def get_flask_mapping_blueprint(
     :param route: The route of the SPARQL service (relative to the base of the Blueprint)
     :param kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
     :return: A blueprint
+
+    The following is an end-to-end example of using this function to create
+    a small URI mapping application.
+
+    .. code-block::
+
+        # flask_example.py
+        from flask import Flask
+        from curies import Converter, get_bioregistry_converter
+        from curies.mapping_service import get_flask_mapping_blueprint
+
+        # Create a converter
+        converter: Converter = get_bioregistry_converter()
+
+        # Create a blueprint from the converter
+        blueprint = get_flask_mapping_blueprint(converter)
+
+        # Create the Flask app and mount the router
+        app = Flask(__name__)
+        app.register_blueprint(blueprint)
+
+        if __name__ == "__main__":
+            app.run()
+
+    In the command line, either run your Python file directly, or via with :mod:`gunicorn`:
+
+    .. code-block:: shell
+
+        pip install gunicorn
+        gunicorn --bind 0.0.0.0:8764 flask_example:app
+
+    Test a request in the Python REPL.
+
+    .. code-block::
+
+        >>> import requests
+        >>> sparql = '''\
+            SELECT ?s ?o WHERE { \
+                VALUES ?s { <http://purl.obolibrary.org/obo/CHEBI_2> } \
+                ?s owl:sameAs ?o \
+            } \
+        '''
+        >>> res = requests.get("http://localhost:8764/sparql", params={"query": sparql})
+
+    Test a request using a service, e.g. with :meth:`rdflib.Graph.query`
+
+    .. code-block:: sparql
+
+        SELECT ?s ?o WHERE {
+            VALUES ?s { <http://purl.obolibrary.org/obo/CHEBI_2> }
+            SERVICE <http://localhost:8764/sparql> {
+                ?s owl:sameAs ?child_mapped .
+            }
+        }
     """
     from flask import Blueprint, Response, request
 
