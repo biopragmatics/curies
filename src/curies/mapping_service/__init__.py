@@ -69,6 +69,8 @@ __all__ = [
     "CURIEServiceGraph",
     "get_flask_mapping_blueprint",
     "get_flask_mapping_app",
+    "get_fastapi_router",
+    "get_fastapi_mapping_app",
 ]
 
 
@@ -216,7 +218,7 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
     :return: A router
     """
-    from fastapi import APIRouter, Path, Response
+    from fastapi import APIRouter, Query, Response
 
     api_router = APIRouter(**kwargs)
     graph = CURIEServiceGraph(converter=converter)
@@ -224,7 +226,7 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
     @api_router.get("/sparql")  # type:ignore
     def resolve(
-        query: str = Path(title="Query", description="The SPARQL query to run"),
+        query: str = Query(title="Query", description="The SPARQL query to run"),  # noqa:B008
     ) -> Response:
         """Run a SPARQL query and serve the results."""
         results = graph.query(query, processor=processor).serialize(format="json")
@@ -240,4 +242,18 @@ def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
     blueprint = get_flask_mapping_blueprint(converter)
     app = Flask(__name__)
     app.register_blueprint(blueprint)
+    return app
+
+
+def get_fastapi_mapping_app(converter: Converter) -> "fastapi.FastAPI":
+    """Get a FastAPI app.
+
+    :param converter: A converter
+    :return: A FastAPI app
+    """
+    from fastapi import FastAPI
+
+    router = get_fastapi_router(converter)
+    app = FastAPI()
+    app.include_router(router)
     return app
