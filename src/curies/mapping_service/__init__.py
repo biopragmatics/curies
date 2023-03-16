@@ -56,6 +56,7 @@ are two ways of referring to UniProt Proteins:
 import itertools as itt
 from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
 
+import pyparsing
 from rdflib import OWL, Graph, URIRef
 
 from .rdflib_custom import JervenSPARQLProcessor  # type: ignore
@@ -218,19 +219,35 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
     :return: A router
     """
-    from fastapi import APIRouter, Query, Response
+    from fastapi import APIRouter, Body, HTTPException, Query, Response
 
     api_router = APIRouter(**kwargs)
     graph = CURIEServiceGraph(converter=converter)
     processor = JervenSPARQLProcessor(graph=graph)
 
+    def _resolve(sparql: str) -> Response:
+        try:
+            results = graph.query(sparql, processor=processor)
+        except pyparsing.exceptions.ParseException as e:
+            raise HTTPException(
+                status_code=422, detail=f"Invalid SPARQL given:\n\n{sparql}\n\nError:\n{str(e)}"
+            )
+        # TODO enable different serializations
+        return Response(results.serialize(format="json"), media_type="application/json")
+
     @api_router.get("/sparql")  # type:ignore
-    def resolve(
+    def resolve_get(
         query: str = Query(title="Query", description="The SPARQL query to run"),  # noqa:B008
     ) -> Response:
         """Run a SPARQL query and serve the results."""
-        results = graph.query(query, processor=processor).serialize(format="json")
-        return Response(results, media_type="application/json")
+        return _resolve(query)
+
+    @api_router.post("/sparql")  # type:ignore
+    def resolve_post(
+        query: str = Body(title="Query", description="The SPARQL query to run"),  # noqa:B008
+    ) -> Response:
+        """Run a SPARQL query and serve the results."""
+        return _resolve(query)
 
     return api_router
 
