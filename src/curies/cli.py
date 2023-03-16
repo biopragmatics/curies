@@ -5,7 +5,7 @@
 
 .. code-block::
 
-    $ python -m curies --host 0.0.0.0 --port 8764 bioregistry
+    $ python -m curies resolver --host 0.0.0.0 --port 8764 bioregistry
 
 The positional argument can be one of the following:
 
@@ -16,6 +16,14 @@ The positional argument can be one of the following:
 The framework can be swapped to use Flask (default) or FastAPI with `--framework`. The
 server can be swapped to use Werkzeug (default) or Uvicorn with `--server`. These functionalities
 are also available programmatically (see :func:`get_flask_app` and :func:`get_fastapi_app`).
+
+Similarly, there's a built-in CLI for running a mapper web application.
+
+.. code-block::
+
+    $ python -m curies mapper --host 0.0.0.0 --port 8764 bioregistry
+
+The same flags and arguments are applicable.
 """
 
 import sys
@@ -23,6 +31,7 @@ from typing import Callable, Mapping
 
 import click
 
+import curies
 from curies import Converter, sources
 
 __all__ = [
@@ -46,15 +55,31 @@ CONVERTERS: Mapping[str, Callable[[], Converter]] = {
 }
 
 
-def _get_app(converter: Converter, framework: str):
+def _get_converter(location, format) -> Converter:
+    if location in CONVERTERS:
+        return CONVERTERS[location]()
+    if format is None:
+        click.secho("--format is required with remote data", fg="red")
+        return sys.exit(1)
+    return LOADERS[format](location)
+
+
+def _get_resolver_app(converter: Converter, framework: str):
     if framework == "flask":
-        from curies import get_flask_app
-
-        return get_flask_app(converter)
+        return curies.get_flask_app(converter)
     elif framework == "fastapi":
-        from curies import get_fastapi_app
+        return curies.get_fastapi_app(converter)
+    else:
+        raise ValueError(f"Unhandled framework: {framework}")
 
-        return get_fastapi_app(converter)
+
+def _get_mapper_app(converter: Converter, framework: str):
+    from curies import mapping_service
+
+    if framework == "flask":
+        return mapping_service.get_flask_mapping_app(converter)
+    elif framework == "fastapi":
+        return mapping_service.get_fastapi_mapping_app(converter)
     else:
         raise ValueError(f"Unhandled framework: {framework}")
 
@@ -72,50 +97,73 @@ def _run_app(app, server, host, port):
         raise ValueError(f"Unhandled server: {server}")
 
 
-@click.command()
-@click.argument("location")
-@click.option(
+LOCATION_ARGUMENT = click.argument("location")
+FRAMEWORK_OPTION = click.option(
     "--framework",
     default="flask",
     type=click.Choice(["flask", "fastapi"]),
     show_default=True,
     help="The framework used to implement the app. Note, each requires different packages to be installed.",
 )
-@click.option(
+SERVER_OPTION = click.option(
     "--server",
     default="werkzeug",
     type=click.Choice(["werkzeug", "uvicorn", "gunicorn"]),
     show_default=True,
     help="The web server used to run the app. Note, each requires different packages to be installed.",
 )
-@click.option(
+FORMAT_OPTION = click.option(
     "--format",
     type=click.Choice(list(LOADERS)),
     help="The data structure of the resolver data. Required if not giving a pre-defined converter name.",
 )
-@click.option(
+HOST_OPTION = click.option(
     "--host",
     default="0.0.0.0",  # noqa:S104
     show_default=True,
     help="The host where the resolver runs",
 )
-@click.option(
+PORT_OPTION = click.option(
     "--port", type=int, default=8764, show_default=True, help="The port where the resolver runs"
 )
-def main(location, host: str, port: int, framework: str, format: str, server: str):
+
+
+@click.group()
+def main():
+    """Run the `curies` CLI."""
+
+
+@main.command()
+@LOCATION_ARGUMENT
+@FRAMEWORK_OPTION
+@SERVER_OPTION
+@FORMAT_OPTION
+@HOST_OPTION
+@PORT_OPTION
+def resolver(location, host: str, port: int, framework: str, format: str, server: str):
     """Serve a resolver app.
 
     Location can either be the name of a built-in converter, a file path, or a URL.
     """
-    if location in CONVERTERS:
-        converter = CONVERTERS[location]()
-    elif format is None:
-        click.secho("--format is required with remote data", fg="red")
-        return sys.exit(1)
-    else:
-        converter = LOADERS[format](location)
+    converter = _get_converter(location, format)
+    app = _get_resolver_app(converter, framework=framework)
+    _run_app(app, server=server, host=host, port=port)
 
-    app = _get_app(converter, framework=framework)
+
+@main.command()
+@LOCATION_ARGUMENT
+@FRAMEWORK_OPTION
+@SERVER_OPTION
+@FORMAT_OPTION
+@HOST_OPTION
+@PORT_OPTION
+def mapper(location, host: str, port: int, framework: str, format: str, server: str):
+    """Serve a mapper app.
+
+    Location can either be the name of a built-in converter, a file path, or a URL.
+    """
+    converter = _get_converter(location, format)
+    app = _get_mapper_app(converter, framework=framework)
     _run_app(app, server=server, host=host, port=port)
 
 

@@ -171,10 +171,14 @@ obo_converter.file_expand(path, column=0)
 
 ### CLI Usage
 
-This package comes with a built-in CLI for running a resolver web application:
+This package comes with a built-in CLI for running a resolver web application or a IRI mapper web application:
 
 ```shell
-$ python -m curies --host 0.0.0.0 --port 8764 bioregistry 
+# Run a resolver
+python -m curies resolver --host 0.0.0.0 --port 8764 bioregistry 
+
+# Run a mapper
+python -m curies mapper --host 0.0.0.0 --port 8764 bioregistry 
 ```
 
 The positional argument can be one of the following:
