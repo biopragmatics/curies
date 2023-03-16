@@ -13,12 +13,12 @@ from rdflib.query import ResultRow
 
 from curies import Converter
 from curies.mapping_service import (
-    CURIEServiceGraph,
+    MappingServiceGraph,
+    MappingServiceSPARQLProcessor,
     _prepare_predicates,
     get_fastapi_mapping_app,
     get_flask_mapping_app,
 )
-from curies.mapping_service.rdflib_custom import JervenSPARQLProcessor
 
 PREFIX_MAP = {
     "CHEBI": [
@@ -93,8 +93,8 @@ class TestMappingService(unittest.TestCase):
     def setUp(self) -> None:
         """Set up the converter."""
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
-        self.graph = CURIEServiceGraph(converter=self.converter)
-        self.processor = JervenSPARQLProcessor(self.graph)
+        self.graph = MappingServiceGraph(converter=self.converter)
+        self.processor = MappingServiceSPARQLProcessor(self.graph)
 
     def test_prepare_predicates(self):
         """Test preparation of predicates."""

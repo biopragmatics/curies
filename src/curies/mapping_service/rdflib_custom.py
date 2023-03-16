@@ -12,10 +12,10 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from rdflib.plugins.sparql.processor import SPARQLProcessor
 from rdflib.plugins.sparql.sparql import Query
 
-__all__ = ["JervenSPARQLProcessor"]
+__all__ = ["MappingServiceSPARQLProcessor"]
 
 
-class JervenSPARQLProcessor(SPARQLProcessor):
+class MappingServiceSPARQLProcessor(SPARQLProcessor):
     """A custom SPARQL processor that optimizes the query based on https://github.com/RDFLib/rdflib/pull/2257.
 
     Why is this necessary? Ideally, we get queries like

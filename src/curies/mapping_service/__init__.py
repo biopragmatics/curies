@@ -60,17 +60,13 @@ a small URI mapping application.
     # flask_example.py
     from flask import Flask
     from curies import Converter, get_bioregistry_converter
-    from curies.mapping_service import get_flask_mapping_blueprint
+    from curies.mapping_service import get_flask_mapping_app
 
     # Create a converter
     converter: Converter = get_bioregistry_converter()
 
-    # Create a blueprint from the converter
-    blueprint = get_flask_mapping_blueprint(converter)
-
-    # Create the Flask app and mount the router
-    app = Flask(__name__)
-    app.register_blueprint(blueprint)
+    # Create the Flask app from the converter
+    app: Flask = get_flask_mapping_app(converter)
 
     if __name__ == "__main__":
         app.run()
@@ -112,7 +108,7 @@ from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, U
 
 from rdflib import OWL, Graph, URIRef
 
-from .rdflib_custom import JervenSPARQLProcessor  # type: ignore
+from .rdflib_custom import MappingServiceSPARQLProcessor  # type: ignore
 from ..api import Converter
 
 if TYPE_CHECKING:
@@ -120,7 +116,8 @@ if TYPE_CHECKING:
     import flask
 
 __all__ = [
-    "CURIEServiceGraph",
+    "MappingServiceGraph",
+    "MappingServiceSPARQLProcessor",
     "get_flask_mapping_blueprint",
     "get_flask_mapping_app",
     "get_fastapi_router",
@@ -136,7 +133,7 @@ def _prepare_predicates(predicates: Union[None, str, Collection[str]] = None) ->
     return {URIRef(predicate) for predicate in predicates}
 
 
-class CURIEServiceGraph(Graph):  # type:ignore
+class MappingServiceGraph(Graph):  # type:ignore
     """A service that implements identifier mapping based on a converter."""
 
     converter: Converter
@@ -250,8 +247,8 @@ def get_flask_mapping_blueprint(
     from flask import Blueprint, Response, request
 
     blueprint = Blueprint("mapping", __name__, **kwargs)
-    graph = CURIEServiceGraph(converter=converter)
-    processor = JervenSPARQLProcessor(graph=graph)
+    graph = MappingServiceGraph(converter=converter)
+    processor = MappingServiceSPARQLProcessor(graph=graph)
 
     @blueprint.route(route, methods=["GET", "POST"])  # type:ignore
     def serve_sparql() -> "Response":
@@ -284,8 +281,8 @@ def get_fastapi_router(
         query: str
 
     api_router = APIRouter(**kwargs)
-    graph = CURIEServiceGraph(converter=converter)
-    processor = JervenSPARQLProcessor(graph=graph)
+    graph = MappingServiceGraph(converter=converter)
+    processor = MappingServiceSPARQLProcessor(graph=graph)
 
     def _resolve(sparql: str) -> Response:
         results = graph.query(sparql, processor=processor)
