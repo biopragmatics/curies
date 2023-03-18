@@ -204,21 +204,19 @@ def _handle_res_csv(res) -> Set[Tuple[str, str]]:
 #     return {(str(s), str(o)) for s, o in graph.subject_objects()}
 
 
-CONTENT_TYPES = dict(
-    [
-        ("application/sparql-results+json", _handle_res_json),
-        ("application/json", _handle_res_json),
-        ("text/json", _handle_res_json),
-        ("application/sparql-results+xml", _handle_res_xml),
-        ("application/xml", _handle_res_xml),
-        ("text/xml", _handle_res_xml),
-        ("application/sparql-results+csv", _handle_res_csv),
-        ("text/csv", _handle_res_csv),
-        # ("text/turtle", partial(_handle_res_rdf, format="ttl")),
-        # ("text/n3", partial(_handle_res_rdf, format="n3")),
-        # ("application/ld+json", partial(_handle_res_rdf, format="json-ld")),
-    ]
-)
+CONTENT_TYPES = {
+    "application/sparql-results+json": _handle_res_json,
+    "application/json": _handle_res_json,
+    "text/json": _handle_res_json,
+    "application/sparql-results+xml": _handle_res_xml,
+    "application/xml": _handle_res_xml,
+    "text/xml": _handle_res_xml,
+    "application/sparql-results+csv": _handle_res_csv,
+    "text/csv": _handle_res_csv,
+    # "text/turtle": partial(_handle_res_rdf, format="ttl"),
+    # "text/n3": partial(_handle_res_rdf, format="n3"),
+    # "application/ld+json": partial(_handle_res_rdf, format="json-ld"),
+}
 CONTENT_TYPES[""] = CONTENT_TYPES[DEFAULT_CONTENT_TYPE]
 CONTENT_TYPES["*/*"] = CONTENT_TYPES[DEFAULT_CONTENT_TYPE]
 
