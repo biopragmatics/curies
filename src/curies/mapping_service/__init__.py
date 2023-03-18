@@ -227,6 +227,25 @@ class MappingServiceGraph(Graph):  # type:ignore
                     yield subj_query, pred, obj
 
 
+CONTENT_TYPE_TO_RDFLIB_FORMAT = {
+    # https://www.w3.org/TR/sparql11-results-json/
+    "application/sparql-results+json": "json",
+    "application/json": "json",
+    "text/json": "json",
+    # https://www.w3.org/TR/rdf-sparql-XMLres/
+    "application/sparql-results+xml": "xml",
+    "application/xml": "xml",  # for compatibility
+    "text/xml": "xml",  # not standard
+    # https://www.w3.org/TR/sparql11-results-csv-tsv/
+    "application/sparql-results+csv": "csv",
+    "text/csv": "csv",  # for compatibility
+    # Other direct RDF serializations
+    "text/turtle": "ttl",
+    "text/n3": "n3",
+    "application/ld+json": "json-ld",
+}
+
+
 def get_flask_mapping_blueprint(
     converter: Converter, route: str = "/sparql", **kwargs: Any
 ) -> "flask.Blueprint":
@@ -249,8 +268,13 @@ def get_flask_mapping_blueprint(
         sparql = (request.args if request.method == "GET" else request.json).get("query")
         if not sparql:
             return Response("Missing parameter query", 400)
-        results = graph.query(sparql, processor=processor).serialize(format="json")
-        return Response(results)
+        content_type = request.headers.get("accept", "application/json")
+        results = graph.query(sparql, processor=processor)
+        response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
+        return Response(
+            response,
+            content_type=content_type,
+        )
 
     return blueprint
 
@@ -265,7 +289,7 @@ def get_fastapi_router(
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
     :return: A router
     """
-    from fastapi import APIRouter, Query, Response
+    from fastapi import APIRouter, Query, Request, Response
     from pydantic import BaseModel
 
     class QueryModel(BaseModel):  # type:ignore
@@ -277,22 +301,24 @@ def get_fastapi_router(
     graph = MappingServiceGraph(converter=converter)
     processor = MappingServiceSPARQLProcessor(graph=graph)
 
-    def _resolve(sparql: str) -> Response:
+    def _resolve(request: Request, sparql: str) -> Response:
+        content_type = request.headers.get("accept", "application/json")
         results = graph.query(sparql, processor=processor)
-        # TODO enable different serializations
-        return Response(results.serialize(format="json"), media_type="application/json")
+        response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
+        return Response(response, media_type=content_type)
 
     @api_router.get(route)  # type:ignore
     def resolve_get(
+        request: Request,
         query: str = Query(title="Query", description="The SPARQL query to run"),  # noqa:B008
     ) -> Response:
         """Run a SPARQL query and serve the results."""
-        return _resolve(query)
+        return _resolve(request, query)
 
     @api_router.post(route)  # type:ignore
-    def resolve_post(query: QueryModel) -> Response:
+    def resolve_post(request: Request, query: QueryModel) -> Response:
         """Run a SPARQL query and serve the results."""
-        return _resolve(query.query)
+        return _resolve(request, query.query)
 
     return api_router
 
