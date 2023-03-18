@@ -276,14 +276,18 @@ class TestFlaskMappingWeb(ConverterMixin):
     def test_get_missing_query(self):
         """Test error on missing query parameter."""
         with self.app.test_client() as client:
-            res = client.get("/sparql", headers={"accept": "application/json"})
-            self.assertEqual(400, res.status_code, msg=f"Response: {res}")
+            for content_type in sorted(CONTENT_TYPES):
+                with self.subTest(content_type=content_type):
+                    res = client.get("/sparql", headers={"accept": content_type})
+                    self.assertEqual(400, res.status_code, msg=f"Response: {res}")
 
     def test_post_missing_query(self):
         """Test error on missing query parameter."""
         with self.app.test_client() as client:
-            res = client.post("/sparql", headers={"accept": "application/json"})
-            self.assertEqual(400, res.status_code, msg=f"Response: {res}")
+            for content_type in sorted(CONTENT_TYPES):
+                with self.subTest(content_type=content_type):
+                    res = client.post("/sparql", headers={"accept": content_type})
+                    self.assertEqual(400, res.status_code, msg=f"Response: {res}")
 
     def test_get_query(self):
         """Test querying the app with GET."""
@@ -317,13 +321,17 @@ class TestFastAPIMappingApp(ConverterMixin):
 
     def test_get_missing_query(self):
         """Test error on missing query parameter."""
-        res = self.client.get("/sparql", headers={"accept": "application/json"})
-        self.assertEqual(422, res.status_code, msg=f"Response: {res}")
+        for content_type in sorted(CONTENT_TYPES):
+            with self.subTest(content_type=content_type):
+                res = self.client.get("/sparql", headers={"accept": content_type})
+                self.assertEqual(422, res.status_code, msg=f"Response: {res}")
 
     def test_post_missing_query(self):
         """Test error on missing query parameter."""
-        res = self.client.post("/sparql", headers={"accept": "application/json"})
-        self.assertEqual(422, res.status_code, msg=f"Response: {res}")
+        for content_type in sorted(CONTENT_TYPES):
+            with self.subTest(content_type=content_type):
+                res = self.client.post("/sparql", headers={"accept": content_type})
+                self.assertEqual(422, res.status_code, msg=f"Response: {res}")
 
     def test_get_query(self):
         """Test querying the app with GET."""
