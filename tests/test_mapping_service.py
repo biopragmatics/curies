@@ -18,6 +18,7 @@ from curies.mapping_service import (
     DEFAULT_CONTENT_TYPE,
     MappingServiceGraph,
     MappingServiceSPARQLProcessor,
+    _handle_header,
     _prepare_predicates,
     get_fastapi_mapping_app,
     get_flask_mapping_app,
@@ -242,12 +243,24 @@ class ConverterMixin(unittest.TestCase):
         super().setUp()
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
 
+    def assert_mimetype(self, res, content_type):
+        """Assert the correct MIMETYPE."""
+        content_type = _handle_header(content_type)
+        mimetype = getattr(res, "mimetype", None)
+        if hasattr(res, "mimetype"):  # this is from Flask
+            self.assertEqual(content_type, mimetype)
+        else:  # this is from FastAPI
+            actual_content_type = res.headers.get("content-type")
+            self.assertIsNotNone(actual_content_type)
+            self.assertEqual(content_type, actual_content_type.split(";")[0].strip())
+
     def assert_get_sparql_results(self, client, sparql):
         """Test a sparql query returns expected values."""
         for content_type, parse_func in sorted(CONTENT_TYPES.items()):
             with self.subTest(content_type=content_type):
                 res = client.get(f"/sparql?query={quote(sparql)}", headers={"accept": content_type})
                 self.assertEqual(200, res.status_code, msg=f"Response: {res}\n\n{res.text}")
+                self.assert_mimetype(res, content_type)
                 self.assertEqual(EXPECTED, parse_func(res))
 
     def assert_post_sparql_results(self, client, sparql):
@@ -262,6 +275,7 @@ class ConverterMixin(unittest.TestCase):
                     res.status_code,
                     msg=f"Response: {res}",
                 )
+                self.assert_mimetype(res, content_type)
                 self.assertEqual(EXPECTED, parse_func(res))
 
 
