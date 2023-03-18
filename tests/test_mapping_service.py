@@ -168,6 +168,10 @@ class TestMappingService(unittest.TestCase):
         )
 
 
+def _handle_json(data):
+    return {(record["s"]["value"], record["o"]["value"]) for record in data["results"]["bindings"]}
+
+
 class ConverterMixin(unittest.TestCase):
     """A mixin that has a converter."""
 
@@ -180,11 +184,7 @@ class ConverterMixin(unittest.TestCase):
         """Test a sparql query returns expected values."""
         res = client.get(f"/sparql?query={quote(sparql)}")
         self.assertEqual(200, res.status_code, msg=f"Response: {res}\n\n{res.text}")
-        records = {
-            (record["s"]["value"], record["o"]["value"])
-            for record in json.loads(res.text)["results"]["bindings"]
-        }
-        self.assertEqual(EXPECTED, records)
+        self.assertEqual(EXPECTED, _handle_json(json.loads(res.text)))
 
 
 class TestFlaskMappingWeb(ConverterMixin):
@@ -201,10 +201,7 @@ class TestFlaskMappingWeb(ConverterMixin):
         self.assertEqual(
             200, res.status_code, msg=f"\nRequest: {res.request}\nResponse: {res}\n\n{res.json}"
         )
-        records = {
-            (record["s"]["value"], record["o"]["value"])
-            for record in json.loads(res.text)["results"]["bindings"]
-        }
+        records = _handle_json(json.loads(res.text))
         self.assertEqual(EXPECTED, records)
 
     def test_get_missing_query(self):

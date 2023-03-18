@@ -104,7 +104,7 @@ Test a request using a service, e.g. with :meth:`rdflib.Graph.query`
 """
 
 import itertools as itt
-from typing import Optional, TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Optional, Set, Tuple, Union, cast
 
 from rdflib import OWL, Graph, URIRef
 from rdflib.term import _is_valid_uri
@@ -227,7 +227,11 @@ class MappingServiceGraph(Graph):  # type:ignore
                     yield subj_query, pred, obj
 
 
-DEFAULT_CONTENT_TYPE = "application/json"
+#: This is default for federated queries
+DEFAULT_CONTENT_TYPE = "application/sparql-results+xml"
+
+#: A mapping from content types to the keys used for serializing
+#: in :meth:`rdflib.Graph.serialize` and other serialization functions
 CONTENT_TYPE_TO_RDFLIB_FORMAT = {
     # https://www.w3.org/TR/sparql11-results-json/
     "application/sparql-results+json": "json",
@@ -246,8 +250,9 @@ CONTENT_TYPE_TO_RDFLIB_FORMAT = {
     "application/ld+json": "json-ld",
 }
 
+
 def _handle_header(header: Optional[str]) -> str:
-    if header is None or header == "*/*":
+    if not header or header == "*/*":
         return DEFAULT_CONTENT_TYPE
     return CONTENT_TYPE_TO_RDFLIB_FORMAT[header]
 
