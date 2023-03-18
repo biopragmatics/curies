@@ -104,7 +104,7 @@ Test a request using a service, e.g. with :meth:`rdflib.Graph.query`
 """
 
 import itertools as itt
-from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
+from typing import Optional, TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
 
 from rdflib import OWL, Graph, URIRef
 from rdflib.term import _is_valid_uri
@@ -246,6 +246,11 @@ CONTENT_TYPE_TO_RDFLIB_FORMAT = {
     "application/ld+json": "json-ld",
 }
 
+def _handle_header(header: Optional[str]) -> str:
+    if header is None or header == "*/*":
+        return DEFAULT_CONTENT_TYPE
+    return CONTENT_TYPE_TO_RDFLIB_FORMAT[header]
+
 
 def get_flask_mapping_blueprint(
     converter: Converter, route: str = "/sparql", **kwargs: Any
@@ -269,7 +274,7 @@ def get_flask_mapping_blueprint(
         sparql = (request.args if request.method == "GET" else request.json).get("query")
         if not sparql:
             return Response("Missing parameter query", 400)
-        content_type = request.headers.get("accept", DEFAULT_CONTENT_TYPE)
+        content_type = _handle_header(request.headers.get("accept"))
         results = graph.query(sparql, processor=processor)
         response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
         return Response(response, content_type=content_type)
@@ -300,7 +305,7 @@ def get_fastapi_router(
     processor = MappingServiceSPARQLProcessor(graph=graph)
 
     def _resolve(request: Request, sparql: str) -> Response:
-        content_type = request.headers.get("accept", DEFAULT_CONTENT_TYPE)
+        content_type = _handle_header(request.headers.get("accept"))
         results = graph.query(sparql, processor=processor)
         response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
         return Response(response, media_type=content_type)
