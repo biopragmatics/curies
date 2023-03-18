@@ -182,7 +182,7 @@ class ConverterMixin(unittest.TestCase):
 
     def assert_get_sparql_results(self, client, sparql):
         """Test a sparql query returns expected values."""
-        res = client.get(f"/sparql?query={quote(sparql)}")
+        res = client.get(f"/sparql?query={quote(sparql)}", headers={"accept": "application/json"})
         self.assertEqual(200, res.status_code, msg=f"Response: {res}\n\n{res.text}")
         self.assertEqual(EXPECTED, _handle_json(json.loads(res.text)))
 
@@ -197,7 +197,7 @@ class TestFlaskMappingWeb(ConverterMixin):
 
     def assert_post_sparql_results(self, client, sparql):
         """Test a sparql query returns expected values."""
-        res = client.post("/sparql", json={"query": sparql})
+        res = client.post("/sparql", json={"query": sparql}, headers={"accept": "application/json"})
         self.assertEqual(
             200, res.status_code, msg=f"\nRequest: {res.request}\nResponse: {res}\n\n{res.json}"
         )
@@ -207,13 +207,13 @@ class TestFlaskMappingWeb(ConverterMixin):
     def test_get_missing_query(self):
         """Test error on missing query parameter."""
         with self.app.test_client() as client:
-            res = client.get("/sparql")
+            res = client.get("/sparql", headers={"accept": "application/json"})
             self.assertEqual(400, res.status_code, msg=f"Response: {res}")
 
     def test_post_missing_query(self):
         """Test error on missing query parameter."""
         with self.app.test_client() as client:
-            res = client.post("/sparql")
+            res = client.post("/sparql", headers={"accept": "application/json"})
             self.assertEqual(400, res.status_code, msg=f"Response: {res}")
 
     def test_get_query(self):
@@ -248,26 +248,23 @@ class TestFastAPIMappingApp(ConverterMixin):
 
     def assert_post_sparql_results(self, client, sparql):
         """Test a sparql query returns expected values."""
-        res = client.post("/sparql", json={"query": sparql})
+        res = client.post("/sparql", json={"query": sparql}, headers={"accept": "application/json"})
         self.assertEqual(
             200,
             res.status_code,
             msg=f"Response: {res}",
         )
-        records = {
-            (record["s"]["value"], record["o"]["value"])
-            for record in res.json()["results"]["bindings"]
-        }
+        records = _handle_json(res.json())
         self.assertEqual(EXPECTED, records)
 
     def test_get_missing_query(self):
         """Test error on missing query parameter."""
-        res = self.client.get("/sparql")
+        res = self.client.get("/sparql", headers={"accept": "application/json"})
         self.assertEqual(422, res.status_code, msg=f"Response: {res}")
 
     def test_post_missing_query(self):
         """Test error on missing query parameter."""
-        res = self.client.post("/sparql")
+        res = self.client.post("/sparql", headers={"accept": "application/json"})
         self.assertEqual(422, res.status_code, msg=f"Response: {res}")
 
     def test_get_query(self):

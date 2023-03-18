@@ -254,7 +254,7 @@ CONTENT_TYPE_TO_RDFLIB_FORMAT = {
 def _handle_header(header: Optional[str]) -> str:
     if not header or header == "*/*":
         return DEFAULT_CONTENT_TYPE
-    return CONTENT_TYPE_TO_RDFLIB_FORMAT[header]
+    return header
 
 
 def get_flask_mapping_blueprint(
@@ -312,7 +312,8 @@ def get_fastapi_router(
     def _resolve(request: Request, sparql: str) -> Response:
         content_type = _handle_header(request.headers.get("accept"))
         results = graph.query(sparql, processor=processor)
-        response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
+        format = CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type]
+        response = results.serialize(format=format)
         return Response(response, media_type=content_type)
 
     @api_router.get(route)  # type:ignore
