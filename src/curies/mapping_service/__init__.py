@@ -312,8 +312,7 @@ def get_fastapi_router(
     def _resolve(request: Request, sparql: str) -> Response:
         content_type = _handle_header(request.headers.get("accept"))
         results = graph.query(sparql, processor=processor)
-        format = CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type]
-        response = results.serialize(format=format)
+        response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
         return Response(response, media_type=content_type)
 
     @api_router.get(route)  # type:ignore

@@ -6,13 +6,16 @@ import json
 import unittest
 from typing import Iterable, Set, Tuple
 from urllib.parse import quote
+from xml import etree
 
+import rdflib
 from fastapi.testclient import TestClient
 from rdflib import OWL, SKOS
 from rdflib.query import ResultRow
 
 from curies import Converter
 from curies.mapping_service import (
+    CONTENT_TYPE_TO_RDFLIB_FORMAT,
     MappingServiceGraph,
     MappingServiceSPARQLProcessor,
     _prepare_predicates,
@@ -168,8 +171,21 @@ class TestMappingService(unittest.TestCase):
         )
 
 
-def _handle_json(data):
+def _handle_json(data) -> Set[Tuple[str, str]]:
     return {(record["s"]["value"], record["o"]["value"]) for record in data["results"]["bindings"]}
+
+
+def _handle_xml(res) -> Set[Tuple[str, str]]:
+    root = etree.ElementTree.fromstring(res.text)
+    results = root.find("{http://www.w3.org/2005/sparql-results#}results")
+    rv = set()
+    for result in results:
+        parsed_result = {
+            binding.attrib["name"]: binding.find("{http://www.w3.org/2005/sparql-results#}uri").text
+            for binding in result
+        }
+        rv.add((parsed_result["s"], parsed_result["o"]))
+    return rv
 
 
 class ConverterMixin(unittest.TestCase):
@@ -182,9 +198,14 @@ class ConverterMixin(unittest.TestCase):
 
     def assert_get_sparql_results(self, client, sparql):
         """Test a sparql query returns expected values."""
-        res = client.get(f"/sparql?query={quote(sparql)}", headers={"accept": "application/json"})
-        self.assertEqual(200, res.status_code, msg=f"Response: {res}\n\n{res.text}")
-        self.assertEqual(EXPECTED, _handle_json(json.loads(res.text)))
+        for content_type, parse_func in [
+            ("application/json", lambda r: _handle_json(json.loads(r.text))),
+            ("application/xml", _handle_xml),
+        ]:
+            with self.subTest(content_type=content_type):
+                res = client.get(f"/sparql?query={quote(sparql)}", headers={"accept": content_type})
+                self.assertEqual(200, res.status_code, msg=f"Response: {res}\n\n{res.text}")
+                self.assertEqual(EXPECTED, parse_func(res))
 
 
 class TestFlaskMappingWeb(ConverterMixin):
