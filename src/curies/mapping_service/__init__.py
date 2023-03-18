@@ -244,10 +244,10 @@ CONTENT_TYPE_TO_RDFLIB_FORMAT = {
     # https://www.w3.org/TR/sparql11-results-csv-tsv/
     "application/sparql-results+csv": "csv",
     "text/csv": "csv",  # for compatibility
-    # Other direct RDF serializations
-    "text/turtle": "ttl",
-    "text/n3": "n3",
-    "application/ld+json": "json-ld",
+    # TODO other direct RDF serializations
+    # "text/turtle": "ttl",
+    # "text/n3": "n3",
+    # "application/ld+json": "json-ld",
 }
 
 
