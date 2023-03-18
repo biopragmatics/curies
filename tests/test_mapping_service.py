@@ -15,6 +15,7 @@ from rdflib.query import ResultRow
 from curies import Converter
 from curies.mapping_service import (
     CONTENT_TYPE_TO_RDFLIB_FORMAT,
+    DEFAULT_CONTENT_TYPE,
     MappingServiceGraph,
     MappingServiceSPARQLProcessor,
     _prepare_predicates,
@@ -203,19 +204,23 @@ def _handle_res_csv(res) -> Set[Tuple[str, str]]:
 #     return {(str(s), str(o)) for s, o in graph.subject_objects()}
 
 
-CONTENT_TYPES = [
-    ("application/sparql-results+json", _handle_res_json),
-    ("application/json", _handle_res_json),
-    ("text/json", _handle_res_json),
-    ("application/sparql-results+xml", _handle_res_xml),
-    ("application/xml", _handle_res_xml),
-    ("text/xml", _handle_res_xml),
-    ("application/sparql-results+csv", _handle_res_csv),
-    ("text/csv", _handle_res_csv),
-    # ("text/turtle", partial(_handle_res_rdf, format="ttl")),
-    # ("text/n3", partial(_handle_res_rdf, format="n3")),
-    # ("application/ld+json", partial(_handle_res_rdf, format="json-ld")),
-]
+CONTENT_TYPES = dict(
+    [
+        ("application/sparql-results+json", _handle_res_json),
+        ("application/json", _handle_res_json),
+        ("text/json", _handle_res_json),
+        ("application/sparql-results+xml", _handle_res_xml),
+        ("application/xml", _handle_res_xml),
+        ("text/xml", _handle_res_xml),
+        ("application/sparql-results+csv", _handle_res_csv),
+        ("text/csv", _handle_res_csv),
+        # ("text/turtle", partial(_handle_res_rdf, format="ttl")),
+        # ("text/n3", partial(_handle_res_rdf, format="n3")),
+        # ("application/ld+json", partial(_handle_res_rdf, format="json-ld")),
+    ]
+)
+CONTENT_TYPES[""] = CONTENT_TYPES[DEFAULT_CONTENT_TYPE]
+CONTENT_TYPES["*/*"] = CONTENT_TYPES[DEFAULT_CONTENT_TYPE]
 
 
 class TestCompleteness(unittest.TestCase):
@@ -223,7 +228,12 @@ class TestCompleteness(unittest.TestCase):
 
     def test_content_types(self):
         """Test that all content types are covered."""
-        self.assertEqual(sorted(CONTENT_TYPE_TO_RDFLIB_FORMAT), sorted(k for k, _ in CONTENT_TYPES))
+        self.assertEqual(
+            sorted(CONTENT_TYPE_TO_RDFLIB_FORMAT),
+            sorted(
+                content_type for content_type in CONTENT_TYPES if content_type not in ["", "*/*"]
+            ),
+        )
 
 
 class ConverterMixin(unittest.TestCase):
@@ -236,7 +246,7 @@ class ConverterMixin(unittest.TestCase):
 
     def assert_get_sparql_results(self, client, sparql):
         """Test a sparql query returns expected values."""
-        for content_type, parse_func in CONTENT_TYPES:
+        for content_type, parse_func in sorted(CONTENT_TYPES.items()):
             with self.subTest(content_type=content_type):
                 res = client.get(f"/sparql?query={quote(sparql)}", headers={"accept": content_type})
                 self.assertEqual(200, res.status_code, msg=f"Response: {res}\n\n{res.text}")
@@ -244,7 +254,7 @@ class ConverterMixin(unittest.TestCase):
 
     def assert_post_sparql_results(self, client, sparql):
         """Test a sparql query returns expected values."""
-        for content_type, parse_func in CONTENT_TYPES:
+        for content_type, parse_func in sorted(CONTENT_TYPES.items()):
             with self.subTest(content_type=content_type):
                 res = client.post(
                     "/sparql", json={"query": sparql}, headers={"accept": content_type}
