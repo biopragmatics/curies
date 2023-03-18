@@ -6,6 +6,7 @@ import json
 import unittest
 from typing import Iterable, Set, Tuple
 from urllib.parse import quote
+from xml import etree
 
 from fastapi.testclient import TestClient
 from rdflib import OWL, SKOS
@@ -13,6 +14,8 @@ from rdflib.query import ResultRow
 
 from curies import Converter
 from curies.mapping_service import (
+    CONTENT_TYPE_TO_RDFLIB_FORMAT,
+    DEFAULT_CONTENT_TYPE,
     MappingServiceGraph,
     MappingServiceSPARQLProcessor,
     _prepare_predicates,
@@ -168,6 +171,69 @@ class TestMappingService(unittest.TestCase):
         )
 
 
+def _handle_json(data) -> Set[Tuple[str, str]]:
+    return {(record["s"]["value"], record["o"]["value"]) for record in data["results"]["bindings"]}
+
+
+def _handle_res_xml(res) -> Set[Tuple[str, str]]:
+    root = etree.ElementTree.fromstring(res.text)  # noqa:S314
+    results = root.find("{http://www.w3.org/2005/sparql-results#}results")
+    rv = set()
+    for result in results:
+        parsed_result = {
+            binding.attrib["name"]: binding.find("{http://www.w3.org/2005/sparql-results#}uri").text
+            for binding in result
+        }
+        rv.add((parsed_result["s"], parsed_result["o"]))
+    return rv
+
+
+def _handle_res_json(res) -> Set[Tuple[str, str]]:
+    return _handle_json(json.loads(res.text))
+
+
+def _handle_res_csv(res) -> Set[Tuple[str, str]]:
+    header, *lines = (line.strip().split(",") for line in res.text.splitlines())
+    records = (dict(zip(header, line)) for line in lines)
+    return {(record["s"], record["o"]) for record in records}
+
+
+# def _handle_res_rdf(res, format) -> Set[Tuple[str, str]]:
+#     graph = rdflib.Graph()
+#     graph.parse(res, format=format)
+#     return {(str(s), str(o)) for s, o in graph.subject_objects()}
+
+
+CONTENT_TYPES = {
+    "application/sparql-results+json": _handle_res_json,
+    "application/json": _handle_res_json,
+    "text/json": _handle_res_json,
+    "application/sparql-results+xml": _handle_res_xml,
+    "application/xml": _handle_res_xml,
+    "text/xml": _handle_res_xml,
+    "application/sparql-results+csv": _handle_res_csv,
+    "text/csv": _handle_res_csv,
+    # "text/turtle": partial(_handle_res_rdf, format="ttl"),
+    # "text/n3": partial(_handle_res_rdf, format="n3"),
+    # "application/ld+json": partial(_handle_res_rdf, format="json-ld"),
+}
+CONTENT_TYPES[""] = CONTENT_TYPES[DEFAULT_CONTENT_TYPE]
+CONTENT_TYPES["*/*"] = CONTENT_TYPES[DEFAULT_CONTENT_TYPE]
+
+
+class TestCompleteness(unittest.TestCase):
+    """Test that tests are complete."""
+
+    def test_content_types(self):
+        """Test that all content types are covered."""
+        self.assertEqual(
+            sorted(CONTENT_TYPE_TO_RDFLIB_FORMAT),
+            sorted(
+                content_type for content_type in CONTENT_TYPES if content_type not in ["", "*/*"]
+            ),
+        )
+
+
 class ConverterMixin(unittest.TestCase):
     """A mixin that has a converter."""
 
@@ -178,13 +244,25 @@ class ConverterMixin(unittest.TestCase):
 
     def assert_get_sparql_results(self, client, sparql):
         """Test a sparql query returns expected values."""
-        res = client.get(f"/sparql?query={quote(sparql)}")
-        self.assertEqual(200, res.status_code, msg=f"Response: {res}\n\n{res.text}")
-        records = {
-            (record["s"]["value"], record["o"]["value"])
-            for record in json.loads(res.text)["results"]["bindings"]
-        }
-        self.assertEqual(EXPECTED, records)
+        for content_type, parse_func in sorted(CONTENT_TYPES.items()):
+            with self.subTest(content_type=content_type):
+                res = client.get(f"/sparql?query={quote(sparql)}", headers={"accept": content_type})
+                self.assertEqual(200, res.status_code, msg=f"Response: {res}\n\n{res.text}")
+                self.assertEqual(EXPECTED, parse_func(res))
+
+    def assert_post_sparql_results(self, client, sparql):
+        """Test a sparql query returns expected values."""
+        for content_type, parse_func in sorted(CONTENT_TYPES.items()):
+            with self.subTest(content_type=content_type):
+                res = client.post(
+                    "/sparql", json={"query": sparql}, headers={"accept": content_type}
+                )
+                self.assertEqual(
+                    200,
+                    res.status_code,
+                    msg=f"Response: {res}",
+                )
+                self.assertEqual(EXPECTED, parse_func(res))
 
 
 class TestFlaskMappingWeb(ConverterMixin):
@@ -195,29 +273,21 @@ class TestFlaskMappingWeb(ConverterMixin):
         super().setUp()
         self.app = get_flask_mapping_app(self.converter)
 
-    def assert_post_sparql_results(self, client, sparql):
-        """Test a sparql query returns expected values."""
-        res = client.post("/sparql", json={"query": sparql})
-        self.assertEqual(
-            200, res.status_code, msg=f"\nRequest: {res.request}\nResponse: {res}\n\n{res.json}"
-        )
-        records = {
-            (record["s"]["value"], record["o"]["value"])
-            for record in json.loads(res.text)["results"]["bindings"]
-        }
-        self.assertEqual(EXPECTED, records)
-
     def test_get_missing_query(self):
         """Test error on missing query parameter."""
         with self.app.test_client() as client:
-            res = client.get("/sparql")
-            self.assertEqual(400, res.status_code, msg=f"Response: {res}")
+            for content_type in sorted(CONTENT_TYPES):
+                with self.subTest(content_type=content_type):
+                    res = client.get("/sparql", headers={"accept": content_type})
+                    self.assertEqual(400, res.status_code, msg=f"Response: {res}")
 
     def test_post_missing_query(self):
         """Test error on missing query parameter."""
         with self.app.test_client() as client:
-            res = client.post("/sparql")
-            self.assertEqual(400, res.status_code, msg=f"Response: {res}")
+            for content_type in sorted(CONTENT_TYPES):
+                with self.subTest(content_type=content_type):
+                    res = client.post("/sparql", headers={"accept": content_type})
+                    self.assertEqual(400, res.status_code, msg=f"Response: {res}")
 
     def test_get_query(self):
         """Test querying the app with GET."""
@@ -249,29 +319,19 @@ class TestFastAPIMappingApp(ConverterMixin):
         self.app = get_fastapi_mapping_app(self.converter)
         self.client = TestClient(self.app)
 
-    def assert_post_sparql_results(self, client, sparql):
-        """Test a sparql query returns expected values."""
-        res = client.post("/sparql", json={"query": sparql})
-        self.assertEqual(
-            200,
-            res.status_code,
-            msg=f"Response: {res}",
-        )
-        records = {
-            (record["s"]["value"], record["o"]["value"])
-            for record in res.json()["results"]["bindings"]
-        }
-        self.assertEqual(EXPECTED, records)
-
     def test_get_missing_query(self):
         """Test error on missing query parameter."""
-        res = self.client.get("/sparql")
-        self.assertEqual(422, res.status_code, msg=f"Response: {res}")
+        for content_type in sorted(CONTENT_TYPES):
+            with self.subTest(content_type=content_type):
+                res = self.client.get("/sparql", headers={"accept": content_type})
+                self.assertEqual(422, res.status_code, msg=f"Response: {res}")
 
     def test_post_missing_query(self):
         """Test error on missing query parameter."""
-        res = self.client.post("/sparql")
-        self.assertEqual(422, res.status_code, msg=f"Response: {res}")
+        for content_type in sorted(CONTENT_TYPES):
+            with self.subTest(content_type=content_type):
+                res = self.client.post("/sparql", headers={"accept": content_type})
+                self.assertEqual(422, res.status_code, msg=f"Response: {res}")
 
     def test_get_query(self):
         """Test querying the app with GET."""
