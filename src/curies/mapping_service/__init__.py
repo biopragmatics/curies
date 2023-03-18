@@ -227,6 +227,7 @@ class MappingServiceGraph(Graph):  # type:ignore
                     yield subj_query, pred, obj
 
 
+DEFAULT_CONTENT_TYPE = "application/json"
 CONTENT_TYPE_TO_RDFLIB_FORMAT = {
     # https://www.w3.org/TR/sparql11-results-json/
     "application/sparql-results+json": "json",
@@ -268,13 +269,10 @@ def get_flask_mapping_blueprint(
         sparql = (request.args if request.method == "GET" else request.json).get("query")
         if not sparql:
             return Response("Missing parameter query", 400)
-        content_type = request.headers.get("accept", "application/json")
+        content_type = request.headers.get("accept", DEFAULT_CONTENT_TYPE)
         results = graph.query(sparql, processor=processor)
         response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
-        return Response(
-            response,
-            content_type=content_type,
-        )
+        return Response(response, content_type=content_type)
 
     return blueprint
 
@@ -302,7 +300,7 @@ def get_fastapi_router(
     processor = MappingServiceSPARQLProcessor(graph=graph)
 
     def _resolve(request: Request, sparql: str) -> Response:
-        content_type = request.headers.get("accept", "application/json")
+        content_type = request.headers.get("accept", DEFAULT_CONTENT_TYPE)
         results = graph.query(sparql, processor=processor)
         response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
         return Response(response, media_type=content_type)
