@@ -26,9 +26,9 @@
     </a>
     <a href="https://codecov.io/gh/cthoyt/curies/branch/main">
         <img src="https://codecov.io/gh/cthoyt/curies/branch/main/graph/badge.svg" alt="Codecov status" />
-    </a>  
+    </a>
     <a href="https://github.com/cthoyt/cookiecutter-python-package">
-        <img alt="Cookiecutter template from @cthoyt" src="https://img.shields.io/badge/Cookiecutter-snekpack-blue" /> 
+        <img alt="Cookiecutter template from @cthoyt" src="https://img.shields.io/badge/Cookiecutter-snekpack-blue" />
     </a>
     <a href='https://github.com/psf/black'>
         <img src='https://img.shields.io/badge/code%20style-black-000000.svg' alt='Code style: black' />
@@ -175,10 +175,10 @@ This package comes with a built-in CLI for running a resolver web application or
 
 ```shell
 # Run a resolver
-python -m curies resolver --host 0.0.0.0 --port 8764 bioregistry 
+python -m curies resolver --host 0.0.0.0 --port 8764 bioregistry
 
 # Run a mapper
-python -m curies mapper --host 0.0.0.0 --port 8764 bioregistry 
+python -m curies mapper --host 0.0.0.0 --port 8764 bioregistry
 ```
 
 The positional argument can be one of the following:
@@ -248,12 +248,12 @@ To install in development mode, use the following:
 ```bash
 $ git clone git+https://github.com/cthoyt/curies.git
 $ cd curies
-$ pip install -e .
+$ pip install -e ".[tests]"
 ```
 
 ### 🥼 Testing
 
-After cloning the repository and installing `tox` with `pip install tox`, the unit tests in the `tests/` folder can be
+After cloning the repository and installing the dependencies, the unit tests in the `tests/` folder can be
 run reproducibly with:
 
 ```shell
@@ -271,7 +271,7 @@ $ git clone git+https://github.com/cthoyt/curies.git
 $ cd curies
 $ tox -e docs
 $ open docs/build/html/index.html
-``` 
+```
 
 The documentation automatically installs the package as well as the `docs`
 extra specified in the [`setup.cfg`](setup.cfg). `sphinx` plugins
