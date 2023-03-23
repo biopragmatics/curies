@@ -1,9 +1,6 @@
 # Created by https://www.toptal.com/developers/gitignore/api/macos,linux,windows,python,jupyternotebooks,jetbrains,pycharm,vim,emacs,visualstudiocode,visualstudio
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,linux,windows,python,jupyternotebooks,jetbrains,pycharm,vim,emacs,visualstudiocode,visualstudio
 
-# Ignore blazegraph jar and jnl used for testing
-/blazegraph.j*
-
 ### Emacs ###
 # -*- mode: gitignore; -*-
 *~
@@ -902,3 +899,7 @@ FodyWeavers.xsd
 # End of https://www.toptal.com/developers/gitignore/api/macos,linux,windows,python,jupyternotebooks,jetbrains,pycharm,vim,emacs,visualstudiocode,visualstudio
 
 scratch/
+
+# Ignore blazegraph jar and jnl used for testing
+blazegraph.jnl
+blazegraph.jar
