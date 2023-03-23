@@ -10,6 +10,7 @@ import subprocess
 import time
 import unittest
 from multiprocessing import Process
+
 import pystow
 import requests
 import uvicorn
@@ -19,6 +20,8 @@ from curies.mapping_service import get_fastapi_mapping_app
 from tests.test_mapping_service import PREFIX_MAP
 
 MAPPING_ENDPOINT = "https://bioregistry.io/sparql"
+
+TEST_QUERY = 'SELECT ?test WHERE { BIND("hello" as ?test) }'
 
 FEDERATED_QUERY = f"""PREFIX owl: <http://www.w3.org/2002/07/owl#>
 SELECT DISTINCT ?o WHERE {{
@@ -88,17 +91,52 @@ class TestFederatedSparql(unittest.TestCase):
     proc: Process
     proc_blazegraph: Process
 
+    def get(self, sparql: str, accept: str = "application/json") -> requests.Response:
+        """Get a response from a given SPARQL query."""
+        return requests.get(
+            self.blazegraph_endpoint,
+            params={"query": sparql},
+            headers={"accept": accept},
+        )
+
+    def assert_blazegraph_running(self):
+        """Check that blazegraph is running properly."""
+        try:
+            res = self.get(TEST_QUERY)
+        except requests.exceptions.ConnectionError:
+            return self.fail("blazegraph is not running")
+        res_json = res.json()
+        self.assertIn("results", res_json)
+        self.assertIn("bindings", res_json["results"])
+        self.assertEqual(1, len(res_json["results"]["bindings"]))
+        self.assertIn("test", res_json["results"]["bindings"][0])
+        self.assertIn("value", res_json["results"]["bindings"][0]["test"])
+        self.assertEqual("hello", res_json["results"]["bindings"][0]["test"]["value"])
+
     def setUp(self):
-        """Set up the federated query."""
-        blazegraph_jar_path = pystow.ensure(
+        """Set up the test case."""
+        self.blazegraph_jar_path = pystow.ensure(
             "blazegraph",
             url="https://github.com/blazegraph/database/releases/download/BLAZEGRAPH_2_1_6_RC/blazegraph.jar",
         )
+        self.blazegraph_port = 9999
+        # maybe check setting port https://github.com/blazegraph/database/wiki/NanoSparqlServer#changing-the-default-port
+        # f"-Djetty.port={self.blazegraph_port}"
+        self.blazegraph_endpoint = (
+            f"http://localhost:{self.blazegraph_port}/blazegraph/namespace/kb/sparql"
+        )
+
+        try:
+            self.get(TEST_QUERY)
+        except requests.exceptions.ConnectionError:
+            pass
+        else:
+            self.fail(msg="Expected a connection error. This means blazegraph is already running")
 
         # Start Blazegraph SPARQL endpoint
         self.proc_blazegraph = Process(
             target=subprocess.run,
-            args=(f"java -jar {blazegraph_jar_path.as_posix()}",),
+            args=([f"java -jar {self.blazegraph_jar_path.as_posix()}"]),
             kwargs={
                 "shell": True,
             },
@@ -132,18 +170,15 @@ class TestFederatedSparql(unittest.TestCase):
         self.proc_blazegraph.kill()
         self.proc.kill()
 
-    def assert_blazegraph_running(self):
-        """Check that blazegraph is running correctly."""
-        self.fail(msg="Checking blazegraph is running is not implemented")
+        # manual instructions for cancelling process:
+        # 1. shell: ps aux | grep blaze
+        # 2. find the number of the process
+        # 3. shell: kill #
 
     def test_federated_local_blazegraph(self):
         """Test sending a federated query to a local mapping service from a local Blazegraph."""
+        resp = self.get(FEDERATED_QUERY)
         try:
-            resp = requests.get(
-                BLAZEGRAPH_ENDPOINT,
-                params={"query": FEDERATED_QUERY},
-                headers={"accept": "application/json"},
-            )
             res = resp.json()
             self.assertGreater(
                 len(res["results"]["bindings"]),
