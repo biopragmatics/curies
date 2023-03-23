@@ -19,32 +19,22 @@ from curies import Converter
 from curies.mapping_service import get_fastapi_mapping_app
 from tests.test_mapping_service import PREFIX_MAP
 
-MAPPING_ENDPOINT = "https://bioregistry.io/sparql"
-
+BIOREGISTRY_SPARQL_ENDPOINT = "https://bioregistry.io/sparql"
 TEST_QUERY = 'SELECT ?test WHERE { BIND("hello" as ?test) }'
-
-FEDERATED_QUERY = f"""PREFIX owl: <http://www.w3.org/2002/07/owl#>
-SELECT DISTINCT ?o WHERE {{
-    SERVICE <{MAPPING_ENDPOINT}> {{
-        <http://purl.obolibrary.org/obo/CHEBI_24867> owl:sameAs ?o
-    }}
-}}"""
-
-# MAPPING_ENDPOINT = "https://bioregistry.io/sparql"
-MAPPING_ENDPOINT = "http://localhost:8000/sparql"
-BLAZEGRAPH_ENDPOINT = "http://localhost:9999/blazegraph/namespace/kb/sparql"
-
-
-# FEDERATED_QUERY = f"""PREFIX owl: <http://www.w3.org/2002/07/owl#>
-# SELECT DISTINCT ?o WHERE {{
-#     SERVICE <{MAPPING_ENDPOINT}> {{
-#         ?s ?p ?o
-#     }}
-# }}"""
 
 
 class TestPublicFederatedSparql(unittest.TestCase):
     """Test the identifier mapping service."""
+
+    def setUp(self) -> None:
+        self.sparql = f"""\
+        PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        SELECT DISTINCT ?o WHERE {{
+            SERVICE <{BIOREGISTRY_SPARQL_ENDPOINT}> {{
+                <http://purl.obolibrary.org/obo/CHEBI_24867> owl:sameAs ?o
+            }}
+        }}
+        """.rstrip()
 
     def query_endpoint(self, endpoint: str, query: str):
         """Query an endpoint."""
@@ -68,15 +58,15 @@ class TestPublicFederatedSparql(unittest.TestCase):
 
     def test_public_federated_virtuoso(self):
         """Test sending a federated query to a public mapping service from Virtuoso."""
-        self.query_endpoint("https://bio2rdf.org/sparql", FEDERATED_QUERY)
+        self.query_endpoint("https://bio2rdf.org/sparql", self.sparql)
 
     def test_public_federated_blazegraph(self):
         """Test sending a federated query to a public mapping service from Blazegraph"""
-        self.query_endpoint("http://kg-hub-rdf.berkeleybop.io/blazegraph/sparql", FEDERATED_QUERY)
+        self.query_endpoint("http://kg-hub-rdf.berkeleybop.io/blazegraph/sparql", self.sparql)
 
     def test_public_federated_graphdb(self):
         """Test sending a federated query to a public mapping service from GraphDB."""
-        self.query_endpoint("https://graphdb.dumontierlab.com/repositories/test", FEDERATED_QUERY)
+        self.query_endpoint("https://graphdb.dumontierlab.com/repositories/test", self.sparql)
 
 
 def _get_app():
@@ -163,11 +153,21 @@ class TestFederatedSparql(unittest.TestCase):
         )
         self.proc.start()
 
+        self.mapping_service = "http://localhost:8000/sparql"  # TODO get from app/configure app
+        self.sparql = f"""\
+        PREFIX owl: <http://www.w3.org/2002/07/owl#>
+        SELECT DISTINCT ?o WHERE {{
+            SERVICE <{self.mapping_service}> {{
+                ?s ?p ?o
+            }}
+        }}
+        """.rstrip()
+
     def tearDown(self):
         """Tear down the testing case."""
         # TODO: blazegraph not actually killed, it will continue to run afterward
         # Not sure how to make sure a java subprocess running as daemon is killed
-        self.proc_blazegraph.kill()
+        # self.proc_blazegraph.kill()
         self.proc.kill()
 
         # manual instructions for cancelling process:
@@ -177,18 +177,18 @@ class TestFederatedSparql(unittest.TestCase):
 
     def test_federated_local_blazegraph(self):
         """Test sending a federated query to a local mapping service from a local Blazegraph."""
-        resp = self.get(FEDERATED_QUERY)
+        resp = self.get(self.sparql)
         try:
             res = resp.json()
             self.assertGreater(
                 len(res["results"]["bindings"]),
                 0,
-                msg=f"Federated query to {BLAZEGRAPH_ENDPOINT} gives no results",
+                msg=f"Federated query to {self.blazegraph_endpoint} gives no results",
             )
             return res["results"]["bindings"]
         except Exception:
             self.fail(
-                msg=f"Error running the federated query to {BLAZEGRAPH_ENDPOINT}: {resp.text}",
+                msg=f"Error running the federated query to {self.blazegraph_endpoint}: {resp.text}",
             )
 
         # NOTE: test using oxigraph as backend
