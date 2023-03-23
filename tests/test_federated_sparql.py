@@ -16,15 +16,9 @@ SELECT DISTINCT ?o WHERE {{
     }}
 }}"""
 
-# NOTE: Keeping temporarily to check querying works properly
-# FEDERATED_QUERY = """PREFIX owl: <http://www.w3.org/2002/07/owl#>
-# SELECT DISTINCT ?o WHERE {
-#     ?s ?p ?o .
-# } LIMIT 100"""
-
-
-class TestFederatedSparql(unittest.TestCase):
+class TestPublicFederatedSparql(unittest.TestCase):
     """Test the identifier mapping service."""
+
 
     def query_endpoint(self, endpoint, query):
         try:
@@ -46,14 +40,14 @@ class TestFederatedSparql(unittest.TestCase):
             )
         return None
 
-    def test_federated_virtuoso(self):
+    def test_public_federated_virtuoso(self):
         """Test sending a federated query to a public mapping service from Virtuoso."""
         self.query_endpoint("https://bio2rdf.org/sparql", FEDERATED_QUERY)
 
-    def test_federated_blazegraph(self):
+    def test_public_federated_blazegraph(self):
         """Test sending a federated query to a public mapping service from Blazegraph"""
         self.query_endpoint("http://kg-hub-rdf.berkeleybop.io/blazegraph/sparql", FEDERATED_QUERY)
 
-    def test_federated_graphdb(self):
+    def test_public_federated_graphdb(self):
         """Test sending a federated query to a public mapping service from GraphDB."""
         self.query_endpoint("https://graphdb.dumontierlab.com/repositories/test", FEDERATED_QUERY)
