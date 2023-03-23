@@ -8,9 +8,6 @@ import unittest
 import requests
 
 MAPPING_ENDPOINT = "https://bioregistry.io/sparql"
-GRAPHDB_ENDPOINT = "https://graphdb.dumontierlab.com/repositories/test"
-VIRTUOSO_ENDPOINT = "https://bio2rdf.org/sparql"
-BLAZEGRAPH_ENDPOINT = "http://kg-hub-rdf.berkeleybop.io/blazegraph/sparql"
 
 FEDERATED_QUERY = f"""PREFIX owl: <http://www.w3.org/2002/07/owl#>
 SELECT DISTINCT ?o WHERE {{
@@ -38,7 +35,9 @@ class TestFederatedSparql(unittest.TestCase):
             )
             res = resp.json()
             self.assertGreater(
-                len(res["results"]["bindings"]), 0, msg=f"Federated query to {endpoint} gives no results"
+                len(res["results"]["bindings"]),
+                0,
+                msg=f"Federated query to {endpoint} gives no results",
             )
             return res["results"]["bindings"]
         except Exception:
@@ -47,15 +46,14 @@ class TestFederatedSparql(unittest.TestCase):
             )
         return None
 
-
     def test_federated_virtuoso(self):
         """Test sending a federated query to a public mapping service from Virtuoso."""
-        self.query_endpoint(VIRTUOSO_ENDPOINT, FEDERATED_QUERY)
+        self.query_endpoint("https://bio2rdf.org/sparql", FEDERATED_QUERY)
 
     def test_federated_blazegraph(self):
         """Test sending a federated query to a public mapping service from Blazegraph"""
-        self.query_endpoint(BLAZEGRAPH_ENDPOINT, FEDERATED_QUERY)
+        self.query_endpoint("http://kg-hub-rdf.berkeleybop.io/blazegraph/sparql", FEDERATED_QUERY)
 
     def test_federated_graphdb(self):
         """Test sending a federated query to a public mapping service from GraphDB."""
-        self.query_endpoint(GRAPHDB_ENDPOINT, FEDERATED_QUERY)
+        self.query_endpoint("https://graphdb.dumontierlab.com/repositories/test", FEDERATED_QUERY)
