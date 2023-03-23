@@ -248,7 +248,7 @@ To install in development mode, use the following:
 ```bash
 $ git clone git+https://github.com/cthoyt/curies.git
 $ cd curies
-$ pip install -e ".[tests]"
+$ pip install -e ".[tests,fastapi,flask,pandas,rdflib,bioregistry]"
 ```
 
 ### 🥼 Testing

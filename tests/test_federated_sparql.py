@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Tests federated SPARQL queries to an identifier mapping service deployed publicly."""
+"""Tests federated SPARQL queries to an identifier mapping service deployed publicly.
+TODO: we might want to add checks if the endpoints are up, and skip the test if not up
+"""
 
 import unittest
 
 import requests
-
-# tox -- tests/test_federated_sparql.py -s
-# pytest tests/test_federated_sparql.py -s
-# TODO: we might want to add checks if the endpoints are up, and skip the test if not up
 
 MAPPING_ENDPOINT = "https://bioregistry.io/sparql"
 GRAPHDB_ENDPOINT = "https://graphdb.dumontierlab.com/repositories/test"
@@ -31,51 +29,33 @@ SELECT DISTINCT ?o WHERE {{
 class TestFederatedSparql(unittest.TestCase):
     """Test the identifier mapping service."""
 
-    def test_federated_virtuoso(self):
-        """Test sending a federated query to a public mapping service from Virtuoso."""
+    def query_endpoint(self, endpoint, query):
         try:
             resp = requests.get(
-                VIRTUOSO_ENDPOINT,
-                params={"query": FEDERATED_QUERY},
+                endpoint,
+                params={"query": query},
                 headers={"accept": "application/json"},
             )
             res = resp.json()
             self.assertGreater(
-                len(res["results"]["bindings"]), 0, msg="Federated Virtuoso no results"
+                len(res["results"]["bindings"]), 0, msg=f"Federated query to {endpoint} gives no results"
             )
+            return res["results"]["bindings"]
         except Exception:
             self.assertTrue(
-                False, msg=f"Error running the federated query to Virtuoso: {resp.text}"
+                False, msg=f"Error running the federated query to {endpoint}: {resp.text}"
             )
+        return None
+
+
+    def test_federated_virtuoso(self):
+        """Test sending a federated query to a public mapping service from Virtuoso."""
+        self.query_endpoint(VIRTUOSO_ENDPOINT, FEDERATED_QUERY)
 
     def test_federated_blazegraph(self):
         """Test sending a federated query to a public mapping service from Blazegraph"""
-        try:
-            resp = requests.get(
-                BLAZEGRAPH_ENDPOINT,
-                params={"query": FEDERATED_QUERY},
-                headers={"accept": "application/json"},
-            )
-            res = resp.json()
-            self.assertGreater(
-                len(res["results"]["bindings"]), 0, msg="Federated blazegraph no results"
-            )
-        except Exception:
-            self.assertTrue(
-                False, msg=f"Error running the federated query to blazegraph: {resp.text}"
-            )
+        self.query_endpoint(BLAZEGRAPH_ENDPOINT, FEDERATED_QUERY)
 
     def test_federated_graphdb(self):
         """Test sending a federated query to a public mapping service from GraphDB."""
-        try:
-            resp = requests.get(
-                GRAPHDB_ENDPOINT,
-                params={"query": FEDERATED_QUERY},
-                headers={"accept": "application/json"},
-            )
-            res = resp.json()
-            self.assertGreater(
-                len(res["results"]["bindings"]), 0, msg="Federated GraphDB no results"
-            )
-        except Exception:
-            self.assertTrue(False, msg=f"Error running the federated query to GraphDB: {resp.text}")
+        self.query_endpoint(GRAPHDB_ENDPOINT, FEDERATED_QUERY)
