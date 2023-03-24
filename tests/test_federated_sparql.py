@@ -10,6 +10,7 @@ import time
 import unittest
 from multiprocessing import Process
 from textwrap import dedent
+from typing import Set, Tuple
 
 import pystow
 import requests
@@ -17,10 +18,35 @@ import uvicorn
 
 from curies import Converter
 from curies.mapping_service import get_fastapi_mapping_app
-from tests.test_mapping_service import PREFIX_MAP
+from tests.test_mapping_service import CONTENT_TYPES, PREFIX_MAP
 
+BLAZEGRAPH_ENDPOINT = "http://localhost:9999/blazegraph/namespace/kb/sparql"
+BLAZEGRAPH_JAR_URL = (
+    "https://github.com/blazegraph/database/releases/download/BLAZEGRAPH_2_1_6_RC/blazegraph.jar"
+)
 BIOREGISTRY_SPARQL_ENDPOINT = "http://bioregistry.io/sparql"
 TEST_QUERY = 'SELECT ?test WHERE { BIND("hello" as ?test) }'
+PING_SPARQL = 'SELECT ?s ?o WHERE { BIND("hello" as ?s) . BIND("there" as ?o) . }'
+
+
+def get(endpoint: str, sparql: str, accept) -> Set[Tuple[str, str]]:
+    """Get a response from a given SPARQL query."""
+    res = requests.get(
+        endpoint,
+        params={"query": sparql},
+        headers={"accept": accept},
+    )
+    func = CONTENT_TYPES[accept]
+    return func(res)
+
+
+def sparql_service_available(endpoint: str) -> bool:
+    """Test if a SPARQL service is running."""
+    try:
+        records = get(endpoint, PING_SPARQL, "application/json")
+    except requests.exceptions.ConnectionError:
+        return False
+    return list(records) == [("hello", "there")]
 
 
 class FederationMixin(unittest.TestCase):
@@ -112,6 +138,9 @@ def _get_app():
     return app
 
 
+@unittest.skipUnless(
+    sparql_service_available(BLAZEGRAPH_ENDPOINT), reason="Blazegraph is not running"
+)
 class TestFederatedSparql(FederationMixin):
     """Test the identifier mapping service."""
 
@@ -120,38 +149,22 @@ class TestFederatedSparql(FederationMixin):
 
     def assert_blazegraph_running(self):
         """Check that blazegraph is running properly."""
-        self.assert_service_works(self.blazegraph_endpoint)
+        self.assert_service_works(BLAZEGRAPH_ENDPOINT)
 
     def setUp(self):
         """Set up the test case."""
-        self.blazegraph_jar_path = pystow.ensure(
-            "blazegraph",
-            url="https://github.com/blazegraph/database/releases/download/BLAZEGRAPH_2_1_6_RC/blazegraph.jar",
-        )
-        self.blazegraph_port = 9999
-        self.blazegraph_endpoint = (
-            f"http://localhost:{self.blazegraph_port}/blazegraph/namespace/kb/sparql"
-        )
-
-        try:
-            self.get(self.blazegraph_endpoint, TEST_QUERY)
-        except requests.exceptions.ConnectionError:
-            pass
-        else:
-            self.fail(msg="Expected a connection error. This means blazegraph is already running")
-
         # Start Blazegraph SPARQL endpoint
-        self.proc_blazegraph = Process(
-            target=subprocess.run,
-            args=([f"java -jar {self.blazegraph_jar_path.as_posix()}"]),
-            kwargs={
-                "shell": True,
-            },
-            daemon=True,
-        )
-        self.proc_blazegraph.start()
-        time.sleep(1)
-        self.assert_blazegraph_running()
+        # self.proc_blazegraph = Process(
+        #     target=subprocess.run,
+        #     args=([f"java -jar {self.blazegraph_jar_path.as_posix()}"]),
+        #     kwargs={
+        #         "shell": True,
+        #     },
+        #     daemon=True,
+        # )
+        # self.proc_blazegraph.start()
+        # time.sleep(1)
+        # self.assert_blazegraph_running()
 
         # NOTE: Try using rdflib-endpoint instead of the curies mapping service
         # import rdflib
@@ -169,9 +182,11 @@ class TestFederatedSparql(FederationMixin):
             daemon=True,
         )
         self.proc.start()
+        time.sleep(5)
 
         self.mapping_service = "http://localhost:8000/sparql"  # TODO get from app/configure app
-        self.sparql = f"""\
+        self.sparql = dedent(
+            f"""\
         PREFIX owl: <http://www.w3.org/2002/07/owl#>
         SELECT DISTINCT ?o WHERE {{
             SERVICE <{self.mapping_service}> {{
@@ -179,6 +194,8 @@ class TestFederatedSparql(FederationMixin):
             }}
         }}
         """.rstrip()
+        )
+        self.assert_service_works(self.mapping_service)
 
     def tearDown(self):
         """Tear down the testing case."""
@@ -194,18 +211,18 @@ class TestFederatedSparql(FederationMixin):
 
     def test_federated_local_blazegraph(self):
         """Test sending a federated query to a local mapping service from a local Blazegraph."""
-        resp = self.get(self.blazegraph_endpoint, self.sparql)
+        resp = self.get(BLAZEGRAPH_ENDPOINT, self.sparql, accept="application/json")
         try:
             res = resp.json()
             self.assertGreater(
                 len(res["results"]["bindings"]),
                 0,
-                msg=f"Federated query to {self.blazegraph_endpoint} gives no results",
+                msg=f"Federated query to {BLAZEGRAPH_ENDPOINT} gives no results",
             )
             return res["results"]["bindings"]
         except Exception:
             self.fail(
-                msg=f"Error running the federated query to {self.blazegraph_endpoint}: {resp.text}",
+                msg=f"Error running the federated query to {BLAZEGRAPH_ENDPOINT}: {resp.text}",
             )
 
         # NOTE: test using oxigraph as backend
