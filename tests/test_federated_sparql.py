@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Tests federated SPARQL queries to an identifier mapping service deployed publicly.
-
-TODO: we might want to add checks if the endpoints are up, and skip the test if not up
-"""
+"""Tests federated SPARQL queries with a locally deployed triple store."""
 
 import time
 import unittest
@@ -113,7 +110,7 @@ class TestFederatedSparql(FederationMixin):
         for mimetype in [
             "application/sparql-results+json",
             "application/sparql-results+xml",
-            "text/csv",  # for some reason
+            "text/csv",  # for some reason, Blazegraph wants this instead of application/sparql-results+csv
         ]:
             with self.subTest(mimetype=mimetype):
                 records = get(self.endpoint, self.sparql, accept=mimetype)
