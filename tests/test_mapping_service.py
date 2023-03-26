@@ -280,7 +280,9 @@ class ConverterMixin(unittest.TestCase):
                 res = client.post(
                     # note that we're using "data" and not JSON since this service
                     # is posting "form data" and not a JSON payload
-                    "/sparql", data={"query": sparql}, headers={"accept": content_type}
+                    "/sparql",
+                    data={"query": sparql},
+                    headers={"accept": content_type},
                 )
                 self.assertEqual(
                     200,
