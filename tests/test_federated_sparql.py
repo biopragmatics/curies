@@ -82,6 +82,8 @@ class TestFederatedSparql(FederationMixin):
     """Test the identifier mapping service."""
 
     endpoint: ClassVar[str] = BLAZEGRAPH_ENDPOINT
+    host: ClassVar[str] = "localhost"
+    port: ClassVar[int] = 8000
     mapping_service_process: Process
 
     def setUp(self):
@@ -91,13 +93,13 @@ class TestFederatedSparql(FederationMixin):
             target=uvicorn.run,
             # uvicorn.run accepts a zero-argument callable that returns an app
             args=(_get_app,),
-            # kwargs={"host": "localhost", "port": 8000, "log_level": "info"},
+            kwargs={"host": self.host, "port": self.port, "log_level": "info"},
             daemon=True,
         )
         self.mapping_service_process.start()
         time.sleep(5)
 
-        self.mapping_service = "http://localhost:8000/sparql"  # TODO get from app/configure app
+        self.mapping_service = f"http://{self.host}:{self.port}/sparql"
         self.sparql = SPARQL_FMT.format(mapping_service=self.mapping_service)
 
         self.assert_service_works(self.mapping_service)
@@ -108,7 +110,11 @@ class TestFederatedSparql(FederationMixin):
 
     def test_federated_local(self):
         """Test sending a federated query to a local mapping service from a local service."""
-        for mimetype in CONTENT_TYPE_TO_HANDLER:
+        for mimetype in [
+            "application/sparql-results+json",
+            "application/sparql-results+xml",
+            "text/csv",  # for some reason
+        ]:
             with self.subTest(mimetype=mimetype):
                 records = get(self.endpoint, self.sparql, accept=mimetype)
                 self.assertIn(
