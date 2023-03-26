@@ -20,10 +20,10 @@ from curies.mapping_service import (
     get_fastapi_mapping_app,
     get_flask_mapping_app,
 )
-from curies.mapping_service.utils import HANDLE
+from curies.mapping_service.utils import CONTENT_TYPE_TO_HANDLER
 
 VALID_CONTENT_TYPES = {
-    *HANDLE,
+    *CONTENT_TYPE_TO_HANDLER,
     "",
     "*/*",
     *CONTENT_TYPE_SYNONYMS,
@@ -213,7 +213,7 @@ class ConverterMixin(unittest.TestCase):
     def assert_parsed(self, res, content_type: str):
         """Test the result has the expected output."""
         content_type = _handle_header(content_type)
-        parse_func = HANDLE[content_type]
+        parse_func = CONTENT_TYPE_TO_HANDLER[content_type]
         records = parse_func(res.text)
         pairs = {(record["s"], record["o"]) for record in records}
         self.assertEqual(EXPECTED, pairs)

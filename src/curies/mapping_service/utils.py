@@ -11,7 +11,7 @@ __all__ = [
     "handle_csv",
     "handle_json",
     "handle_xml",
-    "HANDLE",
+    "CONTENT_TYPE_TO_HANDLER",
 ]
 
 Record = Mapping[str, str]
@@ -47,7 +47,7 @@ def handle_csv(text: str) -> Records:
 
 
 #: A mapping from canonical content types to functions for parsing them
-HANDLE: Mapping[str, Callable[[str], Records]] = {
+CONTENT_TYPE_TO_HANDLER: Mapping[str, Callable[[str], Records]] = {
     "application/sparql-results+json": handle_json,
     "application/sparql-results+xml": handle_xml,
     "application/sparql-results+csv": handle_csv,
