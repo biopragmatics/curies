@@ -100,6 +100,21 @@ class TestMappingService(unittest.TestCase):
         self.graph = MappingServiceGraph(converter=self.converter)
         self.processor = MappingServiceSPARQLProcessor(self.graph)
 
+    def test_parse_header(self):
+        """Test parsing a rather complex header."""
+        example_header = (
+            "application/sparql-results+xml;q=0.8,"
+            "application/xml;q=0.8,"
+            "application/x-binary-rdf-results-table,"
+            "application/sparql-results+json;q=0.8,"
+            "application/json;q=0.8,"
+            "text/csv;q=0.8,"
+            "text/tab-separated-values;q=0.8"
+        )
+        content_type = _handle_header(example_header)
+        # self.assertEqual("application/sparql-results+xml", werkzeug.http.parse_accept_header(example_header))
+        self.assertEqual("application/sparql-results+xml", content_type)
+
     def test_prepare_predicates(self):
         """Test preparation of predicates."""
         self.assertEqual({OWL.sameAs}, _prepare_predicates())
@@ -207,13 +222,8 @@ def _handle_res_csv(res) -> Set[Tuple[str, str]]:
 
 CONTENT_TYPES = {
     "application/sparql-results+json": _handle_res_json,
-    "application/json": _handle_res_json,
-    "text/json": _handle_res_json,
     "application/sparql-results+xml": _handle_res_xml,
-    "application/xml": _handle_res_xml,
-    "text/xml": _handle_res_xml,
     "application/sparql-results+csv": _handle_res_csv,
-    "text/csv": _handle_res_csv,
     # "text/turtle": partial(_handle_res_rdf, format="ttl"),
     # "text/n3": partial(_handle_res_rdf, format="n3"),
     # "application/ld+json": partial(_handle_res_rdf, format="json-ld"),
@@ -268,7 +278,9 @@ class ConverterMixin(unittest.TestCase):
         for content_type, parse_func in sorted(CONTENT_TYPES.items()):
             with self.subTest(content_type=content_type):
                 res = client.post(
-                    "/sparql", json={"query": sparql}, headers={"accept": content_type}
+                    # note that we're using "data" and not JSON since this service
+                    # is posting "form data" and not a JSON payload
+                    "/sparql", data={"query": sparql}, headers={"accept": content_type}
                 )
                 self.assertEqual(
                     200,
