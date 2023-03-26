@@ -235,26 +235,47 @@ DEFAULT_CONTENT_TYPE = "application/sparql-results+xml"
 CONTENT_TYPE_TO_RDFLIB_FORMAT = {
     # https://www.w3.org/TR/sparql11-results-json/
     "application/sparql-results+json": "json",
-    "application/json": "json",
-    "text/json": "json",
     # https://www.w3.org/TR/rdf-sparql-XMLres/
     "application/sparql-results+xml": "xml",
-    "application/xml": "xml",  # for compatibility
-    "text/xml": "xml",  # not standard
     # https://www.w3.org/TR/sparql11-results-csv-tsv/
     "application/sparql-results+csv": "csv",
-    "text/csv": "csv",  # for compatibility
     # TODO other direct RDF serializations
     # "text/turtle": "ttl",
     # "text/n3": "n3",
     # "application/ld+json": "json-ld",
 }
 
+CONTENT_TYPE_SYNONYMS = {
+    "application/json": "application/sparql-results+json",
+    "text/json": "application/sparql-results+json",
+    "application/xml": "application/sparql-results+xml",
+    "text/xml": "application/sparql-results+xml",
+    "text/csv": "application/sparql-results+csv",
+}
+
+
+def _handle_part(part: str) -> Tuple[str, float]:
+    if ";q=" not in part:
+        return part, 1.0
+    key, q = part.split(";q=", 1)
+    return key, float(q)
+
 
 def _handle_header(header: Optional[str]) -> str:
-    if not header or header == "*/*":
+    if not header:
         return DEFAULT_CONTENT_TYPE
-    return header
+
+    parts = dict(_handle_part(part) for part in header.split(","))
+
+    # Sort in descending order of q value
+    for header in sorted(parts, key=parts.__getitem__, reverse=True):
+        header = CONTENT_TYPE_SYNONYMS.get(header, header)
+        if header in CONTENT_TYPE_TO_RDFLIB_FORMAT:
+            return header
+        # What happens if encountering "*/*" that has a higher q than something else?
+        # Is that even possible/coherent?
+
+    return DEFAULT_CONTENT_TYPE
 
 
 def get_flask_mapping_blueprint(
@@ -276,9 +297,11 @@ def get_flask_mapping_blueprint(
     @blueprint.route(route, methods=["GET", "POST"])  # type:ignore
     def serve_sparql() -> "Response":
         """Run a SPARQL query and serve the results."""
-        sparql = (request.args if request.method == "GET" else request.json).get("query")
+        sparql = request.values.get("query")
         if not sparql:
-            return Response("Missing parameter query", 400)
+            return Response(
+                "Missing query (either in args for GET requests, or in form for POST requests)", 400
+            )
         content_type = _handle_header(request.headers.get("accept"))
         results = graph.query(sparql, processor=processor)
         response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
@@ -297,36 +320,33 @@ def get_fastapi_router(
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
     :return: A router
     """
-    from fastapi import APIRouter, Query, Request, Response
-    from pydantic import BaseModel
-
-    class QueryModel(BaseModel):  # type:ignore
-        """A model representing the body in POST queries."""
-
-        query: str
+    from fastapi import APIRouter, Form, Header, Query, Response
 
     api_router = APIRouter(**kwargs)
     graph = MappingServiceGraph(converter=converter)
     processor = MappingServiceSPARQLProcessor(graph=graph)
 
-    def _resolve(request: Request, sparql: str) -> Response:
-        content_type = _handle_header(request.headers.get("accept"))
+    def _resolve(accept: Header, sparql: str) -> Response:
+        content_type = _handle_header(accept)
         results = graph.query(sparql, processor=processor)
         response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
         return Response(response, media_type=content_type)
 
     @api_router.get(route)  # type:ignore
     def resolve_get(
-        request: Request,
-        query: str = Query(title="Query", description="The SPARQL query to run"),  # noqa:B008
+        query: str = Query(description="The SPARQL query to run"),  # noqa:B008
+        accept: str = Header(),  # noqa:B008
     ) -> Response:
         """Run a SPARQL query and serve the results."""
-        return _resolve(request, query)
+        return _resolve(accept, query)
 
     @api_router.post(route)  # type:ignore
-    def resolve_post(request: Request, query: QueryModel) -> Response:
+    def resolve_post(
+        query: str = Form(description="The SPARQL query to run"),  # noqa:B008
+        accept: str = Header(),  # noqa:B008
+    ) -> Response:
         """Run a SPARQL query and serve the results."""
-        return _resolve(request, query.query)
+        return _resolve(accept, query)
 
     return api_router
 
