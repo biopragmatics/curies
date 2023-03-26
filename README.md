@@ -248,12 +248,12 @@ To install in development mode, use the following:
 ```bash
 $ git clone git+https://github.com/cthoyt/curies.git
 $ cd curies
-$ pip install -e ".[tests,fastapi,flask,pandas,rdflib,bioregistry]"
+$ pip install -e .
 ```
 
 ### 🥼 Testing
 
-After cloning the repository and installing the dependencies, the unit tests in the `tests/` folder can be
+After cloning the repository and installing `tox` with `pip install tox`, the unit tests in the `tests/` folder can be
 run reproducibly with:
 
 ```shell
