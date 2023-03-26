@@ -13,7 +13,6 @@ from rdflib.query import ResultRow
 from curies import Converter
 from curies.mapping_service import (
     CONTENT_TYPE_SYNONYMS,
-    CONTENT_TYPE_TO_RDFLIB_FORMAT,
     MappingServiceGraph,
     MappingServiceSPARQLProcessor,
     _handle_header,
