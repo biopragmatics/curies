@@ -5,7 +5,7 @@
 import json
 from typing import Callable, List, Mapping
 
-from defusedxml.etree import ElementTree
+from defusedxml import ElementTree
 
 __all__ = [
     "handle_csv",

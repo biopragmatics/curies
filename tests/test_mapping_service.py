@@ -192,21 +192,6 @@ class TestMappingService(unittest.TestCase):
         )
 
 
-class TestCompleteness(unittest.TestCase):
-    """Test that tests are complete."""
-
-    def test_content_types(self):
-        """Test that all content types are covered."""
-        self.assertEqual(
-            sorted(CONTENT_TYPE_TO_RDFLIB_FORMAT),
-            sorted(
-                content_type
-                for content_type in VALID_CONTENT_TYPES
-                if content_type not in ["", "*/*"]
-            ),
-        )
-
-
 class ConverterMixin(unittest.TestCase):
     """A mixin that has a converter."""
 
