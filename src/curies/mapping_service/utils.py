@@ -4,7 +4,8 @@
 
 import json
 from typing import Callable, List, Mapping
-from xml import etree
+
+from defusedxml.etree import ElementTree
 
 __all__ = [
     "handle_csv",
@@ -28,7 +29,7 @@ def handle_json(text: str) -> Records:
 
 def handle_xml(text: str) -> Records:
     """Parse bindings encoded in an XML string."""
-    root = etree.ElementTree.fromstring(text)  # noqa:S314
+    root = ElementTree.fromstring(text)
     results = root.find("{http://www.w3.org/2005/sparql-results#}results")
     return [
         {

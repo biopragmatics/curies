@@ -27,7 +27,7 @@ VALID_CONTENT_TYPES = {
     *HANDLE,
     "",
     "*/*",
-    CONTENT_TYPE_SYNONYMS,
+    *CONTENT_TYPE_SYNONYMS,
 }
 
 PREFIX_MAP = {
@@ -118,7 +118,6 @@ class TestMappingService(unittest.TestCase):
             "text/tab-separated-values;q=0.8"
         )
         content_type = _handle_header(example_header)
-        # self.assertEqual("application/sparql-results+xml", werkzeug.http.parse_accept_header(example_header))
         self.assertEqual("application/sparql-results+xml", content_type)
 
     def test_prepare_predicates(self):
