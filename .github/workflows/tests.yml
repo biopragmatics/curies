@@ -64,6 +64,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Start local triplestores for testing with docker
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          docker-compose up -d
+          sleep 20
+          ./tests/resources/init_triplestores.sh
       - name: Install dependencies
         run: pip install tox
       - name: Test with pytest and generate coverage file
