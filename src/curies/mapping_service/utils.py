@@ -137,8 +137,8 @@ def handle_header(header: Optional[str]) -> str:
     return DEFAULT_CONTENT_TYPE
 
 
-def require_service(url: str, name: str):
+def require_service(url: str, name: str):  # type:ignore
     """Skip a test unless the service is available."""
     return unittest.skipUnless(
-        sparql_service_available(url), reason=f"No local {name} service is running on {url}"
+        sparql_service_available(url), reason=f"No {name} service is running on {url}"
     )
