@@ -104,12 +104,13 @@ Test a request using a service, e.g. with :meth:`rdflib.Graph.query`
 """
 
 import itertools as itt
-from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Optional, Set, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
 
 from rdflib import OWL, Graph, URIRef
 from rdflib.term import _is_valid_uri
 
 from .rdflib_custom import MappingServiceSPARQLProcessor  # type: ignore
+from .utils import CONTENT_TYPE_TO_RDFLIB_FORMAT, handle_header
 from ..api import Converter
 
 if TYPE_CHECKING:
@@ -227,57 +228,6 @@ class MappingServiceGraph(Graph):  # type:ignore
                     yield subj_query, pred, obj
 
 
-#: This is default for federated queries
-DEFAULT_CONTENT_TYPE = "application/sparql-results+xml"
-
-#: A mapping from content types to the keys used for serializing
-#: in :meth:`rdflib.Graph.serialize` and other serialization functions
-CONTENT_TYPE_TO_RDFLIB_FORMAT = {
-    # https://www.w3.org/TR/sparql11-results-json/
-    "application/sparql-results+json": "json",
-    # https://www.w3.org/TR/rdf-sparql-XMLres/
-    "application/sparql-results+xml": "xml",
-    # https://www.w3.org/TR/sparql11-results-csv-tsv/
-    "application/sparql-results+csv": "csv",
-    # TODO other direct RDF serializations
-    # "text/turtle": "ttl",
-    # "text/n3": "n3",
-    # "application/ld+json": "json-ld",
-}
-
-CONTENT_TYPE_SYNONYMS = {
-    "application/json": "application/sparql-results+json",
-    "text/json": "application/sparql-results+json",
-    "application/xml": "application/sparql-results+xml",
-    "text/xml": "application/sparql-results+xml",
-    "text/csv": "application/sparql-results+csv",
-}
-
-
-def _handle_part(part: str) -> Tuple[str, float]:
-    if ";q=" not in part:
-        return part, 1.0
-    key, q = part.split(";q=", 1)
-    return key, float(q)
-
-
-def _handle_header(header: Optional[str]) -> str:
-    if not header:
-        return DEFAULT_CONTENT_TYPE
-
-    parts = dict(_handle_part(part) for part in header.split(","))
-
-    # Sort in descending order of q value
-    for header in sorted(parts, key=parts.__getitem__, reverse=True):
-        header = CONTENT_TYPE_SYNONYMS.get(header, header)
-        if header in CONTENT_TYPE_TO_RDFLIB_FORMAT:
-            return header
-        # What happens if encountering "*/*" that has a higher q than something else?
-        # Is that even possible/coherent?
-
-    return DEFAULT_CONTENT_TYPE
-
-
 def get_flask_mapping_blueprint(
     converter: Converter, route: str = "/sparql", **kwargs: Any
 ) -> "flask.Blueprint":
@@ -302,7 +252,7 @@ def get_flask_mapping_blueprint(
             return Response(
                 "Missing query (either in args for GET requests, or in form for POST requests)", 400
             )
-        content_type = _handle_header(request.headers.get("accept"))
+        content_type = handle_header(request.headers.get("accept"))
         results = graph.query(sparql, processor=processor)
         response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
         return Response(response, content_type=content_type)
@@ -327,7 +277,7 @@ def get_fastapi_router(
     processor = MappingServiceSPARQLProcessor(graph=graph)
 
     def _resolve(accept: Header, sparql: str) -> Response:
-        content_type = _handle_header(accept)
+        content_type = handle_header(accept)
         results = graph.query(sparql, processor=processor)
         response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
         return Response(response, media_type=content_type)

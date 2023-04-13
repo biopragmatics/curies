@@ -12,15 +12,14 @@ from rdflib.query import ResultRow
 
 from curies import Converter
 from curies.mapping_service import (
-    CONTENT_TYPE_SYNONYMS,
     MappingServiceGraph,
     MappingServiceSPARQLProcessor,
-    _handle_header,
     _prepare_predicates,
     get_fastapi_mapping_app,
     get_flask_mapping_app,
+    handle_header,
 )
-from curies.mapping_service.utils import CONTENT_TYPE_TO_HANDLER
+from curies.mapping_service.utils import CONTENT_TYPE_SYNONYMS, CONTENT_TYPE_TO_HANDLER
 
 VALID_CONTENT_TYPES = {
     *CONTENT_TYPE_TO_HANDLER,
@@ -116,7 +115,7 @@ class TestMappingService(unittest.TestCase):
             "text/csv;q=0.8,"
             "text/tab-separated-values;q=0.8"
         )
-        content_type = _handle_header(example_header)
+        content_type = handle_header(example_header)
         self.assertEqual("application/sparql-results+xml", content_type)
 
     def test_prepare_predicates(self):
@@ -201,7 +200,7 @@ class ConverterMixin(unittest.TestCase):
 
     def assert_mimetype(self, res, content_type):
         """Assert the correct MIMETYPE."""
-        content_type = _handle_header(content_type)
+        content_type = handle_header(content_type)
         mimetype = getattr(res, "mimetype", None)
         if hasattr(res, "mimetype"):  # this is from Flask
             self.assertEqual(content_type, mimetype)
@@ -212,7 +211,7 @@ class ConverterMixin(unittest.TestCase):
 
     def assert_parsed(self, res, content_type: str):
         """Test the result has the expected output."""
-        content_type = _handle_header(content_type)
+        content_type = handle_header(content_type)
         parse_func = CONTENT_TYPE_TO_HANDLER[content_type]
         records = parse_func(res.text)
         pairs = {(record["s"], record["o"]) for record in records}
