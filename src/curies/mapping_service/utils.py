@@ -3,6 +3,7 @@
 """Utilities for the mapping service."""
 
 import json
+import json.decoder
 from typing import Callable, List, Mapping, Optional, Set, Tuple
 
 import requests
@@ -104,7 +105,7 @@ def sparql_service_available(endpoint: str) -> bool:
     """Test if a SPARQL service is running."""
     try:
         records = get_sparql_records(endpoint, PING_SPARQL, "application/json")
-    except requests.exceptions.ConnectionError:
+    except (requests.exceptions.ConnectionError, json.decoder.JSONDecodeError):
         return False
     return {("hello", "there")} == get_sparql_record_so_tuples(records)
 
