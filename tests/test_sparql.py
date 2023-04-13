@@ -13,7 +13,7 @@ from tests.test_mapping_service import VALID_CONTENT_TYPES
 
 # NOTE: federated queries need to use docker internal URL
 LOCAL_MAPPING_SERVICE = "http://localhost:8888/sparql"
-LOCAL_BLAZEGRAPH = "http://localhost:8080/blazegraph/namespace/kb/sparql"
+LOCAL_BLAZEGRAPH = "http://localhost:8889/blazegraph/namespace/kb/sparql"
 LOCAL_VIRTUOSO = "http://localhost:8890/sparql"
 
 DOCKER_MAPPING_SERVICE = "http://mapping-service:8888/sparql"
