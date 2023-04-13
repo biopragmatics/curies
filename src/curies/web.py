@@ -70,7 +70,7 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
 
     blueprint = Blueprint("metaresolver", __name__, **kwargs)
 
-    @blueprint.route("/<prefix>:<path:identifier>")  # type:ignore
+    @blueprint.route(f"/<prefix>{converter.delimiter}<path:identifier>")  # type:ignore
     def resolve(prefix: str, identifier: str) -> "Response":
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
@@ -201,7 +201,7 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
     api_router = APIRouter(**kwargs)
 
-    @api_router.get("/{prefix}:{identifier}")  # type:ignore
+    @api_router.get(f"/{{prefix}}{converter.delimiter}{{identifier}}")  # type:ignore
     def resolve(
         prefix: str = Path(  # noqa:B008
             title="Prefix",
