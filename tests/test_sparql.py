@@ -7,6 +7,7 @@ from typing import Set, Tuple
 from curies.mapping_service.utils import (
     get_sparql_record_so_tuples,
     get_sparql_records,
+    require_service,
     sparql_service_available,
 )
 from tests.test_mapping_service import VALID_CONTENT_TYPES
@@ -26,12 +27,6 @@ def get_pairs(endpoint: str, sparql: str, accept: str) -> Set[Tuple[str, str]]:
     records = get_sparql_records(endpoint=endpoint, sparql=sparql, accept=accept)
     return get_sparql_record_so_tuples(records)
 
-
-def require_service(url, name):
-    """Skip a test unless the service is available."""
-    return unittest.skipUnless(
-        sparql_service_available(url), reason=f"No local {name} service is running on {url}"
-    )
 
 SPARQL_VALUES = f"""\
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
