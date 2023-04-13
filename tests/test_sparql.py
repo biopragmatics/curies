@@ -12,12 +12,12 @@ from curies.mapping_service.utils import (
 from tests.test_mapping_service import VALID_CONTENT_TYPES
 
 # NOTE: federated queries need to use docker internal URL
-LOCAL_MAPPING_SERVICE = "http://localhost:5000/sparql"
-LOCAL_BLAZEGRAPH = "http://localhost:9999/blazegraph/namespace/kb/sparql"
+LOCAL_MAPPING_SERVICE = "http://localhost:8888/sparql"
+LOCAL_BLAZEGRAPH = "http://localhost:8080/blazegraph/namespace/kb/sparql"
 LOCAL_VIRTUOSO = "http://localhost:8890/sparql"
 
 DOCKER_MAPPING_SERVICE = "http://mapping-service:8888/sparql"
-DOCKER_BLAZEGRAPH = "http://localhost:8080/blazegraph/namespace/kb/sparql"
+DOCKER_BLAZEGRAPH = "http://blazegraph:8080/blazegraph/namespace/kb/sparql"
 DOCKER_VIRTUOSO = "http://virtuoso:8890/sparql"
 
 
@@ -114,7 +114,7 @@ class TestSPARQL(unittest.TestCase):
                 SELECT ?s ?o WHERE {{
                   <https://www.ensembl.org/id/ENSG00000006453> owl:sameAs ?s .
 
-                  SERVICE <{LOCAL_BLAZEGRAPH}> {{
+                  SERVICE <{DOCKER_BLAZEGRAPH}> {{
                       ?s bl:category ?o .
                   }}
                 }}
