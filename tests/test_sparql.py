@@ -113,8 +113,7 @@ class TestSPARQL(unittest.TestCase):
         sparql_service_available(LOCAL_BLAZEGRAPH), reason="No local BlazeGraph is running"
     )
     def test_from_blazegraph_to_bioregistry(self):
-        """Test a federated query from a Blazegraph triplestore to the curies service.
-        """
+        """Test a federated query from a Blazegraph triplestore to the curies service."""
         for mimetype in HANDLERS:
             with self.subTest(mimetype=mimetype):
                 self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_SIMPLE, accept=mimetype)
@@ -124,21 +123,18 @@ class TestSPARQL(unittest.TestCase):
         sparql_service_available(LOCAL_VIRTUOSO), reason="No local Virtuoso is running"
     )
     def test_from_virtuoso_to_bioregistry(self):
-        """Test a federated query from a OpenLink Virtuoso triplestore to the curies service.
-        """
+        """Test a federated query from a OpenLink Virtuoso triplestore to the curies service."""
         for mimetype in HANDLERS:
             with self.subTest(mimetype=mimetype):
                 self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_SIMPLE, accept=mimetype)
                 # TODO: Virtuoso fails to resolves VALUES in federated query
                 # self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_VALUES, accept=mimetype)
 
-
     @unittest.skipUnless(
         sparql_service_available(LOCAL_BIOREGISTRY), reason="No local Bioregistry is running"
     )
     def test_from_bioregistry_to_virtuoso(self):
-        """Test a federated query from the curies service to a OpenLink Virtuoso triplestore.
-        """
+        """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
         query = f"""\
 SELECT ?s ?o WHERE {{
     <https://identifiers.org/uniprot/P07862> <http://www.w3.org/2002/07/owl#sameAs> ?s .
@@ -153,13 +149,11 @@ SELECT ?s ?o WHERE {{
                 print(records)
                 self.assertGreater(len(records), 0)
 
-
     @unittest.skipUnless(
         sparql_service_available(LOCAL_BIOREGISTRY), reason="No local Bioregistry is running"
     )
     def test_from_bioregistry_to_blazegraph(self):
-        """Test a federated query from the curies service to a OpenLink Virtuoso triplestore.
-        """
+        """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
         query = f"""\
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX bl: <https://w3id.org/biolink/vocab/>
