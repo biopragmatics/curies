@@ -1,11 +1,12 @@
 """Tests federated SPARQL queries between the curies mapping service and popular triplestores."""
 
-import csv
 import unittest
 from typing import Set, Tuple
-from xml import etree
 
-import requests
+from tests.test_federated_sparql import _get_so
+from tests.test_federated_sparql import get as fget
+from tests.test_federated_sparql import sparql_service_available
+from tests.test_mapping_service import VALID_CONTENT_TYPES
 
 PING_SPARQL = 'SELECT ?s ?o WHERE { BIND("hello" as ?s) . BIND("there" as ?o) . }'
 # NOTE: federated queries need to use docker internal URL
@@ -17,56 +18,9 @@ LOCAL_VIRTUOSO = "http://localhost:8890/sparql"
 DOCKER_VIRTUOSO = "http://virtuoso:8890/sparql"
 
 
-def _handle_res_xml(res: requests.Response) -> Set[Tuple[str, str]]:
-    root = etree.ElementTree.fromstring(res.text)  # noqa:S314
-    results = root.find("{http://www.w3.org/2005/sparql-results#}results")
-    rv = set()
-    for result in results:
-        parsed_result = {
-            binding.attrib["name"]: binding.find("{http://www.w3.org/2005/sparql-results#}uri").text
-            for binding in result
-        }
-        rv.add((parsed_result["s"], parsed_result["o"]))
-    return rv
-
-
-def _handle_res_json(res: requests.Response) -> Set[Tuple[str, str]]:
-    res_json = res.json()
-    return {
-        (record["s"]["value"], record["o"]["value"]) for record in res_json["results"]["bindings"]
-    }
-
-
-def _handle_res_csv(res: requests.Response) -> Set[Tuple[str, str]]:
-    reader = csv.DictReader(res.text.splitlines())
-    return {(record["s"], record["o"]) for record in reader}
-
-
-HANDLERS = {
-    "application/json": _handle_res_json,
-    "application/sparql-results+xml": _handle_res_xml,
-    "text/csv": _handle_res_csv,
-}
-
-
-def get(endpoint: str, sparql: str, accept) -> Set[Tuple[str, str]]:
+def get(endpoint: str, sparql: str, accept: str) -> Set[Tuple[str, str]]:
     """Get a response from a given SPARQL query."""
-    res = requests.get(
-        endpoint,
-        params={"query": sparql},
-        headers={"accept": accept},
-    )
-    func = HANDLERS[accept]
-    return func(res)
-
-
-def sparql_service_available(endpoint: str) -> bool:
-    """Test if a SPARQL service is running."""
-    try:
-        records = get(endpoint, PING_SPARQL, "application/json")
-    except requests.exceptions.ConnectionError:
-        return False
-    return list(records) == [("hello", "there")]
+    return _get_so(fget(endpoint=endpoint, sparql=sparql, accept=accept))
 
 
 SPARQL_VALUES = f"""\
@@ -94,7 +48,7 @@ SELECT DISTINCT ?s ?o WHERE {{
     sparql_service_available(LOCAL_BIOREGISTRY), reason="No local Bioregistry is running"
 )
 class TestSPARQL(unittest.TestCase):
-    """Tests federated SPARQL queries between the curies mapping service and blazegraph/virtuoso triplestores
+    """Tests federated SPARQL queries between the curies mapping service and blazegraph/virtuoso triplestores.
 
     Run and init the required triplestores locally:
     1. docker compose up
@@ -114,7 +68,7 @@ class TestSPARQL(unittest.TestCase):
     )
     def test_from_blazegraph_to_bioregistry(self):
         """Test a federated query from a Blazegraph triplestore to the curies service."""
-        for mimetype in HANDLERS:
+        for mimetype in VALID_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_SIMPLE, accept=mimetype)
                 self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_VALUES, accept=mimetype)
@@ -124,7 +78,7 @@ class TestSPARQL(unittest.TestCase):
     )
     def test_from_virtuoso_to_bioregistry(self):
         """Test a federated query from a OpenLink Virtuoso triplestore to the curies service."""
-        for mimetype in HANDLERS:
+        for mimetype in VALID_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_SIMPLE, accept=mimetype)
                 # TODO: Virtuoso fails to resolves VALUES in federated query
@@ -143,10 +97,9 @@ SELECT ?s ?o WHERE {{
     }}
 }}
 """.rstrip()
-        for mimetype in HANDLERS:
+        for mimetype in VALID_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 records = get(LOCAL_BIOREGISTRY, query, accept=mimetype)
-                print(records)
                 self.assertGreater(len(records), 0)
 
     @unittest.skipUnless(
@@ -165,7 +118,7 @@ SELECT ?s ?o WHERE {{
   }}
 }}
 """.rstrip()
-        for mimetype in HANDLERS:
+        for mimetype in VALID_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 records = get(LOCAL_BIOREGISTRY, query, accept=mimetype)
                 self.assertGreater(len(records), 0)

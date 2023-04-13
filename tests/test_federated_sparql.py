@@ -12,7 +12,7 @@ import uvicorn
 
 from curies import Converter
 from curies.mapping_service import _handle_header, get_fastapi_mapping_app
-from curies.mapping_service.utils import CONTENT_TYPE_TO_HANDLER
+from curies.mapping_service.utils import CONTENT_TYPE_TO_HANDLER, Records
 from tests.test_mapping_service import PREFIX_MAP
 
 BLAZEGRAPH_ENDPOINT = "http://localhost:9999/blazegraph/namespace/kb/sparql"
@@ -31,7 +31,7 @@ SELECT DISTINCT ?s ?o WHERE {{
 """.rstrip()
 
 
-def get(endpoint: str, sparql: str, accept: str):
+def get(endpoint: str, sparql: str, accept: str) -> Records:
     """Get a response from a given SPARQL query."""
     res = requests.get(
         endpoint,
@@ -42,7 +42,7 @@ def get(endpoint: str, sparql: str, accept: str):
     return func(res.text)
 
 
-def _get_so(records) -> Set[Tuple[str, str]]:
+def _get_so(records: Records) -> Set[Tuple[str, str]]:
     return {(record["s"], record["o"]) for record in records}
 
 
