@@ -34,6 +34,26 @@ SELECT DISTINCT ?s ?o WHERE {{
 }}
 """.rstrip()
 
+SPARQL_VALUES_FMT_2 = """\
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT DISTINCT ?s ?o WHERE {{
+    VALUES ?s {{ <http://purl.obolibrary.org/obo/CHEBI_24867> }}
+    SERVICE <{mapping_service}> {{
+        ?s owl:sameAs ?o
+    }}
+}}
+""".rstrip()
+
+SPARQL_VALUES_FMT_3 = """\
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT DISTINCT ?s ?o WHERE {{
+    SERVICE <{mapping_service}> {{
+        ?s owl:sameAs ?o
+    }}
+    VALUES ?s {{ <http://purl.obolibrary.org/obo/CHEBI_24867> }}
+}}
+""".rstrip()
+
 SPARQL_SIMPLE_FMT = """\
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 SELECT DISTINCT ?s ?o WHERE {{
@@ -41,6 +61,38 @@ SELECT DISTINCT ?s ?o WHERE {{
         <http://purl.obolibrary.org/obo/CHEBI_24867> owl:sameAs ?o .
         ?s owl:sameAs ?o .
     }}
+}}
+""".rstrip()
+
+SPARQL_SIMPLE_FMT_2 = """\
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT DISTINCT ?s ?o WHERE {{
+    SERVICE <{mapping_service}> {{
+        ?s owl:sameAs ?o .
+        <http://purl.obolibrary.org/obo/CHEBI_24867> owl:sameAs ?o .
+    }}
+}}
+""".rstrip()
+
+# TODO test
+SPARQL_SIMPLE_FMT_3 = """\
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT DISTINCT ?s ?o WHERE {{
+    <http://purl.obolibrary.org/obo/CHEBI_24867> owl:sameAs ?o .
+    SERVICE <{mapping_service}> {{
+        ?s owl:sameAs ?o .
+    }}
+}}
+""".rstrip()
+
+# TODO test
+SPARQL_SIMPLE_FMT_4 = """\
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT DISTINCT ?s ?o WHERE {{
+    SERVICE <{mapping_service}> {{
+        ?s owl:sameAs ?o .
+    }}
+    <http://purl.obolibrary.org/obo/CHEBI_24867> owl:sameAs ?o .
 }}
 """.rstrip()
 
@@ -71,7 +123,10 @@ class TestFederatedSparql(FederationMixin):
     ]
     query_formats: ClassVar[List[str]] = [
         SPARQL_VALUES_FMT,
+        SPARQL_VALUES_FMT_2,
+        SPARQL_VALUES_FMT_3,
         SPARQL_SIMPLE_FMT,
+        SPARQL_SIMPLE_FMT_2,
     ]
     host: ClassVar[str] = "localhost"
     port: ClassVar[int] = 8000
