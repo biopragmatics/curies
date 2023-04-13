@@ -92,6 +92,7 @@ def get_sparql_records(endpoint: str, sparql: str, accept: str) -> Records:
         params={"query": sparql},
         headers={"accept": accept},
     )
+    res.raise_for_status()
     func = CONTENT_TYPE_TO_HANDLER[handle_header(accept)]
     return func(res.text)
 
