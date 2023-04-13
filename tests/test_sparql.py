@@ -71,26 +71,29 @@ class TestSPARQL(unittest.TestCase):
             records,
         )
 
-    @require_service(LOCAL_BLAZEGRAPH, "Blazegraph")
+    # @require_service(LOCAL_BLAZEGRAPH, "Blazegraph")
     def test_from_blazegraph_to_mapping_service(self):
         """Test a federated query from a Blazegraph triplestore to the curies service."""
+        self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
         for mimetype in VALID_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_SIMPLE, accept=mimetype)
                 self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_VALUES, accept=mimetype)
 
-    @require_service(LOCAL_VIRTUOSO, "Virtuoso")
+    # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
     def test_from_virtuoso_to_mapping_service(self):
         """Test a federated query from a OpenLink Virtuoso triplestore to the curies service."""
+        self.assertTrue(sparql_service_available(LOCAL_VIRTUOSO))
         for mimetype in VALID_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_SIMPLE, accept=mimetype)
                 # TODO: Virtuoso fails to resolves VALUES in federated query
                 # self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_VALUES, accept=mimetype)
 
-    @require_service(DOCKER_VIRTUOSO, "Virtuoso")
+    # @require_service(DOCKER_VIRTUOSO, "Virtuoso")
     def test_from_mapping_service_to_virtuoso(self):
         """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
+        self.assertTrue(sparql_service_available(DOCKER_VIRTUOSO))
         query = dedent(
             f"""\
                 SELECT ?s ?o WHERE {{
@@ -106,9 +109,10 @@ class TestSPARQL(unittest.TestCase):
                 records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
                 self.assertGreater(len(records), 0)
 
-    @require_service(LOCAL_BLAZEGRAPH, "Blazegraph")
+    # @require_service(LOCAL_BLAZEGRAPH, "Blazegraph")
     def test_from_mapping_service_to_blazegraph(self):
         """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
+        self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
         query = dedent(
             f"""\
                 PREFIX owl: <http://www.w3.org/2002/07/owl#>
