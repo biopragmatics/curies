@@ -3,12 +3,13 @@
 import unittest
 from typing import Set, Tuple
 
-from tests.test_federated_sparql import _get_so
-from tests.test_federated_sparql import get as fget
-from tests.test_federated_sparql import sparql_service_available
+from curies.mapping_service.utils import (
+    get_sparql_record_so_tuples,
+    get_sparql_records,
+    sparql_service_available,
+)
 from tests.test_mapping_service import VALID_CONTENT_TYPES
 
-PING_SPARQL = 'SELECT ?s ?o WHERE { BIND("hello" as ?s) . BIND("there" as ?o) . }'
 # NOTE: federated queries need to use docker internal URL
 DOCKER_BIOREGISTRY = "http://mapping-service:8888/sparql"
 LOCAL_BIOREGISTRY = "http://localhost:8888/sparql"
@@ -20,7 +21,8 @@ DOCKER_VIRTUOSO = "http://virtuoso:8890/sparql"
 
 def get(endpoint: str, sparql: str, accept: str) -> Set[Tuple[str, str]]:
     """Get a response from a given SPARQL query."""
-    return _get_so(fget(endpoint=endpoint, sparql=sparql, accept=accept))
+    records = get_sparql_records(endpoint=endpoint, sparql=sparql, accept=accept)
+    return get_sparql_record_so_tuples(records)
 
 
 SPARQL_VALUES = f"""\
