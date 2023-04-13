@@ -2,10 +2,11 @@
 
 """Tests federated SPARQL queries with a locally deployed triple store."""
 
+import itertools as itt
 import time
 import unittest
 from multiprocessing import Process
-from typing import ClassVar
+from typing import ClassVar, List
 
 import uvicorn
 
@@ -23,12 +24,22 @@ BLAZEGRAPH_ENDPOINT = "http://localhost:9999/blazegraph/namespace/kb/sparql"
 BLAZEGRAPH_JAR_URL = (
     "https://github.com/blazegraph/database/releases/download/BLAZEGRAPH_2_1_6_RC/blazegraph.jar"
 )
-SPARQL_FMT = """\
+SPARQL_VALUES_FMT = """\
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 SELECT DISTINCT ?s ?o WHERE {{
     SERVICE <{mapping_service}> {{
         VALUES ?s {{ <http://purl.obolibrary.org/obo/CHEBI_24867> }}
         ?s owl:sameAs ?o
+    }}
+}}
+""".rstrip()
+
+SPARQL_SIMPLE_FMT = """\
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT DISTINCT ?s ?o WHERE {{
+    SERVICE <{mapping_service}> {{
+        <http://purl.obolibrary.org/obo/CHEBI_24867> owl:sameAs ?o .
+        ?s owl:sameAs ?o .
     }}
 }}
 """.rstrip()
@@ -53,6 +64,15 @@ class TestFederatedSparql(FederationMixin):
     """Test the identifier mapping service."""
 
     endpoint: ClassVar[str] = BLAZEGRAPH_ENDPOINT
+    mimetypes: ClassVar[List[str]] = [
+        "application/sparql-results+json",
+        "application/sparql-results+xml",
+        "text/csv",  # for some reason, Blazegraph wants this instead of application/sparql-results+csv
+    ]
+    query_formats: ClassVar[List[str]] = [
+        SPARQL_VALUES_FMT,
+        SPARQL_SIMPLE_FMT,
+    ]
     host: ClassVar[str] = "localhost"
     port: ClassVar[int] = 8000
     mapping_service_process: Process
@@ -71,7 +91,10 @@ class TestFederatedSparql(FederationMixin):
         time.sleep(5)
 
         self.mapping_service = f"http://{self.host}:{self.port}/sparql"
-        self.sparql = SPARQL_FMT.format(mapping_service=self.mapping_service)
+        self.queries = [
+            query_format.format(mapping_service=self.mapping_service)
+            for query_format in self.query_formats
+        ]
 
         self.assert_service_works(self.mapping_service)
 
@@ -81,13 +104,9 @@ class TestFederatedSparql(FederationMixin):
 
     def test_federated_local(self):
         """Test sending a federated query to a local mapping service from a local service."""
-        for mimetype in [
-            "application/sparql-results+json",
-            "application/sparql-results+xml",
-            "text/csv",  # for some reason, Blazegraph wants this instead of application/sparql-results+csv
-        ]:
-            with self.subTest(mimetype=mimetype):
-                records = get_sparql_records(self.endpoint, self.sparql, accept=mimetype)
+        for mimetype, sparql in itt.product(self.mimetypes, self.queries):
+            with self.subTest(mimetype=mimetype, sparql=sparql):
+                records = get_sparql_records(self.endpoint, sparql, accept=mimetype)
                 self.assertIn(
                     (
                         "http://purl.obolibrary.org/obo/CHEBI_24867",
