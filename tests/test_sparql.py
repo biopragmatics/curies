@@ -7,7 +7,6 @@ from typing import Set, Tuple
 from curies.mapping_service.utils import (
     get_sparql_record_so_tuples,
     get_sparql_records,
-    require_service,
     sparql_service_available,
 )
 from tests.test_mapping_service import VALID_CONTENT_TYPES
@@ -49,7 +48,7 @@ SELECT DISTINCT ?s ?o WHERE {{
 """.rstrip()
 
 
-@require_service(LOCAL_MAPPING_SERVICE, "Mapping")
+# @require_service(LOCAL_MAPPING_SERVICE, "Mapping")
 class TestSPARQL(unittest.TestCase):
     """Tests federated SPARQL queries between the curies mapping service and blazegraph/virtuoso triplestores.
 
