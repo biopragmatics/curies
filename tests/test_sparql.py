@@ -119,7 +119,7 @@ class TestSPARQL(unittest.TestCase):
                 PREFIX bl: <https://w3id.org/biolink/vocab/>
                 SELECT ?s ?o WHERE {{
                   <https://www.ensembl.org/id/ENSG00000006453> owl:sameAs ?s .
-                
+
                   SERVICE <{LOCAL_BLAZEGRAPH}> {{
                       ?s bl:category ?o .
                   }}
