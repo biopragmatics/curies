@@ -4,6 +4,7 @@
 
 import json
 import json.decoder
+import unittest
 from typing import Callable, List, Mapping, Optional, Set, Tuple
 
 import requests
@@ -134,3 +135,10 @@ def handle_header(header: Optional[str]) -> str:
         # Is that even possible/coherent?
 
     return DEFAULT_CONTENT_TYPE
+
+
+def require_service(url: str, name: str):  # type:ignore
+    """Skip a test unless the service is available."""
+    return unittest.skipUnless(
+        sparql_service_available(url), reason=f"No {name} service is running on {url}"
+    )
