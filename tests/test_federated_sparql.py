@@ -5,21 +5,23 @@
 import time
 import unittest
 from multiprocessing import Process
-from typing import ClassVar, Set, Tuple
+from typing import ClassVar
 
-import requests
 import uvicorn
 
 from curies import Converter
-from curies.mapping_service import _handle_header, get_fastapi_mapping_app
-from curies.mapping_service.utils import CONTENT_TYPE_TO_HANDLER, Records
+from curies.mapping_service import get_fastapi_mapping_app
+from curies.mapping_service.utils import (
+    get_sparql_record_so_tuples,
+    get_sparql_records,
+    sparql_service_available,
+)
 from tests.test_mapping_service import PREFIX_MAP
 
 BLAZEGRAPH_ENDPOINT = "http://localhost:9999/blazegraph/namespace/kb/sparql"
 BLAZEGRAPH_JAR_URL = (
     "https://github.com/blazegraph/database/releases/download/BLAZEGRAPH_2_1_6_RC/blazegraph.jar"
 )
-PING_SPARQL = 'SELECT ?s ?o WHERE { BIND("hello" as ?s) . BIND("there" as ?o) . }'
 SPARQL_FMT = """\
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 SELECT DISTINCT ?s ?o WHERE {{
@@ -31,39 +33,12 @@ SELECT DISTINCT ?s ?o WHERE {{
 """.rstrip()
 
 
-def get(endpoint: str, sparql: str, accept: str) -> Records:
-    """Get a response from a given SPARQL query."""
-    res = requests.get(
-        endpoint,
-        params={"query": sparql},
-        headers={"accept": accept},
-    )
-    func = CONTENT_TYPE_TO_HANDLER[_handle_header(accept)]
-    return func(res.text)
-
-
-def _get_so(records: Records) -> Set[Tuple[str, str]]:
-    return {(record["s"], record["o"]) for record in records}
-
-
-def sparql_service_available(endpoint: str) -> bool:
-    """Test if a SPARQL service is running."""
-    try:
-        records = get(endpoint, PING_SPARQL, "application/json")
-    except requests.exceptions.ConnectionError:
-        return False
-    return {("hello", "there")} == _get_so(records)
-
-
 class FederationMixin(unittest.TestCase):
     """A shared mixin for testing."""
 
     def assert_service_works(self, endpoint: str):
         """Assert that a service is able to accept a simple SPARQL query."""
-        records = get(endpoint, PING_SPARQL, accept="application/json")
-        self.assertEqual(1, len(records))
-        self.assertEqual("hello", records[0]["s"])
-        self.assertEqual("there", records[0]["o"])
+        self.assertTrue(sparql_service_available(endpoint))
 
 
 def _get_app():
@@ -113,11 +88,11 @@ class TestFederatedSparql(FederationMixin):
             "text/csv",  # for some reason, Blazegraph wants this instead of application/sparql-results+csv
         ]:
             with self.subTest(mimetype=mimetype):
-                records = get(self.endpoint, self.sparql, accept=mimetype)
+                records = get_sparql_records(self.endpoint, self.sparql, accept=mimetype)
                 self.assertIn(
                     (
                         "http://purl.obolibrary.org/obo/CHEBI_24867",
                         "http://identifiers.org/chebi/24867",
                     ),
-                    _get_so(records),
+                    get_sparql_record_so_tuples(records),
                 )
