@@ -14,6 +14,7 @@ from curies.mapping_service import get_fastapi_mapping_app
 from curies.mapping_service.utils import (
     get_sparql_record_so_tuples,
     get_sparql_records,
+    require_service,
     sparql_service_available,
 )
 from tests.test_mapping_service import PREFIX_MAP
@@ -47,9 +48,7 @@ def _get_app():
     return app
 
 
-@unittest.skipUnless(
-    sparql_service_available(BLAZEGRAPH_ENDPOINT), reason="Blazegraph is not running"
-)
+@require_service(BLAZEGRAPH_ENDPOINT, "Blazegraph")
 class TestFederatedSparql(FederationMixin):
     """Test the identifier mapping service."""
 
