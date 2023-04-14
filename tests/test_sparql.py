@@ -1,15 +1,22 @@
 """Tests federated SPARQL queries between the curies mapping service and popular triplestores."""
 
 import itertools as itt
+import time
 import unittest
+from multiprocessing import Process
 from textwrap import dedent
-from typing import Collection, NamedTuple, Set, Tuple
+from typing import ClassVar, Collection, NamedTuple, Set, Tuple
 
+import uvicorn
+
+from curies import Converter
+from curies.mapping_service import get_fastapi_mapping_app
 from curies.mapping_service.utils import (
     get_sparql_record_so_tuples,
     get_sparql_records,
     sparql_service_available,
 )
+from tests.test_mapping_service import PREFIX_MAP
 
 # NOTE: federated queries need to use docker internal URL
 LOCAL_MAPPING_SERVICE = "http://localhost:8888/sparql"
@@ -104,18 +111,11 @@ configurations = {
 }
 
 
-# @require_service(LOCAL_MAPPING_SERVICE, "Mapping")
-class TestSPARQL(unittest.TestCase):
-    """Tests federated SPARQL queries between the curies mapping service and blazegraph/virtuoso triplestores.
+class FederationMixin(unittest.TestCase):
+    """Tests federated SPARQL queries."""
 
-    Run and init the required triplestores locally:
-    1. docker compose up
-    2. ./tests/resources/init_triplestores.sh
-    """
-
-    def setUp(self) -> None:
-        """Set up the test case."""
-        self.mapping_service = LOCAL_MAPPING_SERVICE
+    #: The URL for the mapping service
+    mapping_service: str
 
     def assert_endpoint(self, endpoint: str, query: str, *, accept: str):
         """Assert the endpoint returns favorable results."""
@@ -144,3 +144,51 @@ class TestSPARQL(unittest.TestCase):
                     records = get_pairs(self.mapping_service, sparql, accept=mimetype)
                     self.assertGreater(len(records), 0)
                     # TODO add assert_endpoint here?
+
+
+class TestDockerFederation(FederationMixin):
+    """Tests federated SPARQL queries between the curies mapping service and blazegraph/virtuoso triplestores.
+
+    Run and init the required triplestores locally:
+    1. docker compose up
+    2. ./tests/resources/init_triplestores.sh
+    """
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        self.mapping_service = LOCAL_MAPPING_SERVICE
+
+        if not sparql_service_available(self.mapping_service):
+            self.skipTest(f"Mapping service is not available: {self.mapping_service}")
+
+
+def _get_app():
+    converter = Converter.from_priority_prefix_map(PREFIX_MAP)
+    app = get_fastapi_mapping_app(converter)
+    return app
+
+
+class TestLocalFederation(FederationMixin):
+    """Tests federated SPARQL queries."""
+
+    host: ClassVar[str] = "localhost"
+    port: ClassVar[int] = 8000
+    mapping_service_process: Process
+
+    def setUp(self):
+        """Set up the test case."""
+        # Start the curies mapping service SPARQL endpoint
+        self.mapping_service_process = Process(
+            target=uvicorn.run,
+            # uvicorn.run accepts a zero-argument callable that returns an app
+            args=(_get_app,),
+            kwargs={"host": self.host, "port": self.port, "log_level": "info"},
+            daemon=True,
+        )
+        self.mapping_service_process.start()
+        time.sleep(5)
+
+        self.mapping_service = f"http://{self.host}:{self.port}/sparql"
+
+        if not sparql_service_available(self.mapping_service):
+            self.skipTest(f"Mapping service is not available: {self.mapping_service}")
