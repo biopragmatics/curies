@@ -34,7 +34,7 @@ def get_pairs(endpoint: str, sparql: str, accept: str) -> Set[Tuple[str, str]]:
     return get_sparql_record_so_tuples(records)
 
 
-SPARQL_VALUES = f"""\
+SPARQL_TO_MAPPING_SERVICE_VALUES = f"""\
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 SELECT DISTINCT ?s ?o WHERE {{
     SERVICE <{DOCKER_MAPPING_SERVICE}> {{
@@ -44,7 +44,7 @@ SELECT DISTINCT ?s ?o WHERE {{
 }}
 """.rstrip()
 
-SPARQL_SIMPLE = f"""\
+SPARQL_TO_MAPPING_SERVICE_SIMPLE = f"""\
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 SELECT DISTINCT ?s ?o WHERE {{
     SERVICE <{DOCKER_MAPPING_SERVICE}> {{
@@ -54,6 +54,15 @@ SELECT DISTINCT ?s ?o WHERE {{
 }}
 """.rstrip()
 
+SPARQL_FROM_MAPPING_SERVICE_SIMPLE = """\
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+SELECT ?s ?o WHERE {{
+    <http://purl.obolibrary.org/obo/CHEBI_24867> owl:sameAs ?s .
+    SERVICE <{0}> {{
+        ?s a ?o .
+    }}
+}}
+""".rstrip()
 
 # @require_service(LOCAL_MAPPING_SERVICE, "Mapping")
 class TestSPARQL(unittest.TestCase):
@@ -78,8 +87,8 @@ class TestSPARQL(unittest.TestCase):
         self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
         for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
-                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_SIMPLE, accept=mimetype)
-                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_VALUES, accept=mimetype)
+                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype)
+                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
 
     # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
     def test_from_virtuoso_to_mapping_service(self):
@@ -87,24 +96,15 @@ class TestSPARQL(unittest.TestCase):
         self.assertTrue(sparql_service_available(LOCAL_VIRTUOSO))
         for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
-                self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_SIMPLE, accept=mimetype)
+                self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype)
                 # TODO: Virtuoso fails to resolves VALUES in federated query
-                # self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_VALUES, accept=mimetype)
+                # self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
 
     # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
     def test_from_mapping_service_to_virtuoso(self):
         """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
         self.assertTrue(sparql_service_available(LOCAL_VIRTUOSO))
-        query = dedent(
-            f"""\
-                SELECT DISTINCT ?s ?o WHERE {{
-                    <https://identifiers.org/uniprot/P07862> <http://www.w3.org/2002/07/owl#sameAs> ?s .
-                    SERVICE <{DOCKER_VIRTUOSO}> {{
-                        ?s ?p ?o .
-                    }}
-                }}
-            """.rstrip()
-        )
+        query = dedent(SPARQL_FROM_MAPPING_SERVICE_SIMPLE.format(DOCKER_VIRTUOSO).rstrip())
         for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
@@ -114,19 +114,7 @@ class TestSPARQL(unittest.TestCase):
     def test_from_mapping_service_to_blazegraph(self):
         """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
         self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
-        query = dedent(
-            f"""\
-                PREFIX owl: <http://www.w3.org/2002/07/owl#>
-                PREFIX bl: <https://w3id.org/biolink/vocab/>
-                SELECT ?s ?o WHERE {{
-                  <https://www.ensembl.org/id/ENSG00000006453> owl:sameAs ?s .
-
-                  SERVICE <{DOCKER_BLAZEGRAPH}> {{
-                      ?s bl:category ?o .
-                  }}
-                }}
-            """.rstrip()
-        )
+        query = dedent(SPARQL_FROM_MAPPING_SERVICE_SIMPLE.format(DOCKER_BLAZEGRAPH).rstrip())
         for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
