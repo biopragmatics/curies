@@ -9,7 +9,6 @@ from curies.mapping_service.utils import (
     get_sparql_records,
     sparql_service_available,
 )
-from tests.test_mapping_service import VALID_CONTENT_TYPES
 
 # NOTE: federated queries need to use docker internal URL
 LOCAL_MAPPING_SERVICE = "http://localhost:8888/sparql"
@@ -20,6 +19,14 @@ DOCKER_MAPPING_SERVICE = "http://mapping-service:8888/sparql"
 DOCKER_BLAZEGRAPH = "http://blazegraph:8080/blazegraph/namespace/kb/sparql"
 DOCKER_VIRTUOSO = "http://virtuoso:8890/sparql"
 
+# VALID_CONTENT_TYPES = {'', 'text/json', 'text/csv', 'application/sparql-results+csv', 'text/xml', 'application/xml', 'application/json', '*/*', 'application/sparql-results+json', 'application/sparql-results+xml'}
+# But some triplestores are a bit picky on the mime types to use, e.g. blazegraph SELECT query fails when asking for application/xml
+# So we need to use a subset of content types for the federated tests
+TEST_CONTENT_TYPES = {
+    "application/json",
+    "application/sparql-results+xml",
+    "text/csv"
+}
 
 def get_pairs(endpoint: str, sparql: str, accept: str) -> Set[Tuple[str, str]]:
     """Get a response from a given SPARQL query."""
@@ -69,7 +76,7 @@ class TestSPARQL(unittest.TestCase):
     def test_from_blazegraph_to_mapping_service(self):
         """Test a federated query from a Blazegraph triplestore to the curies service."""
         self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
-        for mimetype in VALID_CONTENT_TYPES:
+        for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_SIMPLE, accept=mimetype)
                 self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_VALUES, accept=mimetype)
@@ -78,19 +85,19 @@ class TestSPARQL(unittest.TestCase):
     def test_from_virtuoso_to_mapping_service(self):
         """Test a federated query from a OpenLink Virtuoso triplestore to the curies service."""
         self.assertTrue(sparql_service_available(LOCAL_VIRTUOSO))
-        for mimetype in VALID_CONTENT_TYPES:
+        for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_SIMPLE, accept=mimetype)
                 # TODO: Virtuoso fails to resolves VALUES in federated query
                 # self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_VALUES, accept=mimetype)
 
-    # @require_service(DOCKER_VIRTUOSO, "Virtuoso")
+    # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
     def test_from_mapping_service_to_virtuoso(self):
         """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
-        self.assertTrue(sparql_service_available(DOCKER_VIRTUOSO))
+        self.assertTrue(sparql_service_available(LOCAL_VIRTUOSO))
         query = dedent(
             f"""\
-                SELECT ?s ?o WHERE {{
+                SELECT DISTINCT ?s ?o WHERE {{
                     <https://identifiers.org/uniprot/P07862> <http://www.w3.org/2002/07/owl#sameAs> ?s .
                     SERVICE <{DOCKER_VIRTUOSO}> {{
                         ?s ?p ?o .
@@ -98,7 +105,7 @@ class TestSPARQL(unittest.TestCase):
                 }}
             """.rstrip()
         )
-        for mimetype in VALID_CONTENT_TYPES:
+        for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
                 self.assertGreater(len(records), 0)
@@ -120,7 +127,7 @@ class TestSPARQL(unittest.TestCase):
                 }}
             """.rstrip()
         )
-        for mimetype in VALID_CONTENT_TYPES:
+        for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
                 self.assertGreater(len(records), 0)
