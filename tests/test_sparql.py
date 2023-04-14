@@ -88,6 +88,7 @@ configurations = {
         local_endpoint=LOCAL_VIRTUOSO,
         docker_endpoint=DOCKER_VIRTUOSO,
         mimetypes=VALID_CONTENT_TYPES,
+        # TODO: Virtuoso fails to resolves VALUES in federated query
         queries=[SPARQL_TO_MAPPING_SERVICE_SIMPLE],
     ),
 }
@@ -136,6 +137,19 @@ class TestSPARQL(unittest.TestCase):
             for mimetype, sparql in itt.product(config.mimetypes, config.queries):
                 with self.subTest(name=name, mimetype=mimetype, sparql=sparql):
                     self.assert_endpoint(config.local_endpoint, sparql, accept=mimetype)
+
+    def test_to_triplestore(self):
+        """Test a federated query from the CURIEs service to various triple stores."""
+        for name, config in configurations.items():
+            # TODO mismatch between local/docker?
+            self.assertTrue(sparql_service_available(config.local_endpoint))
+            query = dedent(
+                SPARQL_FROM_MAPPING_SERVICE_SIMPLE.format(config.docker_endpoint).rstrip()
+            )
+            for mimetype in config.mimetypes:
+                with self.subTest(name=name, mimetype=mimetype):
+                    records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
+                    self.assertGreater(len(records), 0)
 
     # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
     def test_from_mapping_service_to_virtuoso(self):
