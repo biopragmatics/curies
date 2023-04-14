@@ -2,6 +2,7 @@
 
 """Utilities for the mapping service."""
 
+import csv
 import json
 import json.decoder
 import unittest
@@ -74,8 +75,7 @@ def handle_xml(text: str) -> Records:
 
 def handle_csv(text: str) -> Records:
     """Parse bindings encoded in a CSV string."""
-    header, *lines = (line.strip().split(",") for line in text.splitlines())
-    return [dict(zip(header, line)) for line in lines]
+    return [record for record in csv.DictReader(text.splitlines())]
 
 
 #: A mapping from canonical content types to functions for parsing them
