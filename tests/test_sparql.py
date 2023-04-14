@@ -1,14 +1,16 @@
 """Tests federated SPARQL queries between the curies mapping service and popular triplestores."""
 
+import itertools as itt
 import unittest
 from textwrap import dedent
-from typing import Set, Tuple
+from typing import Collection, NamedTuple, Set, Tuple
 
 from curies.mapping_service.utils import (
     get_sparql_record_so_tuples,
     get_sparql_records,
     sparql_service_available,
 )
+from tests.test_mapping_service import VALID_CONTENT_TYPES
 
 # NOTE: federated queries need to use docker internal URL
 LOCAL_MAPPING_SERVICE = "http://localhost:8888/sparql"
@@ -27,6 +29,16 @@ TEST_CONTENT_TYPES = {
     "application/sparql-results+xml",
     "text/csv"
 }
+
+
+class TripleStoreConfiguation(NamedTuple):
+    """A tuple with information for each triplestore."""
+
+    local_endpoint: str
+    docker_endpoint: str
+    mimetypes: Collection[str]
+    queries: Collection[str]
+
 
 def get_pairs(endpoint: str, sparql: str, accept: str) -> Set[Tuple[str, str]]:
     """Get a response from a given SPARQL query."""
@@ -64,6 +76,23 @@ SELECT ?s ?o WHERE {{
 }}
 """.rstrip()
 
+
+configurations = {
+    "blazegraph": TripleStoreConfiguation(
+        local_endpoint=LOCAL_BLAZEGRAPH,
+        docker_endpoint=DOCKER_BLAZEGRAPH,
+        mimetypes=TEST_CONTENT_TYPES,
+        queries=[SPARQL_TO_MAPPING_SERVICE_SIMPLE, SPARQL_TO_MAPPING_SERVICE_VALUES],
+    ),
+    "virtuoso": TripleStoreConfiguation(
+        local_endpoint=LOCAL_VIRTUOSO,
+        docker_endpoint=DOCKER_VIRTUOSO,
+        mimetypes=VALID_CONTENT_TYPES,
+        queries=[SPARQL_TO_MAPPING_SERVICE_SIMPLE],
+    ),
+}
+
+
 # @require_service(LOCAL_MAPPING_SERVICE, "Mapping")
 class TestSPARQL(unittest.TestCase):
     """Tests federated SPARQL queries between the curies mapping service and blazegraph/virtuoso triplestores.
@@ -99,6 +128,14 @@ class TestSPARQL(unittest.TestCase):
                 self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype)
                 # TODO: Virtuoso fails to resolves VALUES in federated query
                 # self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
+
+    def test_from_triplestore(self):
+        """Test federated queries from various triples stores to the CURIEs service."""
+        for name, config in configurations.items():
+            self.assertTrue(sparql_service_available(config.local_endpoint))
+            for mimetype, sparql in itt.product(config.mimetypes, config.queries):
+                with self.subTest(name=name, mimetype=mimetype, sparql=sparql):
+                    self.assert_endpoint(config.local_endpoint, sparql, accept=mimetype)
 
     # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
     def test_from_mapping_service_to_virtuoso(self):
