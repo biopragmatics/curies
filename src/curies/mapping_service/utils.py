@@ -75,7 +75,7 @@ def handle_xml(text: str) -> Records:
 
 def handle_csv(text: str) -> Records:
     """Parse bindings encoded in a CSV string."""
-    return [record for record in csv.DictReader(text.splitlines())]
+    return list(csv.DictReader(text.splitlines()))
 
 
 #: A mapping from canonical content types to functions for parsing them
