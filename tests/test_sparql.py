@@ -38,7 +38,7 @@ class TripleStoreConfiguation(NamedTuple):
     local_endpoint: str
     docker_endpoint: str
     mimetypes: Collection[str]
-    direct_queries: Collection[str]
+    direct_query_fmts: Collection[str]
     service_query_fmts: Collection[str]
 
 
@@ -48,20 +48,20 @@ def get_pairs(endpoint: str, sparql: str, accept: str) -> Set[Tuple[str, str]]:
     return get_sparql_record_so_tuples(records)
 
 
-SPARQL_TO_MAPPING_SERVICE_VALUES = f"""\
+SPARQL_TO_MAPPING_SERVICE_VALUES = """\
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 SELECT DISTINCT ?s ?o WHERE {{
-    SERVICE <{DOCKER_MAPPING_SERVICE}> {{
+    SERVICE <{0}> {{
         VALUES ?s {{ <http://purl.obolibrary.org/obo/CHEBI_24867> <http://purl.obolibrary.org/obo/CHEBI_24868> }} .
         ?s owl:sameAs ?o .
     }}
 }}
 """.rstrip()
 
-SPARQL_TO_MAPPING_SERVICE_SIMPLE = f"""\
+SPARQL_TO_MAPPING_SERVICE_SIMPLE = """\
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 SELECT DISTINCT ?s ?o WHERE {{
-    SERVICE <{DOCKER_MAPPING_SERVICE}> {{
+    SERVICE <{0}> {{
         <http://purl.obolibrary.org/obo/CHEBI_24867> owl:sameAs ?o .
         ?s owl:sameAs ?o .
     }}
@@ -83,7 +83,7 @@ configurations = {
         local_endpoint=LOCAL_BLAZEGRAPH,
         docker_endpoint=DOCKER_BLAZEGRAPH,
         mimetypes=TEST_CONTENT_TYPES,
-        direct_queries=[SPARQL_TO_MAPPING_SERVICE_SIMPLE, SPARQL_TO_MAPPING_SERVICE_VALUES],
+        direct_query_fmts=[SPARQL_TO_MAPPING_SERVICE_SIMPLE, SPARQL_TO_MAPPING_SERVICE_VALUES],
         service_query_fmts=[SPARQL_FROM_MAPPING_SERVICE_SIMPLE],
     ),
     "virtuoso": TripleStoreConfiguation(
@@ -91,14 +91,14 @@ configurations = {
         docker_endpoint=DOCKER_VIRTUOSO,
         mimetypes=TEST_CONTENT_TYPES,  # todo generalize?
         # TODO: Virtuoso fails to resolves VALUES in federated query
-        direct_queries=[SPARQL_TO_MAPPING_SERVICE_SIMPLE],
+        direct_query_fmts=[SPARQL_TO_MAPPING_SERVICE_SIMPLE],
         service_query_fmts=[SPARQL_FROM_MAPPING_SERVICE_SIMPLE],
     ),
     "fuseki": TripleStoreConfiguation(
         local_endpoint=LOCAL_FUSEKI,
         docker_endpoint=DOCKER_FUSEKI,
         mimetypes=TEST_CONTENT_TYPES,
-        direct_queries=[SPARQL_TO_MAPPING_SERVICE_SIMPLE, SPARQL_TO_MAPPING_SERVICE_VALUES],
+        direct_query_fmts=[SPARQL_TO_MAPPING_SERVICE_SIMPLE, SPARQL_TO_MAPPING_SERVICE_VALUES],
         service_query_fmts=[SPARQL_FROM_MAPPING_SERVICE_SIMPLE],
     ),
 }
@@ -113,6 +113,10 @@ class TestSPARQL(unittest.TestCase):
     2. ./tests/resources/init_triplestores.sh
     """
 
+    def setUp(self) -> None:
+        """Set up the test case."""
+        self.mapping_service = LOCAL_MAPPING_SERVICE
+
     def assert_endpoint(self, endpoint: str, query: str, *, accept: str):
         """Assert the endpoint returns favorable results."""
         records = get_pairs(endpoint, query, accept=accept)
@@ -125,17 +129,18 @@ class TestSPARQL(unittest.TestCase):
         """Test federated queries from various triples stores to the CURIEs service."""
         for name, config in configurations.items():
             self.assertTrue(sparql_service_available(config.local_endpoint))
-            for mimetype, sparql in itt.product(config.mimetypes, config.direct_queries):
+            for mimetype, sparql_fmt in itt.product(config.mimetypes, config.direct_query_fmts):
+                sparql = dedent(sparql_fmt.format(self.mapping_service).rstrip())
                 with self.subTest(name=name, mimetype=mimetype, sparql=sparql):
                     self.assert_endpoint(config.local_endpoint, sparql, accept=mimetype)
 
     def test_to_triplestore(self):
         """Test a federated query from the CURIEs service to various triple stores."""
         for name, config in configurations.items():
-            # TODO mismatch between local/docker?
             self.assertTrue(sparql_service_available(config.local_endpoint))
-            for mimetype, query_fmt in itt.product(config.mimetypes, config.service_query_fmts):
-                sparql = dedent(query_fmt.format(config.docker_endpoint).rstrip())
+            for mimetype, sparql_fmt in itt.product(config.mimetypes, config.service_query_fmts):
+                sparql = dedent(sparql_fmt.format(config.docker_endpoint).rstrip())
                 with self.subTest(name=name, mimetype=mimetype, sparql=sparql):
-                    records = get_pairs(LOCAL_MAPPING_SERVICE, sparql, accept=mimetype)
+                    records = get_pairs(self.mapping_service, sparql, accept=mimetype)
                     self.assertGreater(len(records), 0)
+                    # TODO add assert_endpoint here?
