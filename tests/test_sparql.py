@@ -94,6 +94,13 @@ configurations = {
         direct_queries=[SPARQL_TO_MAPPING_SERVICE_SIMPLE],
         service_query_fmts=[SPARQL_FROM_MAPPING_SERVICE_SIMPLE],
     ),
+    "fuseki": TripleStoreConfiguation(
+        local_endpoint=LOCAL_FUSEKI,
+        docker_endpoint=DOCKER_FUSEKI,
+        mimetypes=TEST_CONTENT_TYPES,
+        direct_queries=[SPARQL_TO_MAPPING_SERVICE_SIMPLE, SPARQL_TO_MAPPING_SERVICE_VALUES],
+        service_query_fmts=[SPARQL_FROM_MAPPING_SERVICE_SIMPLE],
+    ),
 }
 
 
@@ -114,18 +121,6 @@ class TestSPARQL(unittest.TestCase):
             records,
         )
 
-    # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
-    def test_from_virtuoso_to_mapping_service(self):
-        """Test a federated query from a OpenLink Virtuoso triplestore to the curies service."""
-        self.assertTrue(sparql_service_available(LOCAL_VIRTUOSO))
-        for mimetype in TEST_CONTENT_TYPES:
-            with self.subTest(mimetype=mimetype):
-                self.assert_endpoint(
-                    LOCAL_VIRTUOSO, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype
-                )
-                # TODO: Virtuoso fails to resolves VALUES in federated query
-                # self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
-
     def test_from_triplestore(self):
         """Test federated queries from various triples stores to the CURIEs service."""
         for name, config in configurations.items():
@@ -144,53 +139,3 @@ class TestSPARQL(unittest.TestCase):
                 with self.subTest(name=name, mimetype=mimetype, sparql=sparql):
                     records = get_pairs(LOCAL_MAPPING_SERVICE, sparql, accept=mimetype)
                     self.assertGreater(len(records), 0)
-
-    # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
-    def test_from_mapping_service_to_virtuoso(self):
-        """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
-        self.assertTrue(sparql_service_available(LOCAL_VIRTUOSO))
-        query = dedent(SPARQL_FROM_MAPPING_SERVICE_SIMPLE.format(DOCKER_VIRTUOSO).rstrip())
-        for mimetype in TEST_CONTENT_TYPES:
-            with self.subTest(mimetype=mimetype):
-                records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
-                self.assertGreater(len(records), 0)
-
-    # @require_service(LOCAL_BLAZEGRAPH, "Blazegraph")
-    def test_from_blazegraph_to_mapping_service(self):
-        """Test a federated query from a Blazegraph triplestore to the curies service."""
-        self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
-        for mimetype in TEST_CONTENT_TYPES:
-            with self.subTest(mimetype=mimetype):
-                self.assert_endpoint(
-                    LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype
-                )
-                self.assert_endpoint(
-                    LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype
-                )
-
-    # @require_service(LOCAL_BLAZEGRAPH, "Blazegraph")
-    def test_from_mapping_service_to_blazegraph(self):
-        """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
-        self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
-        query = dedent(SPARQL_FROM_MAPPING_SERVICE_SIMPLE.format(DOCKER_BLAZEGRAPH).rstrip())
-        for mimetype in TEST_CONTENT_TYPES:
-            with self.subTest(mimetype=mimetype):
-                records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
-                self.assertGreater(len(records), 0)
-
-    def test_from_fuseki_to_mapping_service(self):
-        """Test a federated query from a OpenLink Virtuoso triplestore to the curies service."""
-        self.assertTrue(sparql_service_available(LOCAL_FUSEKI))
-        for mimetype in TEST_CONTENT_TYPES:
-            with self.subTest(mimetype=mimetype):
-                self.assert_endpoint(LOCAL_FUSEKI, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype)
-                self.assert_endpoint(LOCAL_FUSEKI, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
-
-    def test_from_mapping_service_to_fuseki(self):
-        """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
-        self.assertTrue(sparql_service_available(LOCAL_FUSEKI))
-        query = dedent(SPARQL_FROM_MAPPING_SERVICE_SIMPLE.format(DOCKER_FUSEKI).rstrip())
-        for mimetype in TEST_CONTENT_TYPES:
-            with self.subTest(mimetype=mimetype):
-                records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
-                self.assertGreater(len(records), 0)
