@@ -14,10 +14,12 @@ from curies.mapping_service.utils import (
 LOCAL_MAPPING_SERVICE = "http://localhost:8888/sparql"
 LOCAL_BLAZEGRAPH = "http://localhost:8889/blazegraph/namespace/kb/sparql"
 LOCAL_VIRTUOSO = "http://localhost:8890/sparql"
+LOCAL_FUSEKI = "http://localhost:8891/mapping"
 
 DOCKER_MAPPING_SERVICE = "http://mapping-service:8888/sparql"
 DOCKER_BLAZEGRAPH = "http://blazegraph:8080/blazegraph/namespace/kb/sparql"
 DOCKER_VIRTUOSO = "http://virtuoso:8890/sparql"
+DOCKER_FUSEKI = "http://fuseki:3030/mapping"
 
 # VALID_CONTENT_TYPES = {'', 'text/json', 'text/csv', 'application/sparql-results+csv', 'text/xml', 'application/xml', 'application/json', '*/*', 'application/sparql-results+json', 'application/sparql-results+xml'}
 # But some triplestores are a bit picky on the mime types to use, e.g. blazegraph SELECT query fails when asking for application/xml
@@ -81,15 +83,6 @@ class TestSPARQL(unittest.TestCase):
             records,
         )
 
-    # @require_service(LOCAL_BLAZEGRAPH, "Blazegraph")
-    def test_from_blazegraph_to_mapping_service(self):
-        """Test a federated query from a Blazegraph triplestore to the curies service."""
-        self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
-        for mimetype in TEST_CONTENT_TYPES:
-            with self.subTest(mimetype=mimetype):
-                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype)
-                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
-
     # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
     def test_from_virtuoso_to_mapping_service(self):
         """Test a federated query from a OpenLink Virtuoso triplestore to the curies service."""
@@ -111,10 +104,36 @@ class TestSPARQL(unittest.TestCase):
                 self.assertGreater(len(records), 0)
 
     # @require_service(LOCAL_BLAZEGRAPH, "Blazegraph")
+    def test_from_blazegraph_to_mapping_service(self):
+        """Test a federated query from a Blazegraph triplestore to the curies service."""
+        self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
+        for mimetype in TEST_CONTENT_TYPES:
+            with self.subTest(mimetype=mimetype):
+                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype)
+                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
+
+    # @require_service(LOCAL_BLAZEGRAPH, "Blazegraph")
     def test_from_mapping_service_to_blazegraph(self):
         """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
         self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
         query = dedent(SPARQL_FROM_MAPPING_SERVICE_SIMPLE.format(DOCKER_BLAZEGRAPH).rstrip())
+        for mimetype in TEST_CONTENT_TYPES:
+            with self.subTest(mimetype=mimetype):
+                records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)
+                self.assertGreater(len(records), 0)
+
+    def test_from_fuseki_to_mapping_service(self):
+        """Test a federated query from a OpenLink Virtuoso triplestore to the curies service."""
+        self.assertTrue(sparql_service_available(LOCAL_FUSEKI))
+        for mimetype in TEST_CONTENT_TYPES:
+            with self.subTest(mimetype=mimetype):
+                self.assert_endpoint(LOCAL_FUSEKI, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype)
+                self.assert_endpoint(LOCAL_FUSEKI, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
+
+    def test_from_mapping_service_to_fuseki(self):
+        """Test a federated query from the curies service to a OpenLink Virtuoso triplestore."""
+        self.assertTrue(sparql_service_available(LOCAL_FUSEKI))
+        query = dedent(SPARQL_FROM_MAPPING_SERVICE_SIMPLE.format(DOCKER_FUSEKI).rstrip())
         for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
                 records = get_pairs(LOCAL_MAPPING_SERVICE, query, accept=mimetype)

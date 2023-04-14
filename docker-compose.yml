@@ -21,10 +21,17 @@ services:
     ports:
       - 8890:8890
     environment:
-      - DBA_PASSWORD=${VIRTUOSO_PASSWORD:-dba}
+      - DBA_PASSWORD=dba
       - SPARQL_UPDATE=true
       - VIRT_Database_ErrorLogLevel=7  # 7 is maximum logs
       - VIRT_HTTPServer_HTTPLogFile=/http.log
       # https://docs.openlinksw.com/virtuoso/loggingandrecording/
 
-  # TODO: add Apache Fuseki
+  fuseki:
+    image: stain/jena-fuseki:4.0.0
+    ports:
+      - 8891:3030
+    environment:
+      - ADMIN_PASSWORD=dba  # Admin user: admin
+      # - FUSEKI_DATASET_1=mapping  # Not working with 4.0.0
+      # - JVM_ARGS=-Xmx2g
