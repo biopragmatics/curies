@@ -118,8 +118,12 @@ class TestSPARQL(unittest.TestCase):
         self.assertTrue(sparql_service_available(LOCAL_BLAZEGRAPH))
         for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
-                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype)
-                self.assert_endpoint(LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
+                self.assert_endpoint(
+                    LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype
+                )
+                self.assert_endpoint(
+                    LOCAL_BLAZEGRAPH, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype
+                )
 
     # @require_service(LOCAL_VIRTUOSO, "Virtuoso")
     def test_from_virtuoso_to_mapping_service(self):
@@ -127,7 +131,9 @@ class TestSPARQL(unittest.TestCase):
         self.assertTrue(sparql_service_available(LOCAL_VIRTUOSO))
         for mimetype in TEST_CONTENT_TYPES:
             with self.subTest(mimetype=mimetype):
-                self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype)
+                self.assert_endpoint(
+                    LOCAL_VIRTUOSO, SPARQL_TO_MAPPING_SERVICE_SIMPLE, accept=mimetype
+                )
                 # TODO: Virtuoso fails to resolves VALUES in federated query
                 # self.assert_endpoint(LOCAL_VIRTUOSO, SPARQL_TO_MAPPING_SERVICE_VALUES, accept=mimetype)
 
