@@ -10,7 +10,6 @@ from curies.mapping_service.utils import (
     get_sparql_records,
     sparql_service_available,
 )
-from tests.test_mapping_service import VALID_CONTENT_TYPES
 
 # NOTE: federated queries need to use docker internal URL
 LOCAL_MAPPING_SERVICE = "http://localhost:8888/sparql"
@@ -21,13 +20,13 @@ DOCKER_MAPPING_SERVICE = "http://mapping-service:8888/sparql"
 DOCKER_BLAZEGRAPH = "http://blazegraph:8080/blazegraph/namespace/kb/sparql"
 DOCKER_VIRTUOSO = "http://virtuoso:8890/sparql"
 
-# VALID_CONTENT_TYPES = {'', 'text/json', 'text/csv', 'application/sparql-results+csv', 'text/xml', 'application/xml', 'application/json', '*/*', 'application/sparql-results+json', 'application/sparql-results+xml'}
-# But some triplestores are a bit picky on the mime types to use, e.g. blazegraph SELECT query fails when asking for application/xml
-# So we need to use a subset of content types for the federated tests
+#: Some triplestores are a bit picky on the mime types to use, e.g. blazegraph
+#: SELECT query fails when asking for application/xml, so we need to use a subset
+#: of content types for the federated tests
 TEST_CONTENT_TYPES = {
     "application/json",
     "application/sparql-results+xml",
-    "text/csv"
+    "text/csv",
 }
 
 
@@ -77,7 +76,6 @@ SELECT ?s ?o WHERE {{
 }}
 """.rstrip()
 
-
 configurations = {
     "blazegraph": TripleStoreConfiguation(
         local_endpoint=LOCAL_BLAZEGRAPH,
@@ -89,7 +87,7 @@ configurations = {
     "virtuoso": TripleStoreConfiguation(
         local_endpoint=LOCAL_VIRTUOSO,
         docker_endpoint=DOCKER_VIRTUOSO,
-        mimetypes=VALID_CONTENT_TYPES,
+        mimetypes=TEST_CONTENT_TYPES,  # todo generalize?
         # TODO: Virtuoso fails to resolves VALUES in federated query
         direct_queries=[SPARQL_TO_MAPPING_SERVICE_SIMPLE],
         service_query_fmts=[SPARQL_FROM_MAPPING_SERVICE_SIMPLE],
