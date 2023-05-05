@@ -153,6 +153,11 @@ df = pd.read_csv(...)
 obo_converter = curies.get_obo_converter()
 obo_converter.pd_compress(df, column=0)
 obo_converter.pd_expand(df, column=0)
+
+# standardization operations
+obo_converter.pd_standardize_prefix(df, column=0)
+obo_converter.pd_standardize_curie(df, column=0)
+obo_converter.pd_standardize_uri(df, column=0)
 ```
 
 Apply in bulk to a CSV file with `Converter.file_expand` and
