@@ -245,6 +245,7 @@ class Converter:
 
         self.records.append(record)
         self.prefix_map[record.prefix] = record.uri_prefix
+        self.synonym_to_prefix[record.prefix] = record.prefix
         for prefix_synonym in record.prefix_synonyms:
             self.prefix_map[prefix_synonym] = record.uri_prefix
             self.synonym_to_prefix[prefix_synonym] = record.prefix
@@ -763,7 +764,7 @@ class Converter:
         >>> converter.standardize_prefix("chebi")
         'CHEBI'
         >>> converter.standardize_prefix("CHEBI")
-        'CHEBI:138488'
+        'CHEBI'
         >>> converter.standardize_prefix("NOPE") is None
         True
         """
@@ -858,6 +859,57 @@ class Converter:
         :param target_column: The column to put the results in. Defaults to input column.
         """
         df[column if target_column is None else target_column] = df[column].map(self.expand)
+
+    def pd_standardize_prefix(
+        self,
+        df: "pandas.DataFrame",
+        *,
+        column: Union[str, int],
+        target_column: Union[None, str, int] = None,
+    ) -> None:
+        """Standardize all prefixes in the given column.
+
+        :param df: A pandas DataFrame
+        :param column: The column in the dataframe containing prefixes to standardize.
+        :param target_column: The column to put the results in. Defaults to input column.
+        """
+        df[column if target_column is None else target_column] = df[column].map(
+            self.standardize_prefix
+        )
+
+    def pd_standardize_curie(
+        self,
+        df: "pandas.DataFrame",
+        *,
+        column: Union[str, int],
+        target_column: Union[None, str, int] = None,
+    ) -> None:
+        """Standardize all CURIEs in the given column.
+
+        :param df: A pandas DataFrame
+        :param column: The column in the dataframe containing CURIEs to standardize.
+        :param target_column: The column to put the results in. Defaults to input column.
+        """
+        df[column if target_column is None else target_column] = df[column].map(
+            self.standardize_curie
+        )
+
+    def pd_standardize_uri(
+        self,
+        df: "pandas.DataFrame",
+        *,
+        column: Union[str, int],
+        target_column: Union[None, str, int] = None,
+    ) -> None:
+        """Standardize all URIs in the given column.
+
+        :param df: A pandas DataFrame
+        :param column: The column in the dataframe containing URIs to standardize.
+        :param target_column: The column to put the results in. Defaults to input column.
+        """
+        df[column if target_column is None else target_column] = df[column].map(
+            self.standardize_uri
+        )
 
     def file_compress(
         self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True

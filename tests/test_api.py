@@ -324,6 +324,36 @@ class TestConverter(unittest.TestCase):
         self.converter.pd_compress(df, "uri")
         self.assertTrue((df.curie == df.uri).all())
 
+    def test_df_standardize(self):
+        """Test standardizing dataframes."""
+        converter = Converter([])
+        converter.add_prefix(
+            "chebi",
+            "http://purl.obolibrary.org/obo/CHEBI_",
+            prefix_synonyms=["CHEBI"],
+            uri_prefix_synonyms=["https://bioregistry.io/chebi:"],
+        )
+        self.assertEqual("chebi", converter.standardize_prefix("chebi"))
+        self.assertEqual("chebi", converter.standardize_prefix("CHEBI"))
+        self.assertIsNone(converter.standardize_prefix("nope"))
+
+        rows = [
+            ("chebi", "CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
+            ("CHEBI", "CHEBI:2", "https://bioregistry.io/chebi:2"),
+        ]
+        df = pd.DataFrame(rows, columns=["prefix", "curie", "uri"])
+        converter.pd_standardize_prefix(df, column="prefix")
+        self.assertEqual(["chebi", "chebi"], list(df["prefix"]), msg=f"\n\n{df}")
+
+        converter.pd_standardize_curie(df, column="curie")
+        self.assertEqual(["chebi:1", "chebi:2"], list(df["curie"]))
+
+        converter.pd_standardize_uri(df, column="uri")
+        self.assertEqual(
+            ["http://purl.obolibrary.org/obo/CHEBI_1", "http://purl.obolibrary.org/obo/CHEBI_2"],
+            list(df["uri"]),
+        )
+
     def test_file_bulk(self):
         """Test bulk processing of files."""
         with TemporaryDirectory() as directory:
