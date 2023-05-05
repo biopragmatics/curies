@@ -333,6 +333,8 @@ class TestConverter(unittest.TestCase):
             prefix_synonyms=["CHEBI"],
             uri_prefix_synonyms=["https://bioregistry.io/chebi:"],
         )
+        self.assertEqual("chebi", converter.standardize_prefix("CHEBI"))
+
         rows = [
             ("chebi", "CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
             ("CHEBI", "CHEBI:2", "https://bioregistry.io/chebi:2"),
