@@ -245,6 +245,7 @@ class Converter:
 
         self.records.append(record)
         self.prefix_map[record.prefix] = record.uri_prefix
+        self.synonym_to_prefix[record.prefix] = record.prefix
         for prefix_synonym in record.prefix_synonyms:
             self.prefix_map[prefix_synonym] = record.uri_prefix
             self.synonym_to_prefix[prefix_synonym] = record.prefix
@@ -763,7 +764,7 @@ class Converter:
         >>> converter.standardize_prefix("chebi")
         'CHEBI'
         >>> converter.standardize_prefix("CHEBI")
-        'CHEBI:138488'
+        'CHEBI'
         >>> converter.standardize_prefix("NOPE") is None
         True
         """
