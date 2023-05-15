@@ -136,7 +136,7 @@ class Record(BaseModel):  # type:ignore
         return v
 
     @validator("uri_prefix_synonyms")  # type:ignore
-    def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> sr:  # noqa:N805
+    def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
         uri_prefix = values["uri_prefix"]
         if uri_prefix in v:
