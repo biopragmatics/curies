@@ -48,6 +48,7 @@ class TestConverter(unittest.TestCase):
         """Test the reference tuple data type."""
         t = ReferenceTuple("chebi", "1234")
         self.assertEqual("chebi:1234", t.curie)
+        self.assertEqual(t, ReferenceTuple.from_curie("chebi:1234"))
 
     def test_reference_pydantic(self):
         """Test the reference Pydantic model."""

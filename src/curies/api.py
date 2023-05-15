@@ -51,7 +51,13 @@ LocationOr = Union[str, Path, X]
 
 
 class ReferenceTuple(NamedTuple):
-    """A reference to an entity in a given identifier space."""
+    """A reference to an entity in a given identifier space.
+
+    This derives from the "named tuple" which means that it acts
+    like a tuple in most senses - it can be hashed and unpacked
+    like most other tuples. Underneath, it has a C implementation
+    and is very efficient.
+    """
 
     prefix: str
     identifier: str
@@ -68,9 +74,31 @@ class ReferenceTuple(NamedTuple):
         """
         return f"{self.prefix}:{self.identifier}"
 
+    @classmethod
+    def from_curie(cls, curie: str, sep: str = ":") -> "ReferenceTuple":
+        """Parse a CURIE string and populate a reference tuple.
+
+        :param curie: A string representation of a compact URI (CURIE)
+        :param sep: The separator
+        :return: A reference tuple
+
+        >>> ReferenceTuple.from_curie("chebi:1234")
+        ReferenceTuple(prefix='chebi', identifier='1234')
+        """
+        prefix, identifier = curie.split(sep, 1)
+        return cls(prefix, identifier)
+
 
 class Reference(BaseModel):  # type:ignore
-    """A reference to an entity in a given identifier space."""
+    """A reference to an entity in a given identifier space.
+
+    This class uses Pydantic to make it easier to build other
+    more complex data types with Pydantic that also uses a first-
+    class notion of parsed reference (instead of merely stringified
+    CURIEs). Instances of this class can also be hashed because of the
+    "frozen" configuration from Pydantic (see
+    https://docs.pydantic.dev/latest/usage/model_config/ for more details).
+    """
 
     prefix: str = Field(
         ...,
