@@ -6,7 +6,6 @@ import csv
 import itertools as itt
 import json
 from collections import defaultdict
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -18,6 +17,7 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    NamedTuple,
     Optional,
     Sequence,
     Set,
@@ -28,6 +28,7 @@ from typing import (
 )
 
 import requests
+from pydantic import BaseModel, Field, validator
 from pytrie import StringTrie
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -36,6 +37,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 __all__ = [
     "Converter",
+    "Reference",
+    "ReferenceTuple",
     "Record",
     "DuplicateValueError",
     "DuplicatePrefixes",
@@ -47,27 +50,100 @@ X = TypeVar("X")
 LocationOr = Union[str, Path, X]
 
 
-@dataclass
-class Record:
+class ReferenceTuple(NamedTuple):
+    """A reference to an entity in a given identifier space."""
+
+    prefix: str
+    identifier: str
+
+    @property
+    def curie(self) -> str:
+        """Get the reference as a CURIE string.
+
+        :return:
+            A string representation of a compact URI (CURIE).
+
+        >>> ReferenceTuple("chebi", "1234").curie
+        'chebi:1234'
+        """
+        return f"{self.prefix}:{self.identifier}"
+
+
+class Reference(BaseModel):  # type:ignore
+    """A reference to an entity in a given identifier space."""
+
+    prefix: str = Field(
+        ...,
+        description="The prefix used in a compact URI (CURIE).",
+    )
+    identifier: str = Field(
+        ..., description="The local unique identifier used in a compact URI (CURIE)."
+    )
+
+    class Config:
+        """Pydantic configuration for references."""
+
+        frozen = True
+
+    @property
+    def curie(self) -> str:
+        """Get the reference as a CURIE string.
+
+        :return:
+            A string representation of a compact URI (CURIE).
+
+        >>> Reference(prefix="chebi", identifier="1234").curie
+        'chebi:1234'
+        """
+        return f"{self.prefix}:{self.identifier}"
+
+    @property
+    def pair(self) -> ReferenceTuple:
+        """Get the reference as a 2-tuple of prefix and identifier."""
+        return ReferenceTuple(self.prefix, self.identifier)
+
+    @classmethod
+    def from_curie(cls, curie: str, sep: str = ":") -> "Reference":
+        """Parse a CURIE string and populate a reference.
+
+        :param curie: A string representation of a compact URI (CURIE)
+        :param sep: The separator
+        :return: A reference object
+
+        >>> Reference.from_curie("chebi:1234")
+        Reference(prefix='chebi', identifier='1234')
+        """
+        prefix, identifier = curie.split(sep, 1)
+        return cls(prefix=prefix, identifier=identifier)
+
+
+class Record(BaseModel):  # type:ignore
     """A record of some prefixes and their associated URI prefixes."""
 
-    #: The canonical prefix, used in the reverse prefix map
-    prefix: str
-    #: The canonical URI prefix, used in the forward prefix map
-    uri_prefix: str
-    prefix_synonyms: List[str] = field(default_factory=list)
-    uri_prefix_synonyms: List[str] = field(default_factory=list)
+    prefix: str = Field(..., description="The canonical prefix, used in the reverse prefix map")
+    uri_prefix: str = Field(
+        ..., description="The canonical URI prefix, used in the forward prefix map"
+    )
+    prefix_synonyms: List[str] = Field(default_factory=list)
+    uri_prefix_synonyms: List[str] = Field(default_factory=list)
 
-    def __post_init__(self) -> None:
-        """Check the integrity of the record."""
-        for ps in self.prefix_synonyms:
-            if ps == self.prefix:
-                raise ValueError(f"Duplicate of canonical prefix `{self.prefix}` in synonyms")
-        for ups in self.uri_prefix_synonyms:
-            if ups == self.uri_prefix:
-                raise ValueError(
-                    f"Duplicate of canonical URI prefix `{self.uri_prefix}` in synonyms"
-                )
+    @validator("prefix_synonyms")  # type:ignore
+    def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
+        """Check that the canonical prefix does not apper in the prefix synonym list."""
+        prefix = values["prefix"]
+        if prefix in v:
+            raise ValueError(f"Duplicate of canonical prefix `{prefix}` in prefix synonyms")
+        return v
+
+    @validator("uri_prefix_synonyms")  # type:ignore
+    def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> sr:  # noqa:N805
+        """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
+        uri_prefix = values["uri_prefix"]
+        if uri_prefix in v:
+            raise ValueError(
+                f"Duplicate of canonical URI prefix `{uri_prefix}` in URI prefix synonyms"
+            )
+        return v
 
     @property
     def _all_prefixes(self) -> List[str]:
@@ -603,7 +679,7 @@ class Converter:
             return None
         return self.format_curie(prefix, identifier)
 
-    def parse_uri(self, uri: str) -> Union[Tuple[str, str], Tuple[None, None]]:
+    def parse_uri(self, uri: str) -> Union[ReferenceTuple, Tuple[None, None]]:
         """Compress a URI to a CURIE pair.
 
         :param uri:
@@ -627,7 +703,7 @@ class Converter:
         except KeyError:
             return None, None
         else:
-            return prefix, uri[len(value) :]
+            return ReferenceTuple(prefix, uri[len(value) :])
 
     def expand(self, curie: str) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
@@ -685,10 +761,10 @@ class Converter:
         prefix, identifier = self.parse_curie(curie)
         return self.expand_pair_all(prefix, identifier)
 
-    def parse_curie(self, curie: str) -> Tuple[str, str]:
+    def parse_curie(self, curie: str) -> ReferenceTuple:
         """Parse a CURIE."""
-        prefix, identifier = curie.split(self.delimiter, 1)
-        return prefix, identifier
+        reference = Reference.from_curie(curie, sep=self.delimiter)
+        return reference.pair
 
     def expand_pair(self, prefix: str, identifier: str) -> Optional[str]:
         """Expand a CURIE pair to the standard URI.
