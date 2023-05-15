@@ -8,6 +8,8 @@ from .api import (
     DuplicateURIPrefixes,
     DuplicateValueError,
     Record,
+    Reference,
+    ReferenceTuple,
     chain,
 )
 from .sources import (
@@ -23,6 +25,8 @@ from .web import get_fastapi_app, get_fastapi_router, get_flask_app, get_flask_b
 __all__ = [
     "Converter",
     "Record",
+    "ReferenceTuple",
+    "Reference",
     "DuplicateValueError",
     "DuplicateURIPrefixes",
     "DuplicatePrefixes",
