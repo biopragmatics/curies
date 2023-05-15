@@ -12,7 +12,15 @@ import pandas as pd
 import rdflib
 from bioregistry.export.prefix_maps import EXTENDED_PREFIX_MAP_PATH
 
-from curies.api import Converter, DuplicatePrefixes, DuplicateURIPrefixes, Record, chain
+from curies.api import (
+    Converter,
+    DuplicatePrefixes,
+    DuplicateURIPrefixes,
+    Record,
+    Reference,
+    ReferenceTuple,
+    chain,
+)
 from curies.sources import (
     BIOREGISTRY_CONTEXTS,
     get_bioregistry_converter,
@@ -35,6 +43,17 @@ class TestConverter(unittest.TestCase):
             "OBO": "http://purl.obolibrary.org/obo/",
         }
         self.converter = Converter.from_prefix_map(self.simple_obo_prefix_map)
+
+    def test_reference_tuple(self):
+        """Test the reference tuple data type."""
+        t = ReferenceTuple("chebi", "1234")
+        self.assertEqual("chebi:1234", t.curie)
+
+    def test_reference_pydantic(self):
+        """Test the reference Pydantic model."""
+        t = Reference(prefix="chebi", identifier="1234")
+        self.assertEqual("chebi:1234", t.curie)
+        self.assertEqual(t, Reference.from_curie("chebi:1234"))
 
     def test_invalid_record(self):
         """Test throwing an error for invalid records."""
