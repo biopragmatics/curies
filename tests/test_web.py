@@ -42,13 +42,13 @@ class TestFastAPI(ConverterMixin):
     def test_resolve_success(self):
         """Test resolution for a valid CURIE redirects properly."""
         curie = self.converter.format_curie("GO", "1234567")
-        res = self.client.get(f"/{curie}", allow_redirects=False)
+        res = self.client.get(f"/{curie}", follow_redirects=False)
         self.assertEqual(302, res.status_code, msg=res.text)
 
     def test_resolve_failure(self):
         """Test resolution for an invalid CURIE aborts with 404."""
         curie = self.converter.format_curie("NOPREFIX", "NOIDENTIFIER")
-        res = self.client.get(f"/{curie}", allow_redirects=False)
+        res = self.client.get(f"/{curie}", follow_redirects=False)
         self.assertEqual(FAILURE_CODE, res.status_code, msg=res.text)
 
 
