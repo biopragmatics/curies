@@ -13,9 +13,11 @@ import rdflib
 from bioregistry.export.prefix_maps import EXTENDED_PREFIX_MAP_PATH
 
 from curies.api import (
+    CompressionError,
     Converter,
     DuplicatePrefixes,
     DuplicateURIPrefixes,
+    ExpansionError,
     Record,
     Reference,
     ReferenceTuple,
@@ -113,10 +115,17 @@ class TestConverter(unittest.TestCase):
             ("OBO:unnamespaced", "http://purl.obolibrary.org/obo/unnamespaced"),
         ]:
             self.assertEqual(curie, converter.compress(uri))
+            self.assertEqual(curie, converter.compress_strict(uri))
             self.assertEqual(uri, converter.expand(curie))
+            self.assertEqual(uri, converter.expand_strict(curie))
 
         self.assertIsNone(converter.compress("http://example.org/missing:00000"))
+        with self.assertRaises(CompressionError):
+            converter.compress_strict("http://example.org/missing:00000")
+
         self.assertIsNone(converter.expand("missing:00000"))
+        with self.assertRaises(ExpansionError):
+            converter.expand_strict("missing:00000")
 
         self.assertLess(0, len(converter.records), msg="converter has no records")
         self.assertIsNone(converter.get_record("nope"))

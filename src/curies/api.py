@@ -210,6 +210,18 @@ class DuplicatePrefixes(DuplicateValueError):
         return f"Duplicate prefixes:\n{self._str()}"
 
 
+class ConversionError(ValueError):
+    """An error raised on conversion."""
+
+
+class ExpansionError(ConversionError):
+    """An error raised on expansion if the prefix can't be looked up."""
+
+
+class CompressionError(ConversionError):
+    """An error raised on expansion if the URI prefix can't be matched."""
+
+
 def _get_duplicate_uri_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
     return [
         (record_1, record_2, uri_prefix)
@@ -684,6 +696,13 @@ class Converter:
         """Format a prefix and identifier into a CURIE string."""
         return f"{prefix}{self.delimiter}{identifier}"
 
+    def compress_strict(self, uri: str) -> str:
+        """Compress a URI to a CURIE, and raise an error of not possible."""
+        rv = self.compress(uri)
+        if rv is None:
+            raise CompressionError(uri)
+        return rv
+
     def compress(self, uri: str) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
 
@@ -732,6 +751,13 @@ class Converter:
             return None, None
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
+
+    def expand_strict(self, curie: str) -> str:
+        """Expand a CURIE to a URI, and raise an error of not possible."""
+        rv = self.expand(curie)
+        if rv is None:
+            raise ExpansionError(curie)
+        return rv
 
     def expand(self, curie: str) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
