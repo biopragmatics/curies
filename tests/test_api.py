@@ -145,6 +145,21 @@ class TestConverter(unittest.TestCase):
         self.assertIn("chebi", c.prefix_map)
         self.assertNotIn("CHEBI", c.prefix_map)
 
+    def test_jsonld(self):
+        """Test parsing JSON-LD context."""
+        context = {
+            "@context": {
+                "hello": "https://example.org/hello:",
+                "CHEBI": {
+                    "@prefix": True,
+                    "@id": "http://purl.obolibrary.org/CHEBI_",
+                },
+            }
+        }
+        converter = Converter.from_jsonld(context)
+        self.assertIn("hello", converter.prefix_map)
+        self.assertIn("CHEBI", converter.prefix_map)
+
     def test_from_github(self):
         """Test getting a JSON-LD map from GitHub."""
         with self.assertRaises(ValueError):
