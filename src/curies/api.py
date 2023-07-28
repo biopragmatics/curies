@@ -630,8 +630,6 @@ class Converter:
                 prefix_map[key] = value
             elif isinstance(value, dict) and value.get("@prefix") == True:
                 prefix_map[key] = value["@id"]
-            else:
-                raise TypeError
         return cls.from_prefix_map(prefix_map)
 
     @classmethod

@@ -154,7 +154,10 @@ class TestConverter(unittest.TestCase):
                     "@prefix": True,
                     "@id": "http://purl.obolibrary.org/CHEBI_",
                 },
-            }
+                "nope": {
+                    "nope": "nope",
+                },
+            },
         }
         converter = Converter.from_jsonld(context)
         self.assertIn("hello", converter.prefix_map)
