@@ -628,7 +628,7 @@ class Converter:
         for key, value in _prepare(data)["@context"].items():
             if isinstance(value, str):
                 prefix_map[key] = value
-            elif isinstance(value, dict) and value.get("@prefix") == True:
+            elif isinstance(value, dict) and value.get("@prefix") is True:
                 prefix_map[key] = value["@id"]
         return cls.from_prefix_map(prefix_map)
 
