@@ -624,7 +624,13 @@ class Converter:
         >>> converter = Converter.from_jsonld(url)
         >>> "rdf" in converter.prefix_map
         """
-        return cls.from_prefix_map(_prepare(data)["@context"])
+        prefix_map = {}
+        for key, value in _prepare(data)["@context"].items():
+            if isinstance(value, str):
+                prefix_map[key] = value
+            elif isinstance(value, dict) and value.get("@prefix") is True:
+                prefix_map[key] = value["@id"]
+        return cls.from_prefix_map(prefix_map)
 
     @classmethod
     def from_jsonld_github(
