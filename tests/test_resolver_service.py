@@ -8,7 +8,7 @@ from typing import ClassVar
 from fastapi.testclient import TestClient
 
 from curies import Converter
-from curies.web import FAILURE_CODE, get_fastapi_app, get_flask_app
+from curies.resolver_service import FAILURE_CODE, get_fastapi_app, get_flask_app
 
 
 class ConverterMixin(unittest.TestCase):

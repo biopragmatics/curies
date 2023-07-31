@@ -306,6 +306,29 @@ class Converter:
 
         # Example with missing prefix:
         >>> converter.expand("missing:0000000")
+
+    Incremental Converters
+    ----------------------
+    As suggested in `#13 <https://github.com/cthoyt/curies/issues/33>`_, new prefixes
+    can be added to an existing converter like in the following:
+
+    .. code-block::
+
+        import curies
+
+        converter = curies.get_obo_converter()
+        converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
+
+    Similarly, an empty converter can be instantiated using an empty list
+    for the `records` argument and prefixes can be added one at a time
+    (note this currently does not allow for adding synonyms separately):
+
+    .. code-block::
+
+        import curies
+
+        converter = curies.Converter(records=[])
+        converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
     """
 
     #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
