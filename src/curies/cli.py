@@ -65,10 +65,12 @@ def _get_converter(location, format) -> Converter:
 
 
 def _get_resolver_app(converter: Converter, framework: str):
+    from curies import resolver_service
+
     if framework == "flask":
-        return curies.get_flask_app(converter)
+        return resolver_service.get_flask_app(converter)
     elif framework == "fastapi":
-        return curies.get_fastapi_app(converter)
+        return resolver_service.get_fastapi_app(converter)
     else:
         raise ValueError(f"Unhandled framework: {framework}")
 
