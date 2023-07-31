@@ -31,7 +31,6 @@ from typing import Callable, Mapping
 
 import click
 
-import curies
 from curies import Converter, sources
 
 __all__ = [
