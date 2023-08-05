@@ -215,6 +215,10 @@ The most recent release can be installed from
 $ pip install curies
 ```
 
+This package currently supports both Pydantic v1 and v2. See the
+[Pydantic migration guide](https://docs.pydantic.dev/2.0/migration/)
+for updating your code.
+
 ## 👐 Contributing
 
 Contributions, whether filing an issue, making a pull request, or forking, are appreciated. See

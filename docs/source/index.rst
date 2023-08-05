@@ -15,6 +15,10 @@ The most recent code and data can be installed directly from GitHub with:
 
     $ pip install git+https://github.com/cthoyt/curies.git
 
+This package currently supports both Pydantic v1 and v2. See the
+`Pydantic migration guide <https://docs.pydantic.dev/2.0/migration>`_
+for updating your code.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
