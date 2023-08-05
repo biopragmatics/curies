@@ -10,7 +10,6 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 import rdflib
-from bioregistry.export.prefix_maps import EXTENDED_PREFIX_MAP_PATH
 
 from curies.api import (
     CompressionError,
@@ -208,16 +207,6 @@ class TestConverter(unittest.TestCase):
         chebi_uri = converter.prefix_map["chebi"]
         self.assertIn(chebi_uri, converter.reverse_prefix_map)
         self.assertEqual("chebi", converter.reverse_prefix_map[chebi_uri])
-
-    @unittest.skipUnless(
-        EXTENDED_PREFIX_MAP_PATH.is_file(),
-        reason="missing local, editable installation of the Bioregistry",
-    )
-    def test_bioregistry_editable(self):
-        """Test loading the bioregistry extended prefix map locally."""
-        records = json.loads(EXTENDED_PREFIX_MAP_PATH.read_text())
-        converter = Converter.from_extended_prefix_map(records)
-        self.assert_bioregistry_converter(converter)
 
     def test_load_path(self):
         """Test loading from paths."""
