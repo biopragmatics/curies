@@ -37,10 +37,6 @@ CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
 GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
 
 
-def _s() -> str:
-    return str(uuid4())
-
-
 class TestAddRecord(unittest.TestCase):
     """Test adding records."""
 
