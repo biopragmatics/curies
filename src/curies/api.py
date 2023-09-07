@@ -1219,10 +1219,6 @@ class Converter:
         return None
 
 
-def _f(x: str) -> str:
-    return x
-
-
 def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
     """Chain several converters.
 
@@ -1292,51 +1288,3 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
         for record in converter.records:
             rv.add_record(record, case_sensitive=case_sensitive, merge=True)
     return rv
-
-
-def _chain_old(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
-    norm_func: Callable[[str], str]
-    if case_sensitive:
-        norm_func = _f
-    else:
-        norm_func = str.casefold
-
-    key_to_pair: Dict[str, Tuple[str, str]] = {}
-    #: A mapping from the canonical key to the secondary URI expansions
-    uri_prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
-    #: A mapping from the canonical key to the secondary prefixes
-    prefix_tails: DefaultDict[str, Set[str]] = defaultdict(set)
-    for converter in converters:
-        for record in converter.records:
-            key = norm_func(record.prefix)
-            if key not in key_to_pair:
-                key_to_pair[key] = record.prefix, record.uri_prefix
-                uri_prefix_tails[key].update(record.uri_prefix_synonyms)
-                prefix_tails[key].update(record.prefix_synonyms)
-            else:
-                uri_prefix_tails[key].add(record.uri_prefix)
-                uri_prefix_tails[key].update(record.uri_prefix_synonyms)
-                prefix_tails[key].add(record.prefix)
-                prefix_tails[key].update(record.prefix_synonyms)
-
-    # clean up potential duplicates from merging
-    for key, uri_prefixes in uri_prefix_tails.items():
-        uri_prefix = key_to_pair[key][1]
-        if uri_prefix in uri_prefixes:
-            uri_prefixes.remove(uri_prefix)
-    for key, prefixes in prefix_tails.items():
-        prefix = key_to_pair[key][0]
-        if prefix in prefixes:
-            prefixes.remove(prefix)
-
-    return Converter(
-        [
-            Record(
-                prefix=prefix,
-                uri_prefix=uri_prefix,
-                prefix_synonyms=sorted(prefix_tails[key]),
-                uri_prefix_synonyms=sorted(uri_prefix_tails[key]),
-            )
-            for key, (prefix, uri_prefix) in key_to_pair.items()
-        ]
-    )
