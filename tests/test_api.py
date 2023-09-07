@@ -7,7 +7,6 @@ import tempfile
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from uuid import uuid4
 
 import pandas as pd
 import rdflib
