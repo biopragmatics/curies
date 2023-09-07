@@ -145,6 +145,9 @@ class Reference(BaseModel):  # type:ignore
         return cls(prefix=prefix, identifier=identifier)
 
 
+RecordKey = tuple[str, str, str, str]
+
+
 class Record(BaseModel):  # type:ignore
     """A record of some prefixes and their associated URI prefixes."""
 
@@ -180,6 +183,16 @@ class Record(BaseModel):  # type:ignore
     @property
     def _all_uri_prefixes(self) -> List[str]:
         return [self.uri_prefix, *self.uri_prefix_synonyms]
+
+    @property
+    def _key(self) -> RecordKey:
+        """Get a hashable key."""
+        return (
+            self.prefix,
+            self.uri_prefix,
+            ",".join(sorted(self.prefix_synonyms)),
+            ",".join(sorted(self.uri_prefix_synonyms)),
+        )
 
 
 class DuplicateValueError(ValueError):
@@ -370,35 +383,87 @@ class Converter:
         """Get the bijective mapping between CURIE prefixes and URI prefixes."""
         return {r.prefix: r.uri_prefix for r in self.records}
 
-    def _check_record(self, record: Record) -> None:
-        """Check if the record can be added."""
-        if record.prefix in self.prefix_map:
-            raise ValueError(f"new record has duplicate prefix: {record.prefix}")
-        if record.uri_prefix in self.reverse_prefix_map:
-            raise ValueError(f"new record has duplicate URI prefix: {record.uri_prefix}")
-        for prefix_synonym in record.prefix_synonyms:
-            if prefix_synonym in self.prefix_map:
-                raise ValueError(f"new record has duplicate prefix: {prefix_synonym}")
-        for uri_prefix_synonym in record.uri_prefix_synonyms:
-            if uri_prefix_synonym in self.reverse_prefix_map:
-                raise ValueError(f"new record has duplicate URI prefix: {uri_prefix_synonym}")
+    def _match_record(
+        self, external: Record, case_sensitive: bool = True
+    ) -> Mapping[RecordKey, List[str]]:
+        """Match the given record to existing records."""
+        norm_func: Callable[[str], str]
+        if case_sensitive:
+            norm_func = _f
+        else:
+            norm_func = str.casefold
 
-    def add_record(self, record: Record) -> None:
+        def _eq(a: str, b: str) -> bool:
+            return norm_func(a) == norm_func(b)
+
+        def _in(a: str, bs: Iterable[str]) -> bool:
+            nfa = norm_func(a)
+            return any(nfa == norm_func(b) for b in bs)
+
+        rv: DefaultDict[RecordKey, List[str]] = defaultdict(list)
+        for record in self.records:
+            # Match CURIE prefixes
+            if _eq(external.prefix, record.prefix):
+                rv[record._key].append("prefix match")
+            if _in(external.prefix, record.prefix_synonyms):
+                rv[record._key].append("prefix match")
+            for prefix_synonym in external.prefix_synonyms:
+                if _eq(prefix_synonym, record.prefix):
+                    rv[record._key].append("prefix match")
+                if _in(prefix_synonym, record.prefix_synonyms):
+                    rv[record._key].append("prefix match")
+
+            # Match URI prefixes
+            if _eq(external.uri_prefix, record.uri_prefix):
+                rv[record._key].append("URI prefix match")
+            if _in(external.uri_prefix, record.uri_prefix_synonyms):
+                rv[record._key].append("URI prefix match")
+            for uri_prefix_synonym in external.uri_prefix_synonyms:
+                if _eq(uri_prefix_synonym, record.uri_prefix):
+                    rv[record._key].append("URI prefix match")
+                if _in(uri_prefix_synonym, record.uri_prefix_synonyms):
+                    rv[record._key].append("URI prefix match")
+        return dict(rv)
+
+    def add_record(self, record: Record, case_sensitive: bool = True, merge: bool = False) -> None:
         """Append a record to the converter."""
-        self._check_record(record)
+        matched = self._match_record(record, case_sensitive=case_sensitive)
+        if len(matched) > 1:
+            raise ValueError(f"new record has duplicates: {matched}")
+        if len(matched) == 1:
+            if not merge:
+                raise ValueError(f"new record already exists and merge=False: {matched}")
 
-        self.records.append(record)
-        self.prefix_map[record.prefix] = record.uri_prefix
-        self.synonym_to_prefix[record.prefix] = record.prefix
-        for prefix_synonym in record.prefix_synonyms:
-            self.prefix_map[prefix_synonym] = record.uri_prefix
-            self.synonym_to_prefix[prefix_synonym] = record.prefix
+            key = list(matched)[0]
+            old_record = next(r for r in self.records if r._key == key)
+            for prefix_synonym in itt.chain([record.prefix], record.prefix_synonyms):
+                if prefix_synonym in old_record._all_prefixes:
+                    continue
+                old_record.prefix_synonyms.append(prefix_synonym)
+                self.prefix_map[prefix_synonym] = old_record.uri_prefix
+                self.synonym_to_prefix[prefix_synonym] = old_record.prefix
 
-        self.reverse_prefix_map[record.uri_prefix] = record.prefix
-        self.trie[record.uri_prefix] = record.prefix
-        for uri_prefix_synonym in record.uri_prefix_synonyms:
-            self.reverse_prefix_map[uri_prefix_synonym] = record.prefix
-            self.trie[uri_prefix_synonym] = record.prefix
+            for uri_prefix_synonym in itt.chain([record.uri_prefix], record.uri_prefix_synonyms):
+                if uri_prefix_synonym in old_record._all_uri_prefixes:
+                    continue
+                old_record.uri_prefix_synonyms.append(record.uri_prefix)
+                self.reverse_prefix_map[uri_prefix_synonym] = old_record.prefix
+                self.trie[uri_prefix_synonym] = old_record.prefix
+
+        else:
+            # Append a new record
+            self.records.append(record)
+            self.prefix_map[record.prefix] = record.uri_prefix
+            self.synonym_to_prefix[record.prefix] = record.prefix
+            for prefix_synonym in record.prefix_synonyms:
+                self.prefix_map[prefix_synonym] = record.uri_prefix
+                self.synonym_to_prefix[prefix_synonym] = record.prefix
+
+            self.reverse_prefix_map[record.uri_prefix] = record.prefix
+            self.trie[record.uri_prefix] = record.prefix
+            for uri_prefix_synonym in record.uri_prefix_synonyms:
+                self.reverse_prefix_map[uri_prefix_synonym] = record.prefix
+                self.trie[uri_prefix_synonym] = record.prefix
 
     def add_prefix(
         self,
@@ -406,6 +471,9 @@ class Converter:
         uri_prefix: str,
         prefix_synonyms: Optional[Collection[str]] = None,
         uri_prefix_synonyms: Optional[Collection[str]] = None,
+        *,
+        case_sensitive: bool = True,
+        merge: bool = False,
     ) -> None:
         """Append a prefix to the converter.
 
@@ -418,6 +486,13 @@ class Converter:
         :param uri_prefix_synonyms:
             An optional collections of synonyms for the URI prefix such as
             ``https://bioregistry.io/go:``, ``http://www.informatics.jax.org/searches/GO.cgi?id=GO:``, etc.
+        :param case_sensitive:
+            Should prefixes and URI prefixes be compared in a case-sensitive manner when checking
+            for uniqueness? Defaults to True.
+        :param merge:
+            Should this record be merged into an existing record if it uniquely maps to a single
+            existing record? When false, will raise an error if one or more existing records can
+            be mapped. Defaults to false.
 
         This can be used to add missing namespaces on-the-fly to an existing converter:
 
@@ -443,7 +518,7 @@ class Converter:
             prefix_synonyms=sorted(prefix_synonyms or []),
             uri_prefix_synonyms=sorted(uri_prefix_synonyms or []),
         )
-        self.add_record(record)
+        self.add_record(record, case_sensitive=case_sensitive, merge=merge)
 
     @classmethod
     def from_extended_prefix_map(
@@ -481,21 +556,23 @@ class Converter:
         ... ]
         >>> converter = Converter.from_extended_prefix_map(epm)
 
-        Expand using the preferred/canonical prefix
+        Expand using the preferred/canonical prefix:
 
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
 
-        Expand using a prefix synonym
+        Expand using a prefix synonym:
 
         >>> converter.expand("chebi:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
 
-        Compress using the preferred/canonical URI prefix
+        Compress using the preferred/canonical URI prefix:
 
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
         'CHEBI:138488'
-        # URI prefix synoynm
+
+        Compressing using a URI prefix synonym:
+
         >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
         'CHEBI:138488'
 
@@ -1141,7 +1218,7 @@ def _f(x: str) -> str:
     return x
 
 
-def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Converter:
+def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
     """Chain several converters.
 
     :param converters: A list or tuple of converters
@@ -1152,16 +1229,46 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
         If there are no converters
 
     Chain is the perfect tool if you want to override parts of an existing extended
-    prefix map. For example, if you want to use the Bioregistry, but would rather
-    use ``PMID`` as the prefix for PubMed identifiers instead of ``pubmed``, you
+    prefix map. For example, if you want to use most of the Bioregistry, but you
+    would like to specify a custom URI prefix (e.g., using Identifiers.org), you
     can do the following:
 
     >>> from curies import Converter, chain, get_bioregistry_converter
-    >>> overrides = Converter.from_prefix_map({"PMID": "https://identifiers.org/pubmed:"})
+    >>> overrides = Converter.from_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
+    >>> bioregistry_converter = get_bioregistry_converter()
+    >>> converter = chain([overrides, bioregistry_converter])
+    >>> converter.bimap["pubmed"]
+    'https://identifiers.org/pubmed:'
+
+    Similarly, this also works if you want to override a prefix. Keep in mind for this to work
+    with a simple prefix map, you need to make sure the URI prefix matches in each converter,
+    otherwise you will get duplicates:
+
+    >>> from curies import Converter, chain, get_bioregistry_converter
+    >>> overrides = Converter.from_prefix_map({"PMID": "https://www.ncbi.nlm.nih.gov/pubmed/"})
     >>> bioregistry_converter = get_bioregistry_converter()
     >>> converter = chain([overrides, bioregistry_converter])
     >>> converter.bimap["PMID"]
-    'https://identifiers.org/pubmed:'
+    'https://www.ncbi.nlm.nih.gov/pubmed/'
+
+    A safer way is to specify your override using an extended prefix map, which can tie together
+    prefix synonyms and URI prefix synonyms:
+
+    >>> from curies import Converter, chain, get_bioregistry_converter
+    >>> overrides = Converter.from_extended_prefix_map([
+    ...     {
+    ...         "prefix": "PMID",
+    ...         "prefix_synonyms": ["pubmed", "PubMed"],
+    ...         "uri_prefix": "https://www.ncbi.nlm.nih.gov/pubmed/",
+    ...         "uri_prefix_synonyms": [
+    ...             "https://identifiers.org/pubmed:",
+    ...             "http://bio2rdf.org/pubmed:",
+    ...         ],
+    ...     },
+    ... ])
+    >>> converter = chain([overrides, bioregistry_converter])
+    >>> converter.bimap["PMID"]
+    'https://www.ncbi.nlm.nih.gov/pubmed/'
 
     Chain prioritizes based on the order given. Therefore, if two prefix maps
     having the same prefix but different URI prefixes are given, the first is retained
@@ -1175,7 +1282,14 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
     """
     if not converters:
         raise ValueError
+    rv = Converter([])
+    for converter in converters:
+        for record in converter.records:
+            rv.add_record(record, case_sensitive=case_sensitive, merge=True)
+    return rv
 
+
+def _chain_old(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
     norm_func: Callable[[str], str]
     if case_sensitive:
         norm_func = _f

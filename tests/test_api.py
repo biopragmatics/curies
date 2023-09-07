@@ -32,6 +32,34 @@ from curies.sources import (
 from curies.version import get_version
 
 
+class TestAddRecord(unittest.TestCase):
+    """Test adding records."""
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        self.converter = Converter.from_extended_prefix_map(
+            [
+                {
+                    "prefix": "chebi",
+                    "uri_prefix": "http://purl.obolibrary.org/obo/CHEBI_",
+                }
+            ]
+        )
+
+    def test_add_prefix(self):
+        """Test adding a new prefix in merge mode."""
+        record = Record(
+            prefix="chebi",
+            prefix_synonyms=["CHEBI"],
+            uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        )
+        self.converter.add_record(record, merge=True)
+        self.assertEqual(1, len(self.converter.records))
+        record = self.converter.records[0]
+        self.assertIn("CHEBI", record.prefix_synonyms)
+        self.assertNotIn("chebi", record.prefix_synonyms)
+
+
 class TestConverter(unittest.TestCase):
     """Test the converter class."""
 
@@ -319,6 +347,25 @@ class TestConverter(unittest.TestCase):
             converter.expand("CHEBI:138488"),
         )
         self.assertNotIn("nope", converter.get_prefixes())
+
+    def test_combine_with_synonyms(self):
+        """Test combination with synonyms."""
+        c1 = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+        c2 = Converter.from_extended_prefix_map(
+            [
+                {
+                    "prefix": "go",
+                    "prefix_synoynms": ["GO"],
+                    "uri_prefix": "https://identifiers.org/go:",
+                }
+            ]
+        )
+        c3 = chain([c1, c2])
+        self.assertEqual(1, len(c3.records))
+        self.assertIn("GO", c3.prefix_map)
+        self.assertIn("go", c3.prefix_map)
+        self.assertIn("go", c3.bimap)
+        self.assertNotIn("GO", c3.bimap)
 
     def test_combine_ci(self):
         """Test combining case insensitive."""
