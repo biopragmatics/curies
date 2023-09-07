@@ -2,5 +2,5 @@
 
 import unittest
 
-RUN_SLOW = False
+RUN_SLOW = True
 SLOW = unittest.skipUnless(RUN_SLOW, reason="Skipping slow tests")
