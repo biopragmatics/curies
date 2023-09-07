@@ -46,11 +46,17 @@ class TestAddRecord(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up the test case."""
+        self.prefix = "CHEBI"
+        self.uri_prefix = CHEBI_URI_PREFIX
+        self.prefix_synonym = "p"
+        self.uri_prefix_synonym = "u"
         self.converter = Converter.from_extended_prefix_map(
             [
                 {
-                    "prefix": "CHEBI",
-                    "uri_prefix": CHEBI_URI_PREFIX,
+                    "prefix": self.prefix,
+                    "prefix_synonyms": [self.prefix_synonym],
+                    "uri_prefix": self.uri_prefix,
+                    "uri_prefix_synonyms": [self.uri_prefix_synonym],
                 },
             ]
         )
@@ -64,86 +70,120 @@ class TestAddRecord(unittest.TestCase):
     def test_extend_on_prefix_match(self):
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
-        record = Record(
-            prefix="CHEBI",
-            prefix_synonyms=[s1],
-            uri_prefix=s2,
-            uri_prefix_synonyms=[s3],
-        )
-        with self.assertRaises(ValueError):
-            self.converter.add_record(record, merge=False)
-        self.converter.add_record(record, merge=True)
-        self.assertEqual(1, len(self.converter.records))
-        record = self.converter.records[0]
-        self.assertEqual("CHEBI", record.prefix)
-        self.assertEqual([s1], record.prefix_synonyms)
-        self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
-        self.assertEqual({s2, s3}, set(record.uri_prefix_synonyms))
-
-    def test_extend_on_prefix_synonym_match(self):
-        """Test adding a new prefix in merge mode."""
-        s1, s2, s3 = "s1", "s2", "s3"
-        record = Record(
-            prefix=s1,
-            prefix_synonyms=["CHEBI"],
-            uri_prefix=s2,
-            uri_prefix_synonyms=[s3],
-        )
-        with self.assertRaises(ValueError):
-            self.converter.add_record(record, merge=False)
-        self.converter.add_record(record, merge=True)
-        self.assertEqual(1, len(self.converter.records))
-        record = self.converter.records[0]
-        self.assertEqual("CHEBI", record.prefix)
-        self.assertEqual([s1], record.prefix_synonyms)
-        self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
-        self.assertEqual({s2, s3}, set(record.uri_prefix_synonyms))
+        for record in [
+            Record(
+                prefix="CHEBI",
+                prefix_synonyms=[s1],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[s3],
+            ),
+            Record(
+                prefix=s1,
+                prefix_synonyms=["CHEBI"],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[s3],
+            ),
+        ]:
+            with self.assertRaises(ValueError):
+                self.converter.add_record(record, merge=False)
+            self.converter.add_record(record, merge=True)
+            self.assertEqual(1, len(self.converter.records))
+            record = self.converter.records[0]
+            self.assertEqual("CHEBI", record.prefix)
+            self.assertEqual({s1, self.prefix_synonym}, set(record.prefix_synonyms))
+            self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
+            self.assertEqual({s2, s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
 
     def test_extend_on_uri_prefix_match(self):
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
-        record = Record(
-            prefix=s1, prefix_synonyms=[s3], uri_prefix=CHEBI_URI_PREFIX, uri_prefix_synonyms=[s2]
-        )
-        with self.assertRaises(ValueError):
-            self.converter.add_record(record, merge=False)
-        self.converter.add_record(record, merge=True)
-        self.assertEqual(1, len(self.converter.records))
-        record = self.converter.records[0]
-        self.assertEqual("CHEBI", record.prefix)
-        self.assertEqual({s1, s3}, set(record.prefix_synonyms))
-        self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
-        self.assertEqual([s2], record.uri_prefix_synonyms)
+        for record in [
+            Record(
+                prefix=s1,
+                prefix_synonyms=[s3],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[CHEBI_URI_PREFIX],
+            ),
+            Record(
+                prefix=s1,
+                prefix_synonyms=[s3],
+                uri_prefix=CHEBI_URI_PREFIX,
+                uri_prefix_synonyms=[s2],
+            ),
+        ]:
+            with self.assertRaises(ValueError):
+                self.converter.add_record(record, merge=False)
+            self.converter.add_record(record, merge=True)
+            self.assertEqual(1, len(self.converter.records))
+            record = self.converter.records[0]
+            self.assertEqual("CHEBI", record.prefix)
+            self.assertEqual({s1, s3, self.prefix_synonym}, set(record.prefix_synonyms))
+            self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
+            self.assertEqual({s2, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
+
+    def test_extend_on_prefix_synonym_match(self):
+        """Test adding a new prefix in merge mode."""
+        s1, s2, s3 = "s1", "s2", "s3"
+        for record in [
+            Record(
+                prefix=self.prefix_synonym,
+                prefix_synonyms=[s1],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[s3],
+            ),
+            Record(
+                prefix=s1,
+                prefix_synonyms=[self.prefix_synonym],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[s3],
+            ),
+        ]:
+            self.converter.add_record(record, merge=True)
+            self.assertEqual(1, len(self.converter.records))
+            record = self.converter.records[0]
+            self.assertEqual("CHEBI", record.prefix)
+            self.assertEqual({s1, self.prefix_synonym}, set(record.prefix_synonyms))
+            self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
+            self.assertEqual({s2, s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
 
     def test_extend_on_uri_prefix_synonym_match(self):
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
-        record = Record(
-            prefix=s1, prefix_synonyms=[s3], uri_prefix=s2, uri_prefix_synonyms=[CHEBI_URI_PREFIX]
-        )
-        with self.assertRaises(ValueError):
-            self.converter.add_record(record, merge=False)
-        self.converter.add_record(record, merge=True)
-        self.assertEqual(1, len(self.converter.records))
-        record = self.converter.records[0]
-        self.assertEqual("CHEBI", record.prefix)
-        self.assertEqual({s1, s3}, set(record.prefix_synonyms))
-        self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
-        self.assertEqual([s2], record.uri_prefix_synonyms)
+        for record in [
+            Record(
+                prefix=s1,
+                prefix_synonyms=[s2],
+                uri_prefix=self.uri_prefix_synonym,
+                uri_prefix_synonyms=[s3],
+            ),
+            Record(
+                prefix=s1,
+                prefix_synonyms=[s2],
+                uri_prefix=s3,
+                uri_prefix_synonyms=[self.uri_prefix_synonym],
+            ),
+        ]:
+            self.converter.add_record(record, merge=True)
+            self.assertEqual(1, len(self.converter.records))
+            record = self.converter.records[0]
+            self.assertEqual("CHEBI", record.prefix)
+            self.assertEqual({s1, s2, self.prefix_synonym}, set(record.prefix_synonyms))
+            self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
+            self.assertEqual({s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
 
     def test_extend_on_prefix_match_ci(self):
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
         record = Record(
-            prefix="chebi", prefix_synonyms=[s2], uri_prefix=s1, uri_prefix_synonyms=[s3]
+            prefix="chebi", prefix_synonyms=[s1], uri_prefix=s2, uri_prefix_synonyms=[s3]
         )
         self.converter.add_record(record, case_sensitive=False, merge=True)
         self.assertEqual(1, len(self.converter.records))
         record = self.converter.records[0]
         self.assertEqual("CHEBI", record.prefix)
-        self.assertEqual({"chebi", s2}, set(record.prefix_synonyms))
+        self.assertEqual({"chebi", s1, self.prefix_synonym}, set(record.prefix_synonyms))
         self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
-        self.assertEqual({s1, s3}, set(record.uri_prefix_synonyms))
+        self.assertEqual({s2, s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
 
 
 class TestConverter(unittest.TestCase):
