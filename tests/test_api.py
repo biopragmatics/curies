@@ -33,6 +33,7 @@ from curies.sources import (
 from curies.version import get_version
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
+GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
 
 
 def _s() -> str:
@@ -60,7 +61,7 @@ class TestAddRecord(unittest.TestCase):
             prefix="CHEBI",
             prefix_synonyms=[s1],
             uri_prefix=s2,
-            uri_prefix_synoynms=[s3],
+            uri_prefix_synonyms=[s3],
         )
         with self.assertRaises(ValueError):
             self.converter.add_record(record, merge=False)
@@ -79,7 +80,7 @@ class TestAddRecord(unittest.TestCase):
             prefix=s1,
             prefix_synonyms=["CHEBI"],
             uri_prefix=s2,
-            uri_prefix_synoynms=[s3],
+            uri_prefix_synonyms=[s3],
         )
         with self.assertRaises(ValueError):
             self.converter.add_record(record, merge=False)
@@ -438,7 +439,7 @@ class TestConverter(unittest.TestCase):
 
     def test_combine_with_synonyms(self):
         """Test combination with synonyms."""
-        r1 = Record(prefix="GO", uri_prefix="http://purl.obolibrary.org/obo/GO_")
+        r1 = Record(prefix="GO", uri_prefix=GO_URI_PREFIX)
         r2 = Record(prefix="go", prefix_synonyms=["GO"], uri_prefix="https://identifiers.org/go:")
 
         c1 = Converter([])
@@ -447,17 +448,18 @@ class TestConverter(unittest.TestCase):
 
         c1.add_record(r2, merge=True)
         self.assertEqual(1, len(c1.records))
-        self.assertNotEquals(r1, c1.records[0])
-        self.assertNotEquals(r2, c1.records[0])
+        r = c1.records[0]
+        self.assertEqual("GO", r.prefix)
+        self.assertEqual({"go"}, set(r.prefix_synonyms))
+        self.assertEqual("http://purl.obolibrary.org/obo/GO_", r.uri_prefix)
+        self.assertEqual({"https://identifiers.org/go:"}, set(r.uri_prefix_synonyms))
 
-        c1 = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
-        c2 = Converter([])
-        c3 = chain([c1, c2])
+        c3 = chain([Converter([r1]), Converter([r2])])
         self.assertEqual(1, len(c3.records))
         self.assertIn("GO", c3.prefix_map)
-        self.assertIn("go", c3.prefix_map)
-        self.assertIn("go", c3.bimap)
-        self.assertNotIn("GO", c3.bimap)
+        self.assertIn("go", c3.prefix_map, msg=f"PM: {c3.prefix_map}")
+        self.assertNotIn("go", c3.bimap)
+        self.assertIn("GO", c3.bimap)
 
     def test_combine_ci(self):
         """Test combining case insensitive."""

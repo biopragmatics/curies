@@ -451,6 +451,7 @@ class Converter:
             if prefix_synonym not in record_into._all_prefixes:
                 record_into.prefix_synonyms.append(prefix_synonym)
         record_into.prefix_synonyms.sort()
+
         for uri_prefix_synonym in itt.chain([record.uri_prefix], record.uri_prefix_synonyms):
             if uri_prefix_synonym not in record_into._all_uri_prefixes:
                 record_into.uri_prefix_synonyms.append(uri_prefix_synonym)
