@@ -30,6 +30,155 @@ from curies.sources import (
     get_obo_converter,
 )
 from curies.version import get_version
+from tests.constants import SLOW
+
+CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
+GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
+
+
+class TestAddRecord(unittest.TestCase):
+    """Test adding records."""
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        self.prefix = "CHEBI"
+        self.uri_prefix = CHEBI_URI_PREFIX
+        self.prefix_synonym = "p"
+        self.uri_prefix_synonym = "u"
+        self.converter = Converter.from_extended_prefix_map(
+            [
+                {
+                    "prefix": self.prefix,
+                    "prefix_synonyms": [self.prefix_synonym],
+                    "uri_prefix": self.uri_prefix,
+                    "uri_prefix_synonyms": [self.uri_prefix_synonym],
+                },
+            ]
+        )
+
+    def test_duplicate_failure(self):
+        """Test failure caused by double matching."""
+        self.converter.add_prefix("GO", GO_URI_PREFIX)
+        with self.assertRaises(ValueError):
+            self.converter.add_record(Record(prefix="GO", uri_prefix=CHEBI_URI_PREFIX))
+
+    def test_extend_on_prefix_match(self):
+        """Test adding a new prefix in merge mode."""
+        s1, s2, s3 = "s1", "s2", "s3"
+        for record in [
+            Record(
+                prefix="CHEBI",
+                prefix_synonyms=[s1],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[s3],
+            ),
+            Record(
+                prefix=s1,
+                prefix_synonyms=["CHEBI"],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[s3],
+            ),
+        ]:
+            with self.assertRaises(ValueError):
+                self.converter.add_record(record, merge=False)
+            self.converter.add_record(record, merge=True)
+            self.assertEqual(1, len(self.converter.records))
+            record = self.converter.records[0]
+            self.assertEqual("CHEBI", record.prefix)
+            self.assertEqual({s1, self.prefix_synonym}, set(record.prefix_synonyms))
+            self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
+            self.assertEqual({s2, s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
+
+    def test_extend_on_uri_prefix_match(self):
+        """Test adding a new prefix in merge mode."""
+        s1, s2, s3 = "s1", "s2", "s3"
+        for record in [
+            Record(
+                prefix=s1,
+                prefix_synonyms=[s3],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[CHEBI_URI_PREFIX],
+            ),
+            Record(
+                prefix=s1,
+                prefix_synonyms=[s3],
+                uri_prefix=CHEBI_URI_PREFIX,
+                uri_prefix_synonyms=[s2],
+            ),
+        ]:
+            with self.assertRaises(ValueError):
+                self.converter.add_record(record, merge=False)
+            self.converter.add_record(record, merge=True)
+            self.assertEqual(1, len(self.converter.records))
+            record = self.converter.records[0]
+            self.assertEqual("CHEBI", record.prefix)
+            self.assertEqual({s1, s3, self.prefix_synonym}, set(record.prefix_synonyms))
+            self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
+            self.assertEqual({s2, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
+
+    def test_extend_on_prefix_synonym_match(self):
+        """Test adding a new prefix in merge mode."""
+        s1, s2, s3 = "s1", "s2", "s3"
+        for record in [
+            Record(
+                prefix=self.prefix_synonym,
+                prefix_synonyms=[s1],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[s3],
+            ),
+            Record(
+                prefix=s1,
+                prefix_synonyms=[self.prefix_synonym],
+                uri_prefix=s2,
+                uri_prefix_synonyms=[s3],
+            ),
+        ]:
+            self.converter.add_record(record, merge=True)
+            self.assertEqual(1, len(self.converter.records))
+            record = self.converter.records[0]
+            self.assertEqual("CHEBI", record.prefix)
+            self.assertEqual({s1, self.prefix_synonym}, set(record.prefix_synonyms))
+            self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
+            self.assertEqual({s2, s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
+
+    def test_extend_on_uri_prefix_synonym_match(self):
+        """Test adding a new prefix in merge mode."""
+        s1, s2, s3 = "s1", "s2", "s3"
+        for record in [
+            Record(
+                prefix=s1,
+                prefix_synonyms=[s2],
+                uri_prefix=self.uri_prefix_synonym,
+                uri_prefix_synonyms=[s3],
+            ),
+            Record(
+                prefix=s1,
+                prefix_synonyms=[s2],
+                uri_prefix=s3,
+                uri_prefix_synonyms=[self.uri_prefix_synonym],
+            ),
+        ]:
+            self.converter.add_record(record, merge=True)
+            self.assertEqual(1, len(self.converter.records))
+            record = self.converter.records[0]
+            self.assertEqual("CHEBI", record.prefix)
+            self.assertEqual({s1, s2, self.prefix_synonym}, set(record.prefix_synonyms))
+            self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
+            self.assertEqual({s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
+
+    def test_extend_on_prefix_match_ci(self):
+        """Test adding a new prefix in merge mode."""
+        s1, s2, s3 = "s1", "s2", "s3"
+        record = Record(
+            prefix="chebi", prefix_synonyms=[s1], uri_prefix=s2, uri_prefix_synonyms=[s3]
+        )
+        self.converter.add_record(record, case_sensitive=False, merge=True)
+        self.assertEqual(1, len(self.converter.records))
+        record = self.converter.records[0]
+        self.assertEqual("CHEBI", record.prefix)
+        self.assertEqual({"chebi", s1, self.prefix_synonym}, set(record.prefix_synonyms))
+        self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
+        self.assertEqual({s2, s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
 
 
 class TestConverter(unittest.TestCase):
@@ -107,8 +256,10 @@ class TestConverter(unittest.TestCase):
 
     def _assert_convert(self, converter: Converter):
         self.assertIn("GO", converter.prefix_map)
+        self.assertIn("GO", converter.bimap)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_prefix_map)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.trie)
+        self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.bimap.values())
         for curie, uri in [
             ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
             ("OBO:unnamespaced", "http://purl.obolibrary.org/obo/unnamespaced"),
@@ -134,6 +285,7 @@ class TestConverter(unittest.TestCase):
         self.assertIsInstance(record, Record)
         self.assertEqual("GO", record.prefix)
 
+    @SLOW
     def test_bioregistry(self):
         """Test loading a remote JSON-LD context."""
         for web in [True, False]:
@@ -162,6 +314,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn("hello", converter.prefix_map)
         self.assertIn("CHEBI", converter.prefix_map)
 
+    @SLOW
     def test_from_github(self):
         """Test getting a JSON-LD map from GitHub."""
         with self.assertRaises(ValueError):
@@ -173,18 +326,21 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIn("rdf", semweb_converter.prefix_map)
 
+    @SLOW
     def test_obo(self):
         """Test the OBO converter."""
         obo_converter = get_obo_converter()
         self.assertIn("CHEBI", obo_converter.prefix_map)
         self.assertNotIn("chebi", obo_converter.prefix_map)
 
+    @SLOW
     def test_monarch(self):
         """Test the Monarch converter."""
         monarch_converter = get_monarch_converter()
         self.assertIn("CHEBI", monarch_converter.prefix_map)
         self.assertNotIn("chebi", monarch_converter.prefix_map)
 
+    @SLOW
     def test_go_registry(self):
         """Test the GO registry converter."""
         go_converter = get_go_converter()
@@ -202,8 +358,10 @@ class TestConverter(unittest.TestCase):
         self.assertIn("ChEBI", record.prefix_synonyms)
 
         self.assertIn("chebi", converter.prefix_map)
+        self.assertIn("chebi", converter.bimap)
         # Synonyms that are non-conflicting also get added
         self.assertIn("CHEBI", converter.prefix_map)
+        self.assertNotIn("CHEBI", converter.bimap)
         chebi_uri = converter.prefix_map["chebi"]
         self.assertIn(chebi_uri, converter.reverse_prefix_map)
         self.assertEqual("chebi", converter.reverse_prefix_map[chebi_uri])
@@ -299,6 +457,8 @@ class TestConverter(unittest.TestCase):
             }
         )
         converter = chain([c1, c2], case_sensitive=True)
+
+        self.assertEqual("CHEBI", converter.get_record("CHEBI").prefix)
         for url in [
             "http://purl.obolibrary.org/obo/CHEBI_138488",
             "https://bioregistry.io/chebi:138488",
@@ -306,15 +466,47 @@ class TestConverter(unittest.TestCase):
             "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488",
         ]:
             self.assertEqual("CHEBI:138488", converter.compress(url))
+
+        self.assertEqual("GO", converter.get_record("GO").prefix)
         self.assertEqual(
             "GO:0000001",
             converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
         )
+
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_", converter.get_record("CHEBI").uri_prefix
+        )
+        self.assertIn("CHEBI", converter.prefix_map)
+        self.assertEqual("http://purl.obolibrary.org/obo/CHEBI_", converter.prefix_map["CHEBI"])
         self.assertEqual(
             "http://purl.obolibrary.org/obo/CHEBI_138488",
             converter.expand("CHEBI:138488"),
         )
         self.assertNotIn("nope", converter.get_prefixes())
+
+    def test_combine_with_synonyms(self):
+        """Test combination with synonyms."""
+        r1 = Record(prefix="GO", uri_prefix=GO_URI_PREFIX)
+        r2 = Record(prefix="go", prefix_synonyms=["GO"], uri_prefix="https://identifiers.org/go:")
+
+        c1 = Converter([])
+        c1.add_record(r1)
+        self.assertEqual(c1.records, Converter([r1]).records)
+
+        c1.add_record(r2, merge=True)
+        self.assertEqual(1, len(c1.records))
+        r = c1.records[0]
+        self.assertEqual("GO", r.prefix)
+        self.assertEqual({"go"}, set(r.prefix_synonyms))
+        self.assertEqual("http://purl.obolibrary.org/obo/GO_", r.uri_prefix)
+        self.assertEqual({"https://identifiers.org/go:"}, set(r.uri_prefix_synonyms))
+
+        c3 = chain([Converter([r1]), Converter([r2])])
+        self.assertEqual(1, len(c3.records))
+        self.assertIn("GO", c3.prefix_map)
+        self.assertIn("go", c3.prefix_map, msg=f"PM: {c3.prefix_map}")
+        self.assertNotIn("go", c3.bimap)
+        self.assertIn("GO", c3.bimap)
 
     def test_combine_ci(self):
         """Test combining case insensitive."""

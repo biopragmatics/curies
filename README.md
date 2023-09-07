@@ -74,10 +74,50 @@ will return `GO:0032571` instead of `OBO:GO_0032571`.
 
 Full documentation is available at [curies.readthedocs.io](https://curies.readthedocs.io).
 
+### Chaining
+
+This package implements a faultless chain operation `curies.chain` that is configurable for case
+sensitivity and fully considers all synonyms.
+
+`chain()` prioritizes based on the order given. Therefore, if two prefix maps
+having the same prefix but different URI prefixes are given, the first is retained. The second
+is retained as a synonym:
+
+```python
+from curies import Converter, chain
+
+c1 = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+c2 = Converter.from_prefix_map({"GO": "https://identifiers.org/go:"})
+converter = chain([c1, c2])
+
+>>> converter.expand("GO:1234567")
+'http://purl.obolibrary.org/obo/GO_1234567'
+>>> converter.compress("http://purl.obolibrary.org/obo/GO_1234567")
+'GO:1234567'
+>>> converter.compress("https://identifiers.org/go:1234567")
+'GO:1234567'
+```
+
+ Chain is the perfect tool if you want to override parts of an existing extended
+ prefix map. For example, if you want to use most of the Bioregistry, but you
+ would like to specify a custom URI prefix (e.g., using Identifiers.org), you
+ can do the following:
+
+```python
+from curies import Converter, chain, get_bioregistry_converter
+
+overrides = Converter.from_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
+bioregistry_converter = get_bioregistry_converter()
+converter = chain([overrides, bioregistry_converter])
+
+>>> converter.expand("pubmed:1234")
+'https://identifiers.org/pubmed:1234'
+```
+
 ### Standardization
 
 The `curies.Converter` data structure supports prefix and URI prefix synonyms.
-The following exampl demonstrates
+The following example demonstrates
 using these synonyms to support standardizing prefixes, CURIEs, and URIs. Note below,
 the colloquial prefix `gomf`, sometimes used to represent the subspace in the
 [Gene Ontology (GO)](https://obofoundry.org/ontology/go) corresponding to molecular
