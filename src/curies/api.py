@@ -383,7 +383,7 @@ class Converter:
         """Get the bijective mapping between CURIE prefixes and URI prefixes."""
         return {r.prefix: r.uri_prefix for r in self.records}
 
-    def _eq(self, a: str, b: str, case_sensitive):
+    def _eq(self, a: str, b: str, case_sensitive: bool) -> bool:
         if case_sensitive:
             return a == b
         return a.casefold() == b.casefold()
