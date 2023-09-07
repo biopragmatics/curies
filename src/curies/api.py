@@ -145,7 +145,7 @@ class Reference(BaseModel):  # type:ignore
         return cls(prefix=prefix, identifier=identifier)
 
 
-RecordKey = tuple[str, str, str, str]
+RecordKey = Tuple[str, str, str, str]
 
 
 class Record(BaseModel):  # type:ignore
