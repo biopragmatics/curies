@@ -365,6 +365,11 @@ class Converter:
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
         self.trie = StringTrie(self.reverse_prefix_map)
 
+    @property
+    def bimap(self) -> Mapping[str, str]:
+        """Get the bijective mapping between CURIE prefixes and URI prefixes."""
+        return {r.prefix: r.uri_prefix for r in self.records}
+
     def _check_record(self, record: Record) -> None:
         """Check if the record can be added."""
         if record.prefix in self.prefix_map:
@@ -421,7 +426,7 @@ class Converter:
         >>> converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
         >>> converter.expand("hgnc:1234")
         'https://bioregistry.io/hgnc:1234'
-        >>> converter.expand("GO:0032571 ")
+        >>> converter.expand("GO:0032571")
         'http://purl.obolibrary.org/obo/GO_0032571'
 
         This can also be used to incrementally build up a converter from scratch:
@@ -475,13 +480,19 @@ class Converter:
         ...     },
         ... ]
         >>> converter = Converter.from_extended_prefix_map(epm)
-        # Canonical prefix
+
+        Expand using the preferred/canonical prefix
+
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-        # Prefix synoynm
+
+        Expand using a prefix synonym
+
         >>> converter.expand("chebi:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-        # Canonical URI prefix
+
+        Compress using the preferred/canonical URI prefix
+
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
         'CHEBI:138488'
         # URI prefix synoynm
@@ -616,7 +627,7 @@ class Converter:
 
         >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.rpm.json"
         >>> converter = Converter.from_reverse_prefix_map(url)
-        >>> "chebi" in Converter.prefix_map
+        >>> "chebi" in converter.prefix_map
         """
         dd = defaultdict(list)
         for uri_prefix, prefix in _prepare(reverse_prefix_map).items():
@@ -770,7 +781,7 @@ class Converter:
         ...    "GO": "http://purl.obolibrary.org/obo/GO_",
         ... })
         >>> converter.parse_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
-        ('CHEBI', '138488')
+        ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
         (None, None)
         """
@@ -1139,6 +1150,28 @@ def chain(converters: Sequence[Converter], case_sensitive: bool = True) -> Conve
         A converter that looks up one at a time in the other converters.
     :raises ValueError:
         If there are no converters
+
+    Chain is the perfect tool if you want to override parts of an existing extended
+    prefix map. For example, if you want to use the Bioregistry, but would rather
+    use ``PMID`` as the prefix for PubMed identifiers instead of ``pubmed``, you
+    can do the following:
+
+    >>> from curies import Converter, chain, get_bioregistry_converter
+    >>> overrides = Converter.from_prefix_map({"PMID": "https://identifiers.org/pubmed:"})
+    >>> bioregistry_converter = get_bioregistry_converter()
+    >>> converter = chain([overrides, bioregistry_converter])
+    >>> converter.bimap["PMID"]
+    'https://identifiers.org/pubmed:'
+
+    Chain prioritizes based on the order given. Therefore, if two prefix maps
+    having the same prefix but different URI prefixes are given, the first is retained
+
+    >>> from curies import Converter, chain
+    >>> c1 = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+    >>> c2 = Converter.from_prefix_map({"GO": "https://identifiers.org/go:"})
+    >>> c3 = chain([c1, c2])
+    >>> c3.prefix_map["GO"]
+    'http://purl.obolibrary.org/obo/GO_'
     """
     if not converters:
         raise ValueError
