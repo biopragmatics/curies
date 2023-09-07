@@ -383,45 +383,47 @@ class Converter:
         """Get the bijective mapping between CURIE prefixes and URI prefixes."""
         return {r.prefix: r.uri_prefix for r in self.records}
 
+    def _eq(self, a: str, b: str, case_sensitive):
+        if case_sensitive:
+            return a == b
+        return a.casefold() == b.casefold()
+
+    def _in(self, a: str, bs: Iterable[str], case_sensitive: bool) -> bool:
+        if case_sensitive:
+            return a in bs
+        nfa = a.casefold()
+        return any(nfa == b.casefold() for b in bs)
+
     def _match_record(
         self, external: Record, case_sensitive: bool = True
     ) -> Mapping[RecordKey, List[str]]:
         """Match the given record to existing records."""
-        norm_func: Callable[[str], str]
-        if case_sensitive:
-            norm_func = _f
-        else:
-            norm_func = str.casefold
-
-        def _eq(a: str, b: str) -> bool:
-            return norm_func(a) == norm_func(b)
-
-        def _in(a: str, bs: Iterable[str]) -> bool:
-            nfa = norm_func(a)
-            return any(nfa == norm_func(b) for b in bs)
-
         rv: DefaultDict[RecordKey, List[str]] = defaultdict(list)
         for record in self.records:
             # Match CURIE prefixes
-            if _eq(external.prefix, record.prefix):
+            if self._eq(external.prefix, record.prefix, case_sensitive=case_sensitive):
                 rv[record._key].append("prefix match")
-            if _in(external.prefix, record.prefix_synonyms):
+            if self._in(external.prefix, record.prefix_synonyms, case_sensitive=case_sensitive):
                 rv[record._key].append("prefix match")
             for prefix_synonym in external.prefix_synonyms:
-                if _eq(prefix_synonym, record.prefix):
+                if self._eq(prefix_synonym, record.prefix, case_sensitive=case_sensitive):
                     rv[record._key].append("prefix match")
-                if _in(prefix_synonym, record.prefix_synonyms):
+                if self._in(prefix_synonym, record.prefix_synonyms, case_sensitive=case_sensitive):
                     rv[record._key].append("prefix match")
 
             # Match URI prefixes
-            if _eq(external.uri_prefix, record.uri_prefix):
+            if self._eq(external.uri_prefix, record.uri_prefix, case_sensitive=case_sensitive):
                 rv[record._key].append("URI prefix match")
-            if _in(external.uri_prefix, record.uri_prefix_synonyms):
+            if self._in(
+                external.uri_prefix, record.uri_prefix_synonyms, case_sensitive=case_sensitive
+            ):
                 rv[record._key].append("URI prefix match")
             for uri_prefix_synonym in external.uri_prefix_synonyms:
-                if _eq(uri_prefix_synonym, record.uri_prefix):
+                if self._eq(uri_prefix_synonym, record.uri_prefix, case_sensitive=case_sensitive):
                     rv[record._key].append("URI prefix match")
-                if _in(uri_prefix_synonym, record.uri_prefix_synonyms):
+                if self._in(
+                    uri_prefix_synonym, record.uri_prefix_synonyms, case_sensitive=case_sensitive
+                ):
                     rv[record._key].append("URI prefix match")
         return dict(rv)
 
@@ -435,35 +437,37 @@ class Converter:
                 raise ValueError(f"new record already exists and merge=False: {matched}")
 
             key = list(matched)[0]
-            old_record = next(r for r in self.records if r._key == key)
-            for prefix_synonym in itt.chain([record.prefix], record.prefix_synonyms):
-                if prefix_synonym in old_record._all_prefixes:
-                    continue
-                old_record.prefix_synonyms.append(prefix_synonym)
-                self.prefix_map[prefix_synonym] = old_record.uri_prefix
-                self.synonym_to_prefix[prefix_synonym] = old_record.prefix
-
-            for uri_prefix_synonym in itt.chain([record.uri_prefix], record.uri_prefix_synonyms):
-                if uri_prefix_synonym in old_record._all_uri_prefixes:
-                    continue
-                old_record.uri_prefix_synonyms.append(record.uri_prefix)
-                self.reverse_prefix_map[uri_prefix_synonym] = old_record.prefix
-                self.trie[uri_prefix_synonym] = old_record.prefix
-
+            existing_record = next(r for r in self.records if r._key == key)
+            self._merge(record, existing_record)
+            self._index(existing_record)
         else:
             # Append a new record
             self.records.append(record)
-            self.prefix_map[record.prefix] = record.uri_prefix
-            self.synonym_to_prefix[record.prefix] = record.prefix
-            for prefix_synonym in record.prefix_synonyms:
-                self.prefix_map[prefix_synonym] = record.uri_prefix
-                self.synonym_to_prefix[prefix_synonym] = record.prefix
+            self._index(record)
 
-            self.reverse_prefix_map[record.uri_prefix] = record.prefix
-            self.trie[record.uri_prefix] = record.prefix
-            for uri_prefix_synonym in record.uri_prefix_synonyms:
-                self.reverse_prefix_map[uri_prefix_synonym] = record.prefix
-                self.trie[uri_prefix_synonym] = record.prefix
+    @staticmethod
+    def _merge(record: Record, record_into: Record) -> None:
+        for prefix_synonym in itt.chain([record.prefix], record.prefix_synonyms):
+            if prefix_synonym not in record_into._all_prefixes:
+                record_into.prefix_synonyms.append(prefix_synonym)
+        record_into.prefix_synonyms.sort()
+        for uri_prefix_synonym in itt.chain([record.uri_prefix], record.uri_prefix_synonyms):
+            if uri_prefix_synonym not in record_into._all_uri_prefixes:
+                record_into.uri_prefix_synonyms.append(uri_prefix_synonym)
+        record_into.uri_prefix_synonyms.sort()
+
+    def _index(self, record: Record) -> None:
+        self.prefix_map[record.prefix] = record.uri_prefix
+        self.synonym_to_prefix[record.prefix] = record.prefix
+        for prefix_synonym in record.prefix_synonyms:
+            self.prefix_map[prefix_synonym] = record.uri_prefix
+            self.synonym_to_prefix[prefix_synonym] = record.prefix
+
+        self.reverse_prefix_map[record.uri_prefix] = record.prefix
+        self.trie[record.uri_prefix] = record.prefix
+        for uri_prefix_synonym in record.uri_prefix_synonyms:
+            self.reverse_prefix_map[uri_prefix_synonym] = record.prefix
+            self.trie[uri_prefix_synonym] = record.prefix
 
     def add_prefix(
         self,

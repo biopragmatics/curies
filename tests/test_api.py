@@ -331,6 +331,8 @@ class TestConverter(unittest.TestCase):
             }
         )
         converter = chain([c1, c2], case_sensitive=True)
+
+        self.assertEqual("CHEBI", converter.get_record("CHEBI").prefix)
         for url in [
             "http://purl.obolibrary.org/obo/CHEBI_138488",
             "https://bioregistry.io/chebi:138488",
@@ -338,10 +340,16 @@ class TestConverter(unittest.TestCase):
             "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488",
         ]:
             self.assertEqual("CHEBI:138488", converter.compress(url))
+
+        self.assertEqual("GO", converter.get_record("GO").prefix)
         self.assertEqual(
             "GO:0000001",
             converter.compress("http://purl.obolibrary.org/obo/GO_0000001"),
         )
+
+        self.assertEqual("http://purl.obolibrary.org/obo/CHEBI_", converter.get_record("CHEBI").uri_prefix)
+        self.assertIn("CHEBI", converter.prefix_map)
+        self.assertEqual("http://purl.obolibrary.org/obo/CHEBI_", converter.prefix_map["CHEBI"])
         self.assertEqual(
             "http://purl.obolibrary.org/obo/CHEBI_138488",
             converter.expand("CHEBI:138488"),
@@ -350,16 +358,20 @@ class TestConverter(unittest.TestCase):
 
     def test_combine_with_synonyms(self):
         """Test combination with synonyms."""
+        r1 = Record(prefix="GO", uri_prefix="http://purl.obolibrary.org/obo/GO_")
+        r2 = Record(prefix="go", prefix_synonyms=["GO"], uri_prefix="https://identifiers.org/go:")
+
+        c1 = Converter([])
+        c1.add_record(r1)
+        self.assertEqual(c1.records, Converter([r1]).records)
+
+        c1.add_record(r2, merge=True)
+        self.assertEqual(1, len(c1.records))
+        self.assertNotEquals(r1, c1.records[0])
+        self.assertNotEquals(r2, c1.records[0])
+
         c1 = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
-        c2 = Converter.from_extended_prefix_map(
-            [
-                {
-                    "prefix": "go",
-                    "prefix_synoynms": ["GO"],
-                    "uri_prefix": "https://identifiers.org/go:",
-                }
-            ]
-        )
+        c2 = Converter([])
         c3 = chain([c1, c2])
         self.assertEqual(1, len(c3.records))
         self.assertIn("GO", c3.prefix_map)
