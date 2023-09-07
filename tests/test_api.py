@@ -94,7 +94,9 @@ class TestAddRecord(unittest.TestCase):
     def test_extend_on_uri_prefix_match(self):
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
-        record = Record(prefix=s1, prefix_synonyms=[s3], uri_prefix=CHEBI_URI_PREFIX, uri_prefix_synonyms=[s2])
+        record = Record(
+            prefix=s1, prefix_synonyms=[s3], uri_prefix=CHEBI_URI_PREFIX, uri_prefix_synonyms=[s2]
+        )
         with self.assertRaises(ValueError):
             self.converter.add_record(record, merge=False)
         self.converter.add_record(record, merge=True)
@@ -108,7 +110,9 @@ class TestAddRecord(unittest.TestCase):
     def test_extend_on_uri_prefix_synonym_match(self):
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
-        record = Record(prefix=s1, prefix_synonyms=[s3], uri_prefix=s2, uri_prefix_synonyms=[CHEBI_URI_PREFIX])
+        record = Record(
+            prefix=s1, prefix_synonyms=[s3], uri_prefix=s2, uri_prefix_synonyms=[CHEBI_URI_PREFIX]
+        )
         with self.assertRaises(ValueError):
             self.converter.add_record(record, merge=False)
         self.converter.add_record(record, merge=True)
@@ -122,7 +126,9 @@ class TestAddRecord(unittest.TestCase):
     def test_extend_on_prefix_match_ci(self):
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
-        record = Record(prefix="chebi", prefix_synonyms=[s2], uri_prefix=s1, uri_prefix_synonyms=[s3])
+        record = Record(
+            prefix="chebi", prefix_synonyms=[s2], uri_prefix=s1, uri_prefix_synonyms=[s3]
+        )
         self.converter.add_record(record, case_sensitive=False, merge=True)
         self.assertEqual(1, len(self.converter.records))
         record = self.converter.records[0]
