@@ -383,17 +383,6 @@ class Converter:
         """Get the bijective mapping between CURIE prefixes and URI prefixes."""
         return {r.prefix: r.uri_prefix for r in self.records}
 
-    def _eq(self, a: str, b: str, case_sensitive: bool) -> bool:
-        if case_sensitive:
-            return a == b
-        return a.casefold() == b.casefold()
-
-    def _in(self, a: str, bs: Iterable[str], case_sensitive: bool) -> bool:
-        if case_sensitive:
-            return a in bs
-        nfa = a.casefold()
-        return any(nfa == b.casefold() for b in bs)
-
     def _match_record(
         self, external: Record, case_sensitive: bool = True
     ) -> Mapping[RecordKey, List[str]]:
@@ -401,27 +390,25 @@ class Converter:
         rv: DefaultDict[RecordKey, List[str]] = defaultdict(list)
         for record in self.records:
             # Match CURIE prefixes
-            if self._eq(external.prefix, record.prefix, case_sensitive=case_sensitive):
+            if _eq(external.prefix, record.prefix, case_sensitive=case_sensitive):
                 rv[record._key].append("prefix match")
-            if self._in(external.prefix, record.prefix_synonyms, case_sensitive=case_sensitive):
+            if _in(external.prefix, record.prefix_synonyms, case_sensitive=case_sensitive):
                 rv[record._key].append("prefix match")
             for prefix_synonym in external.prefix_synonyms:
-                if self._eq(prefix_synonym, record.prefix, case_sensitive=case_sensitive):
+                if _eq(prefix_synonym, record.prefix, case_sensitive=case_sensitive):
                     rv[record._key].append("prefix match")
-                if self._in(prefix_synonym, record.prefix_synonyms, case_sensitive=case_sensitive):
+                if _in(prefix_synonym, record.prefix_synonyms, case_sensitive=case_sensitive):
                     rv[record._key].append("prefix match")
 
             # Match URI prefixes
-            if self._eq(external.uri_prefix, record.uri_prefix, case_sensitive=case_sensitive):
+            if _eq(external.uri_prefix, record.uri_prefix, case_sensitive=case_sensitive):
                 rv[record._key].append("URI prefix match")
-            if self._in(
-                external.uri_prefix, record.uri_prefix_synonyms, case_sensitive=case_sensitive
-            ):
+            if _in(external.uri_prefix, record.uri_prefix_synonyms, case_sensitive=case_sensitive):
                 rv[record._key].append("URI prefix match")
             for uri_prefix_synonym in external.uri_prefix_synonyms:
-                if self._eq(uri_prefix_synonym, record.uri_prefix, case_sensitive=case_sensitive):
+                if _eq(uri_prefix_synonym, record.uri_prefix, case_sensitive=case_sensitive):
                     rv[record._key].append("URI prefix match")
-                if self._in(
+                if _in(
                     uri_prefix_synonym, record.uri_prefix_synonyms, case_sensitive=case_sensitive
                 ):
                     rv[record._key].append("URI prefix match")
@@ -438,7 +425,7 @@ class Converter:
 
             key = list(matched)[0]
             existing_record = next(r for r in self.records if r._key == key)
-            self._merge(record, existing_record)
+            self._merge(record, into=existing_record)
             self._index(existing_record)
         else:
             # Append a new record
@@ -446,16 +433,16 @@ class Converter:
             self._index(record)
 
     @staticmethod
-    def _merge(record: Record, record_into: Record) -> None:
+    def _merge(record: Record, into: Record) -> None:
         for prefix_synonym in itt.chain([record.prefix], record.prefix_synonyms):
-            if prefix_synonym not in record_into._all_prefixes:
-                record_into.prefix_synonyms.append(prefix_synonym)
-        record_into.prefix_synonyms.sort()
+            if prefix_synonym not in into._all_prefixes:
+                into.prefix_synonyms.append(prefix_synonym)
+        into.prefix_synonyms.sort()
 
         for uri_prefix_synonym in itt.chain([record.uri_prefix], record.uri_prefix_synonyms):
-            if uri_prefix_synonym not in record_into._all_uri_prefixes:
-                record_into.uri_prefix_synonyms.append(uri_prefix_synonym)
-        record_into.uri_prefix_synonyms.sort()
+            if uri_prefix_synonym not in into._all_uri_prefixes:
+                into.uri_prefix_synonyms.append(uri_prefix_synonym)
+        into.uri_prefix_synonyms.sort()
 
     def _index(self, record: Record) -> None:
         self.prefix_map[record.prefix] = record.uri_prefix
@@ -1217,6 +1204,19 @@ class Converter:
             if record.prefix == prefix:
                 return record
         return None
+
+
+def _eq(a: str, b: str, case_sensitive: bool) -> bool:
+    if case_sensitive:
+        return a == b
+    return a.casefold() == b.casefold()
+
+
+def _in(a: str, bs: Iterable[str], case_sensitive: bool) -> bool:
+    if case_sensitive:
+        return a in bs
+    nfa = a.casefold()
+    return any(nfa == b.casefold() for b in bs)
 
 
 def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:

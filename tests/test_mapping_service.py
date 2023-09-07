@@ -24,6 +24,7 @@ from curies.mapping_service.utils import (
     handle_header,
     sparql_service_available,
 )
+from tests.constants import SLOW
 
 VALID_CONTENT_TYPES = {
     *CONTENT_TYPE_TO_HANDLER,
@@ -338,6 +339,7 @@ class TestFastAPIMappingApp(ConverterMixin):
 class TestUtils(unittest.TestCase):
     """Test utilities."""
 
+    @SLOW
     def test_availability(self):
         """Test sparql service availability check."""
         self.assertTrue(

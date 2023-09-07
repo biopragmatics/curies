@@ -31,6 +31,7 @@ from curies.sources import (
     get_obo_converter,
 )
 from curies.version import get_version
+from tests.constants import SLOW
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
 GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
@@ -53,6 +54,12 @@ class TestAddRecord(unittest.TestCase):
                 },
             ]
         )
+
+    def test_duplicate_failure(self):
+        """Test failure caused by double matching."""
+        self.converter.add_prefix("GO", GO_URI_PREFIX)
+        with self.assertRaises(ValueError):
+            self.converter.add_record(Record(prefix="GO", uri_prefix=CHEBI_URI_PREFIX))
 
     def test_extend_on_prefix_match(self):
         """Test adding a new prefix in merge mode."""
@@ -243,6 +250,7 @@ class TestConverter(unittest.TestCase):
         self.assertIsInstance(record, Record)
         self.assertEqual("GO", record.prefix)
 
+    @SLOW
     def test_bioregistry(self):
         """Test loading a remote JSON-LD context."""
         for web in [True, False]:
@@ -271,6 +279,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn("hello", converter.prefix_map)
         self.assertIn("CHEBI", converter.prefix_map)
 
+    @SLOW
     def test_from_github(self):
         """Test getting a JSON-LD map from GitHub."""
         with self.assertRaises(ValueError):
@@ -282,18 +291,21 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIn("rdf", semweb_converter.prefix_map)
 
+    @SLOW
     def test_obo(self):
         """Test the OBO converter."""
         obo_converter = get_obo_converter()
         self.assertIn("CHEBI", obo_converter.prefix_map)
         self.assertNotIn("chebi", obo_converter.prefix_map)
 
+    @SLOW
     def test_monarch(self):
         """Test the Monarch converter."""
         monarch_converter = get_monarch_converter()
         self.assertIn("CHEBI", monarch_converter.prefix_map)
         self.assertNotIn("chebi", monarch_converter.prefix_map)
 
+    @SLOW
     def test_go_registry(self):
         """Test the GO registry converter."""
         go_converter = get_go_converter()
