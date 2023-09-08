@@ -3,7 +3,7 @@ Services
 .. automodule:: curies.cli
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Services:
 
    resolver_service
