@@ -68,6 +68,12 @@ class ReferenceTuple(NamedTuple):
     >>> ReferenceTuple.from_curie("chebi:1234")
     ReferenceTuple(prefix='chebi', identifier='1234')
 
+    A reference tuple can be formatted as a CURIE string with
+    the ``curie`` attribute
+
+     >>> ReferenceTuple.from_curie("chebi:1234").curie
+    'chebi:1234'
+
     Reference tuples can be sliced like regular 2-tuples
 
     >>> t = ReferenceTuple.from_curie("chebi:1234")
@@ -133,6 +139,39 @@ class Reference(BaseModel):  # type:ignore
     CURIEs). Instances of this class can also be hashed because of the
     "frozen" configuration from Pydantic (see
     https://docs.pydantic.dev/latest/usage/model_config/ for more details).
+
+    A reference can be constructed several ways:
+
+    >>> Reference(prefix="chebi", identifier="1234")
+    Reference(prefix='chebi', identifier='1234')
+
+    >>> Reference.from_curie("chebi:1234")
+    Reference(prefix='chebi', identifier='1234')
+
+    A reference can also be constructued using Pydantic's parsing utilities,
+    but keep in mind if you're using Pydantic v1 or Pydantic v2.
+
+    A reference can be formatted as a CURIE string with
+    the ``curie`` attribute
+
+     >>> Reference.from_curie("chebi:1234").curie
+    'chebi:1234'
+
+    References can't be sliced like reference tuples, but they can still
+    be accessed through attributes
+
+    >>> t = Reference.from_curie("chebi:1234")
+    >>> t.prefix
+    'chebi'
+    >>> t.identifier
+    '1234'
+
+    If you need a performance gain, you can get a :class:`ReferenceTuple`
+    using the ``pair`` attribute:
+
+    >>> reference = Reference.from_curie("chebi:1234")
+    >>> reference.pair
+    ReferenceTuple(prefix='chebi', identifier='1234')
     """
 
     prefix: str = Field(
