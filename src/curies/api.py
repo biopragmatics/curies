@@ -1128,6 +1128,21 @@ class Converter:
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
+
+        The Disease Ontology curates mappings to other semantic spaces and distributes them in the
+        tabular SSSOM format. However, they use a wide variety of non-standard prefixes for referring
+        to external vocabularies like SNOMED-CT. The Bioregistry contains these synonyms to support
+        reconciliation. The following example shows how the SSSOM mappings dataframe can be loaded
+        and this function applied to the mapping ``object_id`` column (in place).
+
+        >>> import curies
+        >>> import pandas as pd
+        >>> import itertools as itt
+        >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
+        >>> url = f"https://github.com/mapping-commons/disease-mappings/blob/{commit}/mappings/doid.sssom.tsv"
+        >>> df = pd.read_csv(url, sep="\t", comment='#')
+        >>> converter = curies.get_bioregistry_converter()
+        >>> converter.pd_standardize_curie(df, column="object_id")
         """
         df[column if target_column is None else target_column] = df[column].map(
             self.standardize_curie
@@ -1234,7 +1249,7 @@ class Converter:
         >>> import itertools as itt
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
         >>> url = f"https://github.com/mapping-commons/disease-mappings/blob/{commit}/mappings/doid.sssom.tsv"
-        >>> df = pd.read_csv(url, sep="\t")
+        >>> df = pd.read_csv(url, sep="\t", comment='#')
         >>> prefixes = {
         ...     curies.Reference.from_curie(curie).prefix
         ...     for column in ["subject_id", "predicate_id", "object_id"]
