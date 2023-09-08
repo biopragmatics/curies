@@ -1205,6 +1205,16 @@ class Converter:
                 return record
         return None
 
+    def get_subset(self, prefixes: Iterable[str]) -> "Converter":
+        """Get a converter with a subset of prefixes."""
+        prefixes = set(prefixes)
+        records = [
+            record
+            for record in self.records
+            if any(prefix in prefixes for prefix in record._all_prefixes)
+        ]
+        return Converter(records)
+
 
 def _eq(a: str, b: str, case_sensitive: bool) -> bool:
     if case_sensitive:
