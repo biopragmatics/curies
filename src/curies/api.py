@@ -1123,7 +1123,7 @@ class Converter:
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
     ) -> None:
-        """Standardize all CURIEs in the given column.
+        r"""Standardize all CURIEs in the given column.
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to standardize.
