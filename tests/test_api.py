@@ -251,7 +251,7 @@ class TestConverter(unittest.TestCase):
 
     def test_subset(self):
         """Test subsetting a converter."""
-        new_converter = self.converter.get_subset(["CHEBI"])
+        new_converter = self.converter.get_subconverter(["CHEBI"])
         self.assertEqual(1, len(new_converter.records))
         self.assertEqual({"CHEBI"}, new_converter.get_prefixes())
         self.assertEqual({"CHEBI"}, set(new_converter.bimap))
@@ -262,7 +262,7 @@ class TestConverter(unittest.TestCase):
 
     def test_empty_subset(self):
         """Test subsetting a converter and getting an empty one back."""
-        new_converter_2 = self.converter.get_subset(["NOPE"])
+        new_converter_2 = self.converter.get_subconverter(["NOPE"])
         self.assertEqual(0, len(new_converter_2.records))
 
     def test_convert(self):

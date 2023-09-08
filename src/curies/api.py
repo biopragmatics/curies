@@ -1205,7 +1205,7 @@ class Converter:
                 return record
         return None
 
-    def get_subset(self, prefixes: Iterable[str]) -> "Converter":
+    def get_subconverter(self, prefixes: Iterable[str]) -> "Converter":
         """Get a converter with a subset of prefixes."""
         prefixes = set(prefixes)
         records = [
