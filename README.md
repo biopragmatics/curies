@@ -44,9 +44,9 @@
 Idiomatic conversion between URIs and compact URIs (CURIEs).
 
 ```python
-from curies import Converter
+import curies
 
-converter = Converter.from_prefix_map({
+converter = curies.read_prefix_map({
     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
     "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
     "GO": "http://purl.obolibrary.org/obo/GO_",
@@ -84,11 +84,11 @@ having the same prefix but different URI prefixes are given, the first is retain
 is retained as a synonym:
 
 ```python
-from curies import Converter, chain
+import curies
 
-c1 = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
-c2 = Converter.from_prefix_map({"GO": "https://identifiers.org/go:"})
-converter = chain([c1, c2])
+c1 = curies.read_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+c2 = curies.read_prefix_map({"GO": "https://identifiers.org/go:"})
+converter = curies.chain([c1, c2])
 
 >>> converter.expand("GO:1234567")
 'http://purl.obolibrary.org/obo/GO_1234567'
@@ -104,11 +104,11 @@ converter = chain([c1, c2])
  can do the following:
 
 ```python
-from curies import Converter, chain, get_bioregistry_converter
+import curies
 
-overrides = Converter.from_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
-bioregistry_converter = get_bioregistry_converter()
-converter = chain([overrides, bioregistry_converter])
+overrides = curies.read_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
+bioregistry_converter = curies.get_bioregistry_converter()
+converter = curies.chain([overrides, bioregistry_converter])
 
 >>> converter.expand("pubmed:1234")
 'https://identifiers.org/pubmed:1234'

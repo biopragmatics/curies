@@ -44,6 +44,8 @@ __all__ = [
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "chain",
+    "read_extended_prefix_map",
+    "read_prefix_map",
 ]
 
 X = TypeVar("X")
@@ -1234,10 +1236,10 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     would like to specify a custom URI prefix (e.g., using Identifiers.org), you
     can do the following:
 
-    >>> from curies import Converter, chain, get_bioregistry_converter
-    >>> overrides = Converter.from_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
-    >>> bioregistry_converter = get_bioregistry_converter()
-    >>> converter = chain([overrides, bioregistry_converter])
+    >>> import curies
+    >>> bioregistry_converter = curies.get_bioregistry_converter()
+    >>> overrides = curies.read_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
+    >>> converter = curies.chain([overrides, bioregistry_converter])
     >>> converter.bimap["pubmed"]
     'https://identifiers.org/pubmed:'
 
@@ -1245,9 +1247,7 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     with a simple prefix map, you need to make sure the URI prefix matches in each converter,
     otherwise you will get duplicates:
 
-    >>> from curies import Converter, chain, get_bioregistry_converter
-    >>> overrides = Converter.from_prefix_map({"PMID": "https://www.ncbi.nlm.nih.gov/pubmed/"})
-    >>> bioregistry_converter = get_bioregistry_converter()
+    >>> overrides = curies.read_prefix_map({"PMID": "https://www.ncbi.nlm.nih.gov/pubmed/"})
     >>> converter = chain([overrides, bioregistry_converter])
     >>> converter.bimap["PMID"]
     'https://www.ncbi.nlm.nih.gov/pubmed/'
@@ -1255,8 +1255,9 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     A safer way is to specify your override using an extended prefix map, which can tie together
     prefix synonyms and URI prefix synonyms:
 
+    >>> import curies
     >>> from curies import Converter, chain, get_bioregistry_converter
-    >>> overrides = Converter.from_extended_prefix_map([
+    >>> overrides = curies.read_extended_prefix_map([
     ...     {
     ...         "prefix": "PMID",
     ...         "prefix_synonyms": ["pubmed", "PubMed"],
@@ -1267,17 +1268,16 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     ...         ],
     ...     },
     ... ])
-    >>> converter = chain([overrides, bioregistry_converter])
+    >>> converter = curies.chain([overrides, bioregistry_converter])
     >>> converter.bimap["PMID"]
     'https://www.ncbi.nlm.nih.gov/pubmed/'
 
     Chain prioritizes based on the order given. Therefore, if two prefix maps
     having the same prefix but different URI prefixes are given, the first is retained
 
-    >>> from curies import Converter, chain
-    >>> c1 = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
-    >>> c2 = Converter.from_prefix_map({"GO": "https://identifiers.org/go:"})
-    >>> c3 = chain([c1, c2])
+    >>> c1 = curies.read_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+    >>> c2 = curies.read_prefix_map({"GO": "https://identifiers.org/go:"})
+    >>> c3 = curies.chain([c1, c2])
     >>> c3.prefix_map["GO"]
     'http://purl.obolibrary.org/obo/GO_'
     """
@@ -1288,3 +1288,96 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
         for record in converter.records:
             rv.add_record(record, case_sensitive=case_sensitive, merge=True)
     return rv
+
+
+def read_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) -> Converter:
+    """Get a converter from a simple prefix map.
+
+    :param prefix_map:
+        A mapping whose keys are prefixes and whose values are the corresponding *URI prefixes*).
+
+        .. note::
+
+            It's possible that some *URI prefixes* (values in this mapping)
+            partially overlap (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
+            be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
+            will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
+    :param kwargs: Keyword arguments to pass to :func:`Converter.__init__`
+    :returns:
+        A converter
+
+    >>> import curies
+    >>> converter = curies.read_prefix_map({
+    ...     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+    ... })
+    >>> converter.expand("CHEBI:138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+    >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
+    'CHEBI:138488'
+    """
+    return Converter.from_prefix_map(prefix_map, **kwargs)
+
+
+def read_extended_prefix_map(
+    records: LocationOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
+) -> Converter:
+    """Get a converter from a list of dictionaries by creating records out of them.
+
+    :param records: An iterable of :class:`Record` objects or dictionaries that will
+        get converted into record objects
+    :param kwargs: Keyword arguments to pass to the parent class's init
+    :returns: A converter
+
+    An extended prefix map is a list of dictionaries containing four keys:
+
+    1. A ``prefix`` string
+    2. A ``uri_prefix`` string
+    3. An optional list of strings ``prefix_synonyms``
+    4. An optional list of strings ``uri_prefix_synonyms``
+
+    Across the whole list of dictionaries, there should be uniqueness within
+    the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
+    within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
+
+    >>> import curies
+    >>> epm = [
+    ...     {
+    ...         "prefix": "CHEBI",
+    ...         "prefix_synonyms": ["chebi", "ChEBI"],
+    ...         "uri_prefix": "http://purl.obolibrary.org/obo/CHEBI_",
+    ...         "uri_prefix_synonyms": ["https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:"],
+    ...     },
+    ...     {
+    ...         "prefix": "GO",
+    ...         "uri_prefix": "http://purl.obolibrary.org/obo/GO_",
+    ...     },
+    ... ]
+    >>> converter = curies.read_extended_prefix_map(epm)
+
+    Expand using the preferred/canonical prefix:
+
+    >>> converter.expand("CHEBI:138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+    Expand using a prefix synonym:
+
+    >>> converter.expand("chebi:138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+    Compress using the preferred/canonical URI prefix:
+
+    >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
+    'CHEBI:138488'
+
+    Compressing using a URI prefix synonym:
+
+    >>> converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
+    'CHEBI:138488'
+
+    Example from a remote source:
+
+    >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.epm.json"
+    >>> converter = curies.read_extended_prefix_map(url)
+    """
+    return Converter.from_extended_prefix_map(records, **kwargs)

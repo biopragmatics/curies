@@ -11,6 +11,8 @@ from .api import (
     Reference,
     ReferenceTuple,
     chain,
+    read_prefix_map,
+    read_extended_prefix_map,
 )
 from .sources import (
     get_bioregistry_converter,
@@ -31,6 +33,9 @@ __all__ = [
     "DuplicatePrefixes",
     "chain",
     "get_version",
+    # i/o
+    "read_prefix_map",
+    "read_extended_prefix_map",
     # sources
     "get_obo_converter",
     "get_prefixcommons_converter",
