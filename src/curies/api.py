@@ -1139,7 +1139,7 @@ class Converter:
         >>> import pandas as pd
         >>> import itertools as itt
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
-        >>> url = f"https://github.com/mapping-commons/disease-mappings/blob/{commit}/mappings/doid.sssom.tsv"
+        >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
         >>> df = pd.read_csv(url, sep="\t", comment='#')
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
@@ -1248,7 +1248,7 @@ class Converter:
         >>> import pandas as pd
         >>> import itertools as itt
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
-        >>> url = f"https://github.com/mapping-commons/disease-mappings/blob/{commit}/mappings/doid.sssom.tsv"
+        >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
         >>> df = pd.read_csv(url, sep="\t", comment='#')
         >>> prefixes = {
         ...     curies.Reference.from_curie(curie).prefix
