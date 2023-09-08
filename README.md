@@ -60,33 +60,6 @@ converter = curies.read_prefix_map({
 
 Full documentation is available at [curies.readthedocs.io](https://curies.readthedocs.io).
 
-### Loading Prefix Maps
-
-All loader function work on local file paths, remote URLs, and pre-loaded
-data structures. For example, a converter can be instantiated from a web-based
-resource in JSON-LD format:
-
-```python
-from curies import Converter
-
-url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
-converter = Converter.from_jsonld(url)
-```
-
-Several converters can be instantiated from pre-defined web-based resources:
-
-```python
-import curies
-
-# Uses the Bioregistry, an integrative, comprehensive registry
-bioregistry_converter = curies.get_bioregistry_converter()
-
-# Uses the OBO Foundry, a registry of ontologies
-obo_converter = curies.get_obo_converter()
-
-# Uses the Monarch Initative's project-specific context
-monarch_converter = curies.get_monarch_converter()
-```
 
 ### Bulk Operations
 
