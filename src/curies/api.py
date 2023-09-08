@@ -1123,11 +1123,26 @@ class Converter:
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
     ) -> None:
-        """Standardize all CURIEs in the given column.
+        r"""Standardize all CURIEs in the given column.
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
+
+        The Disease Ontology curates mappings to other semantic spaces and distributes them in the
+        tabular SSSOM format. However, they use a wide variety of non-standard prefixes for referring
+        to external vocabularies like SNOMED-CT. The Bioregistry contains these synonyms to support
+        reconciliation. The following example shows how the SSSOM mappings dataframe can be loaded
+        and this function applied to the mapping ``object_id`` column (in place).
+
+        >>> import curies
+        >>> import pandas as pd
+        >>> import itertools as itt
+        >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
+        >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
+        >>> df = pd.read_csv(url, sep="\t", comment='#')
+        >>> converter = curies.get_bioregistry_converter()
+        >>> converter.pd_standardize_curie(df, column="object_id")
         """
         df[column if target_column is None else target_column] = df[column].map(
             self.standardize_curie
@@ -1204,6 +1219,52 @@ class Converter:
             if record.prefix == prefix:
                 return record
         return None
+
+    def get_subconverter(self, prefixes: Iterable[str]) -> "Converter":
+        r"""Get a converter with a subset of prefixes.
+
+        :param prefixes: A list of prefixes to keep from this converter. These can
+            correspond either to preferred CURIE prefixes or CURIE prefix synonyms.
+        :returns: A new, slimmed down converter
+
+        This functionality is useful for downstream applications like the following:
+
+        1. You load a comprehensive extended prefix map, e.g., from the Bioregistry using
+           :func:`curies.get_bioregistry_converter()`.
+        2. You load some data that conforms to this prefix map by convention. This
+           is often the case for semantic mappings stored in the SSSOM format
+        3. You extract the list of prefixes _actually_ used within your data
+        4. You subset the detailed extended prefix map to only include prefixes
+           relevant for your data
+        5. You make some kind of output of the subsetted extended prefix map to
+           go with your data. Effectively, this is a way of reconciling data. This
+           is especially effective when using the Bioregistry or other comprehensive
+           extended prefix maps.
+
+        Here's a concrete example of doing this (which also includes a bit of data science)
+        to do this on the SSSOM mappings from the Disease Ontology project.
+
+        >>> import curies
+        >>> import pandas as pd
+        >>> import itertools as itt
+        >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
+        >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
+        >>> df = pd.read_csv(url, sep="\t", comment='#')
+        >>> prefixes = {
+        ...     curies.Reference.from_curie(curie).prefix
+        ...     for column in ["subject_id", "predicate_id", "object_id"]
+        ...     for curie in df[column]
+        ... }
+        >>> converter = curies.get_bioregistry_converter()
+        >>> slim_converter = converter.get_subconverter(prefixes)
+        """
+        prefixes = set(prefixes)
+        records = [
+            record
+            for record in self.records
+            if any(prefix in prefixes for prefix in record._all_prefixes)
+        ]
+        return Converter(records)
 
 
 def _eq(a: str, b: str, case_sensitive: bool) -> bool:
