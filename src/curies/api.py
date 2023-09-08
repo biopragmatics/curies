@@ -53,12 +53,45 @@ LocationOr = Union[str, Path, X]
 
 
 class ReferenceTuple(NamedTuple):
-    """A reference to an entity in a given identifier space.
+    """A pair of a prefix (corresponding to a semantic space) and a local unique identifier in that semantic space.
 
-    This derives from the "named tuple" which means that it acts
+    This class derives from the "named tuple" which means that it acts
     like a tuple in most senses - it can be hashed and unpacked
     like most other tuples. Underneath, it has a C implementation
     and is very efficient.
+
+    A reference tuple can be constructed two ways:
+
+    >>> ReferenceTuple("chebi", "1234")
+    ReferenceTuple(prefix='chebi', identifier='1234')
+
+    >>> ReferenceTuple.from_curie("chebi:1234")
+    ReferenceTuple(prefix='chebi', identifier='1234')
+
+    Reference tuples can be sliced like regular 2-tuples
+
+    >>> t = ReferenceTuple.from_curie("chebi:1234")
+    >>> t[0]
+    'chebi'
+    >>> t[1]
+    '1234'
+
+    Similarly, reference tuples can be unpacked like regular 2-tuples
+
+    >>> prefix, identifier = ReferenceTuple.from_curie("chebi:1234")
+    >>> prefix
+    'chebi'
+    >>> identifier
+    '1234'
+
+    Because they are named tuples, reference tuples can be accessed
+    with attributes
+
+    >>> t = ReferenceTuple.from_curie("chebi:1234")
+    >>> t.prefix
+    'chebi'
+    >>> t.identifier
+    '1234'
     """
 
     prefix: str

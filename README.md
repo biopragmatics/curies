@@ -48,10 +48,7 @@ import curies
 
 converter = curies.read_prefix_map({
     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-    "GO": "http://purl.obolibrary.org/obo/GO_",
     # ... and so on
-    "OBO": "http://purl.obolibrary.org/obo/",
 })
 
 >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
@@ -59,18 +56,7 @@ converter = curies.read_prefix_map({
 
 >>> converter.expand("CHEBI:1")
 'http://purl.obolibrary.org/obo/CHEBI_1'
-
-# Unparsable
->>> assert converter.compress("http://example.com/missing:0000000") is None
->>> assert converter.expand("missing:0000000") is None
 ```
-
-When some URI prefixes are partially overlapping (e.g.,
-`http://purl.obolibrary.org/obo/GO_` for `GO` and
-`http://purl.obolibrary.org/obo/` for ``OBO``), the longest
-URI prefix will always be matched. For example, compressing
-`http://purl.obolibrary.org/obo/GO_0032571`
-will return `GO:0032571` instead of `OBO:GO_0032571`.
 
 Full documentation is available at [curies.readthedocs.io](https://curies.readthedocs.io).
 
@@ -113,44 +99,6 @@ converter = curies.chain([overrides, bioregistry_converter])
 >>> converter.expand("pubmed:1234")
 'https://identifiers.org/pubmed:1234'
 ```
-
-### Standardization
-
-The `curies.Converter` data structure supports prefix and URI prefix synonyms.
-The following example demonstrates
-using these synonyms to support standardizing prefixes, CURIEs, and URIs. Note below,
-the colloquial prefix `gomf`, sometimes used to represent the subspace in the
-[Gene Ontology (GO)](https://obofoundry.org/ontology/go) corresponding to molecular
-functions, is upgraded to the preferred prefix, `GO`.
-
-```python
-from curies import Converter, Record
-
-converter = Converter([
-    Record(
-        prefix="GO",
-        prefix_synonyms=["gomf", "gocc", "gobp", "go", ...],
-        uri_prefix="http://purl.obolibrary.org/obo/GO_",
-        uri_prefix_synonyms=[
-            "http://amigo.geneontology.org/amigo/term/GO:",
-            "https://identifiers.org/GO:",
-            ...
-        ],
-    ),
-    # And so on
-    ...
-])
-
->>> converter.standardize_prefix("gomf")
-'GO'
->>> converter.standardize_curie('gomf:0032571')
-'GO:0032571'
->>> converter.standardize_uri('http://amigo.geneontology.org/amigo/term/GO:0032571')
-'http://purl.obolibrary.org/obo/GO_0032571'
-```
-
-Note: non-standard URIs can still be parsed with `converter.parse_uri()` and compressed
-into CURIEs with `converter.compress()`.
 
 ### Loading Prefix Maps
 
