@@ -69,8 +69,10 @@ Directly from a data structure
     This correctly handles the more complex data structures including ``@prefix`` noted in
     `here <https://github.com/OBOFoundry/OBOFoundry.github.io/issues/2410>`_.
 
+Modifying a Context
+-------------------
 Incremental Converters
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 As suggested in `#13 <https://github.com/cthoyt/curies/issues/33>`_, new data
 can be added to an existing converter with either
 :meth:`curies.Converter.add_prefix` or :meth:`curies.Converter.add_record`.
@@ -113,7 +115,7 @@ for conflicts and merging can be made to be case insensitive by setting ``case_s
 Such a merging strategy is the basis for wholesale merging of converters, described below.
 
 Chaining and Merging
---------------------
+~~~~~~~~~~~~~~~~~~~~
 This package implements a faultless chain operation :func:`curies.chain` that is configurable for case
 sensitivity and fully considers all synonyms.
 
@@ -229,8 +231,10 @@ functions, is upgraded to the preferred prefix, ``GO``.
 Note: non-standard URIs can still be parsed with :meth:`curies.Converter.parse_uri` and compressed
 into CURIEs with :meth:`curies.Converter.compress`.
 
+Tools for Developers and Semantic Engineers
+-------------------------------------------
 Reusable data structures for references
----------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 While URIs and CURIEs are often represented as strings, for many programmatic applications,
 it is preferrable to pre-parse them into a pair of prefix corresponding to a semantic space
 and local unique identifier from that semantic space. ``curies`` provides two complementary
@@ -246,7 +250,7 @@ this data type and providing utilities to flip-flop back and forth to :mod:`curi
 which is preferable in data validation (such as when parsing OBO ontologies)
 
 Integrating with :mod:`rdflib`
-------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 RDFlib is a pure Python package for manipulating RDF data. The following example shows how to bind the
 extended prefix map from a :class:`curies.Converter` to a graph (:class:`rdflib.Graph`).
 
