@@ -2,9 +2,35 @@ Getting Started
 ===============
 Loading a Context
 -----------------
+There are several ways to load a context with this package, including:
+
+1. pre-defined contexts
+2. contexts encoded in the standard prefix map format
+3. contexts encoded in the standard JSON-LD context format
+4. contexts encoded in the extended prefix map format
+
 Loading a pre-defined context
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Several converters can be instantiated from pre-defined web-based resources:
+There exist many registries of semantic spaces that include CURIE
+prefixes, URI prefixes, sometimes synonyms, and other associated
+metadata. The Bioregistry provides a
+`detailed overview <https://bioregistry.io/related>`_ of the registries available.
+This package exposes a few high quality registries that are internally consistent
+(i.e., are bijective).
+
+==============  ==========================================
+Name            Function
+==============  ==========================================
+Bioregistry     :func:`curies.get_bioregistry_converter`
+OBO Foundry     :func:`curies.get_obo_converter`
+Prefix Commons  :func:`curies.get_prefixcommons_converter`
+Monarch         :func:`curies.get_monarch_converter`
+Gene Ontology   :func:`curies.get_go_converter`
+==============  ==========================================
+
+These functions can be called directly to instantiate the :class:`curies.Converter`
+class, which is used for compression, expansion, standardization, and other operations
+below.
 
 .. code-block:: python
 
