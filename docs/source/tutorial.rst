@@ -93,6 +93,89 @@ the dictionary, iteration, or any other factors.
     >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
     'CHEBI:1'
 
+Incremental Converters
+----------------------
+As suggested in `#13 <https://github.com/cthoyt/curies/issues/33>`_, new data
+can be added to an existing converter with either
+:meth:`curies.Converter.add_prefix` or :meth:`curies.Converter.add_record`.
+For example, a CURIE and URI prefix for HGNC can be added to the OBO Foundry
+converter with the following:
+
+.. code-block::
+
+    import curies
+
+    converter = curies.get_obo_converter()
+    converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
+
+Similarly, an empty converter can be instantiated using an empty list
+for the `records` argument and prefixes can be added one at a time
+(note this currently does not allow for adding synonyms separately):
+
+.. code-block::
+
+    import curies
+
+    converter = curies.Converter(records=[])
+    converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
+
+A more flexible version of this operation first involves constructing
+a :class:`curies.Record` object:
+
+.. code-block::
+
+    import curies
+
+    converter = curies.get_obo_converter()
+    record = curies.Record(prefix="hgnc", uri_prefix="https://bioregistry.io/hgnc:")
+    converter.add_record(record)
+
+By default, both of these operations will fail if the new content conflicts with existing content.
+If desired, the ``merge`` argument can be set to true to enable merging. Further, checking
+for conflicts and merging can be made to be case insensitive by setting ``case_sensitive`` to false.
+
+Such a merging strategy is the basis for wholesale merging of converters, described below.
+
+Chaining and Merging
+--------------------
+This package implements a faultless chain operation :func:`curies.chain` that is configurable for case
+sensitivity and fully considers all synonyms.
+
+:func:`curies.chain` prioritizes based on the order given. Therefore, if two prefix maps
+having the same prefix but different URI prefixes are given, the first is retained. The second
+is retained as a synonym
+
+.. code-block:: python
+
+    import curies
+
+    c1 = curies.read_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+    c2 = curies.read_prefix_map({"GO": "https://identifiers.org/go:"})
+    converter = curies.chain([c1, c2])
+
+    >>> converter.expand("GO:1234567")
+    'http://purl.obolibrary.org/obo/GO_1234567'
+    >>> converter.compress("http://purl.obolibrary.org/obo/GO_1234567")
+    'GO:1234567'
+    >>> converter.compress("https://identifiers.org/go:1234567")
+    'GO:1234567'
+
+Chain is the perfect tool if you want to override parts of an existing extended
+prefix map. For example, if you want to use most of the Bioregistry, but you
+would like to specify a custom URI prefix (e.g., using Identifiers.org), you
+can do the following
+
+.. code-block:: python
+
+    import curies
+
+    overrides = curies.read_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
+    bioregistry_converter = curies.get_bioregistry_converter()
+    converter = curies.chain([overrides, bioregistry_converter])
+
+    >>> converter.expand("pubmed:1234")
+    'https://identifiers.org/pubmed:1234'
+
 Integrating with :mod:`rdflib`
 ------------------------------
 RDFlib is a pure Python package for manipulating RDF data. The following example shows how to bind the

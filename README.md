@@ -60,46 +60,6 @@ converter = curies.read_prefix_map({
 
 Full documentation is available at [curies.readthedocs.io](https://curies.readthedocs.io).
 
-### Chaining
-
-This package implements a faultless chain operation `curies.chain` that is configurable for case
-sensitivity and fully considers all synonyms.
-
-`chain()` prioritizes based on the order given. Therefore, if two prefix maps
-having the same prefix but different URI prefixes are given, the first is retained. The second
-is retained as a synonym:
-
-```python
-import curies
-
-c1 = curies.read_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
-c2 = curies.read_prefix_map({"GO": "https://identifiers.org/go:"})
-converter = curies.chain([c1, c2])
-
->>> converter.expand("GO:1234567")
-'http://purl.obolibrary.org/obo/GO_1234567'
->>> converter.compress("http://purl.obolibrary.org/obo/GO_1234567")
-'GO:1234567'
->>> converter.compress("https://identifiers.org/go:1234567")
-'GO:1234567'
-```
-
- Chain is the perfect tool if you want to override parts of an existing extended
- prefix map. For example, if you want to use most of the Bioregistry, but you
- would like to specify a custom URI prefix (e.g., using Identifiers.org), you
- can do the following:
-
-```python
-import curies
-
-overrides = curies.read_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
-bioregistry_converter = curies.get_bioregistry_converter()
-converter = curies.chain([overrides, bioregistry_converter])
-
->>> converter.expand("pubmed:1234")
-'https://identifiers.org/pubmed:1234'
-```
-
 ### Loading Prefix Maps
 
 All loader function work on local file paths, remote URLs, and pre-loaded

@@ -11,8 +11,8 @@ from .api import (
     Reference,
     ReferenceTuple,
     chain,
-    read_prefix_map,
     read_extended_prefix_map,
+    read_prefix_map,
 )
 from .sources import (
     get_bioregistry_converter,

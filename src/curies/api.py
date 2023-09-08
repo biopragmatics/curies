@@ -71,7 +71,7 @@ class ReferenceTuple(NamedTuple):
     A reference tuple can be formatted as a CURIE string with
     the ``curie`` attribute
 
-     >>> ReferenceTuple.from_curie("chebi:1234").curie
+    >>> ReferenceTuple.from_curie("chebi:1234").curie
     'chebi:1234'
 
     Reference tuples can be sliced like regular 2-tuples
@@ -154,7 +154,7 @@ class Reference(BaseModel):  # type:ignore
     A reference can be formatted as a CURIE string with
     the ``curie`` attribute
 
-     >>> Reference.from_curie("chebi:1234").curie
+    >>> Reference.from_curie("chebi:1234").curie
     'chebi:1234'
 
     References can't be sliced like reference tuples, but they can still
@@ -269,18 +269,26 @@ class Record(BaseModel):  # type:ignore
         )
 
 
+class DuplicateSummary(NamedTuple):
+    """A triple representing two records that are duplicated, either based on a CURIE or URI prefix."""
+
+    record_1: Record
+    record_2: Record
+    prefix: str
+
+
 class DuplicateValueError(ValueError):
     """An error raised with constructing a converter with data containing duplicate values."""
 
-    def __init__(self, duplicates: List[Tuple[Record, Record, str]]) -> None:
+    def __init__(self, duplicates: List[DuplicateSummary]) -> None:
         """Initialize the error."""
         self.duplicates = duplicates
 
     def _str(self) -> str:
-        s = ""
-        for r1, r2, p in self.duplicates:
-            s += f"\n{p}:\n\t{r1}\n\t{r2}\n"
-        return s
+        rv = ""
+        for duplicate in self.duplicates:
+            rv += f"\n{duplicate.prefix}:\n\t{duplicate.record_1}\n\t{duplicate.record_2}\n"
+        return rv
 
 
 class DuplicateURIPrefixes(DuplicateValueError):
@@ -309,18 +317,18 @@ class CompressionError(ConversionError):
     """An error raised on expansion if the URI prefix can't be matched."""
 
 
-def _get_duplicate_uri_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
+def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]:
     return [
-        (record_1, record_2, uri_prefix)
+        DuplicateSummary(record_1, record_2, uri_prefix)
         for record_1, record_2 in itt.combinations(records, 2)
         for uri_prefix, up2 in itt.product(record_1._all_uri_prefixes, record_2._all_uri_prefixes)
         if uri_prefix == up2
     ]
 
 
-def _get_duplicate_prefixes(records: List[Record]) -> List[Tuple[Record, Record, str]]:
+def _get_duplicate_prefixes(records: List[Record]) -> List[DuplicateSummary]:
     return [
-        (record_1, record_2, prefix)
+        DuplicateSummary(record_1, record_2, prefix)
         for record_1, record_2 in itt.combinations(records, 2)
         for prefix, p2 in itt.product(record_1._all_prefixes, record_2._all_prefixes)
         if prefix == p2
@@ -393,29 +401,6 @@ class Converter:
 
         # Example with missing prefix:
         >>> converter.expand("missing:0000000")
-
-    Incremental Converters
-    ----------------------
-    As suggested in `#13 <https://github.com/cthoyt/curies/issues/33>`_, new prefixes
-    can be added to an existing converter like in the following:
-
-    .. code-block::
-
-        import curies
-
-        converter = curies.get_obo_converter()
-        converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
-
-    Similarly, an empty converter can be instantiated using an empty list
-    for the `records` argument and prefixes can be added one at a time
-    (note this currently does not allow for adding synonyms separately):
-
-    .. code-block::
-
-        import curies
-
-        converter = curies.Converter(records=[])
-        converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
     """
 
     #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
