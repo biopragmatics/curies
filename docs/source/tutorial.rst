@@ -366,6 +366,40 @@ functions, is upgraded to the preferred prefix, ``GO``.
 Note: non-standard URIs can still be parsed with :meth:`curies.Converter.parse_uri` and compressed
 into CURIEs with :meth:`curies.Converter.compress`.
 
+Bulk Operations
+---------------
+Apply in bulk to a :class:`pandas.DataFrame` with :meth:`curies.Converter.pd_expand` and
+:meth:`curies.Converter.pd_compress`:
+
+.. code-block:: python
+
+    import curies
+    import pandas as pd
+
+    df = pd.read_csv(...)
+    converter = curies.get_obo_converter()
+    converter.pd_compress(df, column=0)
+    converter.pd_expand(df, column=0)
+
+    # standardization operations
+    converter.pd_standardize_prefix(df, column=0)
+    converter.pd_standardize_curie(df, column=0)
+    converter.pd_standardize_uri(df, column=0)
+
+Apply in bulk to a CSV file with :meth:`curies.Converter.file_expand` and
+:meth:`curies.Converter.file_compress` (defaults to using tab separator):
+
+.. code-block:: python
+
+    import curies
+
+    path = ...
+    converter = curies.get_obo_converter()
+    # modifies file in place
+    converter.file_compress(path, column=0)
+    # modifies file in place
+    converter.file_expand(path, column=0)
+
 Tools for Developers and Semantic Engineers
 -------------------------------------------
 Reusable data structures for references

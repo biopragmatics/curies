@@ -60,41 +60,6 @@ converter = curies.read_prefix_map({
 
 Full documentation is available at [curies.readthedocs.io](https://curies.readthedocs.io).
 
-
-### Bulk Operations
-
-Apply in bulk to a `pandas.DataFrame` with `Converter.pd_expand` and
-`Converter.pd_compress`:
-
-```python
-import curies
-import pandas as pd
-
-df = pd.read_csv(...)
-obo_converter = curies.get_obo_converter()
-obo_converter.pd_compress(df, column=0)
-obo_converter.pd_expand(df, column=0)
-
-# standardization operations
-obo_converter.pd_standardize_prefix(df, column=0)
-obo_converter.pd_standardize_curie(df, column=0)
-obo_converter.pd_standardize_uri(df, column=0)
-```
-
-Apply in bulk to a CSV file with `Converter.file_expand` and
-`Converter.file_compress` (defaults to using tab separator):
-
-```python
-import curies
-
-path = ...
-obo_converter = curies.get_obo_converter()
-# modifies file in place
-obo_converter.file_compress(path, column=0)
-# modifies file in place
-obo_converter.file_expand(path, column=0)
-```
-
 ### CLI Usage
 
 This package comes with a built-in CLI for running a resolver web application or a IRI mapper web application:
