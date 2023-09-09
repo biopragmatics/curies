@@ -47,53 +47,162 @@ below.
 
 Loading Prefix Maps
 ~~~~~~~~~~~~~~~~~~~
+A prefix map is a dictionary whose keys are CURIE prefixes and values are URI prefixes. An abridged example
+using OBO Foundry preferred CURIE prefixes and URI prefixes is
+
+.. code-block:: json
+
+   {
+       "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+       "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+       "GO": "http://purl.obolibrary.org/obo/GO_"
+   }
+
+Prefix maps can be loaded using the :func:`curies.read_prefix_map`. First,
+a prefix map can be loaded directly from a Python data structure like in
+
+.. code-block:: python
+
+    import curies
+
+    prefix_map = {
+        "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"
+    }
+    converter = curies.read_prefix_map(data)
+
+This function also accepts a string with a HTTP, HTTPS, or FTP path to a remote file as well as a local file path.
+
+.. warning::
+
+    Ideally, prefix maps are *bijective*, meaning that both the keys and values are unique.
+    The Python dictionary data structure ensures that keys are unique, but sometimes values are repeated. For example,
+    the CURIE prefixes ``DC`` and ``DCTERMS`` are often used interchangeably with the URI prefix for
+    the `Dublin Core Metadata Iniative Terms <https://www.dublincore.org/specifications/dublin-core/dcmi-terms>`_.
+    Therefore, many prefix maps are not bijective like
+
+    .. code-block:: json
+
+       {
+           "DC": "http://purl.org/dc/terms/",
+           "DCTERMS": "http://purl.org/dc/terms/"
+       }
+
+    If you load a prefix map that is not bijective, it can have unintended consequences. Therefore,
+    an error is thrown. You can pass ``strict=False`` if you don't mind having unsafe data. A better data
+    structure for situations when there can be CURIE synonyms or even URI prefix synonyms is
+    the *extended prefix map* (see below).
 
 Loading Extended Prefix Maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Extended prefix maps (EPMs) address the issues with prefix maps by including explicit
+fields for CURIE prefix synonyms and URI prefix synonyms while maintaining an explicit
+field for the preferred CURIE prefix and URI prefix. An abbreviated example (just
+containing an entry for ChEBI) looks like:
+
+.. code-block:: json
+
+   [
+       {
+           "prefix": "CHEBI",
+           "uri_prefix": "http://purl.obolibrary.org/obo/CHEBI_",
+           "prefix_synonyms": ["chebi"],
+           "uri_prefix_synonyms": [
+               "https://identifiers.org/chebi:"
+           ]
+       }
+   ]
+
+Extended prefix maps can be loaded with :func:`curies.read_extended_prefix_map`. First,
+a prefix map can be loaded directly from a Python data structure like in
+
+.. code-block:: python
+
+    import curies
+
+    epm = [
+        {
+            "prefix": "CHEBI",
+            "uri_prefix": "http://purl.obolibrary.org/obo/CHEBI_",
+            "prefix_synonyms": ["chebi"],
+            "uri_prefix_synonyms": [
+                "https://identifiers.org/chebi:"
+            ]
+        }
+    ]
+    converter = curies.read_extended_prefix_map(data)
+
+An extended prefix map can be loaded from a remote file via HTTP, HTTPS, or FTP with
+
+.. code-block:: python
+
+    import curies
+
+    url = "https://raw.githubusercontent.com/mapping-commons/sssom-py/master/src/sssom/obo.epm.json"
+    converter = curies.read_extended_prefix_map(url)
+
+Similarly, an extended prefix map stored in a local file can be loaded with the following.
+This works with both :class:`pathlib.Path` and vanilla strings.
+
+.. code-block:: python
+
+    from pathlib import Path
+    from urllib.request import urlretrieve
+
+    import curies
+
+    url = "https://raw.githubusercontent.com/mapping-commons/sssom-py/master/src/sssom/obo.epm.json"
+    path = Path.home().joinpath("Downloads", "obo.epm.json")
+    urlretrieve(url, path)
+    converter = curies.read_extended_prefix_map(path)
 
 Loading JSON-LD Contexts
 ~~~~~~~~~~~~~~~~~~~~~~~~
-All loader function work on local file paths, remote URLs, and pre-loaded
-data structures. For example, a converter can be instantiated from a web-based
-resource in JSON-LD format:
+A `JSON-LD context <https://niem.github.io/json/reference/json-ld/context/>`_
+allows for embedding of a simple prefix map within a linked data document.
+They can be identified hiding in all sorts of JSON (or JSON-like) content
+with the key ``@context``. JSON-LD contexts can be loaded using :meth:`curies.Converter.from_jsonld`.
+
+First, a JSON-LD context can be loaded directly from a Python data structure like in
 
 .. code-block:: python
 
-    from curies import Converter
-
-    url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
-    converter = Converter.from_jsonld(url)
-
-Local file path (this works with :class:`pathlib.Path` or vanilla strings)
-
-.. code-block:: python
-
-    from urllib.request import urlretrieve
-    from curies import Converter
-    from pathlib import Path
-
-    url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
-    path = Path.home().joinpath("Downloads", "semweb.context.jsonld")
-    urlretrieve(url, path)
-    converter = Converter.from_jsonld(path)
-
-Directly from a data structure
-
-.. code-block:: python
-
-    from curies import Converter
+    import curies
 
     data = {
         "@context": {
             "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"
         }
     }
-    converter = Converter.from_jsonld(data)
+    converter = curies.read_jsonld_context(data)
 
 .. note::
 
     This correctly handles the more complex data structures including ``@prefix`` noted in
     `here <https://github.com/OBOFoundry/OBOFoundry.github.io/issues/2410>`_.
+
+A JSON-LD context can be loaded from a remote file via HTTP, HTTPS, or FTP with
+
+.. code-block:: python
+
+    import curies
+
+    url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
+    converter = curies.read_jsonld_context(url)
+
+A JSON-LD context stored in a local file can be loaded with the following.
+This works with both :class:`pathlib.Path` and vanilla strings.
+
+.. code-block:: python
+
+    from pathlib import Path
+    from urllib.request import urlretrieve
+
+    import curies
+
+    url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
+    path = Path.home().joinpath("Downloads", "semweb.context.jsonld")
+    urlretrieve(url, path)
+    converter = curies.read_jsonld_context(path)
 
 Modifying a Context
 -------------------

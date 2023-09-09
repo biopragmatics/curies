@@ -46,6 +46,7 @@ __all__ = [
     "chain",
     "read_extended_prefix_map",
     "read_prefix_map",
+    "read_jsonld_context",
 ]
 
 X = TypeVar("X")
@@ -577,9 +578,15 @@ class Converter:
     ) -> "Converter":
         """Get a converter from a list of dictionaries by creating records out of them.
 
-        :param records: An iterable of :class:`Record` objects or dictionaries that will
-            get converted into record objects
-        :param kwargs: Keyword arguments to pass to the parent class's init
+        :param records:
+             One of the following:
+
+            - An iterable of :class:`curies.Record` objects or dictionaries that will
+              get converted into record objects that together constitute an extended prefix map
+            - A string containing a remote location of a JSON file containg an extended prefix map
+            - A string or :class:`pathlib.Path` object corresponding to a local file path to a JSON file
+              containing an extended prefix map
+        :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
         :returns: A converter
 
         An extended prefix map is a list of dictionaries containing four keys:
@@ -686,16 +693,13 @@ class Converter:
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
-            A mapping whose keys are prefixes and whose values are the corresponding *URI prefixes*).
+            One of the following:
 
-            .. note::
-
-                It's possible that some *URI prefixes* (values in this mapping)
-                partially overlap (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
-                ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
-                be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
-                will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
-        :param kwargs: Keyword arguments to pass to :func:`Converter.__init__`
+            - A mapping whose keys represent CURIE prefixes and values represent URI prefixes
+            - A string containing a remote location of a JSON file containg a prefix map
+            - A string or :class:`pathlib.Path` object corresponding to a local file path to a JSON file
+              containing a prefix map
+        :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
         :returns:
             A converter
 
@@ -720,7 +724,7 @@ class Converter:
 
     @classmethod
     def from_reverse_prefix_map(
-        cls, reverse_prefix_map: LocationOr[Mapping[str, str]]
+        cls, reverse_prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any
     ) -> "Converter":
         """Get a converter from a reverse prefix map.
 
@@ -728,14 +732,7 @@ class Converter:
             A mapping whose keys are URI prefixes and whose values are the corresponding prefixes.
             This data structure allow for multiple different URI formats to point to the same
             prefix.
-
-            .. note::
-
-                It's possible that some *URI prefixes* (keys in this mapping)
-                partially overlap (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
-                ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
-                be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
-                will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
+        :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
         :return:
             A converter
 
@@ -768,16 +765,16 @@ class Converter:
                     prefix=prefix, uri_prefix=uri_prefix, uri_prefix_synonyms=uri_prefix_synonyms
                 )
             )
-        return cls(records)
+        return cls(records, **kwargs)
 
     @classmethod
-    def from_jsonld(cls, data: LocationOr[Dict[str, Any]]) -> "Converter":
+    def from_jsonld(cls, data: LocationOr[Dict[str, Any]], **kwargs: Any) -> "Converter":
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
         :param data:
             A JSON-LD object
-        :return:
-            A converter
+        :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
+        :return: A converter
 
         Example from a remote context file:
 
@@ -792,11 +789,11 @@ class Converter:
                 prefix_map[key] = value
             elif isinstance(value, dict) and value.get("@prefix") is True:
                 prefix_map[key] = value["@id"]
-        return cls.from_prefix_map(prefix_map)
+        return cls.from_prefix_map(prefix_map, **kwargs)
 
     @classmethod
     def from_jsonld_github(
-        cls, owner: str, repo: str, *path: str, branch: str = "main"
+        cls, owner: str, repo: str, *path: str, branch: str = "main", **kwargs: Any
     ) -> "Converter":
         """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld`.
 
@@ -805,6 +802,7 @@ class Converter:
         :param path: The file path in the GitHub repository to a JSON-LD context file.
         :param branch: The branch from which the file should be downloaded. Defaults to ``main``, for old
             repositories this might need to be changed to ``master``.
+        :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
         :return:
             A converter
         :raises ValueError:
@@ -821,7 +819,7 @@ class Converter:
             raise ValueError("final path argument should end with .jsonld")
         rest = "/".join(path)
         url = f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{rest}"
-        return cls.from_jsonld(url)
+        return cls.from_jsonld(url, **kwargs)
 
     @classmethod
     def from_rdflib(
@@ -1412,16 +1410,13 @@ def read_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) ->
     """Get a converter from a simple prefix map.
 
     :param prefix_map:
-        A mapping whose keys are prefixes and whose values are the corresponding *URI prefixes*).
+        One of the following:
 
-        .. note::
-
-            It's possible that some *URI prefixes* (values in this mapping)
-            partially overlap (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
-            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``). The longest URI prefix will always
-            be matched. For example, parsing ``http://purl.obolibrary.org/obo/GO_0032571``
-            will return ``GO:0032571`` instead of ``OBO:GO_0032571``.
-    :param kwargs: Keyword arguments to pass to :func:`Converter.__init__`
+        - A mapping whose keys represent CURIE prefixes and values represent URI prefixes
+        - A string containing a remote location of a JSON file containg a prefix map
+        - A string or :class:`pathlib.Path` object corresponding to a local file path to a JSON file
+          containing a prefix map
+    :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
     :returns:
         A converter
 
@@ -1442,9 +1437,15 @@ def read_extended_prefix_map(
 ) -> Converter:
     """Get a converter from a list of dictionaries by creating records out of them.
 
-    :param records: An iterable of :class:`Record` objects or dictionaries that will
-        get converted into record objects
-    :param kwargs: Keyword arguments to pass to the parent class's init
+    :param records:
+        One of the following:
+
+        - An iterable of :class:`curies.Record` objects or dictionaries that will
+          get converted into record objects that together constitute an extended prefix map
+        - A string containing a remote location of a JSON file containg an extended prefix map
+        - A string or :class:`pathlib.Path` object corresponding to a local file path to a JSON file
+          containing an extended prefix map
+    :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
     :returns: A converter
 
     An extended prefix map is a list of dictionaries containing four keys:
@@ -1499,3 +1500,22 @@ def read_extended_prefix_map(
     >>> converter = curies.read_extended_prefix_map(url)
     """
     return Converter.from_extended_prefix_map(records, **kwargs)
+
+
+def read_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Converter:
+    """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
+
+    :param data:
+        A JSON-LD object
+    :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
+    :return:
+        A converter
+
+    Example from a remote context file:
+
+    >>> base = "https://raw.githubusercontent.com"
+    >>> url = f"{base}/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
+    >>> converter = Converter.from_jsonld(url)
+    >>> "rdf" in converter.prefix_map
+    """
+    return Converter.from_jsonld(data, **kwargs)
