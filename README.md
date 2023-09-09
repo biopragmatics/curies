@@ -46,7 +46,7 @@ Idiomatic conversion between URIs and compact URIs (CURIEs).
 ```python
 import curies
 
-converter = curies.read_prefix_map({
+converter = curies.load_prefix_map({
     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
     # ... and so on
 })

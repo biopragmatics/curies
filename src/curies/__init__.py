@@ -11,9 +11,9 @@ from .api import (
     Reference,
     ReferenceTuple,
     chain,
-    read_extended_prefix_map,
-    read_jsonld_context,
-    read_prefix_map,
+    load_extended_prefix_map,
+    load_jsonld_context,
+    load_prefix_map,
 )
 from .sources import (
     get_bioregistry_converter,
@@ -35,9 +35,9 @@ __all__ = [
     "chain",
     "get_version",
     # i/o
-    "read_prefix_map",
-    "read_extended_prefix_map",
-    "read_jsonld_context",
+    "load_prefix_map",
+    "load_extended_prefix_map",
+    "load_jsonld_context",
     # sources
     "get_obo_converter",
     "get_prefixcommons_converter",

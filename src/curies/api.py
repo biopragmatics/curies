@@ -44,9 +44,9 @@ __all__ = [
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "chain",
-    "read_extended_prefix_map",
-    "read_prefix_map",
-    "read_jsonld_context",
+    "load_extended_prefix_map",
+    "load_prefix_map",
+    "load_jsonld_context",
 ]
 
 X = TypeVar("X")
@@ -1289,8 +1289,9 @@ class Converter:
         1. You load a comprehensive extended prefix map, e.g., from the Bioregistry using
            :func:`curies.get_bioregistry_converter()`.
         2. You load some data that conforms to this prefix map by convention. This
-           is often the case for semantic mappings stored in the SSSOM format
-        3. You extract the list of prefixes _actually_ used within your data
+           is often the case for semantic mappings stored in the
+           `SSSOM format <https://github.com/mapping-commons/sssom>`_.
+        3. You extract the list of prefixes *actually* used within your data
         4. You subset the detailed extended prefix map to only include prefixes
            relevant for your data
         5. You make some kind of output of the subsetted extended prefix map to
@@ -1299,7 +1300,8 @@ class Converter:
            extended prefix maps.
 
         Here's a concrete example of doing this (which also includes a bit of data science)
-        to do this on the SSSOM mappings from the Disease Ontology project.
+        to do this on the SSSOM mappings from the `Disease Ontology <https://disease-ontology.org/>`_
+        project.
 
         >>> import curies
         >>> import pandas as pd
@@ -1354,7 +1356,7 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
 
     >>> import curies
     >>> bioregistry_converter = curies.get_bioregistry_converter()
-    >>> overrides = curies.read_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
+    >>> overrides = curies.load_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
     >>> converter = curies.chain([overrides, bioregistry_converter])
     >>> converter.bimap["pubmed"]
     'https://identifiers.org/pubmed:'
@@ -1363,7 +1365,7 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     with a simple prefix map, you need to make sure the URI prefix matches in each converter,
     otherwise you will get duplicates:
 
-    >>> overrides = curies.read_prefix_map({"PMID": "https://www.ncbi.nlm.nih.gov/pubmed/"})
+    >>> overrides = curies.load_prefix_map({"PMID": "https://www.ncbi.nlm.nih.gov/pubmed/"})
     >>> converter = chain([overrides, bioregistry_converter])
     >>> converter.bimap["PMID"]
     'https://www.ncbi.nlm.nih.gov/pubmed/'
@@ -1373,7 +1375,7 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
 
     >>> import curies
     >>> from curies import Converter, chain, get_bioregistry_converter
-    >>> overrides = curies.read_extended_prefix_map([
+    >>> overrides = curies.load_extended_prefix_map([
     ...     {
     ...         "prefix": "PMID",
     ...         "prefix_synonyms": ["pubmed", "PubMed"],
@@ -1391,8 +1393,8 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     Chain prioritizes based on the order given. Therefore, if two prefix maps
     having the same prefix but different URI prefixes are given, the first is retained
 
-    >>> c1 = curies.read_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
-    >>> c2 = curies.read_prefix_map({"GO": "https://identifiers.org/go:"})
+    >>> c1 = curies.load_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+    >>> c2 = curies.load_prefix_map({"GO": "https://identifiers.org/go:"})
     >>> c3 = curies.chain([c1, c2])
     >>> c3.prefix_map["GO"]
     'http://purl.obolibrary.org/obo/GO_'
@@ -1406,7 +1408,7 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     return rv
 
 
-def read_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) -> Converter:
+def load_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) -> Converter:
     """Get a converter from a simple prefix map.
 
     :param prefix_map:
@@ -1421,7 +1423,7 @@ def read_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) ->
         A converter
 
     >>> import curies
-    >>> converter = curies.read_prefix_map({
+    >>> converter = curies.load_prefix_map({
     ...     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
     ... })
     >>> converter.expand("CHEBI:138488")
@@ -1432,7 +1434,7 @@ def read_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) ->
     return Converter.from_prefix_map(prefix_map, **kwargs)
 
 
-def read_extended_prefix_map(
+def load_extended_prefix_map(
     records: LocationOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
 ) -> Converter:
     """Get a converter from a list of dictionaries by creating records out of them.
@@ -1472,7 +1474,7 @@ def read_extended_prefix_map(
     ...         "uri_prefix": "http://purl.obolibrary.org/obo/GO_",
     ...     },
     ... ]
-    >>> converter = curies.read_extended_prefix_map(epm)
+    >>> converter = curies.load_extended_prefix_map(epm)
 
     Expand using the preferred/canonical prefix:
 
@@ -1497,12 +1499,12 @@ def read_extended_prefix_map(
     Example from a remote source:
 
     >>> url = "https://github.com/biopragmatics/bioregistry/raw/main/exports/contexts/bioregistry.epm.json"
-    >>> converter = curies.read_extended_prefix_map(url)
+    >>> converter = curies.load_extended_prefix_map(url)
     """
     return Converter.from_extended_prefix_map(records, **kwargs)
 
 
-def read_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Converter:
+def load_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Converter:
     """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
     :param data:

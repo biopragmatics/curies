@@ -58,7 +58,7 @@ using OBO Foundry preferred CURIE prefixes and URI prefixes is
        "GO": "http://purl.obolibrary.org/obo/GO_"
    }
 
-Prefix maps can be loaded using the :func:`curies.read_prefix_map`. First,
+Prefix maps can be loaded using the :func:`curies.load_prefix_map`. First,
 a prefix map can be loaded directly from a Python data structure like in
 
 .. code-block:: python
@@ -68,7 +68,7 @@ a prefix map can be loaded directly from a Python data structure like in
     prefix_map = {
         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"
     }
-    converter = curies.read_prefix_map(data)
+    converter = curies.load_prefix_map(data)
 
 This function also accepts a string with a HTTP, HTTPS, or FTP path to a remote file as well as a local file path.
 
@@ -112,7 +112,7 @@ containing an entry for ChEBI) looks like:
        }
    ]
 
-Extended prefix maps can be loaded with :func:`curies.read_extended_prefix_map`. First,
+Extended prefix maps can be loaded with :func:`curies.load_extended_prefix_map`. First,
 a prefix map can be loaded directly from a Python data structure like in
 
 .. code-block:: python
@@ -129,7 +129,7 @@ a prefix map can be loaded directly from a Python data structure like in
             ]
         }
     ]
-    converter = curies.read_extended_prefix_map(data)
+    converter = curies.load_extended_prefix_map(data)
 
 An extended prefix map can be loaded from a remote file via HTTP, HTTPS, or FTP with
 
@@ -138,7 +138,7 @@ An extended prefix map can be loaded from a remote file via HTTP, HTTPS, or FTP 
     import curies
 
     url = "https://raw.githubusercontent.com/mapping-commons/sssom-py/master/src/sssom/obo.epm.json"
-    converter = curies.read_extended_prefix_map(url)
+    converter = curies.load_extended_prefix_map(url)
 
 Similarly, an extended prefix map stored in a local file can be loaded with the following.
 This works with both :class:`pathlib.Path` and vanilla strings.
@@ -153,7 +153,7 @@ This works with both :class:`pathlib.Path` and vanilla strings.
     url = "https://raw.githubusercontent.com/mapping-commons/sssom-py/master/src/sssom/obo.epm.json"
     path = Path.home().joinpath("Downloads", "obo.epm.json")
     urlretrieve(url, path)
-    converter = curies.read_extended_prefix_map(path)
+    converter = curies.load_extended_prefix_map(path)
 
 Loading JSON-LD Contexts
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -173,7 +173,7 @@ First, a JSON-LD context can be loaded directly from a Python data structure lik
             "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"
         }
     }
-    converter = curies.read_jsonld_context(data)
+    converter = curies.load_jsonld_context(data)
 
 .. note::
 
@@ -187,7 +187,7 @@ A JSON-LD context can be loaded from a remote file via HTTP, HTTPS, or FTP with
     import curies
 
     url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
-    converter = curies.read_jsonld_context(url)
+    converter = curies.load_jsonld_context(url)
 
 A JSON-LD context stored in a local file can be loaded with the following.
 This works with both :class:`pathlib.Path` and vanilla strings.
@@ -202,7 +202,7 @@ This works with both :class:`pathlib.Path` and vanilla strings.
     url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
     path = Path.home().joinpath("Downloads", "semweb.context.jsonld")
     urlretrieve(url, path)
-    converter = curies.read_jsonld_context(path)
+    converter = curies.load_jsonld_context(path)
 
 Modifying a Context
 -------------------
@@ -262,8 +262,8 @@ is retained as a synonym
 
     import curies
 
-    c1 = curies.read_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
-    c2 = curies.read_prefix_map({"GO": "https://identifiers.org/go:"})
+    c1 = curies.load_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+    c2 = curies.load_prefix_map({"GO": "https://identifiers.org/go:"})
     converter = curies.chain([c1, c2])
 
     >>> converter.expand("GO:1234567")
@@ -282,7 +282,7 @@ can do the following
 
     import curies
 
-    overrides = curies.read_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
+    overrides = curies.load_prefix_map({"pubmed": "https://identifiers.org/pubmed:"})
     bioregistry_converter = curies.get_bioregistry_converter()
     converter = curies.chain([overrides, bioregistry_converter])
 
@@ -356,7 +356,7 @@ the dictionary, iteration, or any other factors.
 
     import curies
 
-    converter = curies.read_prefix_map({
+    converter = curies.load_prefix_map({
         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         "OBO": "http://purl.obolibrary.org/obo/
     })
