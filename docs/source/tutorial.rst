@@ -289,6 +289,42 @@ can do the following
     >>> converter.expand("pubmed:1234")
     'https://identifiers.org/pubmed:1234'
 
+Subsetting
+~~~~~~~~~~
+A subset of a converter can be extracted using :meth:`curies.Converter.get_subconverter`.
+This functionality is useful for downstream applications like the following:
+
+1. You load a comprehensive extended prefix map, e.g., from the Bioregistry using
+   :func:`curies.get_bioregistry_converter()`.
+2. You load some data that conforms to this prefix map by convention. This
+   is often the case for semantic mappings stored in the
+   `SSSOM format <https://github.com/mapping-commons/sssom>`_.
+3. You extract the list of prefixes *actually* used within your data
+4. You subset the detailed extended prefix map to only include prefixes
+   relevant for your data
+5. You make some kind of output of the subsetted extended prefix map to
+   go with your data. Effectively, this is a way of reconciling data. This
+   is especially effective when using the Bioregistry or other comprehensive
+   extended prefix maps.
+
+Here's a concrete example of doing this (which also includes a bit of data science)
+to do this on the SSSOM mappings from the `Disease Ontology <https://disease-ontology.org/>`_
+project.
+
+>>> import curies
+>>> import pandas as pd
+>>> import itertools as itt
+>>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
+>>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
+>>> df = pd.read_csv(url, sep="\t", comment='#')
+>>> prefixes = {
+...     curies.Reference.from_curie(curie).prefix
+...     for column in ["subject_id", "predicate_id", "object_id"]
+...     for curie in df[column]
+... }
+>>> converter = curies.get_bioregistry_converter()
+>>> slim_converter = converter.get_subconverter(prefixes)
+
 Faultless handling of overlapping URI prefixes
 ----------------------------------------------
 Most implementations of URI parsing iterate through the CURIE prefix/URI prefix pairs
