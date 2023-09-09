@@ -1037,6 +1037,13 @@ class Converter:
             return None
         return self.format_curie(norm_prefix, identifier)
 
+    def standardize_curie_strict(self, curie: str) -> str:
+        """Standardize a CURIE and error if not possible."""
+        norm_curie = self.standardize_curie(curie)
+        if norm_curie is None:
+            raise ExpansionError(curie)
+        return norm_curie
+
     def standardize_uri(self, uri: str) -> Optional[str]:
         """Standardize a URI.
 
@@ -1076,6 +1083,8 @@ class Converter:
         df: "pandas.DataFrame",
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        *,
+        strict: bool = False,
     ) -> None:
         """Convert all URIs in the given column to CURIEs.
 
@@ -1083,13 +1092,16 @@ class Converter:
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
         :param target_column: The column to put the results in. Defaults to input column.
         """
-        df[column if target_column is None else target_column] = df[column].map(self.compress)
+        func = self.compress_strict if strict else self.compress
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_expand(
         self,
         df: "pandas.DataFrame",
         column: Union[str, int],
+        *,
         target_column: Union[None, str, int] = None,
+        strict: bool = False
     ) -> None:
         """Convert all CURIEs in the given column to URIs.
 
@@ -1097,7 +1109,8 @@ class Converter:
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
         :param target_column: The column to put the results in. Defaults to input column.
         """
-        df[column if target_column is None else target_column] = df[column].map(self.expand)
+        func = self.expand_strict if strict else self.expand
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_prefix(
         self,
@@ -1122,6 +1135,7 @@ class Converter:
         *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
     ) -> None:
         r"""Standardize all CURIEs in the given column.
 
@@ -1144,9 +1158,8 @@ class Converter:
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
         """
-        df[column if target_column is None else target_column] = df[column].map(
-            self.standardize_curie
-        )
+        func = self.standardize_curie_strict if strict else self.standardize_curie
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_uri(
         self,
