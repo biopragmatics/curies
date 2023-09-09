@@ -1098,10 +1098,10 @@ class Converter:
     def pd_expand(
         self,
         df: "pandas.DataFrame",
-        column: Union[str, int],
         *,
+        column: Union[str, int],
         target_column: Union[None, str, int] = None,
-        strict: bool = False
+        strict: bool = False,
     ) -> None:
         """Convert all CURIEs in the given column to URIs.
 
@@ -1118,6 +1118,7 @@ class Converter:
         *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
     ) -> None:
         """Standardize all prefixes in the given column.
 
@@ -1167,6 +1168,7 @@ class Converter:
         *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
     ) -> None:
         """Standardize all URIs in the given column.
 
