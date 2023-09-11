@@ -383,7 +383,11 @@ def _prepare(data: LocationOr[X]) -> X:
 
 @dataclasses.dataclass
 class Report:
+    """A report on CURIEs standardization."""
+
     converter: "Converter"
+    column: str | int
+    nones: int
     stayed: int
     updated: int
     failures: Mapping[str, typing.Counter[str]] = dataclasses.field(repr=False)
@@ -400,7 +404,7 @@ class Report:
             (
                 prefix,
                 sum(counter.values()),
-                ", ".join(sorted(set(random.choices(list(counter), k=5)))),
+                ", ".join(sorted(set(random.choices(list(counter), k=5)))),  # noqa:S311
             )
             for prefix, counter in sorted(self.failures.items(), key=lambda p: p[0].casefold())
         ]
@@ -440,7 +444,7 @@ class Report:
             if len(c) == 1:
                 first = list(c)[0]
                 if first == prefix:
-                    rv[prefix] = f"is not a valid CURIE"
+                    rv[prefix] = "is not a valid CURIE"
                     continue
                 elif first.lower() == f"{prefix.lower()}:{prefix.lower()}":
                     rv[prefix] = f"has a double prefix annotation: {first}"
@@ -456,38 +460,57 @@ class Report:
                     rv[prefix] = (
                         f"appears in Bioregistry under [`{norm_prefix}`](https://bioregistry."
                         f"io/{norm_prefix}). Consider chaining your converter with the Bioregistry using "
-                        f"[`curies.chain()`](https://curies.readthedocs.io/en/latest/api/curies.chain.html)."
+                        "[`curies.chain()`](https://curies.readthedocs.io/en/latest/api/curies.chain.html)."
                     )
                     continue
 
             # TODO check for bananas?
             rv[prefix] = (
                 "can either be added to the converter if it is local to the project, "
-                f"or if it is globally useful, contributed to the Bioregistry"
+                "or if it is globally useful, contributed to the Bioregistry"
             )
         return rv
 
-    def _repr_markdown_(self):
+    def get_markdown(self) -> str:
+        """Get markdown text."""
         try:
             import bioregistry
         except ImportError:
             bioregistry = None
 
         failures = sum(len(c) for c in self.failures.values())
-        total = self.stayed + self.updated + failures
-        text = "## Summary\n"
+        total = self.nones + self.stayed + self.updated + failures
+        df = self.get_df()
+
+        # TODO write # CURIEs, # unique CURIEs, and # unique prefixes
+        text = "## Summary\n\n"
+        if 0 == len(df.index):
+            if not self.stayed:
+                return f"Standardization was successfully applied to all {self.updated:,} CURIEs in column `{self.column}`."
+            return (
+                f"Standardization was not necessary for {self.stayed:,} ({self.stayed/total:.1%}) CURIEs "
+                f"and resulted in updates for {self.updated:,} ({self.updated/total:.1%}) CURIEs  in column `{self.column}`"
+            )
+
         if bioregistry is None:
             text += "\nInstall the Bioregistry with `pip install bioregistry` for more detailed suggestions\n\n"
-        text = (
+        text += (
             f"Standardization was not necessary for {self.stayed:,} ({self.stayed/total:.1%}), "
             f"resulted in {self.updated:,} updates ({self.updated/total:.1%}), and {failures:,} failures "
-            f"({failures/total:.1%}). Here's a breakdown of the prefixes that weren't possible to standardize:\n\n"
+            f"({failures/total:.1%})  in column `{self.column}`. Here's a breakdown of the prefixes that "
+            f"weren't possible to standardize:\n\n"
         )
-        text += self.get_df().to_markdown(index=False)
-        text += "\n\n## Suggestions\n\n"
-        for prefix, suggestion in self.get_suggestions().items():
-            text += f"- {prefix} {suggestion}\n"
+        text += df.to_markdown(index=False)
+
+        suggestions = self.get_suggestions()
+        if suggestions:
+            text += "\n\n## Suggestions\n\n"
+            for prefix, suggestion in suggestions.items():
+                text += f"- {prefix} {suggestion}\n"
         return text
+
+    def _repr_markdown_(self) -> str:
+        return self.get_markdown()
 
 
 def _list(correct: Sequence[str]) -> str:
@@ -1337,12 +1360,25 @@ class Converter:
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
         """
-        norm_curies = []
-        failures = defaultdict(Counter)
+        import pandas as pd
+
+        norm_curies: List[Optional[str]] = []
+        failures: DefaultDict[str, Counter[str]] = defaultdict(Counter)
         stayed = 0
         updated = 0
+        nones = 0
+        invalid = 0
         for curie in df[column]:
-            norm_curie = self.standardize_curie(curie)
+            if pd.isna(curie):
+                nones += 1
+                norm_curies.append(None)
+                continue
+            try:
+                norm_curie = self.standardize_curie(curie)
+            except ValueError:
+                # happens on an invalid curie, i.e., without a :
+                invalid += 1
+                norm_curie = None
             if norm_curie is None:
                 failures[curie.split(":")[0]][curie] += 1
             elif curie == norm_curie:
@@ -1350,10 +1386,17 @@ class Converter:
             else:
                 updated += 1
             norm_curies.append(norm_curie)
-        report = Report(converter=self, failures=failures, stayed=stayed, updated=updated)
+        report = Report(
+            converter=self,
+            failures=failures,
+            nones=nones,
+            stayed=stayed,
+            updated=updated,
+            column=column,
+        )
         if strict and failures:
             raise ValueError(
-                f"Some CURIEs couldn't be standardized and strict mode is enabled. Either set `strict=False`, and entries that can't be parsed will be given `None`, or try and improve your context to better cover your data. Here's the report:\n\n{report.get_text()}"
+                f"Some CURIEs couldn't be standardized and strict mode is enabled. Either set `strict=False`, and entries that can't be parsed will be given `None`, or try and improve your context to better cover your data. Here's the report:\n\n{report.get_markdown()}"
             )
         df[column if target_column is None else target_column] = norm_curies
         return report

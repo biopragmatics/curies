@@ -69,7 +69,7 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
     return Converter.from_extended_prefix_map(url, **kwargs)
 
 
-def _augment_curie_prefix_synonyms(record: Record):
+def _augment_curie_prefix_synonyms(record: Record) -> None:
     new_prefix_synonyms = set()
     for s in record._all_prefixes:
         new_prefix_synonyms.add(s)
