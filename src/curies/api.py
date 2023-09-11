@@ -3,9 +3,12 @@
 """Data structures and algorithms for :mod:`curies`."""
 
 import csv
+import dataclasses
 import itertools as itt
 import json
-from collections import defaultdict
+import random
+import typing
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -376,6 +379,124 @@ def _prepare(data: LocationOr[X]) -> X:
             return cast(X, json.load(file))
     else:
         return data
+
+
+@dataclasses.dataclass
+class Report:
+    converter: "Converter"
+    stayed: int
+    updated: int
+    failures: Mapping[str, typing.Counter[str]] = dataclasses.field(repr=False)
+
+    def count_prefixes(self) -> typing.Counter[str]:
+        """Count the frequency of each failing prefix."""
+        return Counter({prefix: len(counter) for prefix, counter in self.failures.items()})
+
+    def get_df(self) -> "pandas.DataFrame":
+        """Summarize standardization issues in a dataframe."""
+        import pandas as pd
+
+        rows = [
+            (
+                prefix,
+                sum(counter.values()),
+                ", ".join(sorted(set(random.choices(list(counter), k=5)))),
+            )
+            for prefix, counter in sorted(self.failures.items(), key=lambda p: p[0].casefold())
+        ]
+        return pd.DataFrame(rows, columns=["prefix", "count", "examples"])
+
+    def get_suggestions(self) -> Dict[str, str]:
+        """Get a mapping from missing prefix to suggestion text."""
+        try:
+            import bioregistry
+        except ImportError:
+            bioregistry = None
+
+        norm_to_prefix = defaultdict(set)
+
+        def _norm(s: str) -> str:
+            for x in "_.- ":
+                s = s.replace(x, "")
+            return s.casefold()
+
+        for record in self.converter.records:
+            for p in record._all_prefixes:
+                norm_to_prefix[_norm(p)].add(p)
+
+        rv = {}
+        for prefix, c in self.failures.items():
+            if prefix in {"url", "uri", "iri"}:
+                rv[prefix] = "is an incorrect way of encoding a URI"
+                continue
+            if prefix in {"urn"}:
+                rv[
+                    prefix
+                ] = "means data is encoded using URNs, which isn't explicitly handled by this package."
+                continue
+            if prefix in {"http", "https", "ftp"}:
+                rv[prefix] = "entries are not CURIEs, try and compressing your data first."
+                continue
+            if len(c) == 1:
+                first = list(c)[0]
+                if first == prefix:
+                    rv[prefix] = f"is not a valid CURIE"
+                    continue
+                elif first.lower() == f"{prefix.lower()}:{prefix.lower()}":
+                    rv[prefix] = f"has a double prefix annotation: {first}"
+                    continue
+            correct = sorted(norm_to_prefix.get(_norm(prefix), []))
+            if correct:
+                rv[prefix] = f"is a case/punctuation variant. Try using {_list(correct)}"
+                continue
+
+            if bioregistry is not None:
+                norm_prefix = bioregistry.normalize_prefix(prefix)
+                if norm_prefix:
+                    rv[prefix] = (
+                        f"appears in Bioregistry under [`{norm_prefix}`](https://bioregistry."
+                        f"io/{norm_prefix}). Consider chaining your converter with the Bioregistry using "
+                        f"[`curies.chain()`](https://curies.readthedocs.io/en/latest/api/curies.chain.html)."
+                    )
+                    continue
+
+            # TODO check for bananas?
+            rv[prefix] = (
+                "can either be added to the converter if it is local to the project, "
+                f"or if it is globally useful, contributed to the Bioregistry"
+            )
+        return rv
+
+    def _repr_markdown_(self):
+        try:
+            import bioregistry
+        except ImportError:
+            bioregistry = None
+
+        failures = sum(len(c) for c in self.failures.values())
+        total = self.stayed + self.updated + failures
+        text = "## Summary\n"
+        if bioregistry is None:
+            text += "\nInstall the Bioregistry with `pip install bioregistry` for more detailed suggestions\n\n"
+        text = (
+            f"Standardization was not necessary for {self.stayed:,} ({self.stayed/total:.1%}), "
+            f"resulted in {self.updated:,} updates ({self.updated/total:.1%}), and {failures:,} failures "
+            f"({failures/total:.1%}). Here's a breakdown of the prefixes that weren't possible to standardize:\n\n"
+        )
+        text += self.get_df().to_markdown(index=False)
+        text += "\n\n## Suggestions\n\n"
+        for prefix, suggestion in self.get_suggestions().items():
+            text += f"- {prefix} {suggestion}\n"
+        return text
+
+
+def _list(correct: Sequence[str]) -> str:
+    if len(correct) == 1:
+        return f"`{correct[0]}`"
+    if len(correct) == 2:
+        return f"`{correct[0]}` or `{correct[1]}`"
+    x = ", ".join(f"`{v}`" for v in correct[:-1])
+    return f"{x}, or `{correct[-1]}`"
 
 
 class Converter:
@@ -1194,7 +1315,7 @@ class Converter:
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
         strict: bool = False,
-    ) -> None:
+    ) -> Report:
         r"""Standardize all CURIEs in the given column.
 
         :param df: A pandas DataFrame
@@ -1216,8 +1337,26 @@ class Converter:
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
         """
-        func = self.standardize_curie_strict if strict else self.standardize_curie
-        df[column if target_column is None else target_column] = df[column].map(func)
+        norm_curies = []
+        failures = defaultdict(Counter)
+        stayed = 0
+        updated = 0
+        for curie in df[column]:
+            norm_curie = self.standardize_curie(curie)
+            if norm_curie is None:
+                failures[curie.split(":")[0]][curie] += 1
+            elif curie == norm_curie:
+                stayed += 1
+            else:
+                updated += 1
+            norm_curies.append(norm_curie)
+        report = Report(converter=self, failures=failures, stayed=stayed, updated=updated)
+        if strict and failures:
+            raise ValueError(
+                f"Some CURIEs couldn't be standardized and strict mode is enabled. Either set `strict=False`, and entries that can't be parsed will be given `None`, or try and improve your context to better cover your data. Here's the report:\n\n{report.get_text()}"
+            )
+        df[column if target_column is None else target_column] = norm_curies
+        return report
 
     def pd_standardize_uri(
         self,
@@ -1354,7 +1493,7 @@ def _in(a: str, bs: Iterable[str], case_sensitive: bool) -> bool:
     return any(nfa == b.casefold() for b in bs)
 
 
-def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
+def chain(converters: Iterable[Converter], *, case_sensitive: bool = True) -> Converter:
     """Chain several converters.
 
     :param converters: A list or tuple of converters
