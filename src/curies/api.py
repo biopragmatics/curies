@@ -1521,3 +1521,27 @@ def load_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Conv
     >>> "rdf" in converter.prefix_map
     """
     return Converter.from_jsonld(data, **kwargs)
+
+
+def upgrade_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
+    """Apply CURIE prefix upgrades.
+
+    :param converter: A converter
+    :param upgrades: A mapping from CURIE prefixes to new CURIE prefixes.
+        Old CURIE prefixes become synonyms in the records (i.e., they aren't forgotten)
+    :returns: An upgraded converter
+    """
+    records = []
+    for record in converter.records:
+        new_prefix = upgrades.get(record.prefix)
+        if new_prefix is None:
+            pass  # nothing to upgrade
+        elif new_prefix in converter.synonym_to_prefix:
+            pass  # would create a clash, don't do anything
+        else:
+            record.prefix_synonyms = sorted(
+                set(record.prefix_synonyms).union({record.prefix}).difference({new_prefix})
+            )
+            record.prefix = new_prefix
+        records.append(record)
+    return Converter(records)

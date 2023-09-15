@@ -21,6 +21,7 @@ from curies.api import (
     Reference,
     ReferenceTuple,
     chain,
+    upgrade_prefixes,
 )
 from curies.sources import (
     BIOREGISTRY_CONTEXTS,
@@ -704,3 +705,33 @@ class TestVersion(unittest.TestCase):
         """
         version = get_version()
         self.assertIsInstance(version, str)
+
+
+class TestPrefixUpgrade(unittest.TestCase):
+    """Tests for reconciliation."""
+
+    def test_simple_upgrade(self):
+        """Test simple upgrade."""
+        records = [
+            Record(prefix="a", prefix_synonyms=["x"], uri_prefix="https://example.org/a/"),
+        ]
+        converter = Converter(records)
+        upgrades = {"a": "a1"}
+        converter = upgrade_prefixes(converter, upgrades)
+        self.assertEqual(1, len(converter.records))
+        self.assertEqual(
+            Record(prefix="a1", prefix_synonyms=["a", "x"], uri_prefix="https://example.org/a/"),
+            converter.records[0],
+        )
+
+    def test_skip_on_clash(self):
+        """Test that an upgrade configuration that would cause a clash does nothing."""
+        records = [
+            Record(prefix="a", prefix_synonyms=["x"], uri_prefix="https://example.org/a/"),
+            Record(prefix="b", prefix_synonyms=["y"], uri_prefix="https://example.org/b/"),
+        ]
+        converter = Converter(records)
+        upgrades = {"a": "b"}
+        converter = upgrade_prefixes(converter, upgrades)
+        self.assertEqual(2, len(converter.records))
+        self.assertEqual(records, converter.records)
