@@ -1536,7 +1536,7 @@ def upgrade_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Conve
         new_prefix = upgrades.get(record.prefix)
         if new_prefix is None:
             pass  # nothing to upgrade
-        elif new_prefix in converter.synonym_to_prefix:
+        elif new_prefix in converter.synonym_to_prefix and new_prefix not in record.prefix_synonyms:
             pass  # would create a clash, don't do anything
         else:
             record.prefix_synonyms = sorted(
@@ -1561,7 +1561,10 @@ def upgrade_uri_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> C
         new_uri_prefix = upgrades.get(record.prefix)
         if new_uri_prefix is None:
             pass  # nothing to upgrade
-        elif new_uri_prefix in converter.reverse_prefix_map:
+        elif (
+            new_uri_prefix in converter.reverse_prefix_map
+            and new_uri_prefix not in record.uri_prefix_synonyms
+        ):
             pass  # would create a clash, don't do anything
         else:
             record.uri_prefix_synonyms = sorted(
