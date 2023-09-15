@@ -15,6 +15,7 @@ from .api import (
     load_jsonld_context,
     load_prefix_map,
     upgrade_prefixes,
+    upgrade_uri_prefixes,
 )
 from .sources import (
     get_bioregistry_converter,
@@ -35,6 +36,7 @@ __all__ = [
     "DuplicatePrefixes",
     "chain",
     "upgrade_prefixes",
+    "upgrade_uri_prefixes",
     "get_version",
     # i/o
     "load_prefix_map",

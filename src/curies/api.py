@@ -1545,3 +1545,35 @@ def upgrade_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Conve
             record.prefix = new_prefix
         records.append(record)
     return Converter(records)
+
+
+def upgrade_uri_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
+    """Apply URI prefix upgrades.
+
+    :param converter: A converter
+    :param upgrades: A mapping from CURIE prefixes to new URI prefixes.
+        If CURIE prefixes are not already in the converter, new records are created.
+        If new URI prefixes clash with any existing ones, they are not added.
+    :returns: An upgraded converter
+    """
+    records = []
+    for record in converter.records:
+        new_uri_prefix = upgrades.get(record.prefix)
+        if new_uri_prefix is None:
+            pass  # nothing to upgrade
+        elif new_uri_prefix in converter.reverse_prefix_map:
+            pass  # would create a clash, don't do anything
+        else:
+            record.uri_prefix_synonyms = sorted(
+                set(record.uri_prefix_synonyms)
+                .union({record.uri_prefix})
+                .difference({new_uri_prefix})
+            )
+            record.uri_prefix = new_uri_prefix
+        records.append(record)
+
+    for prefix, new_uri_prefix in upgrades.items():
+        if prefix not in converter.synonym_to_prefix:
+            records.append(Record(prefix=prefix, uri_prefix=new_uri_prefix))
+
+    return Converter(records)
