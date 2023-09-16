@@ -47,8 +47,9 @@ __all__ = [
     "load_extended_prefix_map",
     "load_prefix_map",
     "load_jsonld_context",
-    "upgrade_prefixes",
-    "upgrade_uri_prefixes",
+    "remap_prefixes",
+    "remap_uri_prefixes",
+    "rewire_prefixes",
 ]
 
 X = TypeVar("X")
@@ -1525,7 +1526,7 @@ def load_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Conv
     return Converter.from_jsonld(data, **kwargs)
 
 
-def upgrade_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
+def remap_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
     """Apply CURIE prefix upgrades.
 
     :param converter: A converter
@@ -1549,7 +1550,11 @@ def upgrade_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Conve
     return Converter(records)
 
 
-def upgrade_uri_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
+def remap_uri_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
+    pass
+
+
+def rewire_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
     """Apply URI prefix upgrades.
 
     :param converter: A converter
