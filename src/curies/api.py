@@ -47,6 +47,8 @@ __all__ = [
     "load_extended_prefix_map",
     "load_prefix_map",
     "load_jsonld_context",
+    "upgrade_prefixes",
+    "upgrade_uri_prefixes",
 ]
 
 X = TypeVar("X")
