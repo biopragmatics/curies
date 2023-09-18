@@ -13,7 +13,7 @@ resource. Rather than maintaining a different extended prefix map than the Biore
 the OBO Foundry community could enumerate its preferred modifications to the base
 (extended) prefix map, then create its prefix map by transforming the Bioregistry's.
 
-Similarly, a consumer of the OBO Foundry prefix map might want to override the URI prefix
+Similarly, a consumer of the OBO Foundry prefix map who's implementing a resolver might want to override the URI prefix
 associated with the `Ontology of Vaccine Adverse Events (OVAE) <https://bioregistry.io/registry/ovae>`_
 to point towards the Ontology Lookup Service instead of the default OntoBee.
 
