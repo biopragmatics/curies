@@ -84,8 +84,8 @@ This means applying the CURIE prefix remapping ``{"a1": "c"}`` results in the fo
         {"prefix": "b", "uri_prefix": "https://example.org/b/"}
     ]
 
-3. New prefix doesn't exist, old prefix doesn't exist
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3. New prefix doesn't exist, old prefix exists
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If neither the old prefix nor new prefix appear in the extended prefix maps, one of two things can happen:
 
 1. Do nothing (lenient)
@@ -109,17 +109,10 @@ This means applying the rewiring ``{"c": "https://example.org/c"}`` results in t
         {"prefix": "c", "uri_prefix": "https://example.org/c/"}
     ]
 
-2. URI prefix exists
-~~~~~~~~~~~~~~~~~~~~
-If the URI prefix appears as either a preferred URI prefix or as a URI prefix synonym in
-any record in the extended prefix map, do one of the following:
-
-1. Do nothing (lenient)
-2. Raise an exception (strict)
-
-
-3. CURIE prefix exists, URI prefix doesn't exist
+2. CURIE prefix exists, URI prefix doesn't exist
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If the CURIE prefix appears as either the preferred prefix or a prefix synonym, do the following
+
 1. Replace the record's preferred URI prefix with the new URI prefix
 2. Add the record's old preferred URI prefix to the record's URI prefix synonyms
 
@@ -132,6 +125,10 @@ This means applying the rewiring ``{"b": "https://example.org/b_new/"}`` results
         {"prefix": "b", "uri_prefix": "https://example.org/b_new/", "uri_prefix_synonyms": ["https://example.org/b/"]}
     ]
 
-Undefined
-~~~~~~~~~
-1. What to do if the prefix given is a prefix synonym in an existing record?
+3. URI prefix exists
+~~~~~~~~~~~~~~~~~~~~
+If the URI prefix appears as either a preferred URI prefix or as a URI prefix synonym in
+any record in the extended prefix map, do one of the following:
+
+1. Do nothing (lenient)
+2. Raise an exception (strict)
