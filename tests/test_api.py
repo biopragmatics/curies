@@ -21,8 +21,8 @@ from curies.api import (
     Reference,
     ReferenceTuple,
     chain,
-    remap_prefixes,
-    rewire_prefixes,
+    remap,
+    rewire,
 )
 from curies.sources import (
     BIOREGISTRY_CONTEXTS,
@@ -718,7 +718,7 @@ class TestPrefixUpgrade(unittest.TestCase):
         ]
         converter = Converter(records)
         upgrades = {"b": "c"}
-        converter = remap_prefixes(converter, upgrades)
+        converter = remap(converter, upgrades)
         self.assertEqual(records, converter.records)
 
     def test_upgrade_curie_prefixes_simple(self):
@@ -728,7 +728,7 @@ class TestPrefixUpgrade(unittest.TestCase):
         ]
         converter = Converter(records)
         upgrades = {"a": "a1"}
-        converter = remap_prefixes(converter, upgrades)
+        converter = remap(converter, upgrades)
         self.assertEqual(1, len(converter.records))
         self.assertEqual(
             Record(prefix="a1", prefix_synonyms=["a", "x"], uri_prefix="https://example.org/a/"),
@@ -743,7 +743,7 @@ class TestPrefixUpgrade(unittest.TestCase):
         ]
         converter = Converter(records)
         upgrades = {"a": "b"}
-        converter = remap_prefixes(converter, upgrades)
+        converter = remap(converter, upgrades)
         self.assertEqual(2, len(converter.records))
         self.assertEqual(records, converter.records)
 
@@ -754,7 +754,7 @@ class TestPrefixUpgrade(unittest.TestCase):
         ]
         converter = Converter(records)
         upgrades = {"a": "x"}
-        converter = remap_prefixes(converter, upgrades)
+        converter = remap(converter, upgrades)
         self.assertEqual(1, len(converter.records))
         self.assertEqual(
             Record(prefix="x", prefix_synonyms=["a"], uri_prefix="https://example.org/a/"),
@@ -772,7 +772,7 @@ class TestPrefixUpgrade(unittest.TestCase):
         ]
         converter = Converter(records)
         upgrades = {"a": "https://example.org/a1/"}
-        converter = rewire_prefixes(converter, upgrades)
+        converter = rewire(converter, upgrades)
         self.assertEqual(1, len(converter.records))
         self.assertEqual(
             Record(
@@ -790,7 +790,7 @@ class TestPrefixUpgrade(unittest.TestCase):
         ]
         converter = Converter(records)
         upgrades = {"b": "https://example.org/b/"}
-        converter = rewire_prefixes(converter, upgrades)
+        converter = rewire(converter, upgrades)
         self.assertEqual(2, len(converter.records))
         self.assertEqual(
             [
@@ -808,7 +808,7 @@ class TestPrefixUpgrade(unittest.TestCase):
         ]
         converter = Converter(records)
         upgrades = {"b": "https://example.org/a/"}
-        converter = rewire_prefixes(converter, upgrades)
+        converter = rewire(converter, upgrades)
         self.assertEqual(2, len(converter.records))
         self.assertEqual(
             [
@@ -829,7 +829,7 @@ class TestPrefixUpgrade(unittest.TestCase):
         ]
         converter = Converter(records)
         upgrades = {"a": "https://example.org/a1/"}
-        converter = rewire_prefixes(converter, upgrades)
+        converter = rewire(converter, upgrades)
         self.assertEqual(1, len(converter.records))
         self.assertEqual(
             [

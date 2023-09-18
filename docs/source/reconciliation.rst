@@ -20,8 +20,8 @@ to point towards the Ontology Lookup Service instead of the default OntoBee.
 There are two operations that are useful for transforming an existing (extended) prefix
 map:
 
-1. **Remapping** is when a given CURIE or URI prefix is replaced with another. See :func:`curies.remap_prefixes`.
-2. **Rewiring** is when the correspondence between a CURIE prefix and URI prefix is updated. See :func:`curies.rewire_prefixes`.
+1. **Remapping** is when a given CURIE or URI prefix is replaced with another. See :func:`curies.remap`.
+2. **Rewiring** is when the correspondence between a CURIE prefix and URI prefix is updated. See :func:`curies.rewire`.
 
 Throughout this document, we're going to use the following extended prefix map as an example
 to illustrate how these operations work from a high level.
