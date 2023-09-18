@@ -1,18 +1,26 @@
 Reconciliation
 ==============
-.. todo::
+Reconciliation is the high-level process of modifying an (extended) prefix map with
+domain-specific rules. This is important as it allows for building on existing
+(extended) prefix maps without having to start from scratch. Further, storing the
+rules to transform an existing prefix map allows for high-level discussion about
+the differences and their reasons.
 
-    - What is reconciliation?
-    - Why do we need to do it?
+As a specific example, the `Bioregistry <https://bioregistry.io/>`_ uses ``snomedct`` as a preferred prefix for
+the Systematized Nomenclature of Medicine - Clinical Terms (SNOMED-CT). The
+OBO Foundry community prefers to use ``SCTID`` as the preferred prefix for this
+resource. Rather than maintaining a different extended prefix map than the Bioregistry,
+the OBO Foundry community could enumerate its preferred modifications to the base
+(extended) prefix map, then create its prefix map by transforming the Bioregistry's.
 
-      - When we want to build on a pre-existing extended prefix map, but have a couple use-case-specific overrides.
-        This enables us to build on existing content instead of re-inventing the wheel over and over
+There are two operations that are useful for transforming an existing (extended) prefix
+map:
 
-- **Remapping** is when a given CURIE or URI prefix is replaced with another
-- **Rewiring** is when the correspondence between a CURIE prefix and URI prefix is updated
-
+1. **Remapping** is when a given CURIE or URI prefix is replaced with another. See :func:`curies.remap_prefixes`.
+2. **Rewiring** is when the correspondence between a CURIE prefix and URI prefix is updated. See :func:`curies.rewire_prefixes`.
 
 Throughout this document, we're going to use the following extended prefix map as an example
+to illustrate how these operations work from a high level.
 
 .. code-block:: json
 
