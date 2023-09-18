@@ -36,7 +36,6 @@ __all__ = [
     "DuplicatePrefixes",
     "chain",
     "remap",
-    "remap_uri_prefixes",
     "rewire",
     "get_version",
     # i/o
