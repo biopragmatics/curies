@@ -15,7 +15,7 @@ from .api import (
     load_jsonld_context,
     load_prefix_map,
     remap_prefixes,
-remap_uri_prefixes,
+    remap_uri_prefixes,
     rewire_prefixes,
 )
 from .sources import (
