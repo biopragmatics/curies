@@ -103,18 +103,28 @@ Prefix Rewiring
 Prefix rewiring is configured by a mapping from existing CURIE prefixes to new URI prefixes.
 The following rules are applied for each pair of CURIE prefix/URI prefix:
 
-1. CURIE prefix doesn't exist
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-If the CURIE prefix doesn't exist in the extended prefix map, then the pair is simply appended.
-This means applying the rewiring ``{"c": "https://example.org/c"}`` results in the following
+1. CURIE prefix doesn't exist, URI prefix doesn't exist
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If the CURIE prefix doesn't appear in the extended prefix map, then nothing is done.
+Adding fully novel content to the extended prefix map can be done with other operations
+such as :meth`:curies.Converter.append_record` or :func:`curies.chain`.
 
-.. code-block:: json
+.. note::
 
-    [
-        {"prefix": "a", "uri_prefix": "https://example.org/a/", "prefix_synonyms": ["a1"]},
-        {"prefix": "b", "uri_prefix": "https://example.org/b/"},
-        {"prefix": "c", "uri_prefix": "https://example.org/c/"}
-    ]
+    There is discussion whether this case could be extended with the following:
+    if the CURIE prefix doesn't exist in the extended prefix map, then the pair is simply appended.
+    This means applying the rewiring ``{"c": "https://example.org/c"}`` results in the following
+
+    .. code-block:: json
+
+        [
+            {"prefix": "a", "uri_prefix": "https://example.org/a/", "prefix_synonyms": ["a1"]},
+            {"prefix": "b", "uri_prefix": "https://example.org/b/"},
+            {"prefix": "c", "uri_prefix": "https://example.org/c/"}
+        ]
+
+    This is not included in the base implementation because it conflates the job of "rewiring"
+    with appending to the extended prefix map
 
 2. CURIE prefix exists, URI prefix doesn't exist
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -132,13 +142,22 @@ This means applying the rewiring ``{"b": "https://example.org/b_new/"}`` results
         {"prefix": "b", "uri_prefix": "https://example.org/b_new/", "uri_prefix_synonyms": ["https://example.org/b/"]}
     ]
 
-3. URI prefix exists
-~~~~~~~~~~~~~~~~~~~~
+3. CURIE prefix doesn't exist, URI prefix exists
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If the URI prefix appears as either a preferred URI prefix or as a URI prefix synonym in
 any record in the extended prefix map, do one of the following:
 
 1. Do nothing (lenient)
 2. Raise an exception (strict)
+
+4. CURIE prefix exists, URI prefix exists
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If the CURIE prefix and URI prefix both appear in the extended prefix map, there are three possibilities.
+
+1. If they are in the same record and the URI prefix is already the preferred prefix, then nothing needs to be done
+2. If they are in the same record and the URI prefix is a URI prefix synonym, then the URI prefix synonym is
+   swapped with the preferred URI prefix
+3. If they appear in different records, then either do nothing (lenient) or raise an exception (strict)
 
 Transitive Mappings
 -------------------
