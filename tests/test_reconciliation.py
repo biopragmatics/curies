@@ -2,80 +2,163 @@
 
 import unittest
 
-from curies import Converter, Record, remap_curie_prefixes, rewire
+from curies import Converter, Record, remap_curie_prefixes, remap_uri_prefixes, rewire
+
+#: The beginning of URIs used throughout examples
+P = "https://example.org"
 
 
-class TestReconciliation(unittest.TestCase):
-    """A test case for reconciliation."""
+class TestCURIERemapping(unittest.TestCase):
+    """A test case for CURIE prefix remapping."""
 
-    def test_upgrade_curie_prefixes_missing(self):
+    def test_missing(self):
         """Test simple upgrade."""
         records = [
-            Record(prefix="a", prefix_synonyms=["x"], uri_prefix="https://example.org/a/"),
+            Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
         ]
         converter = Converter(records)
-        upgrades = {"b": "c"}
-        converter = remap_curie_prefixes(converter, upgrades)
+        curie_remapping = {"b": "c"}
+        converter = remap_curie_prefixes(converter, curie_remapping)
         self.assertEqual(records, converter.records)
 
-    def test_upgrade_curie_prefixes_simple(self):
+    def test_simple(self):
         """Test simple upgrade."""
         records = [
-            Record(prefix="a", prefix_synonyms=["x"], uri_prefix="https://example.org/a/"),
+            Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
         ]
         converter = Converter(records)
-        upgrades = {"a": "a1"}
-        converter = remap_curie_prefixes(converter, upgrades)
+        curie_remapping = {"a": "a1"}
+        converter = remap_curie_prefixes(converter, curie_remapping)
         self.assertEqual(1, len(converter.records))
         self.assertEqual(
-            Record(prefix="a1", prefix_synonyms=["a", "x"], uri_prefix="https://example.org/a/"),
+            Record(prefix="a1", prefix_synonyms=["a", "x"], uri_prefix=f"{P}/a/"),
             converter.records[0],
         )
 
-    def test_upgrade_curie_prefixes_clash(self):
+    def test_synonym(self):
         """Test that an upgrade configuration that would cause a clash does nothing."""
         records = [
-            Record(prefix="a", prefix_synonyms=["x"], uri_prefix="https://example.org/a/"),
-            Record(prefix="b", prefix_synonyms=["y"], uri_prefix="https://example.org/b/"),
+            Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
         ]
         converter = Converter(records)
-        upgrades = {"a": "b"}
-        converter = remap_curie_prefixes(converter, upgrades)
+        curie_remapping = {"a": "x"}
+        converter = remap_curie_prefixes(converter, curie_remapping)
+        self.assertEqual(1, len(converter.records))
+        self.assertEqual(
+            Record(prefix="x", prefix_synonyms=["a"], uri_prefix=f"{P}/a/"),
+            converter.records[0],
+        )
+
+    def test_clash(self):
+        """Test that an upgrade configuration that would cause a clash does nothing."""
+        records = [
+            Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
+            Record(prefix="b", prefix_synonyms=["y"], uri_prefix=f"{P}/b/"),
+        ]
+        converter = Converter(records)
+        curie_remapping = {"a": "b"}
+        converter = remap_curie_prefixes(converter, curie_remapping)
         self.assertEqual(2, len(converter.records))
         self.assertEqual(records, converter.records)
 
-    def test_upgrade_curie_prefixes_synonym(self):
-        """Test that an upgrade configuration that would cause a clash does nothing."""
+    def test_clash_synonym(self):
+        """Test a clash on a synonym."""
         records = [
-            Record(prefix="a", prefix_synonyms=["x"], uri_prefix="https://example.org/a/"),
+            Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
+            Record(prefix="b", prefix_synonyms=["y"], uri_prefix=f"{P}/b/"),
         ]
         converter = Converter(records)
-        upgrades = {"a": "x"}
-        converter = remap_curie_prefixes(converter, upgrades)
+        curie_remapping = {"a": "y"}
+        converter = remap_curie_prefixes(converter, curie_remapping)
+        self.assertEqual(2, len(converter.records))
+        self.assertEqual(records, converter.records)
+
+
+class TestURIRemapping(unittest.TestCase):
+    """A test case for URI prefix remapping."""
+
+    def test_missing(self):
+        """Test simple upgrade."""
+        records = [
+            Record(prefix="a", uri_prefix=f"{P}/a/"),
+        ]
+        converter = Converter(records)
+        uri_remapping = {f"{P}/nope/": f"{P}/more-nope/"}
+        converter = remap_uri_prefixes(converter, uri_remapping)
+        self.assertEqual(records, converter.records)
+
+    def test_simple(self):
+        """Test simple upgrade."""
+        records = [
+            Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=[f"{P}/a1/"]),
+        ]
+        converter = Converter(records)
+        uri_remapping = {f"{P}/a/": f"{P}/a2/"}
+        converter = remap_uri_prefixes(converter, uri_remapping)
         self.assertEqual(1, len(converter.records))
         self.assertEqual(
-            Record(prefix="x", prefix_synonyms=["a"], uri_prefix="https://example.org/a/"),
+            Record(
+                prefix="a",
+                uri_prefix=f"{P}/a2/",
+                uri_prefix_synonyms=[f"{P}/a/", f"{P}/a1/"],
+            ),
             converter.records[0],
         )
+
+    def test_synonym(self):
+        """Test that an upgrade configuration that would cause a clash does nothing."""
+        records = [
+            Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=[f"{P}/a1/"]),
+        ]
+        converter = Converter(records)
+        uri_remapping = {f"{P}/a1/": f"{P}/a2/"}
+        converter = remap_uri_prefixes(converter, uri_remapping)
+        self.assertEqual(1, len(converter.records))
+        self.assertEqual(
+            Record(prefix="a", uri_prefix=f"{P}/a2/", uri_prefix_synonyms=[f"{P}/a/", f"{P}/a1/"]),
+            converter.records[0],
+        )
+
+    def test_clash_preferred(self):
+        """Test that an upgrade configuration that would cause a clash does nothing."""
+        records = [
+            Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
+            Record(prefix="b", prefix_synonyms=["y"], uri_prefix=f"{P}/b/"),
+        ]
+        converter = Converter(records)
+        upgrades = {f"{P}/a/": f"{P}/b/"}
+        converter = remap_uri_prefixes(converter, upgrades)
+        self.assertEqual(2, len(converter.records))
+        self.assertEqual(records, converter.records)
+
+    def test_clash_synonym(self):
+        """Test clashing with a synonym."""
+        records = [
+            Record(prefix="a", uri_prefix=f"{P}/a/"),
+            Record(prefix="b", uri_prefix=f"{P}/b/", uri_prefix_synonyms=[f"{P}/b1/"]),
+        ]
+        converter = Converter(records)
+        upgrades = {f"{P}/a/": f"{P}/b1/"}
+        converter = remap_uri_prefixes(converter, upgrades)
+        self.assertEqual(2, len(converter.records))
+        self.assertEqual(records, converter.records)
+
+
+class TestRewire(unittest.TestCase):
+    """A test case for rewiring."""
 
     def test_upgrade_uri_prefixes_simple(self):
         """Test simple upgrade."""
         records = [
-            Record(
-                prefix="a",
-                uri_prefix="https://example.org/a/",
-                uri_prefix_synonyms=["https://a.org/"],
-            ),
+            Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=["https://a.org/"]),
         ]
         converter = Converter(records)
-        upgrades = {"a": "https://example.org/a1/"}
-        converter = rewire(converter, upgrades)
+        rewiring = {"a": f"{P}/a1/"}
+        converter = rewire(converter, rewiring)
         self.assertEqual(1, len(converter.records))
         self.assertEqual(
             Record(
-                prefix="a",
-                uri_prefix="https://example.org/a1/",
-                uri_prefix_synonyms=["https://a.org/", "https://example.org/a/"],
+                prefix="a", uri_prefix=f"{P}/a1/", uri_prefix_synonyms=["https://a.org/", f"{P}/a/"]
             ),
             converter.records[0],
         )
@@ -83,16 +166,16 @@ class TestReconciliation(unittest.TestCase):
     def test_upgrade_uri_prefixes_add(self):
         """Test an upgrade that adds an extra prefix."""
         records = [
-            Record(prefix="a", uri_prefix="https://example.org/a/"),
+            Record(prefix="a", uri_prefix=f"{P}/a/"),
         ]
         converter = Converter(records)
-        upgrades = {"b": "https://example.org/b/"}
-        converter = rewire(converter, upgrades)
+        rewiring = {"b": f"{P}/b/"}
+        converter = rewire(converter, rewiring)
         self.assertEqual(2, len(converter.records))
         self.assertEqual(
             [
-                Record(prefix="a", uri_prefix="https://example.org/a/"),
-                Record(prefix="b", uri_prefix="https://example.org/b/"),
+                Record(prefix="a", uri_prefix=f"{P}/a/"),
+                Record(prefix="b", uri_prefix=f"{P}/b/"),
             ],
             converter.records,
         )
@@ -100,17 +183,17 @@ class TestReconciliation(unittest.TestCase):
     def test_upgrade_uri_prefixes_clash(self):
         """Test an upgrade that does nothing since it would create a clash."""
         records = [
-            Record(prefix="a", uri_prefix="https://example.org/a/"),
-            Record(prefix="b", uri_prefix="https://example.org/b/"),
+            Record(prefix="a", uri_prefix=f"{P}/a/"),
+            Record(prefix="b", uri_prefix=f"{P}/b/"),
         ]
         converter = Converter(records)
-        upgrades = {"b": "https://example.org/a/"}
-        converter = rewire(converter, upgrades)
+        rewiring = {"b": f"{P}/a/"}
+        converter = rewire(converter, rewiring)
         self.assertEqual(2, len(converter.records))
         self.assertEqual(
             [
-                Record(prefix="a", uri_prefix="https://example.org/a/"),
-                Record(prefix="b", uri_prefix="https://example.org/b/"),
+                Record(prefix="a", uri_prefix=f"{P}/a/"),
+                Record(prefix="b", uri_prefix=f"{P}/b/"),
             ],
             converter.records,
         )
@@ -118,22 +201,18 @@ class TestReconciliation(unittest.TestCase):
     def test_upgrade_uri_upgrade(self):
         """Test an upgrade of an existing URI prefix synonym."""
         records = [
-            Record(
-                prefix="a",
-                uri_prefix="https://example.org/a/",
-                uri_prefix_synonyms=["https://example.org/a1/"],
-            ),
+            Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=[f"{P}/a1/"]),
         ]
         converter = Converter(records)
-        upgrades = {"a": "https://example.org/a1/"}
-        converter = rewire(converter, upgrades)
+        rewiring = {"a": f"{P}/a1/"}
+        converter = rewire(converter, rewiring)
         self.assertEqual(1, len(converter.records))
         self.assertEqual(
             [
                 Record(
                     prefix="a",
-                    uri_prefix="https://example.org/a1/",
-                    uri_prefix_synonyms=["https://example.org/a/"],
+                    uri_prefix=f"{P}/a1/",
+                    uri_prefix_synonyms=[f"{P}/a/"],
                 ),
             ],
             converter.records,
@@ -145,21 +224,21 @@ class TestReconciliation(unittest.TestCase):
             Record(
                 prefix="a",
                 prefix_synonyms=["a1"],
-                uri_prefix="https://example.org/a/",
-                uri_prefix_synonyms=["https://example.org/a1/"],
+                uri_prefix=f"{P}/a/",
+                uri_prefix_synonyms=[f"{P}/a1/"],
             ),
         ]
         converter = Converter(records)
-        upgrades = {"a1": "https://example.org/a1/"}
-        converter = rewire(converter, upgrades)
+        rewiring = {"a1": f"{P}/a1/"}
+        converter = rewire(converter, rewiring)
         self.assertEqual(1, len(converter.records))
         self.assertEqual(
             [
                 Record(
                     prefix="a",
                     prefix_synonyms=["a1"],
-                    uri_prefix="https://example.org/a1/",
-                    uri_prefix_synonyms=["https://example.org/a/"],
+                    uri_prefix=f"{P}/a1/",
+                    uri_prefix_synonyms=[f"{P}/a/"],
                 ),
             ],
             converter.records,
