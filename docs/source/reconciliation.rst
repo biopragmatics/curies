@@ -37,7 +37,7 @@ to illustrate how these operations work from a high level.
 
 CURIE Prefix Remapping
 ----------------------
-CURIE prefix remapping is configured by a mapping from existing CURIE prefixes to new CURIE prefixes.
+CURIE prefix remapping is configured by a dictionary from existing CURIE prefixes to new CURIE prefixes.
 The following rules are applied for each pair of old/new prefixes:
 
 1. New prefix exists
@@ -98,9 +98,9 @@ URI prefix remapping is configured by a mapping from existing URI prefixes to ne
 The rules work exactly the same as with CURIE prefix remapping, but for the :data:`curies.Record.uri_prefix` and
 :data:`curies.Record.uri_prefix_synonyms` fields.
 
-Prefix Rewiring
----------------
-Prefix rewiring is configured by a mapping from existing CURIE prefixes to new URI prefixes.
+Rewiring
+--------
+Rewiring is configured by a dictionary from existing CURIE prefixes to new URI prefixes.
 The following rules are applied for each pair of CURIE prefix/URI prefix:
 
 CURIE prefix exists, URI prefix doesn't exist
@@ -177,7 +177,7 @@ any record in the extended prefix map, do one of the following:
 
 Transitive Mappings
 -------------------
-There's an important drawback to the current implementation of remapping - it is not able to consistently
+There's an important drawback to the current implementation of CURIE remapping - it is not able to consistently
 and correctly handle the case when the order of remapping records matters. For example, in the Bioregistry,
 the `Gene Expression Omnibus <https://www.ncbi.nlm.nih.gov/geo/>`_ is given the prefix ``geo`` and the
 `Geographical Entity Ontology <https://obofoundry.org/ontology/geo>`_ is given the
