@@ -139,3 +139,16 @@ any record in the extended prefix map, do one of the following:
 
 1. Do nothing (lenient)
 2. Raise an exception (strict)
+
+Transitive Mappings
+-------------------
+There's an important drawback to the current implementation of remapping - it is not able to consistently
+and correctly handle the case when the order of remapping records matters. For example, in the Bioregistry,
+the `Gene Expression Omnibus <https://www.ncbi.nlm.nih.gov/geo/>`_ is given the prefix ``geo`` and the
+`Geographical Entity Ontology <https://obofoundry.org/ontology/geo>`_ is given the
+prefix ``geogeo``. OBO Foundry users will want to rename the Gene Expression Omnibus record to something else
+like ``ncbi.geo`` and rename ``geogeo`` to ``geo``. This is possible in theory, but requires an implementation
+that will require additional introspection over the values appearing in both the keys and values of a remapping
+as well as changing the way that the records are modified.
+
+.. seealso:: Discussion about this issue on https://github.com/cthoyt/curies/issues/75

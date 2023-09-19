@@ -32,6 +32,8 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
     :param remapping: A mapping from CURIE prefixes to new CURIE prefixes.
         Old CURIE prefixes become synonyms in the records (i.e., they aren't forgotten)
     :returns: An upgraded converter
+    :raises TransitiveError: If there are any strings that appear in both
+        the key and values of the remapping
     """
     intersection = set(remapping).intersection(remapping.values())
     if intersection:
@@ -60,6 +62,8 @@ def remap_uri_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Co
     :param remapping: A mapping from URI prefixes to new URI prefixes.
         Old URI prefixes become synonyms in the records (i.e., they aren't forgotten)
     :returns: An upgraded converter
+    :raises TransitiveError: If there are any strings that appear in both
+        the key and values of the remapping
     """
     intersection = set(remapping).intersection(remapping.values())
     if intersection:
