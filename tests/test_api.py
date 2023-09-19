@@ -841,3 +841,29 @@ class TestPrefixUpgrade(unittest.TestCase):
             ],
             converter.records,
         )
+
+    def test_upgrade_uri_upgrade_with_curie_prefix(self):
+        """Test an upgrade of an existing URI prefix synonym via a CURIE prefix synonym."""
+        records = [
+            Record(
+                prefix="a",
+                prefix_synonyms=["a1"],
+                uri_prefix="https://example.org/a/",
+                uri_prefix_synonyms=["https://example.org/a1/"],
+            ),
+        ]
+        converter = Converter(records)
+        upgrades = {"a1": "https://example.org/a1/"}
+        converter = rewire(converter, upgrades)
+        self.assertEqual(1, len(converter.records))
+        self.assertEqual(
+            [
+                Record(
+                    prefix="a",
+                    prefix_synonyms=["a1"],
+                    uri_prefix="https://example.org/a1/",
+                    uri_prefix_synonyms=["https://example.org/a/"],
+                ),
+            ],
+            converter.records,
+        )

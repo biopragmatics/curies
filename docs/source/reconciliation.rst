@@ -20,7 +20,7 @@ to point towards the Ontology Lookup Service instead of the default OntoBee.
 There are two operations that are useful for transforming an existing (extended) prefix
 map:
 
-1. **Remapping** is when a given CURIE or URI prefix is replaced with another. See :func:`curies.remap`.
+1. **Remapping** is when a given CURIE prefix is replaced with another. See :func:`curies.remap`.
 2. **Rewiring** is when the correspondence between a CURIE prefix and URI prefix is updated. See :func:`curies.rewire`.
 
 Throughout this document, we're going to use the following extended prefix map as an example
@@ -58,8 +58,8 @@ If the new prefix appears as a preferred prefix or prefix synonym for any other 
 
 This means applying the CURIE prefix remapping ``{"a": "b"}`` results in either no change or an exception being raised.
 
-2. New prefix doesn't exist, old prefix is a preferred prefix
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+2. New prefix doesn't exist, old prefix exists
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If the old prefix appears in a record in the extended prefix map as a preferred prefix:
 
 1. Replace the record's preferred prefix with the new prefix
@@ -84,8 +84,8 @@ This means applying the CURIE prefix remapping ``{"a1": "c"}`` results in the fo
         {"prefix": "b", "uri_prefix": "https://example.org/b/"}
     ]
 
-3. New prefix doesn't exist, old prefix exists
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+3. New prefix doesn't exist, old prefix doesn't exist
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If neither the old prefix nor new prefix appear in the extended prefix maps, one of two things can happen:
 
 1. Do nothing (lenient)

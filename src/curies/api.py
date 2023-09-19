@@ -1525,17 +1525,17 @@ def load_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Conv
     return Converter.from_jsonld(data, **kwargs)
 
 
-def remap(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
+def remap(converter: Converter, remapping: Mapping[str, str]) -> Converter:
     """Apply CURIE prefix upgrades.
 
     :param converter: A converter
-    :param upgrades: A mapping from CURIE prefixes to new CURIE prefixes.
+    :param remapping: A mapping from CURIE prefixes to new CURIE prefixes.
         Old CURIE prefixes become synonyms in the records (i.e., they aren't forgotten)
     :returns: An upgraded converter
     """
     records = []
     for record in converter.records:
-        new_prefix = upgrades.get(record.prefix)
+        new_prefix = _get_preferred_or_synonym(record, remapping)
         if new_prefix is None:
             pass  # nothing to upgrade
         elif new_prefix in converter.synonym_to_prefix and new_prefix not in record.prefix_synonyms:
@@ -1553,18 +1553,18 @@ def remap(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
 #     pass
 
 
-def rewire(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
+def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
     """Apply URI prefix upgrades.
 
     :param converter: A converter
-    :param upgrades: A mapping from CURIE prefixes to new URI prefixes.
+    :param rewiring: A mapping from CURIE prefixes to new URI prefixes.
         If CURIE prefixes are not already in the converter, new records are created.
         If new URI prefixes clash with any existing ones, they are not added.
     :returns: An upgraded converter
     """
     records = []
     for record in converter.records:
-        new_uri_prefix = upgrades.get(record.prefix)
+        new_uri_prefix = _get_preferred_or_synonym(record, rewiring)
         if new_uri_prefix is None:
             pass  # nothing to upgrade
         elif (
@@ -1581,8 +1581,17 @@ def rewire(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
             record.uri_prefix = new_uri_prefix
         records.append(record)
 
-    for prefix, new_uri_prefix in upgrades.items():
+    for prefix, new_uri_prefix in rewiring.items():
         if prefix not in converter.synonym_to_prefix:
             records.append(Record(prefix=prefix, uri_prefix=new_uri_prefix))
 
     return Converter(records)
+
+
+def _get_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> Optional[str]:
+    if record.prefix in upgrades:
+        return upgrades[record.prefix]
+    for s in record.prefix_synonyms:
+        if s in upgrades:
+            return upgrades[s]
+    return None
