@@ -1,6 +1,6 @@
 """Reconciliation."""
 
-from typing import Mapping, Optional, Set
+from typing import Collection, Mapping, Optional
 
 from .api import Converter, Record
 
@@ -14,7 +14,12 @@ __all__ = [
 class TransitiveError(NotImplementedError):
     """An error when transitive mappings appear."""
 
-    def __init__(self, intersection: Set[str]):
+    def __init__(self, intersection: Collection[str]) -> None:
+        """Initialize the exception.
+
+        :param intersection: The strings that appeared both as keys and values
+            in a remapping dictionary (either for CURIEs or URIs)
+        """
         self.intersection = intersection
 
     def __str__(self) -> str:
