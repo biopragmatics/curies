@@ -92,6 +92,12 @@ If neither the old prefix nor new prefix appear in the extended prefix maps, one
 1. Do nothing (lenient)
 2. Raise an exception (strict)
 
+URI Prefix Remapping
+----------------------
+URI prefix remapping is configured by a mapping from existing URI prefixes to new URI prefixes.
+The rules work exactly the same as with CURIE prefix remapping, but for the :data:`curies.Record.uri_prefix` and
+:data:`curies.Record.uri_prefix_synonyms` fields.
+
 Prefix Rewiring
 ---------------
 Prefix rewiring is configured by a mapping from existing CURIE prefixes to new URI prefixes.
