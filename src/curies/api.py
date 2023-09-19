@@ -47,7 +47,7 @@ __all__ = [
     "load_extended_prefix_map",
     "load_prefix_map",
     "load_jsonld_context",
-    "remap",
+    "remap_curie_prefixes",
     "rewire",
 ]
 
@@ -1525,8 +1525,8 @@ def load_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Conv
     return Converter.from_jsonld(data, **kwargs)
 
 
-def remap(converter: Converter, remapping: Mapping[str, str]) -> Converter:
-    """Apply CURIE prefix upgrades.
+def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Converter:
+    """Apply CURIE prefix remappings.
 
     :param converter: A converter
     :param remapping: A mapping from CURIE prefixes to new CURIE prefixes.
@@ -1535,7 +1535,7 @@ def remap(converter: Converter, remapping: Mapping[str, str]) -> Converter:
     """
     records = []
     for record in converter.records:
-        new_prefix = _get_preferred_or_synonym(record, remapping)
+        new_prefix = _get_curie_preferred_or_synonym(record, remapping)
         if new_prefix is None:
             pass  # nothing to upgrade
         elif new_prefix in converter.synonym_to_prefix and new_prefix not in record.prefix_synonyms:
@@ -1549,8 +1549,33 @@ def remap(converter: Converter, remapping: Mapping[str, str]) -> Converter:
     return Converter(records)
 
 
-# def remap_uri_prefixes(converter: Converter, upgrades: Mapping[str, str]) -> Converter:
-#     pass
+def remap_uri_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Converter:
+    """Apply URI prefix remappings.
+
+    :param converter: A converter
+    :param remapping: A mapping from URI prefixes to new URI prefixes.
+        Old URI prefixes become synonyms in the records (i.e., they aren't forgotten)
+    :returns: An upgraded converter
+    """
+    records = []
+    for record in converter.records:
+        new_uri_prefix = _get_uri_preferred_or_synonym(record, remapping)
+        if new_uri_prefix is None:
+            pass  # nothing to upgrade
+        elif (
+            new_uri_prefix in converter.reverse_prefix_map
+            and new_uri_prefix not in record.uri_prefix_synonyms
+        ):
+            pass  # would create a clash, don't do anything
+        else:
+            record.uri_prefix_synonyms = sorted(
+                set(record.uri_prefix_synonyms)
+                .union({record.uri_prefix})
+                .difference({new_uri_prefix})
+            )
+            record.uri_prefix = new_uri_prefix
+        records.append(record)
+    return Converter(records)
 
 
 def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
@@ -1564,7 +1589,7 @@ def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
     """
     records = []
     for record in converter.records:
-        new_uri_prefix = _get_preferred_or_synonym(record, rewiring)
+        new_uri_prefix = _get_curie_preferred_or_synonym(record, rewiring)
         if new_uri_prefix is None:
             pass  # nothing to upgrade
         elif (
@@ -1588,10 +1613,19 @@ def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
     return Converter(records)
 
 
-def _get_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> Optional[str]:
+def _get_curie_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> Optional[str]:
     if record.prefix in upgrades:
         return upgrades[record.prefix]
     for s in record.prefix_synonyms:
+        if s in upgrades:
+            return upgrades[s]
+    return None
+
+
+def _get_uri_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> Optional[str]:
+    if record.uri_prefix in upgrades:
+        return upgrades[record.uri_prefix]
+    for s in record.uri_prefix_synonyms:
         if s in upgrades:
             return upgrades[s]
     return None

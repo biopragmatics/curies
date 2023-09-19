@@ -14,7 +14,7 @@ from .api import (
     load_extended_prefix_map,
     load_jsonld_context,
     load_prefix_map,
-    remap,
+    remap_curie_prefixes,
     rewire,
 )
 from .sources import (
@@ -35,7 +35,7 @@ __all__ = [
     "DuplicateURIPrefixes",
     "DuplicatePrefixes",
     "chain",
-    "remap",
+    "remap_curie_prefixes",
     "rewire",
     "get_version",
     # i/o
