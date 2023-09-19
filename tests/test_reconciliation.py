@@ -163,22 +163,22 @@ class TestRewire(unittest.TestCase):
             converter.records[0],
         )
 
-    def test_upgrade_uri_prefixes_add(self):
-        """Test an upgrade that adds an extra prefix."""
-        records = [
-            Record(prefix="a", uri_prefix=f"{P}/a/"),
-        ]
-        converter = Converter(records)
-        rewiring = {"b": f"{P}/b/"}
-        converter = rewire(converter, rewiring)
-        self.assertEqual(2, len(converter.records))
-        self.assertEqual(
-            [
-                Record(prefix="a", uri_prefix=f"{P}/a/"),
-                Record(prefix="b", uri_prefix=f"{P}/b/"),
-            ],
-            converter.records,
-        )
+    # def test_upgrade_uri_prefixes_add(self):
+    #     """Test an upgrade that adds an extra prefix."""
+    #     records = [
+    #         Record(prefix="a", uri_prefix=f"{P}/a/"),
+    #     ]
+    #     converter = Converter(records)
+    #     rewiring = {"b": f"{P}/b/"}
+    #     converter = rewire(converter, rewiring)
+    #     self.assertEqual(2, len(converter.records))
+    #     self.assertEqual(
+    #         [
+    #             Record(prefix="a", uri_prefix=f"{P}/a/"),
+    #             Record(prefix="b", uri_prefix=f"{P}/b/"),
+    #         ],
+    #         converter.records,
+    #     )
 
     def test_upgrade_uri_prefixes_clash(self):
         """Test an upgrade that does nothing since it would create a clash."""

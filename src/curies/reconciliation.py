@@ -92,9 +92,10 @@ def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
             record.uri_prefix = new_uri_prefix
         records.append(record)
 
-    for prefix, new_uri_prefix in rewiring.items():
-        if prefix not in converter.synonym_to_prefix:
-            records.append(Record(prefix=prefix, uri_prefix=new_uri_prefix))
+    # potential future functionality: add missing records
+    # for prefix, new_uri_prefix in rewiring.items():
+    #     if prefix not in converter.synonym_to_prefix:
+    #         records.append(Record(prefix=prefix, uri_prefix=new_uri_prefix))
 
     return Converter(records)
 
