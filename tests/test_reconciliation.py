@@ -164,6 +164,16 @@ class TestURIRemapping(unittest.TestCase):
 class TestRewire(unittest.TestCase):
     """A test case for rewiring."""
 
+    def test_idempotent(self):
+        """Test that a redundant rewiring doesn't do anything."""
+        records = [
+            Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=["https://a.org/"]),
+        ]
+        converter = Converter(records)
+        rewiring = {"a": f"{P}/a/"}
+        converter = rewire(converter, rewiring)
+        self.assertEqual(records, converter.records)
+
     def test_upgrade_uri_prefixes_simple(self):
         """Test simple upgrade."""
         records = [
