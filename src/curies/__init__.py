@@ -15,6 +15,7 @@ from .api import (
     load_jsonld_context,
     load_prefix_map,
 )
+from .reconciliation import remap_curie_prefixes, remap_uri_prefixes, rewire
 from .sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -33,6 +34,9 @@ __all__ = [
     "DuplicateURIPrefixes",
     "DuplicatePrefixes",
     "chain",
+    "remap_curie_prefixes",
+    "remap_uri_prefixes",
+    "rewire",
     "get_version",
     # i/o
     "load_prefix_map",
