@@ -2,7 +2,7 @@
 
 import unittest
 
-from curies import Record, Converter, remap_curie_prefixes, rewire
+from curies import Converter, Record, remap_curie_prefixes, rewire
 
 
 class TestReconciliation(unittest.TestCase):
