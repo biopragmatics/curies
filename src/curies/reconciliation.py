@@ -1,6 +1,6 @@
 """Reconciliation."""
 
-from typing import Mapping, Optional
+from typing import Mapping, Optional, Set
 
 from .api import Converter, Record
 
@@ -14,10 +14,10 @@ __all__ = [
 class TransitiveError(NotImplementedError):
     """An error when transitive mappings appear."""
 
-    def __init__(self, intersection):
+    def __init__(self, intersection: Set[str]):
         self.intersection = intersection
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"Transitive mapping has not been implemented. This is being thrown because "
             f"the following appear in both the keys and values of the remapping: {self.intersection}."
