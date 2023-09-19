@@ -11,6 +11,20 @@ __all__ = [
 ]
 
 
+class TransitiveError(NotImplementedError):
+    """An error when transitive mappings appear."""
+
+    def __init__(self, intersection):
+        self.intersection = intersection
+
+    def __str__(self):
+        return (
+            f"Transitive mapping has not been implemented. This is being thrown because "
+            f"the following appear in both the keys and values of the remapping: {self.intersection}."
+            "\n\nSee discussion at https://github.com/cthoyt/curies/issues/75."
+        )
+
+
 def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Converter:
     """Apply CURIE prefix remappings.
 
@@ -19,6 +33,10 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
         Old CURIE prefixes become synonyms in the records (i.e., they aren't forgotten)
     :returns: An upgraded converter
     """
+    intersection = set(remapping).intersection(remapping.values())
+    if intersection:
+        raise TransitiveError(intersection)
+
     records = []
     for record in converter.records:
         new_prefix = _get_curie_preferred_or_synonym(record, remapping)
@@ -43,6 +61,10 @@ def remap_uri_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Co
         Old URI prefixes become synonyms in the records (i.e., they aren't forgotten)
     :returns: An upgraded converter
     """
+    intersection = set(remapping).intersection(remapping.values())
+    if intersection:
+        raise TransitiveError(intersection)
+
     records = []
     for record in converter.records:
         new_uri_prefix = _get_uri_preferred_or_synonym(record, remapping)

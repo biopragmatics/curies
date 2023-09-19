@@ -11,6 +11,13 @@ P = "https://example.org"
 class TestCURIERemapping(unittest.TestCase):
     """A test case for CURIE prefix remapping."""
 
+    def test_transitive_error(self):
+        """Test error on transitive remapping."""
+        converter = Converter([])
+        curie_remapping = {"b": "c", "c": "d"}
+        with self.assertRaises(NotImplementedError):
+            remap_curie_prefixes(converter, curie_remapping)
+
     def test_missing(self):
         """Test simple upgrade."""
         records = [
@@ -76,6 +83,16 @@ class TestCURIERemapping(unittest.TestCase):
 
 class TestURIRemapping(unittest.TestCase):
     """A test case for URI prefix remapping."""
+
+    def test_transitive_error(self):
+        """Test error on transitive remapping."""
+        converter = Converter([])
+        uri_remapping = {f"{P}/nope/": f"{P}/more-nope/", f"{P}/more-nope/": f"{P}/more-more-nope/"}
+        with self.assertRaises(NotImplementedError) as e:
+            remap_uri_prefixes(converter, uri_remapping)
+
+        # check that stringification works
+        self.assertIn("75", str(e.exception))
 
     def test_missing(self):
         """Test simple upgrade."""
