@@ -16,6 +16,7 @@ from .api import (
     load_prefix_map,
 )
 from .reconciliation import remap_curie_prefixes, remap_uri_prefixes, rewire
+from .report import Report
 from .sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -28,6 +29,7 @@ from .version import get_version
 __all__ = [
     "Converter",
     "Record",
+    "Report",
     "ReferenceTuple",
     "Reference",
     "DuplicateValueError",
