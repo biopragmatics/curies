@@ -1,8 +1,7 @@
 """Reconciliation."""
 
-from typing import Collection, Mapping, Optional, List, Tuple, Dict
-
-from pydantic import BaseModel
+from collections import Counter
+from typing import Collection, Dict, List, Mapping, Optional, Tuple
 
 from .api import Converter, Record
 
@@ -32,15 +31,6 @@ class TransitiveError(NotImplementedError):
         )
 
 
-def _get_curie_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> Optional[str]:
-    if record.prefix in upgrades:
-        return upgrades[record.prefix]
-    for s in record.prefix_synonyms:
-        if s in upgrades:
-            return upgrades[s]
-    return None
-
-
 def _get(records: Dict[str, Record], query: str) -> Optional[Record]:
     if query in records:
         return records.pop(query)
@@ -53,28 +43,25 @@ def _get(records: Dict[str, Record], query: str) -> Optional[Record]:
 def _find(records: Mapping[str, Record], query: str) -> Optional[Record]:
     if query in records:
         return records[query]
-    for prefix, record in records.items():
+    for record in records.values():
         if query in record.prefix_synonyms:
             return record
+    return None
 
 
-def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, Optional[str]]) -> Converter:
+def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Converter:
     """Apply CURIE prefix remappings.
 
     :param converter: A converter
     :param remapping: A mapping from CURIE prefixes to new CURIE prefixes.
         Old CURIE prefixes become synonyms in the records (i.e., they aren't forgotten).
     :returns: An upgraded converter
-    :raises TransitiveError: If there are any strings that appear in both
-        the key and values of the remapping
     """
+    ordering = _order_mappings(remapping)
     intersection = set(remapping).intersection(remapping.values())
-    # TODO checks that there are no branches
-    # TODO checks that there are no cycles
-
     records = {r.prefix: r for r in converter.records}
     modified_records = []
-    for old, new_prefix in _order_mappings(remapping):
+    for old, new_prefix in ordering:
         record = _get(records, old)
         new_record = _find(records, new_prefix)
         if record is None:
@@ -82,6 +69,7 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, Optional[
         elif new_record is not None and record != new_record:
             pass  # would create a clash, don't do anything
         elif old in intersection:
+            # TODO handle when synonym from old appears in intersection
             record.prefix_synonyms = sorted(
                 set(record.prefix_synonyms).difference({old, new_prefix})
             )
@@ -185,20 +173,31 @@ def _get_uri_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -
     return None
 
 
-def _order_mappings(remappings: Mapping[str, str]) -> List[Tuple[str, str]]:
-    if not set(remappings).intersection(remappings.values()):
+def _order_mappings(remapping: Mapping[str, str]) -> List[Tuple[str, str]]:
+    # Check that it's not the case that multiple prefixes are mapping
+    # to the same new prefix.
+    counter = Counter(remapping.values())
+    duplicates = {v for v, c in counter.items() if c > 1}
+    if duplicates:
+        raise ValueError(f"Duplicate values in remapping: {duplicates}")
+
+    if not set(remapping).intersection(remapping.values()):
         # No logic necessary, so just sort based on key to be consistent
-        return sorted(remappings.items())
+        return sorted(remapping.items())
 
-    # TODO provide a more simple implementation of this
-    import networkx as nx
+    # Check that there are no pairs k,v such that v:k is in the dict
+    # sss = {frozenset([k, v]) for k, v in remapping.items() if v in remapping and remapping[v] == k}
+    # if sss:
+    #     raise ValueError(f"found 2-cycles: {sss}")
 
-    g = nx.DiGraph(remappings.items())
+    # assume that there are no duplicates in the values
     rv = []
-    while g.number_of_nodes() > 0:
-        # get all nodes that have no outgoing
-        no_outgoing = sorted(node for node in g if not list(g.successors(node)))
-        edges = g.in_edges(no_outgoing)
+    d = dict(remapping)
+    while d:
+        no_outgoing = set(d.values()).difference(d)
+        if not no_outgoing:
+            raise ValueError("cycle detected in remapping")
+        edges = sorted((k, v) for k, v in d.items() if v in no_outgoing)
         rv.extend(edges)
-        g.remove_nodes_from(no_outgoing)
+        d = {k: v for k, v in d.items() if v not in no_outgoing}
     return rv

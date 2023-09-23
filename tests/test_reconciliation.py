@@ -23,6 +23,22 @@ class TestUtils(unittest.TestCase):
 class TestCURIERemapping(unittest.TestCase):
     """A test case for CURIE prefix remapping."""
 
+    def test_duplicates(self):
+        """Test detecting bad mapping with duplicates."""
+        curie_remapping = {"b": "c", "d": "c"}
+        with self.assertRaises(ValueError):
+            remap_curie_prefixes(..., curie_remapping)
+
+    def test_cycles(self):
+        """Test detecting bad mapping with duplicates."""
+        curie_remapping = {"b": "c", "c": "b"}
+        with self.assertRaises(ValueError):
+            remap_curie_prefixes(..., curie_remapping)
+
+        curie_remapping = {"a": "b", "b": "c", "c": "a"}
+        with self.assertRaises(ValueError):
+            remap_curie_prefixes(..., curie_remapping)
+
     def test_missing(self):
         """Test simple upgrade."""
         records = [
