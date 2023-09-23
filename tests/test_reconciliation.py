@@ -125,6 +125,35 @@ class TestCURIERemapping(unittest.TestCase):
             converter.records,
         )
 
+    def test_simultaneous_synonym(self):
+        """Test simultaneous remapping."""
+        records = [
+            Record(
+                prefix="geo",
+                prefix_synonyms=["ggg"],
+                uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+            ),
+            Record(prefix="geogeo", uri_prefix="http://purl.obolibrary.org/obo/GEO_"),
+        ]
+        converter = Converter(records)
+        curie_remapping = {"ggg": "ncbi.geo", "geogeo": "geo"}
+        converter = remap_curie_prefixes(converter, curie_remapping)
+        self.assertEqual(
+            [
+                Record(
+                    prefix="geo",
+                    prefix_synonyms=["geogeo"],
+                    uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+                ),
+                Record(
+                    prefix="ncbi.geo",
+                    prefix_synonyms=["ggg"],
+                    uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+                ),
+            ],
+            converter.records,
+        )
+
 
 class TestURIRemapping(unittest.TestCase):
     """A test case for URI prefix remapping."""
