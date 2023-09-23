@@ -432,7 +432,7 @@ class Converter:
                 raise DuplicatePrefixes(duplicate_prefixes)
 
         self.delimiter = delimiter
-        self.records = records
+        self.records = sorted(records, key=lambda r: r.prefix)
         self.prefix_map = _get_prefix_map(records)
         self.synonym_to_prefix = _get_prefix_synmap(records)
         self.reverse_prefix_map = _get_reverse_prefix_map(records)

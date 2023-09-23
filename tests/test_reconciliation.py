@@ -3,20 +3,25 @@
 import unittest
 
 from curies import Converter, Record, remap_curie_prefixes, remap_uri_prefixes, rewire
+from curies.reconciliation import _order_mappings
 
 #: The beginning of URIs used throughout examples
 P = "https://example.org"
 
 
+class TestUtils(unittest.TestCase):
+    """Test utilities."""
+
+    def test_ordering(self):
+        """Test ordering."""
+        self.assertEqual([("a", "a1"), ("b", "b1")], _order_mappings({"a": "a1", "b": "b1"}))
+        # we want to be as low down the chain first. Test both constructions of the dictionary
+        self.assertEqual([("c", "a"), ("b", "c")], _order_mappings({"c": "a", "b": "c"}))
+        self.assertEqual([("c", "a"), ("b", "c")], _order_mappings({"b": "c", "c": "a"}))
+
+
 class TestCURIERemapping(unittest.TestCase):
     """A test case for CURIE prefix remapping."""
-
-    def test_transitive_error(self):
-        """Test error on transitive remapping."""
-        converter = Converter([])
-        curie_remapping = {"b": "c", "c": "d"}
-        with self.assertRaises(NotImplementedError):
-            remap_curie_prefixes(converter, curie_remapping)
 
     def test_missing(self):
         """Test simple upgrade."""
@@ -79,6 +84,30 @@ class TestCURIERemapping(unittest.TestCase):
         converter = remap_curie_prefixes(converter, curie_remapping)
         self.assertEqual(2, len(converter.records))
         self.assertEqual(records, converter.records)
+
+    def test_simultaneous(self):
+        """Test simultaneous remapping."""
+        records = [
+            Record(prefix="geo", uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc="),
+            Record(prefix="geogeo", uri_prefix="http://purl.obolibrary.org/obo/GEO_"),
+        ]
+        converter = Converter(records)
+        curie_remapping = {"geo": "ncbi.geo", "geogeo": "geo"}
+        converter = remap_curie_prefixes(converter, curie_remapping)
+        self.assertEqual(
+            [
+                Record(
+                    prefix="geo",
+                    prefix_synonyms=["geogeo"],
+                    uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+                ),
+                Record(
+                    prefix="ncbi.geo",
+                    uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+                ),
+            ],
+            converter.records,
+        )
 
 
 class TestURIRemapping(unittest.TestCase):
