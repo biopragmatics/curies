@@ -30,7 +30,7 @@ class TestCURIERemapping(unittest.TestCase):
             remap_curie_prefixes(..., curie_remapping)
 
     def test_cycles(self):
-        """Test detecting bad mapping with duplicates."""
+        """Test detecting bad mapping with cycles."""
         curie_remapping = {"b": "c", "c": "b"}
         with self.assertRaises(ValueError):
             remap_curie_prefixes(..., curie_remapping)

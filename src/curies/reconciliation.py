@@ -31,24 +31,6 @@ class TransitiveError(NotImplementedError):
         )
 
 
-def _get(records: Dict[str, Record], query: str) -> Optional[Record]:
-    if query in records:
-        return records.pop(query)
-    for prefix, record in list(records.items()):
-        if query in record.prefix_synonyms:
-            return records.pop(prefix)
-    return None
-
-
-def _find(records: Mapping[str, Record], query: str) -> Optional[Record]:
-    if query in records:
-        return records[query]
-    for record in records.values():
-        if query in record.prefix_synonyms:
-            return record
-    return None
-
-
 def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Converter:
     """Apply CURIE prefix remappings.
 
@@ -60,13 +42,16 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
     ordering = _order_mappings(remapping)
     intersection = set(remapping).intersection(remapping.values())
     records = {r.prefix: r for r in converter.records}
+
     modified_records = []
     for old, new_prefix in ordering:
-        record = _get(records, old)
-        new_record = _find(records, new_prefix)
-        if record is None:
+        _old = converter.synonym_to_prefix.get(old)
+        if _old is None:
             continue  # nothing to upgrade
-        elif new_record is not None and record != new_record:
+
+        record = records.pop(_old)
+        new_record = converter.get_record(new_prefix)
+        if new_record is not None and record != new_record:
             pass  # would create a clash, don't do anything
         elif old in intersection:
             # TODO handle when synonym from old appears in intersection

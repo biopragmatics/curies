@@ -1273,7 +1273,7 @@ class Converter:
         """Get the record for the prefix."""
         # TODO better data structure for this
         for record in self.records:
-            if record.prefix == prefix:
+            if record.prefix == prefix or prefix in record.prefix_synonyms:
                 return record
         return None
 
