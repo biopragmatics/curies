@@ -4,11 +4,11 @@ import unittest
 
 from curies import Converter, Record, remap_curie_prefixes, remap_uri_prefixes, rewire
 from curies.reconciliation import (
-    _order_mappings,
-    DuplicateValues,
-    DuplicateKeys,
-    InconsistentMapping,
     CycleDetected,
+    DuplicateKeys,
+    DuplicateValues,
+    InconsistentMapping,
+    _order_curie_remapping,
 )
 
 #: The beginning of URIs used throughout examples
@@ -28,11 +28,15 @@ class TestUtils(unittest.TestCase):
             ]
         )
         self.assertEqual(
-            [("a", "a1"), ("b", "b1")], _order_mappings(converter, {"a": "a1", "b": "b1"})
+            [("a", "a1"), ("b", "b1")], _order_curie_remapping(converter, {"a": "a1", "b": "b1"})
         )
         # we want to be as low down the chain first. Test both constructions of the dictionary
-        self.assertEqual([("c", "a"), ("b", "c")], _order_mappings(converter, {"c": "a", "b": "c"}))
-        self.assertEqual([("c", "a"), ("b", "c")], _order_mappings(converter, {"b": "c", "c": "a"}))
+        self.assertEqual(
+            [("c", "a"), ("b", "c")], _order_curie_remapping(converter, {"c": "a", "b": "c"})
+        )
+        self.assertEqual(
+            [("c", "a"), ("b", "c")], _order_curie_remapping(converter, {"b": "c", "c": "a"})
+        )
 
     def test_duplicate_values(self):
         """Test detecting bad mapping with duplicate."""
@@ -45,7 +49,7 @@ class TestUtils(unittest.TestCase):
         )
         curie_remapping = {"b": "c", "a": "c"}
         with self.assertRaises(DuplicateValues):
-            _order_mappings(converter, curie_remapping)
+            _order_curie_remapping(converter, curie_remapping)
 
     def test_duplicate_keys(self):
         """Test detecting a bad mapping that contains multiple references to the same record in the keys."""
@@ -58,10 +62,10 @@ class TestUtils(unittest.TestCase):
         )
         curie_remapping = {"a": "c", "a1": "b"}
         with self.assertRaises(DuplicateKeys):
-            _order_mappings(converter, curie_remapping)
+            _order_curie_remapping(converter, curie_remapping)
 
     def test_duplicate_correspondence(self):
-        """Test detecting a bad mapping that contains inconsistent references to the same record in the keys and values."""
+        """Test detecting a bad mapping containing inconsistent references to the same record in the keys and values."""
         converter = Converter(
             [
                 Record(prefix="a", prefix_synonyms=["a1"], uri_prefix=f"{P}/a/"),
@@ -71,7 +75,7 @@ class TestUtils(unittest.TestCase):
         )
         curie_remapping = {"a": "c", "b": "a1"}
         with self.assertRaises(InconsistentMapping):
-            _order_mappings(converter, curie_remapping)
+            _order_curie_remapping(converter, curie_remapping)
 
     def test_cycles(self):
         """Test detecting bad mapping with cycles."""
@@ -88,7 +92,7 @@ class TestUtils(unittest.TestCase):
 
         curie_remapping = {"a": "b", "b": "c", "c": "a"}
         with self.assertRaises(CycleDetected):
-            _order_mappings(converter, curie_remapping)
+            _order_curie_remapping(converter, curie_remapping)
 
 
 class TestCURIERemapping(unittest.TestCase):

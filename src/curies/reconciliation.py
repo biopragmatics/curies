@@ -1,7 +1,7 @@
 """Reconciliation."""
 
 from collections import Counter, defaultdict
-from typing import Collection, Dict, List, Mapping, Optional, Tuple
+from typing import Collection, List, Mapping, Optional, Tuple
 
 from .api import Converter, Record
 
@@ -39,7 +39,7 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
         Old CURIE prefixes become synonyms in the records (i.e., they aren't forgotten).
     :returns: An upgraded converter
     """
-    ordering = _order_mappings(converter, remapping)
+    ordering = _order_curie_remapping(converter, remapping)
     intersection = set(remapping).intersection(remapping.values())
     records = {r.prefix: r for r in converter.records}
 
@@ -173,10 +173,12 @@ class CycleDetected(ValueError):
     """Raised when the remapping induces a cycle."""
 
 
-def _order_mappings(converter: Converter, remapping: Mapping[str, str]) -> List[Tuple[str, str]]:
+def _order_curie_remapping(
+    converter: Converter, curie_remapping: Mapping[str, str]
+) -> List[Tuple[str, str]]:
     # Check that no keys of the remapping actually correspond to the same primary prefix
     key_counter = defaultdict(list)
-    for key in remapping:
+    for key in curie_remapping:
         key_counter[converter.standardize_prefix(key)].append(key)
     duplicate_keys = {
         k: Counter(values) for k, values in key_counter.items() if len(values) > 1 and k is not None
@@ -187,7 +189,7 @@ def _order_mappings(converter: Converter, remapping: Mapping[str, str]) -> List[
     # Check that it's not the case that multiple prefixes are mapping
     # to the same new prefix.
     value_counter = defaultdict(list)
-    for value in remapping.values():
+    for value in curie_remapping.values():
         value_counter[converter.standardize_prefix(value)].append(value)
     duplicate_values = {
         k: Counter(values)
@@ -199,7 +201,7 @@ def _order_mappings(converter: Converter, remapping: Mapping[str, str]) -> List[
 
     # Check that the correspondence is same for both
     correspondence_counter = defaultdict(set)
-    for key, value in remapping.items():
+    for key, value in curie_remapping.items():
         norm_key = converter.standardize_prefix(key)
         norm_val = converter.standardize_prefix(value)
         correspondence_counter[norm_key].add(key)
@@ -218,13 +220,13 @@ def _order_mappings(converter: Converter, remapping: Mapping[str, str]) -> List[
 
     # Given the two tests before, we don't have to worry about any clashes, and
     # we can work directly on primary prefixes
-    if not set(remapping).intersection(remapping.values()):
+    if not set(curie_remapping).intersection(curie_remapping.values()):
         # No logic necessary, so just sort based on key to be consistent
-        return sorted(remapping.items())
+        return sorted(curie_remapping.items())
 
     # assume that there are no duplicates in the values
     rv = []
-    d = dict(remapping)
+    d = dict(curie_remapping)
     while d:
         no_outgoing = set(d.values()).difference(d)
         if not no_outgoing:
