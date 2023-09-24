@@ -112,6 +112,23 @@ are dependent (we're calling these *transitive remappings*) and apply them in th
     This is not the same as an "overwrite" which would delete the original ``geo`` operation. This package
     expects that you give a new name such that no records are lost.
 
+.. warning::
+
+    Primary prefixes must be used when doing transitive remappings. Handling synonyms proved to be too complex.
+    Therefore, if you use a CURIE prefix remapping like in the following, you will get an exception.
+
+    .. code-block::
+
+        converter = Converter([
+            Record(
+                prefix="geo",
+                prefix_synonyms=["ggg"],
+                uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+            ),
+            Record(prefix="geogeo", uri_prefix="http://purl.obolibrary.org/obo/GEO_"),
+        ])
+        curie_remapping = {"ggg": "ncbi.geo", "geogeo": "geo"}
+
 URI Prefix Remapping
 ----------------------
 URI prefix remapping is configured by a mapping from existing URI prefixes to new URI prefixes.
