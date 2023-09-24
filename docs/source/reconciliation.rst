@@ -105,12 +105,40 @@ the desired results:
 2. Remapping with ``{"geogeo": "geo"}`` would not change the mapping as ``geo`` is already part of a different record.
 
 The :func:`curies.remap_curie_prefixes` implements special logic to identify scenarios where two (or more) remappings
-are dependent (we're calling these *transitive remappings*) and apply them in the expected way.
+are dependent (we're calling these *transitive remappings*) and apply them in the expected way. Therefore, we
+see the following
+
+.. code-block:: python
+
+    from curies import Converter, Record, remap_curie_prefixes
+
+    converter = Converter([
+        Record(prefix="geo", uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc="),
+        Record(prefix="geogeo", uri_prefix="http://purl.obolibrary.org/obo/GEO_"),
+    ])
+    remapping = {"geo": "ncbi.geo", "geogeo": "geo"}
+    converter = remap_curie_prefixes(converter, curie_remapping)
+
+    >>> converter.records
+    [
+        Record(
+            prefix="geo",
+            prefix_synonyms=["geogeo"],
+            uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+        ),
+        Record(
+            prefix="ncbi.geo",
+            uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+        ),
+    ]
+
+``geogeo`` is maintained as a CURIE prefix synonym for the Geographical Entity Ontology's record. Synonyms
+of Gene Expression Omnibus would also be retained.
 
 .. note::
 
     This is not the same as an "overwrite" which would delete the original ``geo`` operation. This package
-    expects that you give a new name such that no records are lost.
+    expects that you give a new CURIE prefix to all "overwritten" records such that no records are lost.
 
 .. warning::
 
