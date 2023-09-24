@@ -1,6 +1,6 @@
 """Reconciliation."""
 
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import Collection, Dict, List, Mapping, Optional, Tuple
 
 from .api import Converter, Record
@@ -39,7 +39,7 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
         Old CURIE prefixes become synonyms in the records (i.e., they aren't forgotten).
     :returns: An upgraded converter
     """
-    ordering = _order_mappings(remapping)
+    ordering = _order_mappings(converter, remapping)
     intersection = set(remapping).intersection(remapping.values())
     records = {r.prefix: r for r in converter.records}
 
@@ -54,7 +54,6 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
         if new_record is not None and record != new_record:
             pass  # would create a clash, don't do anything
         elif old in intersection:
-            # TODO handle when synonym from old appears in intersection
             record.prefix_synonyms = sorted(
                 set(record.prefix_synonyms).difference({old, new_prefix})
             )
@@ -158,22 +157,70 @@ def _get_uri_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -
     return None
 
 
-def _order_mappings(remapping: Mapping[str, str]) -> List[Tuple[str, str]]:
+class DuplicateValues(ValueError):
+    """Raised when multiple values in the remapping correspond to the same preferred CURIE prefix."""
+
+
+class DuplicateKeys(ValueError):
+    """Raised when multiple keys in the remapping correspond to the same preferred CURIE prefix."""
+
+
+class InconsistentMapping(ValueError):
+    """Raised when inconsistent prefixes are used in the keys and values of the remapping."""
+
+
+class CycleDetected(ValueError):
+    """Raised when the remapping induces a cycle."""
+
+
+def _order_mappings(converter: Converter, remapping: Mapping[str, str]) -> List[Tuple[str, str]]:
+    # Check that no keys of the remapping actually correspond to the same primary prefix
+    key_counter = defaultdict(list)
+    for key in remapping:
+        key_counter[converter.standardize_prefix(key)].append(key)
+    duplicate_keys = {
+        k: Counter(values) for k, values in key_counter.items() if len(values) > 1 and k is not None
+    }
+    if duplicate_keys:
+        raise DuplicateKeys(f"Duplicate keys in remapping: {duplicate_keys}")
+
     # Check that it's not the case that multiple prefixes are mapping
     # to the same new prefix.
-    counter = Counter(remapping.values())
-    duplicates = {v for v, c in counter.items() if c > 1}
-    if duplicates:
-        raise ValueError(f"Duplicate values in remapping: {duplicates}")
+    value_counter = defaultdict(list)
+    for value in remapping.values():
+        value_counter[converter.standardize_prefix(value)].append(value)
+    duplicate_values = {
+        k: Counter(values)
+        for k, values in value_counter.items()
+        if len(values) > 1 and k is not None
+    }
+    if duplicate_values:
+        raise DuplicateValues(f"Duplicate values in remapping: {duplicate_values}")
 
+    # Check that the correspondence is same for both
+    correspondence_counter = defaultdict(set)
+    for key, value in remapping.items():
+        norm_key = converter.standardize_prefix(key)
+        norm_val = converter.standardize_prefix(value)
+        correspondence_counter[norm_key].add(key)
+        # don't penalize synonym remappings
+        if norm_key != norm_val:
+            correspondence_counter[norm_val].add(value)
+    duplicate_correspondence = {
+        k: Counter(values)
+        for k, values in correspondence_counter.items()
+        if len(values) > 1 and k is not None
+    }
+    if duplicate_correspondence:
+        raise InconsistentMapping(
+            f"Inconsistent usage of prefixes in keys and values: {duplicate_correspondence}"
+        )
+
+    # Given the two tests before, we don't have to worry about any clashes, and
+    # we can work directly on primary prefixes
     if not set(remapping).intersection(remapping.values()):
         # No logic necessary, so just sort based on key to be consistent
         return sorted(remapping.items())
-
-    # Check that there are no pairs k,v such that v:k is in the dict
-    # sss = {frozenset([k, v]) for k, v in remapping.items() if v in remapping and remapping[v] == k}
-    # if sss:
-    #     raise ValueError(f"found 2-cycles: {sss}")
 
     # assume that there are no duplicates in the values
     rv = []
@@ -181,7 +228,7 @@ def _order_mappings(remapping: Mapping[str, str]) -> List[Tuple[str, str]]:
     while d:
         no_outgoing = set(d.values()).difference(d)
         if not no_outgoing:
-            raise ValueError("cycle detected in remapping")
+            raise CycleDetected("cycle detected in remapping")
         edges = sorted((k, v) for k, v in d.items() if v in no_outgoing)
         rv.extend(edges)
         d = {k: v for k, v in d.items() if v not in no_outgoing}
