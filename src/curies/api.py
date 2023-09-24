@@ -432,7 +432,7 @@ class Converter:
                 raise DuplicatePrefixes(duplicate_prefixes)
 
         self.delimiter = delimiter
-        self.records = records
+        self.records = sorted(records, key=lambda r: r.prefix)
         self.prefix_map = _get_prefix_map(records)
         self.synonym_to_prefix = _get_prefix_synmap(records)
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
@@ -1273,7 +1273,7 @@ class Converter:
         """Get the record for the prefix."""
         # TODO better data structure for this
         for record in self.records:
-            if record.prefix == prefix:
+            if record.prefix == prefix or prefix in record.prefix_synonyms:
                 return record
         return None
 

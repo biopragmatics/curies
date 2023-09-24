@@ -92,6 +92,71 @@ If neither the old prefix nor new prefix appear in the extended prefix maps, one
 1. Do nothing (lenient)
 2. Raise an exception (strict)
 
+Transitive CURIE Prefix Remapping
+---------------------------------
+There's a special case of CURIE prefix remapping where one prefix is supposed to overwrite another. For example,
+in the Bioregistry, the `Gene Expression Omnibus <https://www.ncbi.nlm.nih.gov/geo/>`_ is given the prefix ``geo``
+and the `Geographical Entity Ontology <https://obofoundry.org/ontology/geo>`_ is given the
+prefix ``geogeo``. OBO Foundry users will want to rename the Gene Expression Omnibus record to something else
+like ``ncbi.geo`` and rename ``geogeo`` to ``geo``. Taken by themselves, these two operations would not accomplish
+the desired results:
+
+1. Remapping with ``{"geo": "ncbi.geo"}`` would retain ``geo`` as a CURIE prefix synonym
+2. Remapping with ``{"geogeo": "geo"}`` would not change the mapping as ``geo`` is already part of a different record.
+
+The :func:`curies.remap_curie_prefixes` implements special logic to identify scenarios where two (or more) remappings
+are dependent (we're calling these *transitive remappings*) and apply them in the expected way. Therefore, we
+see the following
+
+.. code-block:: python
+
+    from curies import Converter, Record, remap_curie_prefixes
+
+    converter = Converter([
+        Record(prefix="geo", uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc="),
+        Record(prefix="geogeo", uri_prefix="http://purl.obolibrary.org/obo/GEO_"),
+    ])
+    remapping = {"geo": "ncbi.geo", "geogeo": "geo"}
+    converter = remap_curie_prefixes(converter, curie_remapping)
+
+    >>> converter.records
+    [
+        Record(
+            prefix="geo",
+            prefix_synonyms=["geogeo"],
+            uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+        ),
+        Record(
+            prefix="ncbi.geo",
+            uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+        ),
+    ]
+
+``geogeo`` is maintained as a CURIE prefix synonym for the Geographical Entity Ontology's record. Synonyms
+of Gene Expression Omnibus would also be retained.
+
+.. note::
+
+    This is not the same as an "overwrite" which would delete the original ``geo`` operation. This package
+    expects that you give a new CURIE prefix to all "overwritten" records such that no records are lost.
+
+.. warning::
+
+    Primary prefixes must be used when doing transitive remappings. Handling synonyms proved to be too complex.
+    Therefore, if you use a CURIE prefix remapping like in the following, you will get an exception.
+
+    .. code-block::
+
+        converter = Converter([
+            Record(
+                prefix="geo",
+                prefix_synonyms=["ggg"],
+                uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+            ),
+            Record(prefix="geogeo", uri_prefix="http://purl.obolibrary.org/obo/GEO_"),
+        ])
+        curie_remapping = {"ggg": "ncbi.geo", "geogeo": "geo"}
+
 URI Prefix Remapping
 ----------------------
 URI prefix remapping is configured by a mapping from existing URI prefixes to new URI prefixes.
@@ -174,16 +239,3 @@ any record in the extended prefix map, do one of the following:
 
 1. Do nothing (lenient)
 2. Raise an exception (strict)
-
-Transitive Mappings
--------------------
-There's an important drawback to the current implementation of CURIE remapping - it is not able to consistently
-and correctly handle the case when the order of remapping records matters. For example, in the Bioregistry,
-the `Gene Expression Omnibus <https://www.ncbi.nlm.nih.gov/geo/>`_ is given the prefix ``geo`` and the
-`Geographical Entity Ontology <https://obofoundry.org/ontology/geo>`_ is given the
-prefix ``geogeo``. OBO Foundry users will want to rename the Gene Expression Omnibus record to something else
-like ``ncbi.geo`` and rename ``geogeo`` to ``geo``. This is possible in theory, but requires an implementation
-that will require additional introspection over the values appearing in both the keys and values of a remapping
-as well as changing the way that the records are modified.
-
-.. seealso:: Discussion about this issue on https://github.com/cthoyt/curies/issues/75
