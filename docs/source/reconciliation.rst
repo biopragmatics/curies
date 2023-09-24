@@ -92,6 +92,26 @@ If neither the old prefix nor new prefix appear in the extended prefix maps, one
 1. Do nothing (lenient)
 2. Raise an exception (strict)
 
+Transitive CURIE Prefix Remapping
+---------------------------------
+There's a special case of CURIE prefix remapping where one prefix is supposed to overwrite another. For example,
+in the Bioregistry, the `Gene Expression Omnibus <https://www.ncbi.nlm.nih.gov/geo/>`_ is given the prefix ``geo``
+and the `Geographical Entity Ontology <https://obofoundry.org/ontology/geo>`_ is given the
+prefix ``geogeo``. OBO Foundry users will want to rename the Gene Expression Omnibus record to something else
+like ``ncbi.geo`` and rename ``geogeo`` to ``geo``. Taken by themselves, these two operations would not accomplish
+the desired results:
+
+1. Remapping with ``{"geo": "ncbi.geo"}`` would retain ``geo`` as a CURIE prefix synonym
+2. Remapping with ``{"geogeo": "geo"}`` would not change the mapping as ``geo`` is already part of a different record.
+
+The :func:`curies.remap_curie_prefixes` implements special logic to identify scenarios where two (or more) remappings
+are dependent (we're calling these *transitive remappings*) and apply them in the expected way.
+
+.. note::
+
+    This is not the same as an "overwrite" which would delete the original ``geo`` operation. This package
+    expects that you give a new name such that no records are lost.
+
 URI Prefix Remapping
 ----------------------
 URI prefix remapping is configured by a mapping from existing URI prefixes to new URI prefixes.
@@ -174,23 +194,3 @@ any record in the extended prefix map, do one of the following:
 
 1. Do nothing (lenient)
 2. Raise an exception (strict)
-
-Transitive Remappings
----------------------
-There's a special case of CURIE prefix remapping where one prefix is supposed to overwrite another. For example,
-in the Bioregistry, the `Gene Expression Omnibus <https://www.ncbi.nlm.nih.gov/geo/>`_ is given the prefix ``geo``
-and the `Geographical Entity Ontology <https://obofoundry.org/ontology/geo>`_ is given the
-prefix ``geogeo``. OBO Foundry users will want to rename the Gene Expression Omnibus record to something else
-like ``ncbi.geo`` and rename ``geogeo`` to ``geo``. Taken by themselves, these two operations would not accomplish
-the desired results:
-
-1. Remapping with ``{"geo": "ncbi.geo"}`` would retain ``geo`` as a CURIE prefix synonym
-2. Remapping with ``{"geogeo": "geo"}`` would not change the mapping as ``geo`` is already part of a different record.
-
-The :func:`curies.remap_curie_prefixes` implements special logic to identify scenarios where two (or more) remappings
-are dependent (we're calling these *transitive remappings*) and apply them in the expected way.
-
-.. note::
-
-    This is not the same as an "overwrite" which would delete the original ``geo`` operation. This package
-    expects that you give a new name such that no records are lost.
