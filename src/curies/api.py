@@ -865,6 +865,10 @@ class Converter:
         """Format a prefix and identifier into a CURIE string."""
         return f"{prefix}{self.delimiter}{identifier}"
 
+    def compress_strict(self, uri: str) -> str:
+        """Compress a URI to a CURIE, and raise an error of not possible."""
+        return self.compress(uri, strict=True)
+
     @overload
     def compress(self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False) -> str:
         ...
@@ -943,16 +947,17 @@ class Converter:
 
     def expand_strict(self, curie: str) -> str:
         """Expand a CURIE to a URI, and raise an error of not possible."""
-        rv = self.expand(curie)
-        if rv is None:
-            raise ExpansionError(curie)
-        return rv
+        return self.expand(curie, strict=True)
 
-    def expand(self, curie: str) -> Optional[str]:
+    def expand(
+        self, curie: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
 
         :param curie:
             A string representing a compact URI
+        :param strict: If true and the CURIE can't be expanded, returns an error
+        :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
 
@@ -976,7 +981,14 @@ class Converter:
             instead of ``OBO:GO_0032571``.
         """
         prefix, identifier = self.parse_curie(curie)
-        return self.expand_pair(prefix, identifier)
+        rv = self.expand_pair(prefix, identifier)
+        if rv:
+            return rv
+        if strict:
+            raise ExpansionError(curie)
+        if passthrough:
+            return curie
+        return None
 
     def expand_all(self, curie: str) -> Optional[Collection[str]]:
         """Expand a CURIE pair to all possible URIs.
@@ -1175,14 +1187,19 @@ class Converter:
         df: "pandas.DataFrame",
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         """Convert all CURIEs in the given column to URIs.
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
         :param target_column: The column to put the results in. Defaults to input column.
+        :param strict: If true and the CURIE can't be expanded, returns an error
+        :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
         """
-        df[column if target_column is None else target_column] = df[column].map(self.expand)
+        func = partial(self.expand, strict=strict, passthrough=passthrough)
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_prefix(
         self,
@@ -1272,7 +1289,13 @@ class Converter:
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     def file_expand(
-        self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
+        self,
+        path: Union[str, Path],
+        column: int,
+        sep: Optional[str] = None,
+        header: bool = True,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         """Convert all CURIEs in the given column of a CSV file to URIs.
 
@@ -1280,8 +1303,11 @@ class Converter:
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
         :param sep: The delimiter of the CSV file, defaults to tab
         :param header: Does the file have a header row?
+        :param strict: If true and the CURIE can't be expanded, returns an error
+        :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
         """
-        self._file_helper(self.expand, path=path, column=column, sep=sep, header=header)
+        func = partial(self.expand, strict=strict, passthrough=passthrough)
+        self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     @staticmethod
     def _file_helper(
