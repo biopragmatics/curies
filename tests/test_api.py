@@ -286,10 +286,15 @@ class TestConverter(unittest.TestCase):
             self.assertEqual(uri, converter.expand_strict(curie))
 
         self.assertIsNone(converter.compress("http://example.org/missing:00000"))
+        self.assertEqual(
+            "http://example.org/missing:00000",
+            converter.compress("http://example.org/missing:00000", passthrough=True),
+        )
         with self.assertRaises(CompressionError):
             converter.compress_strict("http://example.org/missing:00000")
 
         self.assertIsNone(converter.expand("missing:00000"))
+        self.assertEqual("missing:00000", converter.expand("missing:00000", passthrough=True))
         with self.assertRaises(ExpansionError):
             converter.expand_strict("missing:00000")
 
