@@ -827,6 +827,8 @@ class Converter:
         """
         prefix_map = {}
         for key, value in _prepare(data)["@context"].items():
+            if key.startswith("@"):
+                continue
             if isinstance(value, str):
                 prefix_map[key] = value
             elif isinstance(value, dict) and value.get("@prefix") is True:
