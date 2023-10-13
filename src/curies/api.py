@@ -869,16 +869,19 @@ class Converter:
         """Compress a URI to a CURIE, and raise an error of not possible."""
         return self.compress(uri, strict=True)
 
+    # docstr-coverage:excused `overload`
     @overload
     def compress(self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False) -> str:
         ...
 
+    # docstr-coverage:excused `overload`
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
     ) -> str:
         ...
 
+    # docstr-coverage:excused `overload`
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
@@ -949,16 +952,19 @@ class Converter:
         """Expand a CURIE to a URI, and raise an error of not possible."""
         return self.expand(curie, strict=True)
 
+    # docstr-coverage:excused `overload`
     @overload
     def expand(self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False) -> str:
         ...
 
+    # docstr-coverage:excused `overload`
     @overload
     def expand(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
     ) -> str:
         ...
 
+    # docstr-coverage:excused `overload`
     @overload
     def expand(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
