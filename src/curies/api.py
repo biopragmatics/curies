@@ -321,6 +321,22 @@ class CompressionError(ConversionError):
     """An error raised on expansion if the URI prefix can't be matched."""
 
 
+class StandardizationError(ValueError):
+    """An error raised on standardization."""
+
+
+class PrefixStandardizationError(StandardizationError):
+    pass
+
+
+class CURIEStandardizationError(StandardizationError):
+    pass
+
+
+class URIStandardizationError(StandardizationError):
+    pass
+
+
 def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]:
     return [
         DuplicateSummary(record_1, record_2, uri_prefix)
@@ -1103,7 +1119,9 @@ class Converter:
             rv.append(uri_prefix_synonyms + identifier)
         return rv
 
-    def standardize_prefix(self, prefix: str) -> Optional[str]:
+    def standardize_prefix(
+        self, prefix: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
         """Standardize a prefix.
 
         :param prefix:
@@ -1123,9 +1141,18 @@ class Converter:
         >>> converter.standardize_prefix("NOPE") is None
         True
         """
-        return self.synonym_to_prefix.get(prefix)
+        rv = self.synonym_to_prefix.get(prefix)
+        if rv:
+            return rv
+        if strict:
+            raise PrefixStandardizationError(prefix)
+        if passthrough:
+            return prefix
+        return None
 
-    def standardize_curie(self, curie: str) -> Optional[str]:
+    def standardize_curie(
+        self, curie: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
         """Standardize a CURIE.
 
         :param curie:
@@ -1149,11 +1176,17 @@ class Converter:
         """
         prefix, identifier = self.parse_curie(curie)
         norm_prefix = self.standardize_prefix(prefix)
-        if norm_prefix is None:
-            return None
-        return self.format_curie(norm_prefix, identifier)
+        if norm_prefix is not None:
+            return self.format_curie(norm_prefix, identifier)
+        if strict:
+            raise CURIEStandardizationError(curie)
+        if passthrough:
+            return curie
+        return None
 
-    def standardize_uri(self, uri: str) -> Optional[str]:
+    def standardize_uri(
+        self, uri: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
         """Standardize a URI.
 
         :param uri:
@@ -1182,10 +1215,14 @@ class Converter:
         True
         """
         prefix, identifier = self.parse_uri(uri)
-        if prefix is None or identifier is None:
-            return None
-        # prefix is ensured to be in self.prefix_map because of successful parse
-        return self.prefix_map[prefix] + identifier
+        if prefix and identifier:
+            # prefix is ensured to be in self.prefix_map because of successful parse
+            return self.prefix_map[prefix] + identifier
+        if strict:
+            raise URIStandardizationError(uri)
+        if passthrough:
+            return uri
+        return None
 
     def pd_compress(
         self,
@@ -1231,6 +1268,8 @@ class Converter:
         *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         """Standardize all prefixes in the given column.
 
@@ -1238,9 +1277,8 @@ class Converter:
         :param column: The column in the dataframe containing prefixes to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
         """
-        df[column if target_column is None else target_column] = df[column].map(
-            self.standardize_prefix
-        )
+        func = partial(self.standardize_prefix, strict=strict, passthrough=passthrough)
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_curie(
         self,
@@ -1248,6 +1286,8 @@ class Converter:
         *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         r"""Standardize all CURIEs in the given column.
 
@@ -1270,9 +1310,8 @@ class Converter:
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
         """
-        df[column if target_column is None else target_column] = df[column].map(
-            self.standardize_curie
-        )
+        func = partial(self.standardize_curie, strict=strict, passthrough=passthrough)
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_uri(
         self,
@@ -1280,6 +1319,8 @@ class Converter:
         *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         """Standardize all URIs in the given column.
 
@@ -1287,9 +1328,8 @@ class Converter:
         :param column: The column in the dataframe containing URIs to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
         """
-        df[column if target_column is None else target_column] = df[column].map(
-            self.standardize_uri
-        )
+        func = partial(self.standardize_uri, strict=strict, passthrough=passthrough)
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def file_compress(
         self,
