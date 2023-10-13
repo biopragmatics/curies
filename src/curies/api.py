@@ -949,6 +949,22 @@ class Converter:
         """Expand a CURIE to a URI, and raise an error of not possible."""
         return self.expand(curie, strict=True)
 
+    @overload
+    def expand(self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False) -> str:
+        ...
+
+    @overload
+    def expand(
+        self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
+    ) -> str:
+        ...
+
+    @overload
+    def expand(
+        self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
+    ) -> Optional[str]:
+        ...
+
     def expand(
         self, curie: str, *, strict: bool = False, passthrough: bool = False
     ) -> Optional[str]:
@@ -960,6 +976,8 @@ class Converter:
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
+        :raises ExpansionError:
+            If struct is true and the URI can't be expanded
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
