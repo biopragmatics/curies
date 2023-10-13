@@ -422,15 +422,129 @@ Apply in bulk to a :class:`pandas.DataFrame` with :meth:`curies.Converter.pd_exp
     converter.pd_standardize_curie(df, column=0)
     converter.pd_standardize_uri(df, column=0)
 
+
+Compress URIs
+~~~~~~~~~~~~~
+In order to demonstrate bulk operations using :meth:`curies.Converter.pd_compress`,
+we construct a small dataframe:
+
+.. code-block:: python
+
+    import curies
+    import pandas as pd
+
+    df = pd.DataFrame({"uri": [
+        "http://purl.obolibrary.org/obo/UBPROP_0000010",
+        "http://purl.obolibrary.org/obo/UBPROP_0000011",
+        "http://gudt.org/schema/gudt/baseCGSUnitDimensions",
+        "http://qudt.org/schema/qudt/conversionMultiplier",
+    ]})
+
+    converter = curies.get_obo_converter()
+    converter.pd_compress(df, column="uri", target_column="curie")
+
+Results will look like:
+
+=================================================  ==================
+uri                                                curie
+=================================================  ==================
+http://purl.obolibrary.org/obo/UBPROP_0000010      obo:UBPROP_0000010
+http://purl.obolibrary.org/obo/UBPROP_0000011      obo:UBPROP_0000011
+http://gudt.org/schema/gudt/baseCGSUnitDimensions
+http://qudt.org/schema/qudt/conversionMultiplier
+=================================================  ==================
+
+Note that some URIs are not handled by the extended prefix map inside the converter, so if you want
+to pass those through, use ``passthrough=True`` like in
+
+.. code-block:: python
+
+    converter.pd_compress(df, column="uri", target_column="curie", passthrough=True)
+
+=================================================  =================================================
+uri                                                curie
+=================================================  =================================================
+http://purl.obolibrary.org/obo/UBPROP_0000010      obo:UBPROP_0000010
+http://purl.obolibrary.org/obo/UBPROP_0000011      obo:UBPROP_0000011
+http://gudt.org/schema/gudt/baseCGSUnitDimensions  http://gudt.org/schema/gudt/baseCGSUnitDimensions
+http://qudt.org/schema/qudt/conversionMultiplier   http://qudt.org/schema/qudt/conversionMultiplier
+=================================================  =================================================
+
+Expand CURIEs
+~~~~~~~~~~~~~
+In order to demonstrate bulk operations using :meth:`curies.Converter.pd_expand`,
+we construct a small dataframe used in conjunction with the OBO converter (which
+only includes OBO Foundry ontology URI prefix expansions):
+
+.. code-block:: python
+
+    import curies
+    import pandas as pd
+
+    df = pd.DataFrame({"curie": [
+        "GO:0000001",
+        "skos:exactMatch",
+    ]})
+
+    converter = curies.get_obo_converter()
+    converter.pd_expand(df, column="curie", target_column="uri")
+
+===============  =========================================
+curie            uri
+===============  =========================================
+GO:0000001       http://purl.obolibrary.org/obo/GO_0000001
+skos:exactMatch
+===============  =========================================
+
+Note that since ``skos`` is not in the OBO Foundry extended prefix map, no results are placed in
+the ``uri`` column. If you wan to pass through elements that can't be expanded, you can use
+``passthrough=True`` like in:
+
+.. code-block:: python
+
+    converter.pd_expand(df, column="curie", target_column="uri", passthrough=True)
+
+===============  =========================================
+curie            uri
+===============  =========================================
+GO:0000001       http://purl.obolibrary.org/obo/GO_0000001
+skos:exactMatch  skos:exactMatch
+===============  =========================================
+
+Alternatively, chaining together multiple converters (such as the Bioregistry) will yield better results
+
+.. code-block:: python
+
+    import curies
+    import pandas as pd
+
+    df = pd.DataFrame({"curie":  [
+        "GO:0000001",
+        "skos:exactMatch",
+    ]})
+
+    converter = curies.chain([
+        curies.get_obo_converter(),
+        curies.get_bioregistry_converter(),
+    ])
+    converter.pd_expand(df, column="curie", target_column="uri")
+
+===============  ==============================================
+curie            uri
+===============  ==============================================
+GO:0000001       http://purl.obolibrary.org/obo/GO_0000001
+skos:exactMatch  http://www.w3.org/2004/02/skos/core#exactMatch
+===============  ==============================================
+
 Standardizing Prefixes
 ~~~~~~~~~~~~~~~~~~~~~~
-For example, the `Gene Ontology Annotations Database <https://geneontology.org/docs/go-annotations/>`_
+The `Gene Ontology (GO) Annotations Database <https://geneontology.org/docs/go-annotations/>`_
 distributes its file where references to proteins from the `Universal Protein Resource (UniProt)
 <https://www.uniprot.org/>`_ use the prefix ``UniProtKB``. When using the Bioregistry's extended prefix map,
 these prefixes should be standardized to ``uniprot`` with :meth:`curies.Converter.pd_standardize_prefix`.
 This can be done in-place with the following:
 
-.. code-block::
+.. code-block:: python
 
     import pandas
     import curies
@@ -452,12 +566,12 @@ The ``target_column`` keyword can be given if you don't want to overwrite the or
 
 Standardizing CURIEs
 ~~~~~~~~~~~~~~~~~~~~~~
-Using the same example data, the sixth column contains CURIE for references such as
+Using the same example data from GO, the sixth column contains CURIE for references such as
 `GO_REF:0000043 <https://bioregistry.io/go.ref:0000043>`_. When using the Bioregistry's extended prefix map,
 these CURIEs' prefixes should be standardized to ``go.ref`` with :meth:`curies.Converter.pd_standardize_curie`.
 This can be done in-place with the following:
 
-.. code-block::
+.. code-block:: python
 
     import pandas
     import curies
