@@ -321,6 +321,22 @@ class CompressionError(ConversionError):
     """An error raised on expansion if the URI prefix can't be matched."""
 
 
+class StandardizationError(ValueError):
+    """An error raised on standardization."""
+
+
+class PrefixStandardizationError(StandardizationError):
+    """An error raise when a prefix can't be standardized."""
+
+
+class CURIEStandardizationError(StandardizationError):
+    """An error raise when a CURIE can't be standardized."""
+
+
+class URIStandardizationError(StandardizationError):
+    """An error raise when a URI can't be standardized."""
+
+
 def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]:
     return [
         DuplicateSummary(record_1, record_2, uri_prefix)
@@ -895,8 +911,9 @@ class Converter:
 
         :param uri:
             A string representing a valid uniform resource identifier (URI)
-        :param strict: If true and the URI can't be compressed, returns an error
+        :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
+            Defaults to false.
         :returns:
             A compact URI if this converter could find an appropriate URI prefix, otherwise none.
         :raises CompressionError:
@@ -978,8 +995,9 @@ class Converter:
 
         :param curie:
             A string representing a compact URI
-        :param strict: If true and the CURIE can't be expanded, returns an error
+        :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
+            Defaults to false.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:
@@ -1103,14 +1121,42 @@ class Converter:
             rv.append(uri_prefix_synonyms + identifier)
         return rv
 
-    def standardize_prefix(self, prefix: str) -> Optional[str]:
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_prefix(
+        self, prefix: str, *, strict: Literal[True] = True, passthrough: bool = False
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_prefix(
+        self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_prefix(
+        self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
+    ) -> Optional[str]:
+        ...
+
+    def standardize_prefix(
+        self, prefix: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
         """Standardize a prefix.
 
         :param prefix:
             The prefix of the CURIE
+        :param strict: If true and the prefix can't be standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the prefix can't be standardized, return the input.
+            Defaults to false.
         :returns:
             The standardized version of this prefix wrt this converter.
             If the prefix is not registered in this converter, returns none.
+        :raises PrefixStandardizationError:
+            If strict is true and the prefix can't be standardied
 
         >>> from curies import Converter, Record
         >>> converter = Converter.from_extended_prefix_map([
@@ -1122,19 +1168,56 @@ class Converter:
         'CHEBI'
         >>> converter.standardize_prefix("NOPE") is None
         True
+        >>> converter.standardize_prefix("NOPE", passthrough=True)
+        'NOPE'
         """
-        return self.synonym_to_prefix.get(prefix)
+        rv = self.synonym_to_prefix.get(prefix)
+        if rv:
+            return rv
+        if strict:
+            raise PrefixStandardizationError(prefix)
+        if passthrough:
+            return prefix
+        return None
 
-    def standardize_curie(self, curie: str) -> Optional[str]:
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_curie(
+        self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_curie(
+        self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_curie(
+        self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
+    ) -> Optional[str]:
+        ...
+
+    def standardize_curie(
+        self, curie: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
         """Standardize a CURIE.
 
         :param curie:
-            A string representing a compact URI
+            A string representing a compact URI (CURIE)
+        :param strict: If true and the CURIE can't be standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the CURIE can't be standardized, return the input.
+            Defaults to false.
         :returns:
             A standardized version of the CURIE in case a prefix synonym was used.
             Note that this function is idempotent, i.e., if you give an already
             standard CURIE, it will just return it as is. If the CURIE can't be parsed
             with respect to the records in the converter, None is returned.
+        :raises CURIEStandardizationError:
+            If strict is true and the CURIE can't be standardized
 
         >>> from curies import Converter, Record
         >>> converter = Converter.from_extended_prefix_map([
@@ -1146,23 +1229,57 @@ class Converter:
         'CHEBI:138488'
         >>> converter.standardize_curie("NOPE:NOPE") is None
         True
+        >>> converter.standardize_curie("NOPE:NOPE", passthrough=True)
+        'NOPE:NOPE'
         """
         prefix, identifier = self.parse_curie(curie)
         norm_prefix = self.standardize_prefix(prefix)
-        if norm_prefix is None:
-            return None
-        return self.format_curie(norm_prefix, identifier)
+        if norm_prefix is not None:
+            return self.format_curie(norm_prefix, identifier)
+        if strict:
+            raise CURIEStandardizationError(curie)
+        if passthrough:
+            return curie
+        return None
 
-    def standardize_uri(self, uri: str) -> Optional[str]:
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_uri(
+        self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_uri(
+        self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_uri(
+        self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
+    ) -> Optional[str]:
+        ...
+
+    def standardize_uri(
+        self, uri: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
         """Standardize a URI.
 
         :param uri:
             A string representing a valid uniform resource identifier (URI)
+        :param strict: If true and the URI can't be standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the URI can't be standardized, return the input.
+            Defaults to false.
         :returns:
             A standardized version of the URI in case a URI prefix synonym was used.
             Note that this function is idempotent, i.e., if you give an already
             standard URI, it will just return it as is. If the URI can't be parsed
             with respect to the records in the converter, None is returned.
+        :raises URIStandardizationError:
+            If strict is true and the URI can't be standardized
 
         >>> from curies import Converter, Record
         >>> converter = Converter.from_extended_prefix_map([
@@ -1178,14 +1295,20 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.standardize_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-        >>> converter.standardize_uri("NOPE") is None
+        >>> converter.standardize_uri("http://example.org/NOPE") is None
         True
+        >>> converter.standardize_uri("http://example.org/NOPE", passthrough=True)
+        'http://example.org/NOPE'
         """
         prefix, identifier = self.parse_uri(uri)
-        if prefix is None or identifier is None:
-            return None
-        # prefix is ensured to be in self.prefix_map because of successful parse
-        return self.prefix_map[prefix] + identifier
+        if prefix and identifier:
+            # prefix is ensured to be in self.prefix_map because of successful parse
+            return self.prefix_map[prefix] + identifier
+        if strict:
+            raise URIStandardizationError(uri)
+        if passthrough:
+            return uri
+        return None
 
     def pd_compress(
         self,
@@ -1200,8 +1323,9 @@ class Converter:
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
         :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and the URI can't be compressed, returns an error
+        :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
+            Defaults to false.
         """
         func = partial(self.compress, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
@@ -1219,8 +1343,9 @@ class Converter:
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
         :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and the CURIE can't be expanded, returns an error
+        :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
+            Defaults to false.
         """
         func = partial(self.expand, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
@@ -1231,16 +1356,20 @@ class Converter:
         *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         """Standardize all prefixes in the given column.
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing prefixes to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
+        :param strict: If true and any prefix can't be standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and any prefix can't be standardized, return the input.
+            Defaults to false.
         """
-        df[column if target_column is None else target_column] = df[column].map(
-            self.standardize_prefix
-        )
+        func = partial(self.standardize_prefix, strict=strict, passthrough=passthrough)
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_curie(
         self,
@@ -1248,12 +1377,17 @@ class Converter:
         *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         r"""Standardize all CURIEs in the given column.
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
+        :param strict: If true and any CURIE can't be standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and any CURIE can't be standardized, return the input.
+            Defaults to false.
 
         The Disease Ontology curates mappings to other semantic spaces and distributes them in the
         tabular SSSOM format. However, they use a wide variety of non-standard prefixes for referring
@@ -1270,9 +1404,8 @@ class Converter:
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
         """
-        df[column if target_column is None else target_column] = df[column].map(
-            self.standardize_curie
-        )
+        func = partial(self.standardize_curie, strict=strict, passthrough=passthrough)
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_uri(
         self,
@@ -1280,16 +1413,20 @@ class Converter:
         *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         """Standardize all URIs in the given column.
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing URIs to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
+        :param strict: If true and any URI can't be standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and any URI can't be standardized, return the input.
+            Defaults to false.
         """
-        df[column if target_column is None else target_column] = df[column].map(
-            self.standardize_uri
-        )
+        func = partial(self.standardize_uri, strict=strict, passthrough=passthrough)
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def file_compress(
         self,
@@ -1306,8 +1443,9 @@ class Converter:
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
         :param sep: The delimiter of the CSV file, defaults to tab
         :param header: Does the file have a header row?
-        :param strict: If true and the URI can't be compressed, returns an error
+        :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
+            Defaults to false.
         """
         func = partial(self.compress, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
@@ -1327,8 +1465,9 @@ class Converter:
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
         :param sep: The delimiter of the CSV file, defaults to tab
         :param header: Does the file have a header row?
-        :param strict: If true and the CURIE can't be expanded, returns an error
+        :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
+            Defaults to false.
         """
         func = partial(self.expand, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
