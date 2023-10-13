@@ -911,8 +911,9 @@ class Converter:
 
         :param uri:
             A string representing a valid uniform resource identifier (URI)
-        :param strict: If true and the URI can't be compressed, returns an error
+        :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
+            Defaults to false.
         :returns:
             A compact URI if this converter could find an appropriate URI prefix, otherwise none.
         :raises CompressionError:
@@ -994,8 +995,9 @@ class Converter:
 
         :param curie:
             A string representing a compact URI
-        :param strict: If true and the CURIE can't be expanded, returns an error
+        :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
+            Defaults to false.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:
@@ -1147,8 +1149,9 @@ class Converter:
 
         :param prefix:
             The prefix of the CURIE
-        :param strict: If true and the prefix can't be standardized, returns an error
+        :param strict: If true and the prefix can't be standardized, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the prefix can't be standardized, return the input.
+            Defaults to false.
         :returns:
             The standardized version of this prefix wrt this converter.
             If the prefix is not registered in this converter, returns none.
@@ -1205,8 +1208,9 @@ class Converter:
 
         :param curie:
             A string representing a compact URI (CURIE)
-        :param strict: If true and the CURIE can't be standardized, returns an error
+        :param strict: If true and the CURIE can't be standardized, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be standardized, return the input.
+            Defaults to false.
         :returns:
             A standardized version of the CURIE in case a prefix synonym was used.
             Note that this function is idempotent, i.e., if you give an already
@@ -1266,8 +1270,9 @@ class Converter:
 
         :param uri:
             A string representing a valid uniform resource identifier (URI)
-        :param strict: If true and the URI can't be standardized, returns an error
+        :param strict: If true and the URI can't be standardized, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be standardized, return the input.
+            Defaults to false.
         :returns:
             A standardized version of the URI in case a URI prefix synonym was used.
             Note that this function is idempotent, i.e., if you give an already
@@ -1318,8 +1323,9 @@ class Converter:
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
         :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and the URI can't be compressed, returns an error
+        :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
+            Defaults to false.
         """
         func = partial(self.compress, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
@@ -1337,8 +1343,9 @@ class Converter:
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
         :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and the CURIE can't be expanded, returns an error
+        :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
+            Defaults to false.
         """
         func = partial(self.expand, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
@@ -1357,8 +1364,9 @@ class Converter:
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing prefixes to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and any prefix can't be standardized, returns an error
+        :param strict: If true and any prefix can't be standardized, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and any prefix can't be standardized, return the input.
+            Defaults to false.
         """
         func = partial(self.standardize_prefix, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
@@ -1377,8 +1385,9 @@ class Converter:
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and any CURIE can't be standardized, returns an error
+        :param strict: If true and any CURIE can't be standardized, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and any CURIE can't be standardized, return the input.
+            Defaults to false.
 
         The Disease Ontology curates mappings to other semantic spaces and distributes them in the
         tabular SSSOM format. However, they use a wide variety of non-standard prefixes for referring
@@ -1412,8 +1421,9 @@ class Converter:
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing URIs to standardize.
         :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and any URI can't be standardized, returns an error
+        :param strict: If true and any URI can't be standardized, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and any URI can't be standardized, return the input.
+            Defaults to false.
         """
         func = partial(self.standardize_uri, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
@@ -1433,8 +1443,9 @@ class Converter:
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
         :param sep: The delimiter of the CSV file, defaults to tab
         :param header: Does the file have a header row?
-        :param strict: If true and the URI can't be compressed, returns an error
+        :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
+            Defaults to false.
         """
         func = partial(self.compress, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
@@ -1454,8 +1465,9 @@ class Converter:
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
         :param sep: The delimiter of the CSV file, defaults to tab
         :param header: Does the file have a header row?
-        :param strict: If true and the CURIE can't be expanded, returns an error
+        :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
+            Defaults to false.
         """
         func = partial(self.expand, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
