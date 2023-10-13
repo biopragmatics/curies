@@ -326,15 +326,15 @@ class StandardizationError(ValueError):
 
 
 class PrefixStandardizationError(StandardizationError):
-    pass
+    """An error raise when a prefix can't be standardized."""
 
 
 class CURIEStandardizationError(StandardizationError):
-    pass
+    """An error raise when a CURIE can't be standardized."""
 
 
 class URIStandardizationError(StandardizationError):
-    pass
+    """An error raise when a URI can't be standardized."""
 
 
 def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]:
