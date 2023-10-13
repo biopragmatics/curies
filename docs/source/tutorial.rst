@@ -434,8 +434,8 @@ we construct a small dataframe:
     import pandas as pd
 
     df = pd.DataFrame({"uri": [
-        "http://purl.obolibrary.org/obo/UBPROP_0000010",
-        "http://purl.obolibrary.org/obo/UBPROP_0000011",
+        "http://purl.obolibrary.org/obo/GO_0000010",
+        "http://purl.obolibrary.org/obo/GO_0000011",
         "http://gudt.org/schema/gudt/baseCGSUnitDimensions",
         "http://qudt.org/schema/qudt/conversionMultiplier",
     ]})
@@ -445,14 +445,14 @@ we construct a small dataframe:
 
 Results will look like:
 
-=================================================  ==================
+=================================================  ==========
 uri                                                curie
-=================================================  ==================
-http://purl.obolibrary.org/obo/UBPROP_0000010      obo:UBPROP_0000010
-http://purl.obolibrary.org/obo/UBPROP_0000011      obo:UBPROP_0000011
+=================================================  ==========
+http://purl.obolibrary.org/obo/GO_0000010          GO:0000010
+http://purl.obolibrary.org/obo/GO_0000011          GO:0000011
 http://gudt.org/schema/gudt/baseCGSUnitDimensions
 http://qudt.org/schema/qudt/conversionMultiplier
-=================================================  ==================
+=================================================  ==========
 
 Note that some URIs are not handled by the extended prefix map inside the converter, so if you want
 to pass those through, use ``passthrough=True`` like in
@@ -464,8 +464,8 @@ to pass those through, use ``passthrough=True`` like in
 =================================================  =================================================
 uri                                                curie
 =================================================  =================================================
-http://purl.obolibrary.org/obo/UBPROP_0000010      obo:UBPROP_0000010
-http://purl.obolibrary.org/obo/UBPROP_0000011      obo:UBPROP_0000011
+http://purl.obolibrary.org/obo/GO_0000010          GO:0000010
+http://purl.obolibrary.org/obo/GO_0000011          GO:0000011
 http://gudt.org/schema/gudt/baseCGSUnitDimensions  http://gudt.org/schema/gudt/baseCGSUnitDimensions
 http://qudt.org/schema/qudt/conversionMultiplier   http://qudt.org/schema/qudt/conversionMultiplier
 =================================================  =================================================
