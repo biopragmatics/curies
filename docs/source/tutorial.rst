@@ -422,6 +422,60 @@ Apply in bulk to a :class:`pandas.DataFrame` with :meth:`curies.Converter.pd_exp
     converter.pd_standardize_curie(df, column=0)
     converter.pd_standardize_uri(df, column=0)
 
+Standardizing Prefixes
+~~~~~~~~~~~~~~~~~~~~~~
+For example, the `Gene Ontology Annotations Database <https://geneontology.org/docs/go-annotations/>`_
+distributes its file where references to proteins from the `Universal Protein Resource (UniProt)
+<https://www.uniprot.org/>`_ use the prefix ``UniProtKB``. When using the Bioregistry's extended prefix map,
+these prefixes should be standardized to ``uniprot`` with :meth:`curies.Converter.pd_standardize_prefix`.
+This can be done in-place with the following:
+
+.. code-block::
+
+    import pandas
+    import curies
+
+    # the first column represents the prefix for the protein,
+    # called "DB" in the schema. This is where we want to upgrade
+    # `UniProtKB` to `uniprot`
+    df = pd.read_csv(
+        "http://geneontology.org/gene-associations/goa_human.gaf.gz",
+        sep="\t",
+        comment="!",
+        header=None,
+    )
+
+    converter = curies.get_bioregistry_converter()
+    converter.pd_standardize_prefix(df, column=0)
+
+The ``target_column`` keyword can be given if you don't want to overwrite the original.
+
+Standardizing CURIEs
+~~~~~~~~~~~~~~~~~~~~~~
+Using the same example data, the sixth column contains CURIE for references such as
+`GO_REF:0000043 <https://bioregistry.io/go.ref:0000043>`_. When using the Bioregistry's extended prefix map,
+these CURIEs' prefixes should be standardized to ``go.ref`` with :meth:`curies.Converter.pd_standardize_curie`.
+This can be done in-place with the following:
+
+.. code-block::
+
+    import pandas
+    import curies
+
+    df = pd.read_csv(
+        "http://geneontology.org/gene-associations/goa_human.gaf.gz",
+        sep="\t",
+        comment="!",
+        header=None,
+    )
+
+    converter = curies.get_bioregistry_converter()
+    converter.pd_standardize_curie(df, column=5)
+
+The ``target_column`` keyword can be given if you don't want to overwrite the original.
+
+File Operations
+~~~~~~~~~~~~~~~
 Apply in bulk to a CSV file with :meth:`curies.Converter.file_expand` and
 :meth:`curies.Converter.file_compress` (defaults to using tab separator):
 
