@@ -866,16 +866,18 @@ class Converter:
         return f"{prefix}{self.delimiter}{identifier}"
 
     @overload
-    def compress(self, uri: str, *, strict: Literal[True], passthrough: bool) -> str:
-        ...
-
-    @overload
-    def compress(self, uri: str, *, strict: Literal[False], passthrough: Literal[True]) -> str:
+    def compress(self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False) -> str:
         ...
 
     @overload
     def compress(
-        self, uri: str, *, strict: Literal[False], passthrough: Literal[False]
+        self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
+    ) -> str:
+        ...
+
+    @overload
+    def compress(
+        self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
     ) -> Optional[str]:
         ...
 

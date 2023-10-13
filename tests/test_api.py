@@ -281,13 +281,17 @@ class TestConverter(unittest.TestCase):
             ("OBO:unnamespaced", "http://purl.obolibrary.org/obo/unnamespaced"),
         ]:
             self.assertEqual(curie, converter.compress(uri))
-            self.assertEqual(curie, converter.compress_strict(uri))
+            self.assertEqual(curie, converter.compress(uri, strict=True))
             self.assertEqual(uri, converter.expand(curie))
             self.assertEqual(uri, converter.expand_strict(curie))
 
         self.assertIsNone(converter.compress("http://example.org/missing:00000"))
+        self.assertEqual(
+            "http://example.org/missing:00000",
+            converter.compress("http://example.org/missing:00000", passthrough=True),
+        )
         with self.assertRaises(CompressionError):
-            converter.compress_strict("http://example.org/missing:00000")
+            converter.compress("http://example.org/missing:00000", strict=True)
 
         self.assertIsNone(converter.expand("missing:00000"))
         with self.assertRaises(ExpansionError):
