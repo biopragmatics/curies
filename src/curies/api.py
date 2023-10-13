@@ -6,6 +6,7 @@ import csv
 import itertools as itt
 import json
 from collections import defaultdict
+from functools import partial
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -16,6 +17,7 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Literal,
     Mapping,
     NamedTuple,
     Optional,
@@ -25,6 +27,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import requests
@@ -862,20 +865,34 @@ class Converter:
         """Format a prefix and identifier into a CURIE string."""
         return f"{prefix}{self.delimiter}{identifier}"
 
-    def compress_strict(self, uri: str) -> str:
-        """Compress a URI to a CURIE, and raise an error of not possible."""
-        rv = self.compress(uri)
-        if rv is None:
-            raise CompressionError(uri)
-        return rv
+    @overload
+    def compress(self, uri: str, *, strict: Literal[True], passthrough: bool) -> str:
+        ...
 
-    def compress(self, uri: str) -> Optional[str]:
+    @overload
+    def compress(self, uri: str, *, strict: Literal[False], passthrough: Literal[True]) -> str:
+        ...
+
+    @overload
+    def compress(
+        self, uri: str, *, strict: Literal[False], passthrough: Literal[False]
+    ) -> Optional[str]:
+        ...
+
+    def compress(
+        self, uri: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
         """Compress a URI to a CURIE, if possible.
 
         :param uri:
             A string representing a valid uniform resource identifier (URI)
+        :param strict: If true and the URI can't be compressed, returns an error
+        :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
         :returns:
             A compact URI if this converter could find an appropriate URI prefix, otherwise none.
+        :raises CompressionError:
+            If strict is set to true and the URI can't be compressed
+
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
@@ -888,9 +905,13 @@ class Converter:
         >>> converter.compress("http://example.org/missing:0000000")
         """
         prefix, identifier = self.parse_uri(uri)
-        if prefix is None or identifier is None:
-            return None
-        return self.format_curie(prefix, identifier)
+        if prefix and identifier:
+            return self.format_curie(prefix, identifier)
+        if strict:
+            raise CompressionError(uri)
+        if passthrough:
+            return uri
+        return None
 
     def parse_uri(self, uri: str) -> Union[ReferenceTuple, Tuple[None, None]]:
         """Compress a URI to a CURIE pair.
@@ -1133,14 +1154,19 @@ class Converter:
         df: "pandas.DataFrame",
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         """Convert all URIs in the given column to CURIEs.
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
         :param target_column: The column to put the results in. Defaults to input column.
+        :param strict: If true and the URI can't be compressed, returns an error
+        :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
         """
-        df[column if target_column is None else target_column] = df[column].map(self.compress)
+        func = partial(self.compress, strict=strict, passthrough=passthrough)
+        df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_expand(
         self,
@@ -1223,7 +1249,13 @@ class Converter:
         )
 
     def file_compress(
-        self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
+        self,
+        path: Union[str, Path],
+        column: int,
+        sep: Optional[str] = None,
+        header: bool = True,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> None:
         """Convert all URIs in the given column of a CSV file to CURIEs.
 
@@ -1231,8 +1263,11 @@ class Converter:
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
         :param sep: The delimiter of the CSV file, defaults to tab
         :param header: Does the file have a header row?
+        :param strict: If true and the URI can't be compressed, returns an error
+        :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
         """
-        self._file_helper(self.compress, path=path, column=column, sep=sep, header=header)
+        func = partial(self.compress, strict=strict, passthrough=passthrough)
+        self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     def file_expand(
         self, path: Union[str, Path], column: int, sep: Optional[str] = None, header: bool = True
