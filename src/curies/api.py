@@ -1381,7 +1381,7 @@ class Converter:
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
         strict: bool = False,
-        passthrough: bool = (False,),
+        passthrough: bool = False,
     ) -> "curies.Report":
         r"""Standardize all CURIEs in the given column.
 
