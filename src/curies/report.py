@@ -1,11 +1,12 @@
 """Report."""
 
 import dataclasses
+import enum
 import random
 import typing
 from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Dict, Mapping, Optional, Tuple
-import enum
+
 from .api import Converter
 
 if TYPE_CHECKING:
