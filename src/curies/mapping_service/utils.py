@@ -127,14 +127,14 @@ def parse_header(header: str) -> List[str]:
 
 
 def handle_header(header: Optional[str], default: str = DEFAULT_CONTENT_TYPE) -> str:
-    """Canonicalize the a header."""
+    """Canonicalize a header."""
     if not header:
         return default
 
-    for header in parse_header(header):
-        header = CONTENT_TYPE_SYNONYMS.get(header, header)
-        if header in CONTENT_TYPE_TO_RDFLIB_FORMAT:
-            return header
+    for header_part in parse_header(header):
+        header_part = CONTENT_TYPE_SYNONYMS.get(header_part, header_part)
+        if header_part in CONTENT_TYPE_TO_RDFLIB_FORMAT:
+            return header_part
         # What happens if encountering "*/*" that has a higher q than something else?
         # Is that even possible/coherent?
 
