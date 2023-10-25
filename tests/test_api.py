@@ -14,12 +14,15 @@ import rdflib
 from curies.api import (
     CompressionError,
     Converter,
+    CURIEStandardizationError,
     DuplicatePrefixes,
     DuplicateURIPrefixes,
     ExpansionError,
+    PrefixStandardizationError,
     Record,
     Reference,
     ReferenceTuple,
+    URIStandardizationError,
     chain,
 )
 from curies.sources import (
@@ -286,10 +289,15 @@ class TestConverter(unittest.TestCase):
             self.assertEqual(uri, converter.expand_strict(curie))
 
         self.assertIsNone(converter.compress("http://example.org/missing:00000"))
+        self.assertEqual(
+            "http://example.org/missing:00000",
+            converter.compress("http://example.org/missing:00000", passthrough=True),
+        )
         with self.assertRaises(CompressionError):
             converter.compress_strict("http://example.org/missing:00000")
 
         self.assertIsNone(converter.expand("missing:00000"))
+        self.assertEqual("missing:00000", converter.expand("missing:00000", passthrough=True))
         with self.assertRaises(ExpansionError):
             converter.expand_strict("missing:00000")
 
@@ -437,6 +445,9 @@ class TestConverter(unittest.TestCase):
         self.assertEqual("CHEBI:138488", converter.standardize_curie("chebi:138488"))
         self.assertEqual("CHEBI:138488", converter.standardize_curie("CHEBI:138488"))
         self.assertIsNone(converter.standardize_curie("NOPE:NOPE"))
+        self.assertEqual("NOPE:NOPE", converter.standardize_curie("NOPE:NOPE", passthrough=True))
+        with self.assertRaises(CURIEStandardizationError):
+            converter.standardize_curie("NOPE:NOPE", strict=True)
 
         self.assertEqual(
             "http://purl.obolibrary.org/obo/CHEBI_138488",
@@ -449,6 +460,9 @@ class TestConverter(unittest.TestCase):
             converter.standardize_uri("http://purl.obolibrary.org/obo/CHEBI_138488"),
         )
         self.assertIsNone(converter.standardize_uri("NOPE"))
+        self.assertEqual("NOPE", converter.standardize_uri("NOPE", passthrough=True))
+        with self.assertRaises(URIStandardizationError):
+            converter.standardize_uri("NOPE:NOPE", strict=True)
 
     def test_combine(self):
         """Test chaining converters."""
@@ -580,6 +594,9 @@ class TestConverter(unittest.TestCase):
         self.assertEqual("chebi", converter.standardize_prefix("chebi"))
         self.assertEqual("chebi", converter.standardize_prefix("CHEBI"))
         self.assertIsNone(converter.standardize_prefix("nope"))
+        self.assertEqual("nope", converter.standardize_prefix("nope", passthrough=True))
+        with self.assertRaises(PrefixStandardizationError):
+            converter.standardize_prefix("nope", strict=True)
 
         rows = [
             ("chebi", "CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
