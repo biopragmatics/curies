@@ -17,6 +17,7 @@ __all__ = [
     "CONTENT_TYPE_TO_HANDLER",
     "get_sparql_records",
     "sparql_service_available",
+    "parse_header",
     "handle_header",
 ]
 
@@ -119,22 +120,25 @@ def _handle_part(part: str) -> Tuple[str, float]:
     return key, float(q)
 
 
-def handle_header(header: Optional[str]) -> str:
-    """Canonicalize the a header."""
-    if not header:
-        return DEFAULT_CONTENT_TYPE
-
+def parse_header(header: str) -> List[str]:
+    """Parse the header and sort in descending order of q value."""
     parts = dict(_handle_part(part) for part in header.split(","))
+    return sorted(parts, key=parts.__getitem__, reverse=True)
 
-    # Sort in descending order of q value
-    for header in sorted(parts, key=parts.__getitem__, reverse=True):
-        header = CONTENT_TYPE_SYNONYMS.get(header, header)
-        if header in CONTENT_TYPE_TO_RDFLIB_FORMAT:
-            return header
+
+def handle_header(header: Optional[str], default: str = DEFAULT_CONTENT_TYPE) -> str:
+    """Canonicalize a header."""
+    if not header:
+        return default
+
+    for header_part in parse_header(header):
+        header_part = CONTENT_TYPE_SYNONYMS.get(header_part, header_part)
+        if header_part in CONTENT_TYPE_TO_RDFLIB_FORMAT:
+            return header_part
         # What happens if encountering "*/*" that has a higher q than something else?
         # Is that even possible/coherent?
 
-    return DEFAULT_CONTENT_TYPE
+    return default
 
 
 def require_service(url: str, name: str):  # type:ignore
