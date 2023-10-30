@@ -14,6 +14,10 @@ from .api import (
     load_extended_prefix_map,
     load_jsonld_context,
     load_prefix_map,
+    load_shacl,
+    write_extended_prefix_map,
+    write_jsonld_context,
+    write_shacl,
 )
 from .reconciliation import remap_curie_prefixes, remap_uri_prefixes, rewire
 from .sources import (
@@ -42,6 +46,10 @@ __all__ = [
     "load_prefix_map",
     "load_extended_prefix_map",
     "load_jsonld_context",
+    "load_shacl",
+    "write_extended_prefix_map",
+    "write_jsonld_context",
+    "write_shacl",
     # sources
     "get_obo_converter",
     "get_prefixcommons_converter",
