@@ -1827,9 +1827,9 @@ def _record_to_dict(record: Record) -> Mapping[str, Union[str, List[str]]]:
 
 
 def _ensure_path(path: Union[str, Path]) -> Path:
-    if isinstance(path, Path):
-        return path
-    return Path(path).resolve()
+    if isinstance(path, str):
+        path = Path(path).resolve()
+    return path
 
 
 def write_jsonld_context(converter: Converter, path: Union[str, Path]) -> None:

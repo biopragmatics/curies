@@ -42,7 +42,7 @@ class TestIO(unittest.TestCase):
         """Test writing and reading a prefix map via JSON-LD."""
         with TemporaryDirectory() as d:
             path = Path(d).joinpath("test.json")
-            curies.write_jsonld_context(self.converter, path)
+            curies.write_jsonld_context(self.converter, path.as_posix())
             nc = curies.load_jsonld_context(path)
         self.assertEqual({self.prefix: self.uri_prefix}, nc.prefix_map)
         self.assertEqual(
@@ -57,5 +57,5 @@ class TestIO(unittest.TestCase):
         with TemporaryDirectory() as d:
             path = Path(d).joinpath("test.ttl")
             curies.write_shacl(self.converter, path)
-            nc = Converter.from_shacl(path)
+            nc = curies.load_shacl(path)
         self.assertEqual(self.converter.bimap, nc.bimap)
