@@ -894,7 +894,7 @@ class Converter:
 
         :param graph: A RDFLib graph, a Path, a string representing a file path, or a string URL
         :param format: The RDF format, if a file path is given
-        :param kwargs: Keyword arguments to pass to :meth:`from_prefix_map`
+        :param kwargs: Keyword arguments to pass to :meth:`Converter.__init__`
         :return: A converter
         """
         if isinstance(graph, (str, Path)):
@@ -905,16 +905,20 @@ class Converter:
             graph = temporary_graph
 
         query = """\
-            SELECT ?curie_prefix ?uri_prefix
+            SELECT ?curie_prefix ?uri_prefix ?pattern
             WHERE {
                 ?bnode1 sh:declare ?bnode2 .
-                ?bnode2 sh:prefix ?curie_prefix .
-                ?bnode2 sh:namespace ?uri_prefix .
+                ?bnode2 sh:prefix ?curie_prefix ;
+                        sh:namespace ?uri_prefix .
+                OPTIONAL { ?bnode2 sh:pattern ?pattern . }
             }
         """
         results = graph.query(query)
-        prefix_map = {str(k): str(v) for k, v in results}
-        return cls.from_prefix_map(prefix_map, **kwargs)
+        records = [
+            Record(prefix=str(prefix), uri_prefix=str(uri_prefix), pattern=pattern and str(pattern))
+            for prefix, uri_prefix, pattern in results
+        ]
+        return cls(records, **kwargs)
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""
@@ -1863,8 +1867,16 @@ def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
         """
     )
     path = _ensure_path(path)
-    entries = ",\n".join(
-        f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}" ]'
-        for prefix, uri_prefix in sorted(converter.bimap.items())
-    )
-    path.write_text(text.format(entries=entries))
+    lines = []
+    for record in converter.records:
+        beginning = f'    [ sh:prefix "{record.prefix}" ; sh:namespace "{record.uri_prefix}"'
+        if record.pattern:
+            line = f'{beginning} ; sh.pattern "{_escape_regex(record.pattern)}" ]'
+        else:
+            line = f"{beginning} ]"
+        lines.append(line)
+    path.write_text(text.format(entries=",\n".join(lines)))
+
+
+def _escape_regex(pattern: str) -> str:
+    return pattern.replace("\\", "\\\\")
