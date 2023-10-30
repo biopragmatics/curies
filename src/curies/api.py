@@ -888,12 +888,11 @@ class Converter:
     ) -> "Converter":
         """Get a converter from SHACL, either in a turtle f.
 
-        :param graph: A RDFLib graph
+        :param graph: A RDFLib graph, a Path, a string representing a file path, or a string URL
         :param format: The RDF format, if a file path is given
         :param kwargs: Keyword arguments to pass to :meth:`from_prefix_map`
         :return: A converter
         """
-        # TODO use analog of LocationOr["rdflib.Graph"]
         if isinstance(graph, (str, Path)):
             import rdflib
 
