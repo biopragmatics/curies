@@ -8,6 +8,7 @@ import json
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
+from textwrap import dedent
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -50,6 +51,11 @@ __all__ = [
     "load_extended_prefix_map",
     "load_prefix_map",
     "load_jsonld_context",
+    "load_shacl",
+    # Writers
+    "write_extended_prefix_map",
+    "write_jsonld_context",
+    "write_shacl",
 ]
 
 X = TypeVar("X")
@@ -871,6 +877,39 @@ class Converter:
         # it's required to stringify namespace since it's a rdflib.URIRef
         # object, which acts funny if not coerced into a string
         prefix_map = {prefix: str(namespace) for prefix, namespace in graph_or_manager.namespaces()}
+        return cls.from_prefix_map(prefix_map, **kwargs)
+
+    @classmethod
+    def from_shacl(
+        cls,
+        graph: Union[str, Path, "rdflib.Graph"],
+        format: Optional[str] = None,
+        **kwargs: Any,
+    ) -> "Converter":
+        """Get a converter from SHACL, either in a turtle f.
+
+        :param graph: A RDFLib graph, a Path, a string representing a file path, or a string URL
+        :param format: The RDF format, if a file path is given
+        :param kwargs: Keyword arguments to pass to :meth:`from_prefix_map`
+        :return: A converter
+        """
+        if isinstance(graph, (str, Path)):
+            import rdflib
+
+            temporary_graph = rdflib.Graph()
+            temporary_graph.parse(location=graph, format=format)
+            graph = temporary_graph
+
+        query = """\
+            SELECT ?curie_prefix ?uri_prefix
+            WHERE {
+                ?bnode1 sh:declare ?bnode2 .
+                ?bnode2 sh:prefix ?curie_prefix .
+                ?bnode2 sh:namespace ?uri_prefix .
+            }
+        """
+        results = graph.query(query)
+        prefix_map = {str(k): str(v) for k, v in results}
         return cls.from_prefix_map(prefix_map, **kwargs)
 
     def get_prefixes(self) -> Set[str]:
@@ -1747,3 +1786,81 @@ def load_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Conv
     >>> "rdf" in converter.prefix_map
     """
     return Converter.from_jsonld(data, **kwargs)
+
+
+def load_shacl(data: LocationOr["rdflib.Graph"], **kwargs: Any) -> Converter:
+    """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
+
+    :param data:
+        A path to an RDF file or a RDFlib graph
+    :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
+    :return:
+        A converter
+    """
+    return Converter.from_shacl(data, **kwargs)
+
+
+def write_extended_prefix_map(converter: Converter, path: Union[str, Path]) -> None:
+    """Write an extended prefix map as JSON to a file."""
+    path = _ensure_path(path)
+    path.write_text(
+        json.dumps(
+            [_record_to_dict(record) for record in converter.records],
+            indent=4,
+            sort_keys=True,
+            ensure_ascii=False,
+        )
+    )
+
+
+def _record_to_dict(record: Record) -> Mapping[str, Union[str, List[str]]]:
+    """Convert a record to a dict."""
+    rv: Dict[str, Union[str, List[str]]] = {
+        "prefix": record.prefix,
+        "uri_prefix": record.uri_prefix,
+    }
+    if record.prefix_synonyms:
+        rv["prefix_synonyms"] = sorted(record.prefix_synonyms)
+    if record.uri_prefix_synonyms:
+        rv["uri_prefix_synonyms"] = sorted(record.uri_prefix_synonyms)
+    return rv
+
+
+def _ensure_path(path: Union[str, Path]) -> Path:
+    if isinstance(path, str):
+        path = Path(path).resolve()
+    return path
+
+
+def write_jsonld_context(converter: Converter, path: Union[str, Path]) -> None:
+    """Write the converter's bijective map as a JSON-LD context to a file."""
+    path = _ensure_path(path)
+    with path.open("w") as file:
+        json.dump(
+            fp=file,
+            indent=4,
+            sort_keys=True,
+            obj={
+                "@context": converter.bimap,
+            },
+        )
+
+
+def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
+    """Write the converter's bijective map as SHACL in turtle RDF to a file."""
+    text = dedent(
+        """\
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+
+        [
+          sh:declare
+        {entries}
+        ] .
+        """
+    )
+    path = _ensure_path(path)
+    entries = ",\n".join(
+        f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}" ]'
+        for prefix, uri_prefix in sorted(converter.bimap.items())
+    )
+    path.write_text(text.format(entries=entries))

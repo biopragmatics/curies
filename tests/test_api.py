@@ -11,6 +11,7 @@ from tempfile import TemporaryDirectory
 import pandas as pd
 import rdflib
 
+import curies
 from curies.api import (
     CompressionError,
     Converter,
@@ -227,7 +228,7 @@ class TestConverter(unittest.TestCase):
     def test_invalid_records(self):
         """Test throwing an error for duplicated URI prefixes."""
         with self.assertRaises(DuplicateURIPrefixes) as e:
-            Converter.from_prefix_map(
+            curies.load_prefix_map(
                 {
                     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
                     "nope": "http://purl.obolibrary.org/obo/CHEBI_",

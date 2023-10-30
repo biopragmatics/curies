@@ -204,6 +204,49 @@ This works with both :class:`pathlib.Path` and vanilla strings.
     urlretrieve(url, path)
     converter = curies.load_jsonld_context(path)
 
+Loading SHACL
+~~~~~~~~~~~~~
+The `shapes constraint language (SHACL) <https://bioregistry.io/sh>`_ can be used to represent
+prefix maps directly in RDF using the `sh:prefix` and `sh:namespace` predicates. Therefore, the
+simple ChEBI example from before can be represented using
+
+.. code-block:: turtle
+
+    @prefix sh: <http://www.w3.org/ns/shacl#> .
+
+    [
+        sh:declare
+        [
+            sh:prefix "CHEBI" ;
+            sh:namespace "http://purl.obolibrary.org/obo/CHEBI_" .
+        ] .
+    ]
+
+A SHACL context can be loaded from a remote file via HTTP, HTTPS, or FTP with
+
+.. code-block:: python
+
+    import curies
+
+    url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.ttl"
+    converter = curies.load_shacl(url)
+
+
+A SHACL context stored in a local file can be loaded with the following.
+This works with both :class:`pathlib.Path` and vanilla strings.
+
+.. code-block:: python
+
+    from pathlib import Path
+    from urllib.request import urlretrieve
+
+    import curies
+
+    url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.ttl"
+    path = Path.home().joinpath("Downloads", "semweb.context.ttl")
+    urlretrieve(url, path)
+    converter = curies.load_shacl(path)
+
 Modifying a Context
 -------------------
 Incremental Converters
