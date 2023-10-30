@@ -4,7 +4,7 @@
 
 from typing import Any
 
-from .api import Converter
+from .api import Converter, Record
 
 __all__ = [
     "get_obo_converter",
@@ -61,6 +61,19 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
             pass
         else:
             epm = bioregistry.manager.get_curies_records()  # pragma: no cover
+            for record in epm:  # pragma: no cover
+                # Remove this after https://github.com/biopragmatics/bioregistry/issues/935 is fixed
+                _augment_curie_prefix_synonyms(record)  # pragma: no cover
             return Converter.from_extended_prefix_map(epm)  # pragma: no cover
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
     return Converter.from_extended_prefix_map(url, **kwargs)
+
+
+def _augment_curie_prefix_synonyms(record: Record) -> None:
+    new_prefix_synonyms = set()
+    for s in record._all_prefixes:
+        new_prefix_synonyms.add(s)
+        new_prefix_synonyms.add(s.lower())
+        new_prefix_synonyms.add(s.upper())
+    new_prefix_synonyms.difference_update(record.prefix)
+    record.prefix_synonyms = sorted(new_prefix_synonyms)

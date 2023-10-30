@@ -5,7 +5,7 @@
 import csv
 import itertools as itt
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from functools import partial
 from pathlib import Path
 from typing import (
@@ -21,7 +21,6 @@ from typing import (
     Mapping,
     NamedTuple,
     Optional,
-    Sequence,
     Set,
     Tuple,
     TypeVar,
@@ -37,6 +36,9 @@ from pytrie import StringTrie
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import rdflib
+
+    import curies
+
 
 __all__ = [
     "Converter",
@@ -1333,6 +1335,7 @@ class Converter:
     def pd_expand(
         self,
         df: "pandas.DataFrame",
+        *,
         column: Union[str, int],
         target_column: Union[None, str, int] = None,
         strict: bool = False,
@@ -1379,7 +1382,7 @@ class Converter:
         target_column: Union[None, str, int] = None,
         strict: bool = False,
         passthrough: bool = False,
-    ) -> None:
+    ) -> "curies.Report":
         r"""Standardize all CURIEs in the given column.
 
         :param df: A pandas DataFrame
@@ -1388,6 +1391,8 @@ class Converter:
         :param strict: If true and any CURIE can't be standardized, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and any CURIE can't be standardized, return the input.
             Defaults to false.
+        :return: A report object
+        :raises ValueError: If strict is enabled and the column contains CURIEs that aren't standardizable
 
         The Disease Ontology curates mappings to other semantic spaces and distributes them in the
         tabular SSSOM format. However, they use a wide variety of non-standard prefixes for referring
@@ -1404,8 +1409,50 @@ class Converter:
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
         """
-        func = partial(self.standardize_curie, strict=strict, passthrough=passthrough)
-        df[column if target_column is None else target_column] = df[column].map(func)
+        import pandas as pd
+
+        from .report import Report
+
+        norm_curies: List[Optional[str]] = []
+        failures: DefaultDict[str, Counter[str]] = defaultdict(Counter)
+        stayed = 0
+        updated = 0
+        nones = 0
+        invalid = 0
+        for curie in df[column]:
+            if pd.isna(curie):
+                nones += 1
+                norm_curies.append(None)
+                continue
+            try:
+                norm_curie = self.standardize_curie(curie)
+            except ValueError:
+                # happens on an invalid curie, i.e., without a :
+                invalid += 1
+                norm_curie = None
+            if norm_curie is None:
+                failures[curie.split(":")[0]][curie] += 1
+            elif curie == norm_curie:
+                stayed += 1
+            else:
+                updated += 1
+            norm_curies.append(norm_curie)
+        report = Report(
+            converter=self,
+            failures=failures,
+            nones=nones,
+            stayed=stayed,
+            updated=updated,
+            column=column,
+        )
+        if strict and failures:
+            raise ValueError(
+                f"Some CURIEs couldn't be standardized and strict mode is enabled. Either set "
+                f"`strict=False`, and entries that can't be parsed will be given `None`, or try "
+                f"and improve your context to better cover your data. Here's the report:\n\n{report.get_markdown()}"
+            )
+        df[column if target_column is None else target_column] = norm_curies
+        return report
 
     def pd_standardize_uri(
         self,
@@ -1565,7 +1612,7 @@ def _in(a: str, bs: Iterable[str], case_sensitive: bool) -> bool:
     return any(nfa == b.casefold() for b in bs)
 
 
-def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
+def chain(converters: Iterable[Converter], *, case_sensitive: bool = True) -> Converter:
     """Chain several converters.
 
     :param converters: A list or tuple of converters
