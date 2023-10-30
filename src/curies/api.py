@@ -241,6 +241,10 @@ class Record(BaseModel):  # type:ignore
     )
     prefix_synonyms: List[str] = Field(default_factory=list)
     uri_prefix_synonyms: List[str] = Field(default_factory=list)
+    pattern: Optional[str] = Field(
+        default=None,
+        description="The regular expression pattern for entries in this semantic space",
+    )
 
     @validator("prefix_synonyms")  # type:ignore
     def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
