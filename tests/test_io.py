@@ -39,6 +39,7 @@ class TestIO(unittest.TestCase):
             curies.write_extended_prefix_map(self.converter, path)
             nc = curies.load_extended_prefix_map(path)
         self.assertEqual(self.converter.records, nc.records)
+        self.assertEqual({self.prefix: self.pattern}, nc.pattern_map)
 
     def test_write_jsonld_with_bimap(self):
         """Test writing and reading a prefix map via JSON-LD."""

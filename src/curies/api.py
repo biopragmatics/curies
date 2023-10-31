@@ -1843,6 +1843,8 @@ def _record_to_dict(record: Record) -> Mapping[str, Union[str, List[str]]]:
         rv["prefix_synonyms"] = sorted(record.prefix_synonyms)
     if record.uri_prefix_synonyms:
         rv["uri_prefix_synonyms"] = sorted(record.uri_prefix_synonyms)
+    if record.pattern:
+        rv["pattern"] = record.pattern
     return rv
 
 
