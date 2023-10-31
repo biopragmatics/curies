@@ -57,6 +57,7 @@ class TestIO(unittest.TestCase):
 
     def test_write_jsonld_with_synonyms(self):
         """Test writing a JSON-LD with synonyms."""
+        # note: we don't test loading since loading a JSON-LD with synonyms is undefined
         for expand in [True, False]:
             with self.subTest(expand=expand):
                 with TemporaryDirectory() as d:
@@ -64,7 +65,6 @@ class TestIO(unittest.TestCase):
                     curies.write_jsonld_context(self.converter, path, include_synonyms=True)
                     data = json.loads(path.read_text())["@context"]
                 self.assertEqual({self.prefix, self.prefix_synonym}, set(data))
-                # note: we don't test loading since loading a JSON-LD with synonyms is undefined
 
     def test_shacl(self):
         """Test round-tripping SHACL."""
@@ -76,6 +76,7 @@ class TestIO(unittest.TestCase):
 
     def test_shacl_with_synonyms(self):
         """Test writing SHACL with synonyms."""
+        # note: we don't test loading since loading SHACL with synonyms is undefined
         with TemporaryDirectory() as d:
             path = Path(d).joinpath("test.ttl")
             curies.write_shacl(self.converter, path, include_synonyms=True)
