@@ -374,6 +374,10 @@ def _get_prefix_map(records: List[Record]) -> Dict[str, str]:
     return rv
 
 
+def _get_pattern_map(records: List[Record]) -> Dict[str, str]:
+    return {record.prefix: record.pattern for record in records if record.pattern}
+
+
 def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
     rv = {}
     for record in records:
@@ -439,6 +443,8 @@ class Converter:
     reverse_prefix_map: Dict[str, str]
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
+    #: A mapping from prefix to regular expression pattern. Not necessarily complete wrt the prefix map
+    pattern_map: Dict[str, str]
 
     def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True) -> None:
         """Instantiate a converter.
@@ -466,6 +472,7 @@ class Converter:
         self.synonym_to_prefix = _get_prefix_synmap(records)
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
         self.trie = StringTrie(self.reverse_prefix_map)
+        self.pattern_map = _get_pattern_map(records)
 
     @property
     def bimap(self) -> Mapping[str, str]:
@@ -533,6 +540,8 @@ class Converter:
                 into.uri_prefix_synonyms.append(uri_prefix_synonym)
         into.uri_prefix_synonyms.sort()
 
+        # TODO merging patterns?
+
     def _index(self, record: Record) -> None:
         self.prefix_map[record.prefix] = record.uri_prefix
         self.synonym_to_prefix[record.prefix] = record.prefix
@@ -545,6 +554,9 @@ class Converter:
         for uri_prefix_synonym in record.uri_prefix_synonyms:
             self.reverse_prefix_map[uri_prefix_synonym] = record.prefix
             self.trie[uri_prefix_synonym] = record.prefix
+
+        if record.pattern and record.prefix not in self.pattern_map:
+            self.pattern_map[record.prefix] = record.pattern
 
     def add_prefix(
         self,
@@ -1871,7 +1883,7 @@ def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
     for record in converter.records:
         beginning = f'    [ sh:prefix "{record.prefix}" ; sh:namespace "{record.uri_prefix}"'
         if record.pattern:
-            line = f'{beginning} ; sh.pattern "{_escape_regex(record.pattern)}" ]'
+            line = f'{beginning} ; sh:pattern "{_escape_regex(record.pattern)}" ]'
         else:
             line = f"{beginning} ]"
         lines.append(line)

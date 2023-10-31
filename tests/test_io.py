@@ -19,6 +19,7 @@ class TestIO(unittest.TestCase):
         self.uri_prefix = CHEBI_URI_PREFIX
         self.prefix_synonym = "p"
         self.uri_prefix_synonym = "u"
+        self.pattern = "^\\d{7}$"
         self.converter = Converter.from_extended_prefix_map(
             [
                 {
@@ -26,6 +27,7 @@ class TestIO(unittest.TestCase):
                     "prefix_synonyms": [self.prefix_synonym],
                     "uri_prefix": self.uri_prefix,
                     "uri_prefix_synonyms": [self.uri_prefix_synonym],
+                    "pattern": self.pattern,
                 },
             ]
         )
@@ -59,3 +61,4 @@ class TestIO(unittest.TestCase):
             curies.write_shacl(self.converter, path)
             nc = curies.load_shacl(path)
         self.assertEqual(self.converter.bimap, nc.bimap)
+        self.assertEqual({self.prefix: self.pattern}, nc.pattern_map)
