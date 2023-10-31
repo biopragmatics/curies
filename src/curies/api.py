@@ -1832,18 +1832,37 @@ def _ensure_path(path: Union[str, Path]) -> Path:
     return path
 
 
-def write_jsonld_context(converter: Converter, path: Union[str, Path]) -> None:
+def write_jsonld_context(
+    converter: Converter, path: Union[str, Path], *, include_synonyms: bool = False
+) -> None:
     """Write the converter's bijective map as a JSON-LD context to a file."""
     path = _ensure_path(path)
+    context = {}
+    for record in converter.records:
+        term = _get_expanded_term(record)
+        context[record.prefix] = term
+        if include_synonyms:
+            for prefix_synonym in record.prefix_synonyms:
+                context[prefix_synonym] = term
     with path.open("w") as file:
         json.dump(
             fp=file,
             indent=4,
             sort_keys=True,
-            obj={
-                "@context": converter.bimap,
-            },
+            obj={"@context": context},
         )
+
+
+def _get_expanded_term(record: Record) -> Dict[str, Any]:
+    # See https://www.w3.org/TR/json-ld11/#expanded-term-definition
+    rv = {"@prefix": True, "@id": record.uri_prefix}
+    # TODO add an @context inside here to somehow capture the pattern
+    # if record.pattern:
+    #     rv["@context"] = {
+    #         "sh": "http://www.w3.org/ns/shacl#",
+    #         "sh:pattern": record.pattern,
+    #     }
+    return rv
 
 
 def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
