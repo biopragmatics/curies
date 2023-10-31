@@ -1833,13 +1833,17 @@ def _ensure_path(path: Union[str, Path]) -> Path:
 
 
 def write_jsonld_context(
-    converter: Converter, path: Union[str, Path], *, include_synonyms: bool = False
+    converter: Converter,
+    path: Union[str, Path],
+    *,
+    include_synonyms: bool = False,
+    expand: bool = False,
 ) -> None:
     """Write the converter's bijective map as a JSON-LD context to a file."""
     path = _ensure_path(path)
     context = {}
     for record in converter.records:
-        term = _get_expanded_term(record)
+        term = _get_expanded_term(record, expand=expand)
         context[record.prefix] = term
         if include_synonyms:
             for prefix_synonym in record.prefix_synonyms:
@@ -1853,10 +1857,13 @@ def write_jsonld_context(
         )
 
 
-def _get_expanded_term(record: Record) -> Dict[str, Any]:
-    # See https://www.w3.org/TR/json-ld11/#expanded-term-definition
+def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, Dict[str, Any]]:
+    if not expand:
+        return record.uri_prefix
+
+    # Use expanded term definition described in https://www.w3.org/TR/json-ld11/#expanded-term-definition
     rv = {"@prefix": True, "@id": record.uri_prefix}
-    # TODO add an @context inside here to somehow capture the pattern
+    # TODO add an @context inside here to somehow capture the pattern, if available
     # if record.pattern:
     #     rv["@context"] = {
     #         "sh": "http://www.w3.org/ns/shacl#",
@@ -1897,14 +1904,14 @@ def write_shacl(
     lines = []
     for record in converter.records:
         pattern = None if pattern_map is None else pattern_map.get(record.prefix)
-        lines.append(_get_shacl_line(record.prefix, record.uri_prefix))
+        lines.append(_get_shacl_line(record.prefix, record.uri_prefix, pattern=pattern))
         if include_synonyms:
             for prefix_synonym in record.prefix_synonyms:
-                lines.append(_get_shacl_line(prefix_synonym, record.uri_prefix))
+                lines.append(_get_shacl_line(prefix_synonym, record.uri_prefix, pattern=pattern))
     path.write_text(text.format(entries=",\n".join(lines)))
 
 
-def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None) -> str:
+def _get_shacl_line(prefix: str, uri_prefix: str, *, pattern: Optional[str] = None) -> str:
     line = f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI '
     if pattern:
         pattern = pattern.replace("\\", "\\\\")
