@@ -1866,7 +1866,11 @@ def _get_expanded_term(record: Record) -> Dict[str, Any]:
 
 
 def write_shacl(
-    converter: Converter, path: Union[str, Path], *, include_synonyms: bool = False
+    converter: Converter,
+    path: Union[str, Path],
+    *,
+    include_synonyms: bool = False,
+    pattern_map: Optional[Mapping[str, str]] = None,
 ) -> None:
     """Write the converter's bijective map as SHACL in turtle RDF to a file.
 
@@ -1874,6 +1878,7 @@ def write_shacl(
     :param path: The path to a file to write to
     :param include_synonyms: If true, includes CURIE prefix synonyms.
         URI prefix synonms are not output.
+    :param pattern_map: A mapping from prefixes to regular expression patterns (this is an experimental feature)
 
     .. seealso:: https://www.w3.org/TR/shacl/#sparql-prefixes
     """
@@ -1891,6 +1896,7 @@ def write_shacl(
     path = _ensure_path(path)
     lines = []
     for record in converter.records:
+        pattern = None if pattern_map is None else pattern_map.get(record.prefix)
         lines.append(_get_shacl_line(record.prefix, record.uri_prefix))
         if include_synonyms:
             for prefix_synonym in record.prefix_synonyms:
@@ -1898,5 +1904,9 @@ def write_shacl(
     path.write_text(text.format(entries=",\n".join(lines)))
 
 
-def _get_shacl_line(prefix: str, uri_prefix: str) -> str:
-    return f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI ]'
+def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None) -> str:
+    line = f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI '
+    if pattern:
+        pattern = pattern.replace("\\", "\\\\")
+        line += f'; sh:pattern "{pattern}"'
+    return line + " ]"
