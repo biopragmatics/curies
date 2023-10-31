@@ -1847,10 +1847,17 @@ def write_jsonld_context(converter: Converter, path: Union[str, Path]) -> None:
 
 
 def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
-    """Write the converter's bijective map as SHACL in turtle RDF to a file."""
+    """Write the converter's bijective map as SHACL in turtle RDF to a file.
+
+    :param converter: The converter to export
+    :param path: The path to a file to write to
+
+    .. seealso:: https://www.w3.org/TR/shacl/#sparql-prefixes
+    """
     text = dedent(
         """\
         @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
         [
           sh:declare
@@ -1860,7 +1867,7 @@ def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
     )
     path = _ensure_path(path)
     entries = ",\n".join(
-        f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}" ]'
+        f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI ]'
         for prefix, uri_prefix in sorted(converter.bimap.items())
     )
     path.write_text(text.format(entries=entries))
