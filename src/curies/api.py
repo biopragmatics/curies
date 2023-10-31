@@ -1865,11 +1865,15 @@ def _get_expanded_term(record: Record) -> Dict[str, Any]:
     return rv
 
 
-def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
+def write_shacl(
+    converter: Converter, path: Union[str, Path], *, include_synonyms: bool = False
+) -> None:
     """Write the converter's bijective map as SHACL in turtle RDF to a file.
 
     :param converter: The converter to export
     :param path: The path to a file to write to
+    :param include_synonyms: If true, includes CURIE prefix synonyms.
+        URI prefix synonms are not output.
 
     .. seealso:: https://www.w3.org/TR/shacl/#sparql-prefixes
     """
@@ -1885,8 +1889,14 @@ def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
         """
     )
     path = _ensure_path(path)
-    entries = ",\n".join(
-        f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI ]'
-        for prefix, uri_prefix in sorted(converter.bimap.items())
-    )
-    path.write_text(text.format(entries=entries))
+    lines = []
+    for record in converter.records:
+        lines.append(_get_shacl_line(record.prefix, record.uri_prefix))
+        if include_synonyms:
+            for prefix_synonym in record.prefix_synonyms:
+                lines.append(_get_shacl_line(prefix_synonym, record.uri_prefix))
+    path.write_text(text.format(entries=",\n".join(lines)))
+
+
+def _get_shacl_line(prefix: str, uri_prefix: str) -> str:
+    return f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI ]'
