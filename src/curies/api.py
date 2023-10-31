@@ -920,8 +920,8 @@ class Converter:
             SELECT ?curie_prefix ?uri_prefix ?pattern
             WHERE {
                 ?bnode1 sh:declare ?bnode2 .
-                ?bnode2 sh:prefix ?curie_prefix ;
-                        sh:namespace ?uri_prefix .
+                ?bnode2 sh:prefix ?curie_prefix .
+                ?bnode2 sh:namespace ?uri_prefix .
                 OPTIONAL { ?bnode2 sh:pattern ?pattern . }
             }
         """
