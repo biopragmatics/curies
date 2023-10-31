@@ -1854,25 +1854,65 @@ def _ensure_path(path: Union[str, Path]) -> Path:
     return path
 
 
-def write_jsonld_context(converter: Converter, path: Union[str, Path]) -> None:
+def write_jsonld_context(
+    converter: Converter,
+    path: Union[str, Path],
+    *,
+    include_synonyms: bool = False,
+    expand: bool = False,
+) -> None:
     """Write the converter's bijective map as a JSON-LD context to a file."""
     path = _ensure_path(path)
+    context = {}
+    for record in converter.records:
+        term = _get_expanded_term(record, expand=expand)
+        context[record.prefix] = term
+        if include_synonyms:
+            for prefix_synonym in record.prefix_synonyms:
+                context[prefix_synonym] = term
     with path.open("w") as file:
         json.dump(
             fp=file,
             indent=4,
             sort_keys=True,
-            obj={
-                "@context": converter.bimap,
-            },
+            obj={"@context": context},
         )
 
 
-def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
-    """Write the converter's bijective map as SHACL in turtle RDF to a file."""
+def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, Dict[str, Any]]:
+    if not expand:
+        return record.uri_prefix
+
+    # Use expanded term definition described in https://www.w3.org/TR/json-ld11/#expanded-term-definition
+    rv = {"@prefix": True, "@id": record.uri_prefix}
+    # TODO add an @context inside here to somehow capture the pattern, if available
+    # if record.pattern:
+    #     rv["@context"] = {
+    #         "sh": "http://www.w3.org/ns/shacl#",
+    #         "sh:pattern": record.pattern,
+    #     }
+    return rv
+
+
+def write_shacl(
+    converter: Converter,
+    path: Union[str, Path],
+    *,
+    include_synonyms: bool = False,
+) -> None:
+    """Write the converter's bijective map as SHACL in turtle RDF to a file.
+
+    :param converter: The converter to export
+    :param path: The path to a file to write to
+    :param include_synonyms: If true, includes CURIE prefix synonyms.
+        URI prefix synonyms are not output.
+
+    .. seealso:: https://www.w3.org/TR/shacl/#sparql-prefixes
+    """
     text = dedent(
         """\
         @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
         [
           sh:declare
@@ -1883,14 +1923,18 @@ def write_shacl(converter: Converter, path: Union[str, Path]) -> None:
     path = _ensure_path(path)
     lines = []
     for record in converter.records:
-        beginning = f'    [ sh:prefix "{record.prefix}" ; sh:namespace "{record.uri_prefix}"'
-        if record.pattern:
-            line = f'{beginning} ; sh:pattern "{_escape_regex(record.pattern)}" ]'
-        else:
-            line = f"{beginning} ]"
-        lines.append(line)
+        lines.append(_get_shacl_line(record.prefix, record.uri_prefix, pattern=record.pattern))
+        if include_synonyms:
+            for prefix_synonym in record.prefix_synonyms:
+                lines.append(
+                    _get_shacl_line(prefix_synonym, record.uri_prefix, pattern=record.pattern)
+                )
     path.write_text(text.format(entries=",\n".join(lines)))
 
 
-def _escape_regex(pattern: str) -> str:
-    return pattern.replace("\\", "\\\\")
+def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None) -> str:
+    line = f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI '
+    if pattern:
+        pattern = pattern.replace("\\", "\\\\")
+        line += f'; sh:pattern "{pattern}"'
+    return line + " ]"

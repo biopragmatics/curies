@@ -1,5 +1,6 @@
 """Reconciliation."""
 
+import logging
 from collections import Counter, defaultdict
 from typing import Collection, List, Mapping, Optional, Tuple
 
@@ -10,6 +11,8 @@ __all__ = [
     "remap_uri_prefixes",
     "rewire",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class TransitiveError(NotImplementedError):
@@ -47,12 +50,23 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
     for old, new_prefix in ordering:
         _old = converter.synonym_to_prefix.get(old)
         if _old is None:
-            continue  # nothing to upgrade
+            logger.debug(
+                "Remapping %s->%s can not be applied because %s does not appear in the converter. Skipping.",
+                old,
+                new_prefix,
+                old,
+            )
+            continue
 
         record = records.pop(_old)
         new_record = converter.get_record(new_prefix)
         if new_record is not None and record != new_record:
-            pass  # would create a clash, don't do anything
+            logger.debug(
+                "Remapping %s->%s would create a clash because of the existing record %r. Skipping.",
+                old,
+                new_prefix,
+                new_record,
+            )
         elif old in intersection:
             record.prefix_synonyms = sorted(
                 set(record.prefix_synonyms).difference({old, new_prefix})
@@ -117,11 +131,18 @@ def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
         new_uri_prefix = _get_curie_preferred_or_synonym(record, rewiring)
         if new_uri_prefix is None:
             pass  # nothing to upgrade
+        elif new_uri_prefix == record.uri_prefix:
+            pass  # it's already the preferred prefix, nothing to do
         elif (
             new_uri_prefix in converter.reverse_prefix_map
             and new_uri_prefix not in record.uri_prefix_synonyms
         ):
-            pass  # would create a clash, don't do anything
+            logger.debug(
+                "Rewiring %r to %s would create a clash because of the existing record %s. Skipping.",
+                record,
+                new_uri_prefix,
+                converter.reverse_prefix_map[new_uri_prefix],
+            )
         else:
             record.uri_prefix_synonyms = sorted(
                 set(record.uri_prefix_synonyms)
