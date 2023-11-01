@@ -5,6 +5,7 @@
 import csv
 import itertools as itt
 import json
+import logging
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
@@ -57,6 +58,8 @@ __all__ = [
     "write_jsonld_context",
     "write_shacl",
 ]
+
+logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
 LocationOr = Union[str, Path, X]
@@ -824,9 +827,21 @@ class Converter:
         >>> url = f"{base}/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
         >>> converter = Converter.from_jsonld(url)
         >>> "rdf" in converter.prefix_map
+
+        .. seealso:: https://www.w3.org/TR/json-ld11/#the-context defines the ``@context`` aspect of JSON-LD
         """
         prefix_map = {}
         for key, value in _prepare(data)["@context"].items():
+            # TODO how to handle key == "@base"?
+            if not key:
+                logger.warning(
+                    "The JSON-LD specification says in https://www.w3.org/TR/json-ld/#terms that "
+                    "keys are not allowed to be empty strings. The given @context object contained "
+                    "an empty string as one of its keys"
+                )
+                continue
+            if key.startswith("@"):
+                continue
             if isinstance(value, str):
                 prefix_map[key] = value
             elif isinstance(value, dict) and value.get("@prefix") is True:

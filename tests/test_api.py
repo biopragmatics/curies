@@ -325,6 +325,8 @@ class TestConverter(unittest.TestCase):
         """Test parsing JSON-LD context."""
         context = {
             "@context": {
+                "@version": "1.0.0",  # should skip this
+                "": "",  # should skip this
                 "hello": "https://example.org/hello:",
                 "CHEBI": {
                     "@prefix": True,
