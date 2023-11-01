@@ -91,6 +91,7 @@ Other packages that convert between CURIEs and URIs:
 - https://github.com/geneontology/curie-util-py (Python)
 - https://github.com/geneontology/curie-util-es5 (Node.js)
 - https://github.com/endoli/curie.rs (Rust)
+- https://github.com/cthoyt/curies4j (Java)
 
 ## 🚀 Installation
 
