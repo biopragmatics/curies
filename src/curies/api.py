@@ -540,8 +540,6 @@ class Converter:
                 into.uri_prefix_synonyms.append(uri_prefix_synonym)
         into.uri_prefix_synonyms.sort()
 
-        # TODO merging patterns?
-
     def _index(self, record: Record) -> None:
         self.prefix_map[record.prefix] = record.uri_prefix
         self.synonym_to_prefix[record.prefix] = record.prefix

@@ -570,6 +570,43 @@ class TestConverter(unittest.TestCase):
             converter.expand("CHEBI:138488"),
         )
 
+    def test_combine_with_patterns(self):
+        """Test chaining with patterns."""
+        c1 = Converter([Record(prefix="a", uri_prefix="https://example.org/a/", pattern="^\\d{7}")])
+        c2 = Converter([Record(prefix="a", uri_prefix="https://example.org/a/", pattern="^\\d+")])
+        converter = chain([c1, c2])
+        self.assertEqual(
+            [Record(prefix="a", uri_prefix="https://example.org/a/", pattern="^\\d{7}")],
+            converter.records,
+        )
+
+    def test_combine_with_patterns_via_synonym(self):
+        """Test chaining with patterns."""
+        c1 = Converter([Record(prefix="a", uri_prefix="https://example.org/a/", pattern="^\\d{7}")])
+        c2 = Converter(
+            [
+                Record(
+                    prefix="b",
+                    prefix_synonyms=["a"],
+                    uri_prefix="https://example.org/b/",
+                    pattern="^\\d+",
+                )
+            ]
+        )
+        converter = chain([c1, c2])
+        self.assertEqual(
+            [
+                Record(
+                    prefix="a",
+                    prefix_synonyms=["b"],
+                    uri_prefix="https://example.org/a/",
+                    uri_prefix_synonyms=["https://example.org/b/"],
+                    pattern="^\\d{7}",
+                )
+            ],
+            converter.records,
+        )
+
     def test_df_bulk(self):
         """Test bulk processing in pandas dataframes."""
         rows = [
