@@ -241,6 +241,11 @@ class Record(BaseModel):  # type:ignore
     )
     prefix_synonyms: List[str] = Field(default_factory=list)
     uri_prefix_synonyms: List[str] = Field(default_factory=list)
+    pattern: Optional[str] = Field(
+        default=None,
+        description="The regular expression pattern for entries in this semantic space. "
+        "Warning: this is an experimental feature.",
+    )
 
     @validator("prefix_synonyms")  # type:ignore
     def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
@@ -370,6 +375,10 @@ def _get_prefix_map(records: List[Record]) -> Dict[str, str]:
     return rv
 
 
+def _get_pattern_map(records: List[Record]) -> Dict[str, str]:
+    return {record.prefix: record.pattern for record in records if record.pattern}
+
+
 def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
     rv = {}
     for record in records:
@@ -435,6 +444,10 @@ class Converter:
     reverse_prefix_map: Dict[str, str]
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
+    #: A mapping from prefix to regular expression pattern. Not necessarily complete wrt the prefix map.
+    #:
+    #: .. warning:: patterns are an experimental feature
+    pattern_map: Dict[str, str]
 
     def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True) -> None:
         """Instantiate a converter.
@@ -462,6 +475,7 @@ class Converter:
         self.synonym_to_prefix = _get_prefix_synmap(records)
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
         self.trie = StringTrie(self.reverse_prefix_map)
+        self.pattern_map = _get_pattern_map(records)
 
     @property
     def bimap(self) -> Mapping[str, str]:
@@ -541,6 +555,9 @@ class Converter:
         for uri_prefix_synonym in record.uri_prefix_synonyms:
             self.reverse_prefix_map[uri_prefix_synonym] = record.prefix
             self.trie[uri_prefix_synonym] = record.prefix
+
+        if record.pattern and record.prefix not in self.pattern_map:
+            self.pattern_map[record.prefix] = record.pattern
 
     def add_prefix(
         self,
@@ -890,7 +907,7 @@ class Converter:
 
         :param graph: A RDFLib graph, a Path, a string representing a file path, or a string URL
         :param format: The RDF format, if a file path is given
-        :param kwargs: Keyword arguments to pass to :meth:`from_prefix_map`
+        :param kwargs: Keyword arguments to pass to :meth:`Converter.__init__`
         :return: A converter
         """
         if isinstance(graph, (str, Path)):
@@ -901,16 +918,20 @@ class Converter:
             graph = temporary_graph
 
         query = """\
-            SELECT ?curie_prefix ?uri_prefix
+            SELECT ?curie_prefix ?uri_prefix ?pattern
             WHERE {
                 ?bnode1 sh:declare ?bnode2 .
                 ?bnode2 sh:prefix ?curie_prefix .
                 ?bnode2 sh:namespace ?uri_prefix .
+                OPTIONAL { ?bnode2 sh:pattern ?pattern . }
             }
         """
         results = graph.query(query)
-        prefix_map = {str(k): str(v) for k, v in results}
-        return cls.from_prefix_map(prefix_map, **kwargs)
+        records = [
+            Record(prefix=str(prefix), uri_prefix=str(uri_prefix), pattern=pattern and str(pattern))
+            for prefix, uri_prefix, pattern in results
+        ]
+        return cls(records, **kwargs)
 
     def get_prefixes(self) -> Set[str]:
         """Get the set of prefixes covered by this converter."""
@@ -1823,6 +1844,8 @@ def _record_to_dict(record: Record) -> Mapping[str, Union[str, List[str]]]:
         rv["prefix_synonyms"] = sorted(record.prefix_synonyms)
     if record.uri_prefix_synonyms:
         rv["uri_prefix_synonyms"] = sorted(record.uri_prefix_synonyms)
+    if record.pattern:
+        rv["pattern"] = record.pattern
     return rv
 
 
@@ -1901,16 +1924,18 @@ def write_shacl(
     path = _ensure_path(path)
     lines = []
     for record in converter.records:
-        lines.append(_get_shacl_line(record.prefix, record.uri_prefix))
+        lines.append(_get_shacl_line(record.prefix, record.uri_prefix, pattern=record.pattern))
         if include_synonyms:
             for prefix_synonym in record.prefix_synonyms:
-                lines.append(_get_shacl_line(prefix_synonym, record.uri_prefix))
+                lines.append(
+                    _get_shacl_line(prefix_synonym, record.uri_prefix, pattern=record.pattern)
+                )
     path.write_text(text.format(entries=",\n".join(lines)))
 
 
-def _get_shacl_line(prefix: str, uri_prefix: str) -> str:
+def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None) -> str:
     line = f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI '
-    # if pattern:
-    #     pattern = pattern.replace("\\", "\\\\")
-    #     line += f'; sh:pattern "{pattern}"'
+    if pattern:
+        pattern = pattern.replace("\\", "\\\\")
+        line += f'; sh:pattern "{pattern}"'
     return line + " ]"
