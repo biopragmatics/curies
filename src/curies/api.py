@@ -243,7 +243,8 @@ class Record(BaseModel):  # type:ignore
     uri_prefix_synonyms: List[str] = Field(default_factory=list)
     pattern: Optional[str] = Field(
         default=None,
-        description="The regular expression pattern for entries in this semantic space",
+        description="The regular expression pattern for entries in this semantic space. "
+        "Warning: this is an experimental feature.",
     )
 
     @validator("prefix_synonyms")  # type:ignore
@@ -443,7 +444,9 @@ class Converter:
     reverse_prefix_map: Dict[str, str]
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
-    #: A mapping from prefix to regular expression pattern. Not necessarily complete wrt the prefix map
+    #: A mapping from prefix to regular expression pattern. Not necessarily complete wrt the prefix map.
+    #:
+    #: .. warning:: patterns are an experimental feature
     pattern_map: Dict[str, str]
 
     def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True) -> None:
