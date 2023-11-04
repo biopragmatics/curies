@@ -960,7 +960,7 @@ class Converter:
         """Check if the string can be parsed as a URI by this converter.
 
         :param s: A string that might be a URI
-        :returns: If the string can be parsed as a CURIE by this converter.
+        :returns: If the string can be parsed as a URI by this converter.
             Note that some valid URIs, when passed to this function, will
             result in False if their URI prefixes are not registered with this
             converter.
