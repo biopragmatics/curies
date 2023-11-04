@@ -42,7 +42,7 @@ below.
     # Uses the OBO Foundry, a registry of ontologies
     obo_converter = curies.get_obo_converter()
 
-    # Uses the Monarch Initative's project-specific context
+    # Uses the Monarch Initiative project-specific context
     monarch_converter = curies.get_monarch_converter()
 
 Loading Prefix Maps
@@ -77,7 +77,7 @@ This function also accepts a string with a HTTP, HTTPS, or FTP path to a remote 
     Ideally, prefix maps are *bijective*, meaning that both the keys and values are unique.
     The Python dictionary data structure ensures that keys are unique, but sometimes values are repeated. For example,
     the CURIE prefixes ``DC`` and ``DCTERMS`` are often used interchangeably with the URI prefix for
-    the `Dublin Core Metadata Iniative Terms <https://www.dublincore.org/specifications/dublin-core/dcmi-terms>`_.
+    the `Dublin Core Metadata Initiative Terms <https://www.dublincore.org/specifications/dublin-core/dcmi-terms>`_.
     Therefore, many prefix maps are not bijective like
 
     .. code-block:: json
@@ -649,11 +649,17 @@ Apply in bulk to a CSV file with :meth:`curies.Converter.file_expand` and
 
 Tools for Developers and Semantic Engineers
 -------------------------------------------
-CURIE and URI Checks
-~~~~~~~~~~~~~~~~~~~~
-Sometimes, it's not clear if data from a given place is a CURIE or a URI. While
+
+Working with strings that might be a URI or a CURIE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sometimes, it's not clear if a string is a CURIE or a URI. While
 the `SafeCURIE syntax <https://www.w3.org/TR/2010/NOTE-curie-20101216/#P_safe_curie>`_
-is intended to address this, it's often overlooked. Therefore, each :class:`curies.Converter`
+is intended to address this, it's often overlooked.
+
+CURIE and URI Checks
+********************
+The first way to handle this ambiguity is to be able to check if the string is a CURIE
+or a URI. Therefore, each :class:`curies.Converter`
 comes with functions for checking if a string is a CURIE (:meth:`curies.Converter.is_curie`)
 or a URI (:meth:`curies.Converter.is_uri`) under its definition.
 
@@ -679,10 +685,47 @@ or a URI (:meth:`curies.Converter.is_uri`) under its definition.
     >>> converter.is_uri("http://proteopedia.org/wiki/index.php/2gc4")
     False
 
+Extended Expansion and Compression
+**********************************
+The code block below extends the CURIE expansion function to handle the situation where
+you might get passed a CURIE or a URI. If it's a CURIE, expansions happen with the normal
+rules. If it's a URI, it tries to standardize it.
+
+.. code-block:: python
+
+    def expand_ambiguous(converter, uri_or_curie, strict=False, passthrough=False):
+        if converter.is_curie(uri_or_curie):
+            return converter.expand(uri_or_curie)
+        if converter.is_uri(uri_or_curie):
+            return converter.standardize_uri(uri_or_curie)
+        if strict:
+            raise ValueError
+        if passthrough:
+            return uri_or_curie
+        return None
+
+A similar workflow can be done for compressing URIs where a CURIE might get passed.
+
+.. code-block:: python
+
+    def compress_ambiguous(converter, uri_or_curie, strict=False, passthrough=False):
+        if converter.is_uri(uri_or_curie):
+            return converter.compress(uri_or_curie)
+        if converter.is_curie(uri_or_curie):
+            return converter.standardize_curie(uri_or_curie)
+        if strict:
+            raise ValueError
+        if passthrough:
+            return uri_or_curie
+        return None
+
+Please get in touch if you find yourself using such a workflow as we might want to incorporate this
+as a first-party feature.
+
 Reusable data structures for references
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 While URIs and CURIEs are often represented as strings, for many programmatic applications,
-it is preferrable to pre-parse them into a pair of prefix corresponding to a semantic space
+it is preferable to pre-parse them into a pair of prefix corresponding to a semantic space
 and local unique identifier from that semantic space. ``curies`` provides two complementary
 data structures for representing these pairs:
 
