@@ -649,11 +649,17 @@ Apply in bulk to a CSV file with :meth:`curies.Converter.file_expand` and
 
 Tools for Developers and Semantic Engineers
 -------------------------------------------
+
+Working with strings that might be a URI or a CURIE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sometimes, it's not clear if a string is a CURIE or a URI. While
+the `SafeCURIE syntax <https://www.w3.org/TR/2010/NOTE-curie-20101216/#P_safe_curie>`_
+is intended to address this, it's often overlooked.
+
 CURIE and URI Checks
 ~~~~~~~~~~~~~~~~~~~~
-Sometimes, it's not clear if data from a given place is a CURIE or a URI. While
-the `SafeCURIE syntax <https://www.w3.org/TR/2010/NOTE-curie-20101216/#P_safe_curie>`_
-is intended to address this, it's often overlooked. Therefore, each :class:`curies.Converter`
+The first way to handle this ambiguity is to be able to check if the string is a CURIE
+or a URI. Therefore, each :class:`curies.Converter`
 comes with functions for checking if a string is a CURIE (:meth:`curies.Converter.is_curie`)
 or a URI (:meth:`curies.Converter.is_uri`) under its definition.
 
@@ -679,8 +685,8 @@ or a URI (:meth:`curies.Converter.is_uri`) under its definition.
     >>> converter.is_uri("http://proteopedia.org/wiki/index.php/2gc4")
     False
 
-Working with fields that might be a URI or a CURIE
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Extended Expansion and Compression
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The code block below extends the CURIE expansion function to handle the situation where
 you might get passed a CURIE or a URI. If it's a CURIE, expansions happen with the normal
 rules. If it's a URI, it tries to standardize it.
