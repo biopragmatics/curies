@@ -669,7 +669,7 @@ or a URI (:meth:`curies.Converter.is_uri`) under its definition.
     False
     # This is a valid CURIE, but not under this converter's definition
     >>> converter.is_curie("pdb:2gc4")
-    True
+    False
 
     >>> converter.is_uri("http://purl.obolibrary.org/obo/GO_1234567")
     True
