@@ -693,9 +693,7 @@ rules. If it's a URI, it tries to standardize it.
 
 .. code-block:: python
 
-    import curies
-
-    def expand_ambiguous(converter, uri_or_curie, *, strict = False, passthrough=False):
+    def expand_ambiguous(converter, uri_or_curie, strict=False, passthrough=False):
         if converter.is_curie(uri_or_curie):
             return converter.expand(uri_or_curie)
         if converter.is_uri(uri_or_curie):
