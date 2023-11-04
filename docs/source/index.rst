@@ -27,7 +27,7 @@ For many users, expansion (CURIE to URI) and contraction (URI to CURIE) are the 
     import curies
 
     # Get a converter
-    converter = curies.get_obofoundry_converter()
+    converter = curies.get_obo_converter()
 
     >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
     'CHEBI:1'
