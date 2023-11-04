@@ -42,7 +42,7 @@ below.
     # Uses the OBO Foundry, a registry of ontologies
     obo_converter = curies.get_obo_converter()
 
-    # Uses the Monarch Initative's project-specific context
+    # Uses the Monarch Initiative project-specific context
     monarch_converter = curies.get_monarch_converter()
 
 Loading Prefix Maps
@@ -77,7 +77,7 @@ This function also accepts a string with a HTTP, HTTPS, or FTP path to a remote 
     Ideally, prefix maps are *bijective*, meaning that both the keys and values are unique.
     The Python dictionary data structure ensures that keys are unique, but sometimes values are repeated. For example,
     the CURIE prefixes ``DC`` and ``DCTERMS`` are often used interchangeably with the URI prefix for
-    the `Dublin Core Metadata Iniative Terms <https://www.dublincore.org/specifications/dublin-core/dcmi-terms>`_.
+    the `Dublin Core Metadata Initiative Terms <https://www.dublincore.org/specifications/dublin-core/dcmi-terms>`_.
     Therefore, many prefix maps are not bijective like
 
     .. code-block:: json
@@ -725,7 +725,7 @@ as a first-party feature.
 Reusable data structures for references
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 While URIs and CURIEs are often represented as strings, for many programmatic applications,
-it is preferrable to pre-parse them into a pair of prefix corresponding to a semantic space
+it is preferable to pre-parse them into a pair of prefix corresponding to a semantic space
 and local unique identifier from that semantic space. ``curies`` provides two complementary
 data structures for representing these pairs:
 
