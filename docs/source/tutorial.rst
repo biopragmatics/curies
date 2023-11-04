@@ -649,6 +649,36 @@ Apply in bulk to a CSV file with :meth:`curies.Converter.file_expand` and
 
 Tools for Developers and Semantic Engineers
 -------------------------------------------
+CURIE and URI Checks
+~~~~~~~~~~~~~~~~~~~~
+Sometimes, it's not clear if data from a given place is a CURIE or a URI. While
+the `SafeCURIE syntax <https://www.w3.org/TR/2010/NOTE-curie-20101216/#P_safe_curie>`_
+is intended to address this, it's often overlooked. Therefore, each :class:`curies.Converter`
+comes with functions for checking if a string is a CURIE (:meth:`curies.Converter.is_curie`)
+or a URI (:meth:`curies.Converter.is_uri`) under its definition.
+
+.. code-block:: python
+
+    import curies
+
+    converter = curies.get_obo_converter()
+
+    >>> converter.is_curie("GO:1234567")
+    True
+    >>> converter.is_curie("http://purl.obolibrary.org/obo/GO_1234567")
+    False
+    # This is a valid CURIE, but not under this converter's definition
+    >>> converter.is_curie("pdb:2gc4")
+    True
+
+    >>> converter.is_uri("http://purl.obolibrary.org/obo/GO_1234567")
+    True
+    >>> converter.is_uri("GO:1234567")
+    False
+    # This is a valid URI, but not under this converter's definition
+    >>> converter.is_uri("http://proteopedia.org/wiki/index.php/2gc4")
+    False
+
 Reusable data structures for references
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 While URIs and CURIEs are often represented as strings, for many programmatic applications,
