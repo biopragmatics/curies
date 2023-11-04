@@ -284,6 +284,10 @@ class TestConverter(unittest.TestCase):
             ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
             ("OBO:unnamespaced", "http://purl.obolibrary.org/obo/unnamespaced"),
         ]:
+            self.assertTrue(converter.is_uri(uri))
+            self.assertTrue(converter.is_curie(curie))
+            self.assertFalse(converter.is_curie(uri))
+            self.assertFalse(converter.is_uri(curie))
             self.assertEqual(curie, converter.compress(uri))
             self.assertEqual(curie, converter.compress_strict(uri))
             self.assertEqual(uri, converter.expand(curie))
