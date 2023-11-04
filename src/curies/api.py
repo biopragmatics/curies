@@ -956,6 +956,11 @@ class Converter:
         """Format a prefix and identifier into a CURIE string."""
         return f"{prefix}{self.delimiter}{identifier}"
 
+    def is_uri(self, uri: str) -> bool:
+        """Check if a string is a valid URI based on the records in this converter."""
+        prefix, _ = self.parse_uri(uri)
+        return prefix is not None
+
     def compress_strict(self, uri: str) -> str:
         """Compress a URI to a CURIE, and raise an error of not possible."""
         return self.compress(uri, strict=True)
@@ -1039,6 +1044,10 @@ class Converter:
             return None, None
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
+
+    def is_curie(self, curie: str) -> bool:
+        """Check if the CURIE is parsable under this converter."""
+        return self.expand(curie) is None
 
     def expand_strict(self, curie: str) -> str:
         """Expand a CURIE to a URI, and raise an error of not possible."""
