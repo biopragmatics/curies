@@ -657,7 +657,7 @@ the `SafeCURIE syntax <https://www.w3.org/TR/2010/NOTE-curie-20101216/#P_safe_cu
 is intended to address this, it's often overlooked.
 
 CURIE and URI Checks
-~~~~~~~~~~~~~~~~~~~~
+********************
 The first way to handle this ambiguity is to be able to check if the string is a CURIE
 or a URI. Therefore, each :class:`curies.Converter`
 comes with functions for checking if a string is a CURIE (:meth:`curies.Converter.is_curie`)
@@ -686,18 +686,20 @@ or a URI (:meth:`curies.Converter.is_uri`) under its definition.
     False
 
 Extended Expansion and Compression
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**********************************
 The code block below extends the CURIE expansion function to handle the situation where
 you might get passed a CURIE or a URI. If it's a CURIE, expansions happen with the normal
 rules. If it's a URI, it tries to standardize it.
 
 .. code-block:: python
 
-    def omni_expand(converter, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
+    import curies
+
+    def expand_ambiguous(converter, uri_or_curie, *, strict = False, passthrough=False):
         if converter.is_curie(uri_or_curie):
-            return converter.expand(uri_or_curie, strict=strict, passthrough=passthrough)
+            return converter.expand(uri_or_curie)
         if converter.is_uri(uri_or_curie):
-            return converter.standardize_uri(uri_or_curie, strict=strict, passthrough=passthrough)
+            return converter.standardize_uri(uri_or_curie)
         if strict:
             raise ValueError
         if passthrough:
@@ -708,11 +710,11 @@ A similar workflow can be done for compressing URIs where a CURIE might get pass
 
 .. code-block:: python
 
-    def omni_compress(converter, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
+    def compress_ambiguous(converter, uri_or_curie, strict=False, passthrough=False):
         if converter.is_uri(uri_or_curie):
-            return converter.compress(uri_or_curie, strict=strict, passthrough=passthrough)
+            return converter.compress(uri_or_curie)
         if converter.is_curie(uri_or_curie):
-            return converter.standardize_curie(uri_or_curie, strict=strict, passthrough=passthrough)
+            return converter.standardize_curie(uri_or_curie)
         if strict:
             raise ValueError
         if passthrough:
