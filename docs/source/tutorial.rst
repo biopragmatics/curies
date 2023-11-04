@@ -679,6 +679,43 @@ or a URI (:meth:`curies.Converter.is_uri`) under its definition.
     >>> converter.is_uri("http://proteopedia.org/wiki/index.php/2gc4")
     False
 
+Working with fields that might be a URI or a CURIE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The code block below extends the CURIE expansion function to handle the situation where
+you might get passed a CURIE or a URI. If it's a CURIE, expansions happen with the normal
+rules. If it's a URI, it tries to standardize it.
+
+.. code-block:: python
+
+    def omni_expand(converter, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
+        if converter.is_curie(uri_or_curie):
+            return converter.expand(uri_or_curie, strict=strict, passthrough=passthrough)
+        if converter.is_uri(uri_or_curie):
+            return converter.standardize_uri(uri_or_curie, strict=strict, passthrough=passthrough)
+        if strict:
+            raise ValueError
+        if passthrough:
+            return uri_or_curie
+        return None
+
+A similar workflow can be done for compressing URIs where a CURIE might get passed.
+
+.. code-block:: python
+
+    def omni_compress(converter, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
+        if converter.is_uri(uri_or_curie):
+            return converter.compress(uri_or_curie, strict=strict, passthrough=passthrough)
+        if converter.is_curie(uri_or_curie):
+            return converter.standardize_curie(uri_or_curie, strict=strict, passthrough=passthrough)
+        if strict:
+            raise ValueError
+        if passthrough:
+            return uri_or_curie
+        return None
+
+Please get in touch if you find yourself using such a workflow as we might want to incorporate this
+as a first-party feature.
+
 Reusable data structures for references
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 While URIs and CURIEs are often represented as strings, for many programmatic applications,
