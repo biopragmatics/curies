@@ -1086,7 +1086,7 @@ class Converter:
         False.
 
         >>> converter.is_curie("pdb:2gc4")
-        True
+        False
         """
         return self.expand(s) is not None
 
