@@ -956,6 +956,31 @@ class Converter:
         """Format a prefix and identifier into a CURIE string."""
         return f"{prefix}{self.delimiter}{identifier}"
 
+    def is_uri(self, s: str) -> bool:
+        """Check if the string can be parsed as a URI by this converter.
+
+        :param s: A string that might be a URI
+        :returns: If the string can be parsed as a URI by this converter.
+            Note that some valid URIs, when passed to this function, will
+            result in False if their URI prefixes are not registered with this
+            converter.
+
+        >>> import curies
+        >>> converter = curies.get_obo_converter()
+        >>> converter.is_uri("http://purl.obolibrary.org/obo/GO_1234567")
+        True
+        >>> converter.is_uri("GO:1234567")
+        False
+
+        The following is a valid URI, but the prefix is not registered
+        with the converter based on the OBO Foundry prefix map, so it returns
+        False.
+
+        >>> converter.is_uri("http://proteopedia.org/wiki/index.php/2gc4")
+        False
+        """
+        return self.compress(s) is not None
+
     def compress_strict(self, uri: str) -> str:
         """Compress a URI to a CURIE, and raise an error of not possible."""
         return self.compress(uri, strict=True)
@@ -1039,6 +1064,31 @@ class Converter:
             return None, None
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
+
+    def is_curie(self, s: str) -> bool:
+        """Check if the string can be parsed as a CURIE by this converter.
+
+        :param s: A string that might be a CURIE
+        :returns: If the string can be parsed as a CURIE by this converter.
+            Note that some valid CURIEs, when passed to this function, will
+            result in False if their prefixes are not registered with this
+            converter.
+
+        >>> import curies
+        >>> converter = curies.get_obo_converter()
+        >>> converter.is_curie("GO:1234567")
+        True
+        >>> converter.is_curie("http://purl.obolibrary.org/obo/GO_1234567")
+        False
+
+        The following is a valid CURIE, but the prefix is not registered
+        with the converter based on the OBO Foundry prefix map, so it returns
+        False.
+
+        >>> converter.is_curie("pdb:2gc4")
+        False
+        """
+        return self.expand(s) is not None
 
     def expand_strict(self, curie: str) -> str:
         """Expand a CURIE to a URI, and raise an error of not possible."""
