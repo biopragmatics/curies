@@ -269,6 +269,15 @@ class TestConverter(unittest.TestCase):
         new_converter_2 = self.converter.get_subconverter(["NOPE"])
         self.assertEqual(0, len(new_converter_2.records))
 
+    def test_predicates(self):
+        """Add tests for predicates."""
+        self.assertFalse(self.converter.is_uri(""))
+        self.assertFalse(self.converter.is_uri("nope"))
+        self.assertFalse(self.converter.is_curie(""))
+        self.assertFalse(self.converter.is_curie("nope"))
+        self.assertFalse(self.converter.is_curie(":nope"))
+        self.assertFalse(self.converter.is_curie("nope:"))
+
     def test_convert(self):
         """Test compression."""
         self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())

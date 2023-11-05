@@ -1088,7 +1088,10 @@ class Converter:
         >>> converter.is_curie("pdb:2gc4")
         False
         """
-        return self.expand(s) is not None
+        try:
+            return self.expand(s) is not None
+        except ValueError:
+            return False
 
     def expand_strict(self, curie: str) -> str:
         """Expand a CURIE to a URI, and raise an error of not possible."""
