@@ -1126,7 +1126,7 @@ class Converter:
         self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
     ) -> Optional[str]:
         """Expand a CURIE or standardize a URI.
-        
+
         :param uri_or_curie:
             A string representing a compact URI (CURIE) or a URI.
         :param strict: If true and the string is neither a CURIE that can be expanded nor a URI that can be
