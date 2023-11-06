@@ -1198,7 +1198,8 @@ class Converter:
             A string representing a compact URI (CURIE)
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
-            Defaults to false.
+            Defaults to false. If your strings can either be a CURIE _or_ a URI, consider using
+            :meth:`Converter.expand_ambiguous` instead.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:

@@ -687,22 +687,33 @@ or a URI (:meth:`curies.Converter.is_uri`) under its definition.
 
 Extended Expansion and Compression
 **********************************
-The code block below extends the CURIE expansion function to handle the situation where
+The :meth:`curies.Converter.expand_ambiguous` extends the CURIE expansion function to handle the situation where
 you might get passed a CURIE or a URI. If it's a CURIE, expansions happen with the normal
 rules. If it's a URI, it tries to standardize it.
 
 .. code-block:: python
 
-    def expand_ambiguous(converter, uri_or_curie, strict=False, passthrough=False):
-        if converter.is_curie(uri_or_curie):
-            return converter.expand(uri_or_curie)
-        if converter.is_uri(uri_or_curie):
-            return converter.standardize_uri(uri_or_curie)
-        if strict:
-            raise ValueError
-        if passthrough:
-            return uri_or_curie
-        return None
+    from curies import Converter, Record
+    converter = Converter.from_extended_prefix_map([
+        Record(
+            prefix="CHEBI",
+            uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+            uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ),
+    ])
+
+    >>> converter.expand_ambiguous("CHEBI:138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+    # standardize URIs
+    >>> converter.expand_ambiguous("http://purl.obolibrary.org/obo/CHEBI_138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+    >>> converter.expand_ambiguous("https://identifiers.org/chebi:138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+    # Handle cases that aren't valid w.r.t. the converter
+    >>> converter.expand_ambiguous("missing:0000000")
+    >>> converter.expand_ambiguous("https://example.com/missing:0000000")
 
 A similar workflow can be done for compressing URIs where a CURIE might get passed.
 
