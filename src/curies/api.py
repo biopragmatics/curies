@@ -1093,6 +1093,49 @@ class Converter:
         except ValueError:
             return False
 
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_ambiguous(
+        self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = False
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_ambiguous(
+        self,
+        uri_or_curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[True] = True,
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_ambiguous(
+        self,
+        uri_or_curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[False] = False,
+    ) -> Optional[str]:
+        ...
+
+    def expand_ambiguous(
+        self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
+        """Expand a CURIE or standardize a URI."""
+        if self.is_curie(uri_or_curie):
+            return self.expand(uri_or_curie, strict=True)
+        if self.is_uri(uri_or_curie):
+            return self.standardize_uri(uri_or_curie, strict=True)
+        if strict:
+            raise ExpansionError(uri_or_curie)
+        if passthrough:
+            return uri_or_curie
+        return None
+
     def expand_strict(self, curie: str) -> str:
         """Expand a CURIE to a URI, and raise an error of not possible."""
         return self.expand(curie, strict=True)
@@ -1465,6 +1508,7 @@ class Converter:
         target_column: Union[None, str, int] = None,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all CURIEs in the given column to URIs.
 
@@ -1474,8 +1518,10 @@ class Converter:
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.expand, strict=strict, passthrough=passthrough)
+        pre_func = self.expand_ambiguous if ambiguous else self.expand
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_prefix(
@@ -1560,6 +1606,7 @@ class Converter:
         self,
         path: Union[str, Path],
         column: int,
+        *,
         sep: Optional[str] = None,
         header: bool = True,
         strict: bool = False,
@@ -1582,10 +1629,12 @@ class Converter:
         self,
         path: Union[str, Path],
         column: int,
+        *,
         sep: Optional[str] = None,
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all CURIEs in the given column of a CSV file to URIs.
 
@@ -1596,8 +1645,10 @@ class Converter:
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.expand, strict=strict, passthrough=passthrough)
+        pre_func = self.expand_ambiguous if ambiguous else self.expand
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     @staticmethod
