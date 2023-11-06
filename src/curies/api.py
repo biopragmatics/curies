@@ -1143,7 +1143,7 @@ class Converter:
         >>> converter = Converter.from_extended_prefix_map([
         ...     Record(
         ...          prefix="CHEBI",
-        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_138488",
+        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
         ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
         ...     ),
         ... ])
