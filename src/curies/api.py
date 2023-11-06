@@ -1125,7 +1125,37 @@ class Converter:
     def expand_ambiguous(
         self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
     ) -> Optional[str]:
-        """Expand a CURIE or standardize a URI."""
+        """Expand a CURIE or standardize a URI.
+        
+        :param uri_or_curie:
+            A string representing a compact URI (CURIE) or a URI.
+        :param strict: If true and the string is neither a CURIE that can be expanded nor a URI that can be
+            standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the string is neither a CURIE that can be expanded
+            nor a URI that can be standardized, return the input. Defaults to false.
+        :returns:
+            If the string is a CURIE, and it can be expanded, returns the corresponding URI.
+            If the string is a URI, and it can be standardized, returns the standard URI.
+        :raises ExpansionError:
+            If strict is true and the CURIE can't be expanded
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(
+        ...          prefix="CHEBI",
+        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_138488",
+        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...     ),
+        ... ])
+        >>> converter.expand_ambiguous("CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.expand_ambiguous("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.expand_ambiguous("https://identifiers.org/chebi:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.expand_ambiguous("missing:0000000")
+        >>> converter.expand_ambiguous("https://example.com/missing:0000000")
+        """
         if self.is_curie(uri_or_curie):
             return self.expand(uri_or_curie, strict=True)
         if self.is_uri(uri_or_curie):
@@ -1165,14 +1195,14 @@ class Converter:
         """Expand a CURIE to a URI, if possible.
 
         :param curie:
-            A string representing a compact URI
+            A string representing a compact URI (CURIE)
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:
-            If struct is true and the URI can't be expanded
+            If strict is true and the CURIE can't be expanded
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
