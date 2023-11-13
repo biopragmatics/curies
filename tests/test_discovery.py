@@ -7,6 +7,7 @@ import rdflib
 
 from curies import Converter, Record
 from curies.discovery import discover, discover_from_rdf
+from tests.constants import SLOW
 
 
 class TestDiscovery(unittest.TestCase):
@@ -18,7 +19,10 @@ class TestDiscovery(unittest.TestCase):
     def setUpClass(cls) -> None:
         """Set up the test case with a dummy converter."""
         cls.converter = Converter(
-            [Record(prefix="GO", uri_prefix="http://purl.obolibrary.org/obo/GO_")]
+            [
+                Record(prefix="GO", uri_prefix="http://purl.obolibrary.org/obo/GO_"),
+                Record(prefix="rdfs", uri_prefix=str(rdflib.RDFS._NS)),
+            ]
         )
 
     def test_simple(self):
@@ -67,3 +71,13 @@ class TestDiscovery(unittest.TestCase):
             converter.compress("http://purl.obolibrary.org/obo/GO_0001234"),
             msg="discovered converter should not inherit reference converter's definitions",
         )
+
+    @SLOW
+    def test_remote(self):
+        """Test parsing AEON."""
+        converter = discover_from_rdf(
+            converter=Converter([]),
+            graph="https://raw.githubusercontent.com/tibonto/aeon/main/aeon.owl",
+            format="xml",
+        )
+        self.assertIn("http://purl.obolibrary.org/obo/AEON_", converter.reverse_prefix_map)

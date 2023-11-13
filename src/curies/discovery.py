@@ -49,13 +49,13 @@ def discover_from_rdf(
         A converter with dummy prefixes for URI prefixes appearing in the RDF
         content (i.e., triples).
     """
-    graph = _ensure_graph(graph, format)
-    uris = set(_yield_uris(graph))
+    graph = _ensure_graph(graph=graph, format=format)
+    uris = set(_yield_uris(graph=graph))
     return discover(converter, uris, **kwargs)
 
 
 def _ensure_graph(
-    graph: Union[GraphInput, "rdflib.Graph"], format: Optional[GraphFormats] = None
+    *, graph: Union[GraphInput, "rdflib.Graph"], format: Optional[GraphFormats] = None
 ) -> "rdflib.Graph":
     import rdflib
 
@@ -63,11 +63,11 @@ def _ensure_graph(
         return graph
 
     rv = rdflib.Graph()
-    rv.parse(graph, format=format)
+    rv.parse(source=graph, format=format)
     return rv
 
 
-def _yield_uris(graph: "rdflib.Graph") -> Iterable[str]:
+def _yield_uris(*, graph: "rdflib.Graph") -> Iterable[str]:
     import rdflib
 
     for parts in graph.triples((None, None, None)):
@@ -80,7 +80,7 @@ def discover(
     converter: Converter,
     uris: Iterable[str],
     *,
-    delimiters: Sequence[str] = "#/",
+    delimiters: Optional[Sequence[str]] = None,
     cutoff: Optional[int] = None,
     metaprefix: str = "ns",
 ) -> Converter:
@@ -98,11 +98,13 @@ def discover(
         commonly used for URL fragments, then ``/`` since many URIs are constructed
         with these.
     :param cutoff:
-        The number of unique URIs with a given prefix needed to call it
-        as unique. This can be adjusted, but is initially high.
+        If given, will require more than ``cutoff`` unique local unique identifiers
+        associated with a given URI prefix to keep it.
 
-        The cutoff can be set to 0 to recover all putative URI prefixes.
-        However, this comes with the risk of false positives.
+        Defaults to zero, which increases recall (i.e., likelihood of getting all
+        possible URI prefixes) but decreases precision (i.e., more of the results
+        might be false positives / spurious). If you get a lot of false positives,
+        try increasing first to 1, 2, then maybe higher.
     :param metaprefix:
         The beginning part of each dummy prefix, followed by a number. The default value
         is ``ns``, so dummy prefixes are named ``ns1``, ``ns2``, and so on.
@@ -128,8 +130,12 @@ def discover(
     return Converter(records)
 
 
+#: The default delimiters used when guessing URI prefixes
+DEFAULT_DELIMITERS = ("#", "/", "_")
+
+
 def _get_uri_prefix_to_luids(
-    converter: Converter, uris: Iterable[str], delimiters: Sequence[str] = "#/"
+    *, converter: Converter, uris: Iterable[str], delimiters: Optional[Sequence[str]] = None
 ) -> Mapping[str, Set[str]]:
     """Get a mapping from putative URI prefixes to corresponding putative local unique identifiers.
 
@@ -147,9 +153,15 @@ def _get_uri_prefix_to_luids(
     :returns:
         A dictionary of putative URI prefixes to sets of putative local unique identifiers
     """
+    if not delimiters:
+        delimiters = DEFAULT_DELIMITERS
     uri_prefix_to_luids = defaultdict(set)
     for uri in uris:
         if converter.is_uri(uri):
+            continue
+        if uri.startswith("https://github.com") and "issues" in uri:
+            # TODO it's not really the job of :mod:`curies` to incorporate special cases,
+            #  but the GitHub thing is such an annoyance...
             continue
         for delimiter in delimiters:
             if delimiter not in uri:
