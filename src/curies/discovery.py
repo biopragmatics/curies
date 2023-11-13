@@ -15,6 +15,7 @@ __all__ = [
 
 
 def discovery_rdflib(converter: Converter, graph: "rdflib.Graph"):
+    """Discover new URI prefixes from an RDFLib triple store."""
     return discover(converter, set(_yield_uris(graph)))
 
 
