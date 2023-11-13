@@ -1042,7 +1042,7 @@ class Converter:
         'CHEBI:138488'
 
         >>> converter.to_curie("CHEBI:138488")
-        'CHEBI:138488'f
+        'CHEBI:138488'
         >>> converter.to_curie("chebi:138488")
         'CHEBI:138488'
 
