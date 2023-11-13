@@ -763,6 +763,92 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIsNone(converter.expand_all("NOPE:NOPE"))
 
+    def test_expand_ambiguous(self):
+        """Test expansion of URI or CURIEs."""
+        converter = Converter.from_extended_prefix_map(
+            [
+                Record(
+                    prefix="CHEBI",
+                    prefix_synonyms=["chebi"],
+                    uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                    uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+                ),
+            ]
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand_or_standardize("CHEBI:138488"),
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand_or_standardize("chebi:138488"),
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488"),
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand_or_standardize("https://identifiers.org/chebi:138488"),
+        )
+
+        self.assertIsNone(converter.expand_or_standardize("missing:0000000"))
+        with self.assertRaises(ExpansionError):
+            converter.expand_or_standardize("missing:0000000", strict=True)
+        self.assertEqual(
+            "missing:0000000", converter.expand_or_standardize("missing:0000000", passthrough=True)
+        )
+
+        self.assertIsNone(converter.expand_or_standardize("https://example.com/missing:0000000"))
+        with self.assertRaises(ExpansionError):
+            converter.expand_or_standardize("https://example.com/missing:0000000", strict=True)
+        self.assertEqual(
+            "https://example.com/missing:0000000",
+            converter.expand_or_standardize(
+                "https://example.com/missing:0000000", passthrough=True
+            ),
+        )
+
+    def test_compress_ambiguous(self):
+        """Test compression of URI or CURIEs."""
+        converter = Converter.from_extended_prefix_map(
+            [
+                Record(
+                    prefix="CHEBI",
+                    prefix_synonyms=["chebi"],
+                    uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                    uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+                ),
+            ]
+        )
+        self.assertEqual("CHEBI:138488", converter.compress_or_standardize("CHEBI:138488"))
+        self.assertEqual("CHEBI:138488", converter.compress_or_standardize("chebi:138488"))
+        self.assertEqual(
+            "CHEBI:138488",
+            converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488"),
+        )
+        self.assertEqual(
+            "CHEBI:138488",
+            converter.compress_or_standardize("https://identifiers.org/chebi:138488"),
+        )
+
+        self.assertIsNone(converter.expand_or_standardize("missing:0000000"))
+        with self.assertRaises(ExpansionError):
+            converter.expand_or_standardize("missing:0000000", strict=True)
+        self.assertEqual(
+            "missing:0000000", converter.expand_or_standardize("missing:0000000", passthrough=True)
+        )
+
+        self.assertIsNone(converter.expand_or_standardize("https://example.com/missing:0000000"))
+        with self.assertRaises(ExpansionError):
+            converter.expand_or_standardize("https://example.com/missing:0000000", strict=True)
+        self.assertEqual(
+            "https://example.com/missing:0000000",
+            converter.expand_or_standardize(
+                "https://example.com/missing:0000000", passthrough=True
+            ),
+        )
+
 
 class TestVersion(unittest.TestCase):
     """Trivially test a version."""

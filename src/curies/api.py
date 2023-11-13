@@ -981,6 +981,84 @@ class Converter:
         """
         return self.compress(s) is not None
 
+    # docstr-coverage:excused `overload`
+    @overload
+    def compress_or_standardize(
+        self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = False
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def compress_or_standardize(
+        self,
+        uri_or_curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[True] = True,
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def compress_or_standardize(
+        self,
+        uri_or_curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[False] = False,
+    ) -> Optional[str]:
+        ...
+
+    def compress_or_standardize(
+        self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
+        """Compress a URI or standardize a CURIE.
+
+        :param uri_or_curie:
+            A string representing a compact URI (CURIE) or a URI.
+        :param strict: If true and the string is neither a URI that can be compressed nor a CURIE that can be
+            standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the string is neither a URI that can be compressed
+            nor a CURIE that can be standardized, return the input. Defaults to false.
+        :returns:
+            If the string is a URI, and it can be compressed, returns the corresponding CURIE.
+            If the string is a CURIE, and it can be standardized, returns the standard CURIE.
+        :raises CompressionError:
+            If strict is true and the URI can't be compressed
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(
+        ...          prefix="CHEBI",
+        ...          prefix_synonyms=["chebi"],
+        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...     ),
+        ... ])
+        >>> converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'CHEBI:138488'
+        >>> converter.compress_or_standardize("https://identifiers.org/chebi:138488")
+        'CHEBI:138488'
+
+        >>> converter.compress_or_standardize("CHEBI:138488")
+        'CHEBI:138488'
+        >>> converter.compress_or_standardize("chebi:138488")
+        'CHEBI:138488'
+
+        >>> converter.compress_or_standardize("missing:0000000")
+        >>> converter.compress_or_standardize("https://example.com/missing:0000000")
+        """
+        if self.is_uri(uri_or_curie):
+            return self.compress(uri_or_curie, strict=True)
+        if self.is_curie(uri_or_curie):
+            return self.standardize_curie(uri_or_curie, strict=True)
+        if strict:
+            raise CompressionError(uri_or_curie)
+        if passthrough:
+            return uri_or_curie
+        return None
+
     def compress_strict(self, uri: str) -> str:
         """Compress a URI to a CURIE, and raise an error of not possible."""
         return self.compress(uri, strict=True)
@@ -1093,6 +1171,84 @@ class Converter:
         except ValueError:
             return False
 
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_or_standardize(
+        self, curie_or_uri: str, *, strict: Literal[True] = True, passthrough: bool = False
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_or_standardize(
+        self,
+        curie_or_uri: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[True] = True,
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_or_standardize(
+        self,
+        curie_or_uri: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[False] = False,
+    ) -> Optional[str]:
+        ...
+
+    def expand_or_standardize(
+        self, curie_or_uri: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
+        """Expand a CURIE or standardize a URI.
+
+        :param curie_or_uri:
+            A string representing a compact URI (CURIE) or a URI.
+        :param strict: If true and the string is neither a CURIE that can be expanded nor a URI that can be
+            standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the string is neither a CURIE that can be expanded
+            nor a URI that can be standardized, return the input. Defaults to false.
+        :returns:
+            If the string is a CURIE, and it can be expanded, returns the corresponding URI.
+            If the string is a URI, and it can be standardized, returns the standard URI.
+        :raises ExpansionError:
+            If strict is true and the CURIE can't be expanded
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(
+        ...          prefix="CHEBI",
+        ...          prefix_synonyms=["chebi"],
+        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...     ),
+        ... ])
+        >>> converter.expand_or_standardize("CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+         >>> converter.expand_or_standardize("chebi:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+        >>> converter.expand_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.expand_or_standardize("https://identifiers.org/chebi:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+        >>> converter.expand_or_standardize("missing:0000000")
+        >>> converter.expand_or_standardize("https://example.com/missing:0000000")
+        """
+        if self.is_curie(curie_or_uri):
+            return self.expand(curie_or_uri, strict=True)
+        if self.is_uri(curie_or_uri):
+            return self.standardize_uri(curie_or_uri, strict=True)
+        if strict:
+            raise ExpansionError(curie_or_uri)
+        if passthrough:
+            return curie_or_uri
+        return None
+
     def expand_strict(self, curie: str) -> str:
         """Expand a CURIE to a URI, and raise an error of not possible."""
         return self.expand(curie, strict=True)
@@ -1122,14 +1278,15 @@ class Converter:
         """Expand a CURIE to a URI, if possible.
 
         :param curie:
-            A string representing a compact URI
+            A string representing a compact URI (CURIE)
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
-            Defaults to false.
+            Defaults to false. If your strings can either be a CURIE _or_ a URI, consider using
+            :meth:`Converter.expand_ambiguous` instead.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:
-            If struct is true and the URI can't be expanded
+            If strict is true and the CURIE can't be expanded
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
@@ -1445,6 +1602,7 @@ class Converter:
         target_column: Union[None, str, int] = None,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all URIs in the given column to CURIEs.
 
@@ -1454,8 +1612,10 @@ class Converter:
         :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.compress, strict=strict, passthrough=passthrough)
+        pre_func = self.compress_or_standardize if ambiguous else self.compress
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_expand(
@@ -1465,6 +1625,7 @@ class Converter:
         target_column: Union[None, str, int] = None,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all CURIEs in the given column to URIs.
 
@@ -1474,8 +1635,10 @@ class Converter:
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.expand, strict=strict, passthrough=passthrough)
+        pre_func = self.expand_or_standardize if ambiguous else self.expand
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_prefix(
@@ -1525,7 +1688,6 @@ class Converter:
 
         >>> import curies
         >>> import pandas as pd
-        >>> import itertools as itt
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
         >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
         >>> df = pd.read_csv(url, sep="\t", comment='#')
@@ -1560,10 +1722,12 @@ class Converter:
         self,
         path: Union[str, Path],
         column: int,
+        *,
         sep: Optional[str] = None,
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all URIs in the given column of a CSV file to CURIEs.
 
@@ -1574,18 +1738,22 @@ class Converter:
         :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.compress, strict=strict, passthrough=passthrough)
+        pre_func = self.compress_or_standardize if ambiguous else self.compress
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     def file_expand(
         self,
         path: Union[str, Path],
         column: int,
+        *,
         sep: Optional[str] = None,
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all CURIEs in the given column of a CSV file to URIs.
 
@@ -1596,8 +1764,10 @@ class Converter:
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.expand, strict=strict, passthrough=passthrough)
+        pre_func = self.expand_or_standardize if ambiguous else self.expand
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     @staticmethod
