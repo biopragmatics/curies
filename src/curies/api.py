@@ -1095,14 +1095,14 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def expand_ambiguous(
+    def to_uri(
         self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = False
     ) -> str:
         ...
 
     # docstr-coverage:excused `overload`
     @overload
-    def expand_ambiguous(
+    def to_uri(
         self,
         uri_or_curie: str,
         *,
@@ -1113,7 +1113,7 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def expand_ambiguous(
+    def to_uri(
         self,
         uri_or_curie: str,
         *,
@@ -1122,7 +1122,7 @@ class Converter:
     ) -> Optional[str]:
         ...
 
-    def expand_ambiguous(
+    def to_uri(
         self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
     ) -> Optional[str]:
         """Expand a CURIE or standardize a URI.
@@ -1147,14 +1147,14 @@ class Converter:
         ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
         ...     ),
         ... ])
-        >>> converter.expand_ambiguous("CHEBI:138488")
+        >>> converter.to_uri("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-        >>> converter.expand_ambiguous("http://purl.obolibrary.org/obo/CHEBI_138488")
+        >>> converter.to_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-        >>> converter.expand_ambiguous("https://identifiers.org/chebi:138488")
+        >>> converter.to_uri("https://identifiers.org/chebi:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-        >>> converter.expand_ambiguous("missing:0000000")
-        >>> converter.expand_ambiguous("https://example.com/missing:0000000")
+        >>> converter.to_uri("missing:0000000")
+        >>> converter.to_uri("https://example.com/missing:0000000")
         """
         if self.is_curie(uri_or_curie):
             return self.expand(uri_or_curie, strict=True)
@@ -1551,7 +1551,7 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.expand_ambiguous if ambiguous else self.expand
+        pre_func = self.to_uri if ambiguous else self.expand
         func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         df[column if target_column is None else target_column] = df[column].map(func)
 
@@ -1678,7 +1678,7 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.expand_ambiguous if ambiguous else self.expand
+        pre_func = self.to_uri if ambiguous else self.expand
         func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 

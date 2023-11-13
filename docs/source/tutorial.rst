@@ -687,7 +687,7 @@ or a URI (:meth:`curies.Converter.is_uri`) under its definition.
 
 Extended Expansion and Compression
 **********************************
-The :meth:`curies.Converter.expand_ambiguous` extends the CURIE expansion function to handle the situation where
+The :meth:`curies.Converter.to_uri` extends the CURIE expansion function to handle the situation where
 you might get passed a CURIE or a URI. If it's a CURIE, expansions happen with the normal
 rules. If it's a URI, it tries to standardize it.
 
@@ -702,18 +702,18 @@ rules. If it's a URI, it tries to standardize it.
         ),
     ])
 
-    >>> converter.expand_ambiguous("CHEBI:138488")
+    >>> converter.to_uri("CHEBI:138488")
     'http://purl.obolibrary.org/obo/CHEBI_138488'
 
     # standardize URIs
-    >>> converter.expand_ambiguous("http://purl.obolibrary.org/obo/CHEBI_138488")
+    >>> converter.to_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
     'http://purl.obolibrary.org/obo/CHEBI_138488'
-    >>> converter.expand_ambiguous("https://identifiers.org/chebi:138488")
+    >>> converter.to_uri("https://identifiers.org/chebi:138488")
     'http://purl.obolibrary.org/obo/CHEBI_138488'
 
     # Handle cases that aren't valid w.r.t. the converter
-    >>> converter.expand_ambiguous("missing:0000000")
-    >>> converter.expand_ambiguous("https://example.com/missing:0000000")
+    >>> converter.to_uri("missing:0000000")
+    >>> converter.to_uri("https://example.com/missing:0000000")
 
 A similar workflow can be done for compressing URIs where a CURIE might get passed.
 

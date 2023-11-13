@@ -776,30 +776,30 @@ class TestConverter(unittest.TestCase):
         )
         self.assertEqual(
             "http://purl.obolibrary.org/obo/CHEBI_138488",
-            converter.expand_ambiguous("CHEBI:138488"),
+            converter.to_uri("CHEBI:138488"),
         )
         self.assertEqual(
             "http://purl.obolibrary.org/obo/CHEBI_138488",
-            converter.expand_ambiguous("http://purl.obolibrary.org/obo/CHEBI_138488"),
+            converter.to_uri("http://purl.obolibrary.org/obo/CHEBI_138488"),
         )
         self.assertEqual(
             "http://purl.obolibrary.org/obo/CHEBI_138488",
-            converter.expand_ambiguous("https://identifiers.org/chebi:138488"),
+            converter.to_uri("https://identifiers.org/chebi:138488"),
         )
 
-        self.assertIsNone(converter.expand_ambiguous("missing:0000000"))
+        self.assertIsNone(converter.to_uri("missing:0000000"))
         with self.assertRaises(ExpansionError):
-            converter.expand_ambiguous("missing:0000000", strict=True)
+            converter.to_uri("missing:0000000", strict=True)
         self.assertEqual(
-            "missing:0000000", converter.expand_ambiguous("missing:0000000", passthrough=True)
+            "missing:0000000", converter.to_uri("missing:0000000", passthrough=True)
         )
 
-        self.assertIsNone(converter.expand_ambiguous("https://example.com/missing:0000000"))
+        self.assertIsNone(converter.to_uri("https://example.com/missing:0000000"))
         with self.assertRaises(ExpansionError):
-            converter.expand_ambiguous("https://example.com/missing:0000000", strict=True)
+            converter.to_uri("https://example.com/missing:0000000", strict=True)
         self.assertEqual(
             "https://example.com/missing:0000000",
-            converter.expand_ambiguous("https://example.com/missing:0000000", passthrough=True),
+            converter.to_uri("https://example.com/missing:0000000", passthrough=True),
         )
 
 
