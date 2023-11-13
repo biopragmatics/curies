@@ -3,8 +3,8 @@
 import unittest
 from typing import ClassVar
 
-from curies.discovery import discover
 from curies import Converter, Record
+from curies.discovery import discover
 
 
 class TestDiscovery(unittest.TestCase):

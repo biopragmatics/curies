@@ -19,6 +19,7 @@ from .api import (
     write_jsonld_context,
     write_shacl,
 )
+from .discovery import discover, discovery_rdflib
 from .reconciliation import remap_curie_prefixes, remap_uri_prefixes, rewire
 from .sources import (
     get_bioregistry_converter,
@@ -56,4 +57,7 @@ __all__ = [
     "get_monarch_converter",
     "get_go_converter",
     "get_bioregistry_converter",
+    # discovery
+    "discover",
+    "discovery_rdflib",
 ]

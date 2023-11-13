@@ -1,9 +1,9 @@
 """Discovery new entries for a Converter."""
 
+from collections import defaultdict
 from typing import TYPE_CHECKING, Iterable
 
 from curies import Converter, Record
-from collections import defaultdict
 
 if TYPE_CHECKING:
     import rdflib
