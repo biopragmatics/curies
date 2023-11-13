@@ -3,8 +3,10 @@
 import unittest
 from typing import ClassVar
 
+import rdflib
+
 from curies import Converter, Record
-from curies.discovery import discover
+from curies.discovery import discover, discovery_rdflib
 
 
 class TestDiscovery(unittest.TestCase):
@@ -37,4 +39,31 @@ class TestDiscovery(unittest.TestCase):
         self.assertIsNone(
             converter.compress("http://ran.dom/001"),
             msg="cutoff was high, so discovered converter should not detect `http://ran.dom/`",
+        )
+
+    def test_rdflib(self):
+        """Test discovery in RDFlib."""
+        graph = rdflib.Graph()
+        for i in range(30):
+            graph.add(
+                (
+                    rdflib.URIRef(f"http://ran.dom/{i:03}"),
+                    rdflib.RDFS.subClassOf,
+                    rdflib.URIRef(f"http://ran.dom/{i + 1:03}"),
+                )
+            )
+            graph.add(
+                (
+                    rdflib.URIRef(f"http://ran.dom/{i:03}"),
+                    rdflib.RDFS.label,
+                    rdflib.Literal(f"Node {i}"),
+                )
+            )
+
+        converter = discovery_rdflib(self.converter, graph)
+        self.assertEqual([Record(prefix="ns1", uri_prefix="http://ran.dom/")], converter.records)
+        self.assertEqual("ns1:001", converter.compress("http://ran.dom/001"))
+        self.assertIsNone(
+            converter.compress("http://purl.obolibrary.org/obo/GO_0001234"),
+            msg="discovered converter should not inherit reference converter's definitions",
         )
