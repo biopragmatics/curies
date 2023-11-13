@@ -983,14 +983,14 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def to_curie(
+    def compress_or_standardize(
         self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = False
     ) -> str:
         ...
 
     # docstr-coverage:excused `overload`
     @overload
-    def to_curie(
+    def compress_or_standardize(
         self,
         uri_or_curie: str,
         *,
@@ -1001,7 +1001,7 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def to_curie(
+    def compress_or_standardize(
         self,
         uri_or_curie: str,
         *,
@@ -1010,7 +1010,7 @@ class Converter:
     ) -> Optional[str]:
         ...
 
-    def to_curie(
+    def compress_or_standardize(
         self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
     ) -> Optional[str]:
         """Compress a URI or standardize a CURIE.
@@ -1036,18 +1036,18 @@ class Converter:
         ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
         ...     ),
         ... ])
-        >>> converter.to_curie("http://purl.obolibrary.org/obo/CHEBI_138488")
+        >>> converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
         'CHEBI:138488'
-        >>> converter.to_curie("https://identifiers.org/chebi:138488")
-        'CHEBI:138488'
-
-        >>> converter.to_curie("CHEBI:138488")
-        'CHEBI:138488'
-        >>> converter.to_curie("chebi:138488")
+        >>> converter.compress_or_standardize("https://identifiers.org/chebi:138488")
         'CHEBI:138488'
 
-        >>> converter.to_curie("missing:0000000")
-        >>> converter.to_curie("https://example.com/missing:0000000")
+        >>> converter.compress_or_standardize("CHEBI:138488")
+        'CHEBI:138488'
+        >>> converter.compress_or_standardize("chebi:138488")
+        'CHEBI:138488'
+
+        >>> converter.compress_or_standardize("missing:0000000")
+        >>> converter.compress_or_standardize("https://example.com/missing:0000000")
         """
         if self.is_uri(uri_or_curie):
             return self.compress(uri_or_curie, strict=True)
@@ -1173,16 +1173,16 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def to_uri(
-        self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = False
+    def expand_or_standardize(
+        self, curie_or_uri: str, *, strict: Literal[True] = True, passthrough: bool = False
     ) -> str:
         ...
 
     # docstr-coverage:excused `overload`
     @overload
-    def to_uri(
+    def expand_or_standardize(
         self,
-        uri_or_curie: str,
+        curie_or_uri: str,
         *,
         strict: Literal[False] = False,
         passthrough: Literal[True] = True,
@@ -1191,21 +1191,21 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def to_uri(
+    def expand_or_standardize(
         self,
-        uri_or_curie: str,
+        curie_or_uri: str,
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
     ) -> Optional[str]:
         ...
 
-    def to_uri(
-        self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
+    def expand_or_standardize(
+        self, curie_or_uri: str, *, strict: bool = False, passthrough: bool = False
     ) -> Optional[str]:
         """Expand a CURIE or standardize a URI.
 
-        :param uri_or_curie:
+        :param curie_or_uri:
             A string representing a compact URI (CURIE) or a URI.
         :param strict: If true and the string is neither a CURIE that can be expanded nor a URI that can be
             standardized, returns an error. Defaults to false.
@@ -1226,27 +1226,27 @@ class Converter:
         ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
         ...     ),
         ... ])
-        >>> converter.to_uri("CHEBI:138488")
+        >>> converter.expand_or_standardize("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-         >>> converter.to_uri("chebi:138488")
-        'http://purl.obolibrary.org/obo/CHEBI_138488'
-
-        >>> converter.to_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
-        'http://purl.obolibrary.org/obo/CHEBI_138488'
-        >>> converter.to_uri("https://identifiers.org/chebi:138488")
+         >>> converter.expand_or_standardize("chebi:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
 
-        >>> converter.to_uri("missing:0000000")
-        >>> converter.to_uri("https://example.com/missing:0000000")
+        >>> converter.expand_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.expand_or_standardize("https://identifiers.org/chebi:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+        >>> converter.expand_or_standardize("missing:0000000")
+        >>> converter.expand_or_standardize("https://example.com/missing:0000000")
         """
-        if self.is_curie(uri_or_curie):
-            return self.expand(uri_or_curie, strict=True)
-        if self.is_uri(uri_or_curie):
-            return self.standardize_uri(uri_or_curie, strict=True)
+        if self.is_curie(curie_or_uri):
+            return self.expand(curie_or_uri, strict=True)
+        if self.is_uri(curie_or_uri):
+            return self.standardize_uri(curie_or_uri, strict=True)
         if strict:
-            raise ExpansionError(uri_or_curie)
+            raise ExpansionError(curie_or_uri)
         if passthrough:
-            return uri_or_curie
+            return curie_or_uri
         return None
 
     def expand_strict(self, curie: str) -> str:
@@ -1614,7 +1614,7 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.to_curie if ambiguous else self.compress
+        pre_func = self.compress_or_standardize if ambiguous else self.compress
         func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         df[column if target_column is None else target_column] = df[column].map(func)
 
@@ -1637,7 +1637,7 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.to_uri if ambiguous else self.expand
+        pre_func = self.expand_or_standardize if ambiguous else self.expand
         func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         df[column if target_column is None else target_column] = df[column].map(func)
 
@@ -1740,7 +1740,7 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.to_curie if ambiguous else self.compress
+        pre_func = self.compress_or_standardize if ambiguous else self.compress
         func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
@@ -1766,7 +1766,7 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.to_uri if ambiguous else self.expand
+        pre_func = self.expand_or_standardize if ambiguous else self.expand
         func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
