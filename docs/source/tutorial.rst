@@ -442,32 +442,17 @@ functions, is upgraded to the preferred prefix, ``GO``.
     >>> converter.standardize_uri('http://amigo.geneontology.org/amigo/term/GO:0032571')
     'http://purl.obolibrary.org/obo/GO_0032571'
 
-Note: non-standard URIs can still be parsed with :meth:`curies.Converter.parse_uri` and compressed
+Note: non-standard URIs (i.e., ones based on URI prefix synonyms) can still be parsed with
+:meth:`curies.Converter.parse_uri` and compressed
 into CURIEs with :meth:`curies.Converter.compress`.
 
 Bulk Operations
 ---------------
-Apply in bulk to a :class:`pandas.DataFrame` with :meth:`curies.Converter.pd_expand` and
-:meth:`curies.Converter.pd_compress`:
+Expansion, compression, and standardization operations can be done in bulk to all rows
+in a :class:`pandas.DataFrame` using the following examples.
 
-.. code-block:: python
-
-    import curies
-    import pandas as pd
-
-    df = pd.read_csv(...)
-    converter = curies.get_obo_converter()
-    converter.pd_compress(df, column=0)
-    converter.pd_expand(df, column=0)
-
-    # standardization operations
-    converter.pd_standardize_prefix(df, column=0)
-    converter.pd_standardize_curie(df, column=0)
-    converter.pd_standardize_uri(df, column=0)
-
-
-Compress URIs
-~~~~~~~~~~~~~
+Bulk Compress URIs
+~~~~~~~~~~~~~~~~~~
 In order to demonstrate bulk operations using :meth:`curies.Converter.pd_compress`,
 we construct a small dataframe:
 
@@ -513,8 +498,11 @@ http://gudt.org/schema/gudt/baseCGSUnitDimensions  http://gudt.org/schema/gudt/b
 http://qudt.org/schema/qudt/conversionMultiplier   http://qudt.org/schema/qudt/conversionMultiplier
 =================================================  =================================================
 
-Expand CURIEs
-~~~~~~~~~~~~~
+The keyword ``ambiguous=True`` can be passed if the source column can either be a CURIE
+or URI. Then, the semantics of compression are used from :meth:`curies.Converter.compress_or_standardize`.
+
+Bulk Expand CURIEs
+~~~~~~~~~~~~~~~~~~
 In order to demonstrate bulk operations using :meth:`curies.Converter.pd_expand`,
 we construct a small dataframe used in conjunction with the OBO converter (which
 only includes OBO Foundry ontology URI prefix expansions):
@@ -579,8 +567,11 @@ GO:0000001       http://purl.obolibrary.org/obo/GO_0000001
 skos:exactMatch  http://www.w3.org/2004/02/skos/core#exactMatch
 ===============  ==============================================
 
-Standardizing Prefixes
-~~~~~~~~~~~~~~~~~~~~~~
+The keyword ``ambiguous=True`` can be passed if the source column can either be a CURIE
+or URI. Then, the semantics of compression are used from :meth:`curies.Converter.compress_or_standardize`.
+
+Bulk Standardizing Prefixes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The `Gene Ontology (GO) Annotations Database <https://geneontology.org/docs/go-annotations/>`_
 distributes its file where references to proteins from the `Universal Protein Resource (UniProt)
 <https://www.uniprot.org/>`_ use the prefix ``UniProtKB``. When using the Bioregistry's extended prefix map,
@@ -607,8 +598,8 @@ This can be done in-place with the following:
 
 The ``target_column`` keyword can be given if you don't want to overwrite the original.
 
-Standardizing CURIEs
-~~~~~~~~~~~~~~~~~~~~~~
+Bulk Standardizing CURIEs
+~~~~~~~~~~~~~~~~~~~~~~~~~
 Using the same example data from GO, the sixth column contains CURIE for references such as
 `GO_REF:0000043 <https://bioregistry.io/go.ref:0000043>`_. When using the Bioregistry's extended prefix map,
 these CURIEs' prefixes should be standardized to ``go.ref`` with :meth:`curies.Converter.pd_standardize_curie`.
@@ -646,6 +637,9 @@ Apply in bulk to a CSV file with :meth:`curies.Converter.file_expand` and
     converter.file_compress(path, column=0)
     # modifies file in place
     converter.file_expand(path, column=0)
+
+Like with the Pandas operations, the keyword ``ambiguous=True``` can be set
+when entries can either be CURIEs or URIs.
 
 Tools for Developers and Semantic Engineers
 -------------------------------------------
@@ -687,40 +681,68 @@ or a URI (:meth:`curies.Converter.is_uri`) under its definition.
 
 Extended Expansion and Compression
 **********************************
-The code block below extends the CURIE expansion function to handle the situation where
+The :meth:`curies.Converter.expand_or_standardize` extends the CURIE expansion function to handle the situation where
 you might get passed a CURIE or a URI. If it's a CURIE, expansions happen with the normal
 rules. If it's a URI, it tries to standardize it.
 
 .. code-block:: python
 
-    def expand_ambiguous(converter, uri_or_curie, strict=False, passthrough=False):
-        if converter.is_curie(uri_or_curie):
-            return converter.expand(uri_or_curie)
-        if converter.is_uri(uri_or_curie):
-            return converter.standardize_uri(uri_or_curie)
-        if strict:
-            raise ValueError
-        if passthrough:
-            return uri_or_curie
-        return None
+    from curies import Converter, Record
+    converter = Converter.from_extended_prefix_map([
+        Record(
+            prefix="CHEBI",
+            prefix_synonyms=["chebi"],
+            uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+            uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ),
+    ])
 
-A similar workflow can be done for compressing URIs where a CURIE might get passed.
+    # Expand CURIEs
+    >>> converter.expand_or_standardize("CHEBI:138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+    >>> converter.expand_or_standardize("chebi:138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+    # standardize URIs
+    >>> converter.expand_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+    >>> converter.expand_or_standardize("https://identifiers.org/chebi:138488")
+    'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+    # Handle cases that aren't valid w.r.t. the converter
+    >>> converter.expand_or_standardize("missing:0000000")
+    >>> converter.expand_or_standardize("https://example.com/missing:0000000")
+
+A similar workflow is implemented in :meth:`curies.Converter.compress_or_standardize` for compressing URIs
+where a CURIE might get passed.
 
 .. code-block:: python
 
-    def compress_ambiguous(converter, uri_or_curie, strict=False, passthrough=False):
-        if converter.is_uri(uri_or_curie):
-            return converter.compress(uri_or_curie)
-        if converter.is_curie(uri_or_curie):
-            return converter.standardize_curie(uri_or_curie)
-        if strict:
-            raise ValueError
-        if passthrough:
-            return uri_or_curie
-        return None
+    from curies import Converter, Record
+    converter = Converter.from_extended_prefix_map([
+        Record(
+            prefix="CHEBI",
+            prefix_synonyms=["chebi"],
+            uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+            uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ),
+    ])
 
-Please get in touch if you find yourself using such a workflow as we might want to incorporate this
-as a first-party feature.
+    # Compress URIs
+    >>> converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
+    'CHEBI:138488'
+    >>> converter.compress_or_standardize("https://identifiers.org/chebi:138488")
+    'CHEBI:138488'
+
+    # standardize CURIEs
+    >>> converter.compress_or_standardize("CHEBI:138488")
+    'CHEBI:138488'
+    >>> converter.compress_or_standardize("chebi:138488")
+    'CHEBI:138488'
+
+    # Handle cases that aren't valid w.r.t. the converter
+    >>> converter.compress_or_standardize("missing:0000000")
+    >>> converter.compress_or_standardize("https://example.com/missing:0000000")
 
 Reusable data structures for references
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -750,7 +772,7 @@ extended prefix map from a :class:`curies.Converter` to a graph (:class:`rdflib.
     converter = curies.get_obo_converter()
     graph = rdflib.Graph()
 
-    for prefix, uri_prefix in converter.prefix_map.items():
+    for prefix, uri_prefix in converter.bimap.items():
         graph.bind(prefix, rdflib.Namespace(uri_prefix))
 
 A more flexible approach is to instantiate a namespace manager (:class:`rdflib.namespace.NamespaceManager`)
@@ -763,7 +785,7 @@ and bind directly to that.
     converter = curies.get_obo_converter()
     namespace_manager = rdflib.namespace.NamespaceManager(rdflib.Graph())
 
-    for prefix, uri_prefix in converter.prefix_map.items():
+    for prefix, uri_prefix in converter.bimap.items():
         namespace_manager.bind(prefix, rdflib.Namespace(uri_prefix))
 
 URI references for use in RDFLib's graph class can be constructed from
@@ -775,4 +797,4 @@ CURIEs using a combination of :meth:`curies.Converter.expand` and :class:`rdflib
 
     converter = curies.get_obo_converter()
 
-    uri_ref = rdflib.URIRef(converter.expand("CHEBI:138488"))
+    uri_ref = rdflib.URIRef(converter.expand("CHEBI:138488", strict=True))
