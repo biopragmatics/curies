@@ -1,7 +1,7 @@
 """Discovery new entries for a Converter."""
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, Sequence
 
 from curies import Converter, Record
 
@@ -14,7 +14,7 @@ __all__ = [
 ]
 
 
-def discovery_rdflib(converter: Converter, graph: "rdflib.Graph"):
+def discovery_rdflib(converter: Converter, graph: "rdflib.Graph") -> Converter:
     """Discover new URI prefixes from an RDFLib triple store."""
     return discover(converter, set(_yield_uris(graph)))
 
@@ -31,7 +31,7 @@ def _yield_uris(graph: "rdflib.Graph") -> Iterable[str]:
 def discover(
     converter: Converter,
     uris: Iterable[str],
-    delimiters="#/",
+    delimiters: Sequence[str] = "#/",
     cutoff: int = 30,
     metaprefix: str = "ns",
 ) -> Converter:
@@ -62,7 +62,6 @@ def discover(
             if luid.isalnum():
                 counter[uri_prefix + delimiter].add(luid)
                 break
-    counter = dict(counter)
     records = []
     record_number = 0
     for uri_prefix, luids in sorted(counter.items()):
