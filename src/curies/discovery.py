@@ -10,11 +10,11 @@ if TYPE_CHECKING:
 
 __all__ = [
     "discover",
-    "discovery_rdflib",
+    "discover_from_rdf",
 ]
 
 
-def discovery_rdflib(converter: Converter, graph: "rdflib.Graph", **kwargs: Any) -> Converter:
+def discover_from_rdf(converter: Converter, graph: "rdflib.Graph", **kwargs: Any) -> Converter:
     """Discover new URI prefixes from an RDFLib triple store."""
     uris = set(_yield_uris(graph))
     return discover(converter, uris, **kwargs)

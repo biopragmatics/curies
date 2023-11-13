@@ -6,7 +6,7 @@ from typing import ClassVar
 import rdflib
 
 from curies import Converter, Record
-from curies.discovery import discover, discovery_rdflib
+from curies.discovery import discover, discover_from_rdf
 
 
 class TestDiscovery(unittest.TestCase):
@@ -60,7 +60,7 @@ class TestDiscovery(unittest.TestCase):
                 )
             )
 
-        converter = discovery_rdflib(self.converter, graph)
+        converter = discover_from_rdf(self.converter, graph)
         self.assertEqual([Record(prefix="ns1", uri_prefix="http://ran.dom/")], converter.records)
         self.assertEqual("ns1:001", converter.compress("http://ran.dom/001"))
         self.assertIsNone(
