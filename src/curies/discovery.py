@@ -1,7 +1,7 @@
 """Discovery new entries for a Converter."""
 
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence, Set
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional, Sequence, Set, Union
 
 from curies import Converter, Record
 
@@ -14,10 +14,28 @@ __all__ = [
 ]
 
 
-def discover_from_rdf(converter: Converter, graph: "rdflib.Graph", **kwargs: Any) -> Converter:
+def discover_from_rdf(
+    converter: Converter,
+    graph: Union[str, "rdflib.Graph"],
+    graph_format: Optional[str] = None,
+    **kwargs: Any,
+) -> Converter:
     """Discover new URI prefixes from an RDFLib triple store."""
+    graph = _ensure_graph(graph, graph_format)
     uris = set(_yield_uris(graph))
     return discover(converter, uris, **kwargs)
+
+
+def _ensure_graph(
+    graph: Union[str, "rdflib.Graph"], graph_format: Optional[str] = None
+) -> "rdflib.Graph":
+    if not isinstance(graph, str):
+        return graph
+    import rdflib
+
+    rv = rdflib.Graph()
+    rv.parse(graph, format=graph_format)
+    return rv
 
 
 def _yield_uris(graph: "rdflib.Graph") -> Iterable[str]:

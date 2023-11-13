@@ -11,26 +11,26 @@ A common place where discovering URI prefixes is important is when working with 
 
 .. code-block:: python
 
-    import rdflib
     import curies
     from tabulate import tabulate
 
     ONTOLOGY_URL = "https://raw.githubusercontent.com/tibonto/aeon/main/aeon.owl"
     SEMWEB_URL = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
 
-
-    graph = rdflib.Graph()
-    graph.parse(ONTOLOGY_URL, format="xml")
-
     # Load up some pre-registered context
-    converter = curies.chain(
-        [
-            curies.load_jsonld_context(SEMWEB_URL),
-            curies.get_obo_converter(),
-        ]
+    converter = curies.chain([
+        curies.load_jsonld_context(SEMWEB_URL),
+        curies.get_obo_converter(),
+    ])
+
+    discovered_converter = curies.discover_from_rdf(
+        converter,
+        graph=ONTOLOGY_URL,
+        graph_format="xml",
+        delimiters="#/_",
+        cutoff=5,
     )
 
-    discovered_converter = curies.discover_from_rdf(converter, graph, delimiters="#/_", cutoff=5)
     rows = [(record.prefix, f"``{record.uri_prefix}``") for record in discovered_converter.records]
     print(tabulate(rows, headers=["curie_prefix", "uri_prefix"], tablefmt="rst"))
 
