@@ -981,6 +981,84 @@ class Converter:
         """
         return self.compress(s) is not None
 
+    # docstr-coverage:excused `overload`
+    @overload
+    def to_curie(
+        self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = False
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def to_curie(
+        self,
+        uri_or_curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[True] = True,
+    ) -> str:
+        ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def to_curie(
+        self,
+        uri_or_curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[False] = False,
+    ) -> Optional[str]:
+        ...
+
+    def to_curie(
+        self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
+        """Compress a URI or standardize a CURIE.
+
+        :param uri_or_curie:
+            A string representing a compact URI (CURIE) or a URI.
+        :param strict: If true and the string is neither a URI that can be compressed nor a CURIE that can be
+            standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the string is neither a URI that can be compressed
+            nor a CURIE that can be standardized, return the input. Defaults to false.
+        :returns:
+            If the string is a URI, and it can be compressed, returns the corresponding CURIE.
+            If the string is a CURIE, and it can be standardized, returns the standard CURIE.
+        :raises CompressionError:
+            If strict is true and the URI can't be compressed
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(
+        ...          prefix="CHEBI",
+        ...          prefix_synonyms=["chebi"],
+        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...     ),
+        ... ])
+        >>> converter.to_curie("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'CHEBI:138488'
+        >>> converter.to_curie("https://identifiers.org/chebi:138488")
+        'CHEBI:138488'
+
+        >>> converter.to_curie("CHEBI:138488")
+        'CHEBI:138488'f
+        >>> converter.to_curie("chebi:138488")
+        'CHEBI:138488'
+
+        >>> converter.to_curie("missing:0000000")
+        >>> converter.to_curie("https://example.com/missing:0000000")
+        """
+        if self.is_uri(uri_or_curie):
+            return self.compress(uri_or_curie, strict=True)
+        if self.is_curie(uri_or_curie):
+            return self.standardize_curie(uri_or_curie, strict=True)
+        if strict:
+            raise CompressionError(uri_or_curie)
+        if passthrough:
+            return uri_or_curie
+        return None
+
     def compress_strict(self, uri: str) -> str:
         """Compress a URI to a CURIE, and raise an error of not possible."""
         return self.compress(uri, strict=True)
@@ -1524,6 +1602,7 @@ class Converter:
         target_column: Union[None, str, int] = None,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all URIs in the given column to CURIEs.
 
@@ -1533,8 +1612,10 @@ class Converter:
         :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.compress, strict=strict, passthrough=passthrough)
+        pre_func = self.to_curie if ambiguous else self.compress
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_expand(
@@ -1607,7 +1688,6 @@ class Converter:
 
         >>> import curies
         >>> import pandas as pd
-        >>> import itertools as itt
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
         >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
         >>> df = pd.read_csv(url, sep="\t", comment='#')
@@ -1647,6 +1727,7 @@ class Converter:
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all URIs in the given column of a CSV file to CURIEs.
 
@@ -1657,8 +1738,10 @@ class Converter:
         :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.compress, strict=strict, passthrough=passthrough)
+        pre_func = self.to_curie if ambiguous else self.compress
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     def file_expand(

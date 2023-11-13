@@ -719,23 +719,36 @@ rules. If it's a URI, it tries to standardize it.
     >>> converter.to_uri("missing:0000000")
     >>> converter.to_uri("https://example.com/missing:0000000")
 
-A similar workflow can be done for compressing URIs where a CURIE might get passed.
+A similar workflow is implemented in :meth:`curies.Converter.to_curie` for compressing URIs
+where a CURIE might get passed.
 
 .. code-block:: python
 
-    def compress_ambiguous(converter, uri_or_curie, strict=False, passthrough=False):
-        if converter.is_uri(uri_or_curie):
-            return converter.compress(uri_or_curie)
-        if converter.is_curie(uri_or_curie):
-            return converter.standardize_curie(uri_or_curie)
-        if strict:
-            raise ValueError
-        if passthrough:
-            return uri_or_curie
-        return None
+    from curies import Converter, Record
+    converter = Converter.from_extended_prefix_map([
+        Record(
+            prefix="CHEBI",
+            prefix_synonyms=["chebi"],
+            uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+            uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ),
+    ])
 
-Please get in touch if you find yourself using such a workflow as we might want to incorporate this
-as a first-party feature.
+    # Compress URIs
+    >>> converter.to_curie("http://purl.obolibrary.org/obo/CHEBI_138488")
+    'CHEBI:138488'
+    >>> converter.to_curie("https://identifiers.org/chebi:138488")
+    'CHEBI:138488'
+
+    # standardize CURIEs
+    >>> converter.to_curie("CHEBI:138488")
+    'CHEBI:138488'
+    >>> converter.to_curie("chebi:138488")
+    'CHEBI:138488'
+
+    # Handle cases that aren't valid w.r.t. the converter
+    >>> converter.to_curie("missing:0000000")
+    >>> converter.to_curie("https://example.com/missing:0000000")
 
 Reusable data structures for references
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -765,7 +778,7 @@ extended prefix map from a :class:`curies.Converter` to a graph (:class:`rdflib.
     converter = curies.get_obo_converter()
     graph = rdflib.Graph()
 
-    for prefix, uri_prefix in converter.prefix_map.items():
+    for prefix, uri_prefix in converter.bimap.items():
         graph.bind(prefix, rdflib.Namespace(uri_prefix))
 
 A more flexible approach is to instantiate a namespace manager (:class:`rdflib.namespace.NamespaceManager`)
@@ -778,7 +791,7 @@ and bind directly to that.
     converter = curies.get_obo_converter()
     namespace_manager = rdflib.namespace.NamespaceManager(rdflib.Graph())
 
-    for prefix, uri_prefix in converter.prefix_map.items():
+    for prefix, uri_prefix in converter.bimap.items():
         namespace_manager.bind(prefix, rdflib.Namespace(uri_prefix))
 
 URI references for use in RDFLib's graph class can be constructed from
@@ -790,4 +803,4 @@ CURIEs using a combination of :meth:`curies.Converter.expand` and :class:`rdflib
 
     converter = curies.get_obo_converter()
 
-    uri_ref = rdflib.URIRef(converter.expand("CHEBI:138488"))
+    uri_ref = rdflib.URIRef(converter.expand("CHEBI:138488", strict=True))
