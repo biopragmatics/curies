@@ -8,6 +8,7 @@ URI Prefix Discovery
 Discovering URI Prefixes from an Ontology
 -----------------------------------------
 A common place where discovering URI prefixes is important is when working with new ontologies.
+Here, we use :func:`curies.discover_from_rdf` to load an ontology in the RDF/XML format.
 
 .. code-block:: python
 

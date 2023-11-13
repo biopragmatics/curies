@@ -20,7 +20,7 @@ def discover_from_rdf(
     graph_format: Optional[str] = None,
     **kwargs: Any,
 ) -> Converter:
-    """Discover new URI prefixes from an RDFLib triple store."""
+    """Discover new URI prefixes from an RDFLib triple store, wrapping :func:`curies.discover`."""
     graph = _ensure_graph(graph, graph_format)
     uris = set(_yield_uris(graph))
     return discover(converter, uris, **kwargs)
@@ -56,19 +56,25 @@ def discover(
 ) -> Converter:
     """Discover new URI prefixes.
 
-    :param converter: A converter with pre-existing definitions. URI prefixes
+    :param converter:
+        A converter with pre-existing definitions. URI prefixes
         are considered "new" if they can't already be validated by this converter
-    :param uris: An iterable of URIs to search through. Will be taken as a set and
+    :param uris:
+        An iterable of URIs to search through. Will be taken as a set and
         each unique entry is only considered once.
     :param delimiters:
         The delimiters considered between a putative URI prefix and putative
         local unique identifier. By default, checks ``#`` first since this is
         commonly used for URL fragments, then ``/`` since many URIs are constructed
         with these.
-    :param cutoff: The number of unique URIs with a given prefix needed to call it
+    :param cutoff:
+        The number of unique URIs with a given prefix needed to call it
         as unique. This can be adjusted, but is initially high.
-    :param metaprefix: The beginning part of each dummy prefix, followed by a number
-    :returns: A converter with dummy prefixes
+    :param metaprefix:
+        The beginning part of each dummy prefix, followed by a number. The default value
+        is ``ns``, so dummy prefixes are named ``ns1``, ``ns2``, and so on.
+    :returns:
+        A converter with dummy prefixes
     """
     counter = discover_helper(converter=converter, uris=uris, delimiters=delimiters)
     records = []
@@ -86,16 +92,19 @@ def discover_helper(
 ) -> Mapping[str, Set[str]]:
     """Discover new URI prefixes.
 
-    :param converter: A converter with pre-existing definitions. URI prefixes
+    :param converter:
+        A converter with pre-existing definitions. URI prefixes
         are considered "new" if they can't already be validated by this converter
-    :param uris: An iterable of URIs to search through. Will be taken as a set and
+    :param uris:
+        An iterable of URIs to search through. Will be taken as a set and
         each unique entry is only considered once.
     :param delimiters:
         The delimiters considered between a putative URI prefix and putative
         local unique identifier. By default, checks ``#`` first since this is
         commonly used for URL fragments, then ``/`` since many URIs are constructed
         with these.
-    :returns: A dictionary of putative URI prefixes to sets of putative local unique identifiers
+    :returns:
+        A dictionary of putative URI prefixes to sets of putative local unique identifiers
     """
     counter = defaultdict(set)
     for uri in uris:
