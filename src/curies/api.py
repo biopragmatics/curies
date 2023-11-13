@@ -1615,7 +1615,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.to_curie if ambiguous else self.compress
-        func = partial(pre_func, strict=strict, passthrough=passthrough)
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_expand(
@@ -1741,7 +1741,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.to_curie if ambiguous else self.compress
-        func = partial(pre_func, strict=strict, passthrough=passthrough)
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     def file_expand(
