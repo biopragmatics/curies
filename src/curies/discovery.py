@@ -178,6 +178,21 @@ def discover(
         map based on the discoveries.
     :returns:
         A converter with dummy prefixes
+
+    .. code-block:: python
+
+        >>> import curies
+
+        # Generate some example URIs
+        >>> uris = [f"http://ran.dom/{i:03}" for i in range(30)]
+
+        >>> discovered_converter = curies.discover(uris)
+        >>> discovered_converter.records
+        [Record(prefix="ns1", uri_prefix="http://ran.dom/")]
+
+        # Now, you can compress the URIs to dummy CURIEs
+        >>> discovered_converter.compress("http://ran.dom/002")
+        'ns1:002'
     """
     uri_prefix_to_luids = _get_uri_prefix_to_luids(
         converter=converter, uris=uris, delimiters=delimiters

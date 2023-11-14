@@ -165,21 +165,31 @@ of two appearances of a URI prefix to reduce the most spurious false positives.
     )
 
 We have reduced the list to a manageable set of 9 putative URI prefixes in the following table.
-This table is annotated with manual curation in the "call" column
 
-==============  =========================================================================  ================================================================================================================================================
-curie_prefix    uri_prefix                                                                 Call
-==============  =========================================================================  ================================================================================================================================================
-ns1             ``http://purl.obolibrary.org/obo/AEON_``                                   Represents the AEON vocabulary itself. Should be given the ``aeon`` prefix.
-ns2             ``http://purl.obolibrary.org/obo/bfo/axiom/``                              False positive
-ns3             ``http://purl.obolibrary.org/obo/valid_for_go_``                           False positive
-ns4             ``https://w3id.org/scholarlydata/ontology/conference-ontology.owl#``       Represents the `Conference Ontology <https://bioregistry.io/conference>`_. Should be given the ``conference`` prefix.
-ns5             ``https://w3id.org/seo#``                                                  Represents the `Scientific Event Ontology (SEO) <https://bioregistry.io/seo>`_. Should be given the ``seo`` prefix.
-ns6             ``https://www.confident-conference.org/index.php/Event:VIVO_2021_``        False positive
-ns7             ``https://www.confident-conference.org/index.php/Event:VIVO_2021_talk1_``  False positive
-ns8             ``https://www.confident-conference.org/index.php/Event:VIVO_2021_talk2_``  False positive
-ns9             ``urn:swrl#``                                                              Represents the `Semantic Web Rule Language <https://bioregistry.io/registry/swrl>`_, though using URNs is an interesting choice in serialization
-==============  =========================================================================  ================================================================================================================================================
+==============  =========================================================================
+curie_prefix    uri_prefix
+==============  =========================================================================
+ns1             ``http://purl.obolibrary.org/obo/AEON_``
+ns2             ``http://purl.obolibrary.org/obo/bfo/axiom/``
+ns3             ``http://purl.obolibrary.org/obo/valid_for_go_``
+ns4             ``https://w3id.org/scholarlydata/ontology/conference-ontology.owl#``
+ns5             ``https://w3id.org/seo#``
+ns6             ``https://www.confident-conference.org/index.php/Event:VIVO_2021_``
+ns7             ``https://www.confident-conference.org/index.php/Event:VIVO_2021_talk1_``
+ns8             ``https://www.confident-conference.org/index.php/Event:VIVO_2021_talk2_``
+ns9             ``urn:swrl#``
+==============  =========================================================================
+
+Here are the calls to be made:
+
+- ``ns1`` represents the AEON vocabulary itself and should be given the ``aeon`` prefix.
+- ``ns2``, ``ns3``, ``ns6``, ``ns7`, and ``ns8`` are all false positives
+- ``ns4`` represents the `Conference Ontology <https://bioregistry.io/conference>`_ and
+  should be given the ``conference`` prefix.
+- ``ns5`` represents the `Scientific Event Ontology (SEO) <https://bioregistry.io/seo>`_ and
+  should be given the ``seo`` prefix.
+- ``ns9`` represents the `Semantic Web Rule Language <https://bioregistry.io/registry/swrl>`_,
+  though using URNs is an interesting choice in serialization.
 
 After we've made these calls, it's a good idea to write an (extended) prefix map. In this case, since we aren't working
 with CURIE prefix synonyms nor URI prefix synonyms, it's okay to write a simple prefix map or a JSON-LD context without
