@@ -93,13 +93,13 @@ through the ``converter`` keyword argument.
     ONTOLOGY_URL = "https://raw.githubusercontent.com/tibonto/aeon/main/aeon.owl"
     SEMWEB_URL = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
 
-    converter = curies.chain([
+    base_converter = curies.chain([
         curies.load_jsonld_context(SEMWEB_URL),
         curies.get_obo_converter(),
     ])
 
     discovered_converter = curies.discover_from_rdf(
-        ONTOLOGY_URL, format="xml", converter=converter
+        ONTOLOGY_URL, format="xml", converter=base_converter
     )
 
 We reduced the number of putative URI prefixes in half in the following table. However, we can still identify
@@ -155,13 +155,13 @@ of two appearances of a URI prefix to reduce the most spurious false positives.
     ONTOLOGY_URL = "https://raw.githubusercontent.com/tibonto/aeon/main/aeon.owl"
     SEMWEB_URL = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
 
-    converter = curies.chain([
+    base_converter = curies.chain([
         curies.load_jsonld_context(SEMWEB_URL),
         curies.get_obo_converter(),
     ])
 
     discovered_converter = curies.discover_from_rdf(
-        ONTOLOGY_URL, format="xml", converter=converter, cutoff=2
+        ONTOLOGY_URL, format="xml", converter=base_converter, cutoff=2
     )
 
 We have reduced the list to a manageable set of 9 putative URI prefixes in the following table.
@@ -183,7 +183,21 @@ ns9             ``urn:swrl#``
 Here are the calls to be made:
 
 - ``ns1`` represents the AEON vocabulary itself and should be given the ``aeon`` prefix.
-- ``ns2``, ``ns3``, ``ns6``, ``ns7`, and ``ns8`` are all false positives
+- ``ns2`` and ``ns3``` are all false positives
+- ``ns6``, ``ns7``, and ``ns8`` are a tricky case - they have a meaningful overlap that can't be easily
+  automatically detected (yet). In this case, it makes the most sense to add the shortest one manually
+  to the base converter with some unique name (don't use ``ns6`` as it will cause conflicts later), like in:
+
+  .. code-block:: python
+
+      base_converter = curies.chain([
+          curies.load_jsonld_context(SEMWEB_URL),
+          curies.get_obo_converter(),
+          curies.load_prefix_map({"confident_event_vivo_2021": "https://www.confident-conference.org/index.php/Event:VIVO_2021_"}),
+      ])
+
+  In reality, these are all part of the `ConfIDent Event <https://bioregistry.io/confident.event>`_ vocabulary,
+  which has the URI prefix ``https://www.confident-conference.org/index.php/Event:``.
 - ``ns4`` represents the `Conference Ontology <https://bioregistry.io/conference>`_ and
   should be given the ``conference`` prefix.
 - ``ns5`` represents the `Scientific Event Ontology (SEO) <https://bioregistry.io/seo>`_ and
