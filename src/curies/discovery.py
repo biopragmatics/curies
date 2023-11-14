@@ -88,9 +88,16 @@ def discover_from_rdf(
         A converter with dummy prefixes for URI prefixes appearing in the RDF
         content (i.e., triples).
     """
-    graph = _ensure_graph(graph=graph, format=format)
-    uris = set(_yield_uris(graph=graph))
+    uris = get_uris_from_rdf(graph=graph, format=format)
     return discover(uris, **kwargs)
+
+
+def get_uris_from_rdf(
+    graph: Union[GraphInput, "rdflib.Graph"], *, format: Optional[GraphFormats] = None
+) -> Set[str]:
+    """Get a set of URIs from a graph."""
+    graph = _ensure_graph(graph=graph, format=format)
+    return set(_yield_uris(graph=graph))
 
 
 def _ensure_graph(

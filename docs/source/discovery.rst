@@ -9,15 +9,20 @@ In the following example, we look at the `Academic Event Ontology (AEON) <https:
 is an ontology developed under OBO Foundry principles describing academic events. Accordingly, it includes many
 URI references to terms in OBO Foundry ontologies.
 
-In this tutorial, we use :func:`curies.discover_from_rdf` to load the ontology in the RDF/XML format and
-discover putative URI prefixes.
+In this tutorial, we use :func:`curies.discover` (and then :func:`curies.discover_from_rdf` as a nice convenience
+function) to load the ontology in the RDF/XML format and discover putative URI prefixes.
 
 .. code-block:: python
 
     import curies
+    from curies.discovery import get_uris_from_rdf
 
     ONTOLOGY_URL = "https://raw.githubusercontent.com/tibonto/aeon/main/aeon.owl"
-    discovered_converter = curies.discover_from_rdf(ONTOLOGY_URL, format="xml")
+
+    uris = get_uris_from_rdf(ONTOLOGY_URL, format="xml")
+    discovered_converter = curies.discover(uris)
+    # note, these two steps can be combine with curies.discover_from_rdf,
+    # and we'll do that in the following examples
 
 We discovered the fifty URI prefixes in the following table. Many of them appear to be OBO Foundry URI prefixes or
 semantic web prefixes, so in the next step, we'll use prior knowledge to reduce the false discovery rate.
@@ -94,7 +99,7 @@ through the ``converter`` keyword argument.
     ])
 
     discovered_converter = curies.discover_from_rdf(
-        ONTOLOGY_URL, format="xml", converter=converter,
+        ONTOLOGY_URL, format="xml", converter=converter
     )
 
 We reduced the number of putative URI prefixes in half in the following table. However, we can still identify
