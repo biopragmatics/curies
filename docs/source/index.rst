@@ -63,6 +63,7 @@ for updating your code.
 
    tutorial
    reconciliation
+   discovery
    struct
    api
    services/index
