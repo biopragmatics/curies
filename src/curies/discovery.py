@@ -1,4 +1,43 @@
-"""Discovery new entries for a Converter."""
+"""Discovery new entries for a Converter.
+
+The :func:`curies.discover` functionality is intended to be used in a "data science" workflow. Its goal is to
+enable a data scientist to semi-interactively explore data (e.g., coming from an ontology, SSSOM, RDF)
+that doesn't come with a complete (extended) prefix map and identify common URI prefixes.
+
+It returns the discovered URI prefixes in a :class:`curies.Converter` object with "dummy" CURIE prefixes.
+This makes it possible to convert the URIs appearing in the data into CURIEs and therefore enables
+their usage in places where CURIEs are expected.
+
+However, it's suggested that after discovering URI prefixes, the data scientist more carefully
+constructs a meaningful prefix map based on the discovered one. This might include some or all of the
+following steps:
+
+1. Replace dummy CURIE prefixes with meaningful ones
+2. Remove spurious URI prefixes that appear but do not represent a semantic space. This happens often
+   due to using ``_`` as a delimiter or having a frequency cutoff of zero (see the parameters for this function).
+3. Consider chaining a comprehensive extended prefix map such as the Bioregistry
+   (from :func:`curies.get_bioregistry_converter`) with onto the converter passed to this function
+   so pre-existing URI prefixes are not *re-discovered*.
+
+Finally, you should save the prefix map that you create in a persistent place (i.e., inside a JSON file) such
+that it can be reused.
+
+Algorithm
+---------
+The :func:`curies.discover` function implements the following algorithm that does the following for each URI:
+
+1. For each delimiter (in the priority order they are given) check if the delimiter is present.
+2. If it's present, split the URI into two parts based on rightmost appearance of the delimiter.
+3. If the right part after splitting is all alphanumeric characters, save the URI prefix (with delimiter attached)
+4. If a delimiter is successfully used to identify a URI prefix, don't check any of the following delimiters
+
+After identifying putative URI prefixes, the second part of the algorithm does the following:
+
+1. If a cutoff was provided, remove all putative URI prefixes for which there were fewer examples than the cutoff
+2. Sort the URI prefixes lexicographically (i.e., with :func:`sorted`)
+3. Assign a dummy CURIE prefix to each URI prefix, counting upwards from 1
+4. Construct a converter from this prefix map and return it
+"""
 
 from collections import defaultdict
 from pathlib import PurePath
@@ -120,46 +159,18 @@ def discover(
         The beginning part of each dummy prefix, followed by a number. The default value
         is ``ns``, so dummy prefixes are named ``ns1``, ``ns2``, and so on.
     :param converter:
-        A converter with pre-existing definitions. URI prefixes
-        are considered "new" if they can't already be validated by this converter.
+        If a pre-existing converter is passed, then URIs that can be parsed using the
+        pre-existing converter are not considered during discovery.
+
+        For example, if you're an OBO person working with URIs coming from an OBO ontology,
+        it makes sense to pass the converter from :func:`curies.get_obo_converter` to
+        reduce false positive discoveries. More generally, a comprehensive converter
+        like the Bioregistry (from :func:`curies.get_bioregistry_converter`) can massively
+        reduce false positive discoveries and ultimately reduce burden on the data scientist
+        using this function when needing to understand the results and carefully curate a prefix
+        map based on the discoveries.
     :returns:
         A converter with dummy prefixes
-
-    This function is intended to be used in a "data science" workflow. Its goal is to enable a
-    data scientist to semi-interactively explore data (e.g., coming from an ontology, SSSOM, RDF)
-    that doesn't come with a complete (extended) prefix map and identify common URI prefixes.
-
-    It returns the discovered URI prefixes in a :class:`Converter` object with "dummy" CURIE prefixes.
-    This makes it possible to convert the URIs appearing in the data into CURIEs and therefore enables
-    their usage in places where CURIEs are expected.
-
-    However, it's suggested that after discovering URI prefixes, the data scientist more carefully
-    constructs a meaningful prefix map based on the discovered one. This might include some or all of the
-    following steps:
-
-    1. Replace dummy CURIE prefixes with meaningful ones
-    2. Remove spurious URI prefixes that appear but do not represent a semantic space. This happens often
-       due to using ``_`` as a delimiter or having a frequency cutoff of zero (see the parameters for this function).
-    3. Consider chaining a comprehensive extended prefix map such as the Bioregistry
-       (from :func:`curies.get_bioregistry_converter`) with onto the converter passed to this function
-       so pre-existing URI prefixes are not *re-discovered*.
-
-    Finally, you should save the prefix map that you create in a persistent place (i.e., inside a JSON file) such
-    that it can be reused.
-
-    This function implements the following algorithm that does the following for each URI:
-
-    1. For each delimiter (in the priority order they are given) check if the delimiter is present.
-    2. If it's present, split the URI into two parts based on rightmost appearance of the delimiter.
-    3. If the right part after splitting is all alphanumeric characters, save the URI prefix (with delimiter attached)
-    4. If a delimiter is successfully used to identify a URI prefix, don't check any of the following delimiters
-
-    After identifying putative URI prefixes, the second part of the algorithm does the following:
-
-    1. If a cutoff was provided, remove all putative URI prefixes for which there were fewer examples than the cutoff
-    2. Sort the URI prefixes lexicographically (i.e., with :func:`sorted`)
-    3. Assign a dummy CURIE prefix to each URI prefix, counting upwards from 1
-    4. Construct a converter from this prefix map and return it
     """
     uri_prefix_to_luids = _get_uri_prefix_to_luids(
         converter=converter, uris=uris, delimiters=delimiters
