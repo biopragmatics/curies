@@ -105,12 +105,12 @@ def _ensure_graph(
 ) -> "rdflib.Graph":
     import rdflib
 
-    if isinstance(graph, rdflib.Graph):
-        return graph
+    if not isinstance(graph, rdflib.Graph):
+        _temp_graph = rdflib.Graph()
+        _temp_graph.parse(source=graph, format=format)
+        graph = _temp_graph
 
-    rv = rdflib.Graph()
-    rv.parse(source=graph, format=format)
-    return rv
+    return graph
 
 
 def _yield_uris(*, graph: "rdflib.Graph") -> Iterable[str]:

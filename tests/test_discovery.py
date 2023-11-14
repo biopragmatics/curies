@@ -30,7 +30,7 @@ class TestDiscovery(unittest.TestCase):
         uris = [f"http://ran.dom/{i:03}" for i in range(30)]
         uris.append("http://purl.obolibrary.org/obo/GO_0001234")
 
-        converter = discover(self.converter, uris, cutoff=3)
+        converter = discover(uris, cutoff=3, converter=self.converter)
         self.assertEqual([Record(prefix="ns1", uri_prefix="http://ran.dom/")], converter.records)
         self.assertEqual("ns1:001", converter.compress("http://ran.dom/001"))
         self.assertIsNone(
@@ -38,7 +38,7 @@ class TestDiscovery(unittest.TestCase):
             msg="discovered converter should not inherit reference converter's definitions",
         )
 
-        converter = discover(self.converter, uris, cutoff=50)
+        converter = discover(uris, cutoff=50, converter=self.converter)
         self.assertEqual([], converter.records)
         self.assertIsNone(
             converter.compress("http://ran.dom/001"),
@@ -64,7 +64,7 @@ class TestDiscovery(unittest.TestCase):
                 )
             )
 
-        converter = discover_from_rdf(self.converter, graph)
+        converter = discover_from_rdf(graph, converter=self.converter)
         self.assertEqual([Record(prefix="ns1", uri_prefix="http://ran.dom/")], converter.records)
         self.assertEqual("ns1:001", converter.compress("http://ran.dom/001"))
         self.assertIsNone(
@@ -76,7 +76,6 @@ class TestDiscovery(unittest.TestCase):
     def test_remote(self):
         """Test parsing AEON."""
         converter = discover_from_rdf(
-            converter=Converter([]),
             graph="https://raw.githubusercontent.com/tibonto/aeon/main/aeon.owl",
             format="xml",
         )
