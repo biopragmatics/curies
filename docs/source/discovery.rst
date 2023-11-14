@@ -25,9 +25,9 @@ Here, we use :func:`curies.discover_from_rdf` to load an ontology in the RDF/XML
     ])
 
     discovered_converter = curies.discover_from_rdf(
-        converter,
         ONTOLOGY_URL,
         format="xml",
+        converter=converter,
     )
 
     rows = [(record.prefix, f"``{record.uri_prefix}``") for record in discovered_converter.records]
@@ -71,10 +71,10 @@ of 2 appearances for it to make it.
 .. code-block:: python
 
     discovered_converter = curies.discover_from_rdf(
-        converter,
         ONTOLOGY_URL,
         format="xml",
         cutoff=2,
+        converter=converter,
     )
 
     rows = [(record.prefix, f"``{record.uri_prefix}``") for record in discovered_converter.records]
