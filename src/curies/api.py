@@ -534,7 +534,8 @@ class Converter:
         """Append a record to the converter."""
         matched = self._match_record(record, case_sensitive=case_sensitive)
         if len(matched) > 1:
-            raise ValueError(f"new record has duplicates: {matched}")
+            msg = "".join(f"\n  {m} -> {v}" for m, v in matched.items())
+            raise ValueError(f"new record has duplicates:{msg}")
         if len(matched) == 1:
             if not merge:
                 raise ValueError(f"new record already exists and merge=False: {matched}")
