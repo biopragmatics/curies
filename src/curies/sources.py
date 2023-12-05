@@ -20,8 +20,32 @@ BIOREGISTRY_CONTEXTS = (
 
 
 def get_obo_converter() -> Converter:
-    """Get the latest OBO Foundry context."""
-    # See configuration on https://github.com/OBOFoundry/purl.obolibrary.org/blob/master/www/.htaccess
+    """Get the latest OBO Foundry context.
+
+    :returns:
+        A converter object representing the OBO Foundry's JSON-LD context,
+        which contains a simple mapping from OBO Foundry preferred prefixes
+        for ontologies that contain case stylization (e.g., ``GO``, not ``go``; ``VariO``, not ``vario``).
+
+        It does not include synonyms nor any non-ontology prefixes - e.g., it does not include
+        semantic web prefixes like ``rdfs``, it does not include other useful biomedical prefixes
+        like ``hgnc``.
+
+    If you want a more comprehensive prefix map, consider using the Bioregistry
+    via :func:`get_bioregistry_converter` or by chaining the OBO converter in front of the
+    Bioregistry depending on your personal/project preferences using :func:`curies.chain`.
+
+    Provenance:
+
+    - This JSON-LD context is generated programmatically
+      by https://github.com/OBOFoundry/OBOFoundry.github.io/blob/master/util/processor.py.
+    - The file is accessed via from http://purl.obolibrary.org/meta/obo_context.jsonld,
+      which is configured through the OBO Foundry's PURL server with
+      https://github.com/OBOFoundry/purl.obolibrary.org/blob/master/www/.htaccess
+      and ultimately points to
+      https://raw.githubusercontent.com/OBOFoundry/OBOFoundry.github.io/master/registry/obo_context.jsonl
+    """
+    # See configuration on
     # to see where this PURL points
     url = "http://purl.obolibrary.org/meta/obo_context.jsonld"
     return Converter.from_jsonld(url)
