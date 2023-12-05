@@ -79,6 +79,12 @@ def get_go_converter() -> Converter:
 def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
     """Get the latest extended prefix map from the Bioregistry [hoyt2022]_.
 
+    :param web: If false, tries to import :mod:`bioregistry` and use
+        :func:`bioregistry.get_converter` to get the converter. Otherwise,
+        falls back to using the GitHub-hosted EPM export.
+    :param kwargs:
+        Keyword arguments to pass to :meth`:curies.Converter.from_extended_prefix_map`
+        when using web-based loading.
     :returns: A converter representing the Bioregistry, which includes
         a comprehensive collection of prefixes, prefix synonyms, and
         URI prefix synonyms.
@@ -113,7 +119,6 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
         except ImportError:  # pragma: no cover
             pass
         else:
-            epm = bioregistry.manager.get_curies_records()  # pragma: no cover
-            return Converter.from_extended_prefix_map(epm)  # pragma: no cover
+            return bioregistry.manager.get_converter()  # type:ignore
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
     return Converter.from_extended_prefix_map(url, **kwargs)
