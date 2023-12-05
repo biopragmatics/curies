@@ -236,7 +236,21 @@ RecordKey = Tuple[str, str, str, str]
 
 
 class Record(BaseModel):  # type:ignore
-    """A record of some prefixes and their associated URI prefixes."""
+    """A record of some prefixes and their associated URI prefixes.
+
+    A list of records can be annotated in a FastAPI setting with the following:
+
+    .. code-block:: python
+
+        from typing import List
+        from curies import Record
+        from pydantic import BaseModel
+
+        class Records(BaseModel):
+            __root__ = List[Record]
+
+    .. seealso:: https://github.com/cthoyt/curies/issues/70
+    """
 
     prefix: str = Field(..., description="The canonical prefix, used in the reverse prefix map")
     uri_prefix: str = Field(
