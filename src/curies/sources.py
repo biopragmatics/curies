@@ -77,7 +77,36 @@ def get_go_converter() -> Converter:
 
 
 def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
-    """Get the latest Bioregistry context."""
+    """Get the latest extended prefix map from the Bioregistry [hoyt2022]_.
+
+    :returns: A converter representing the Bioregistry, which includes
+        a comprehensive collection of prefixes, prefix synonyms, and
+        URI prefix synonyms.
+
+    Short summary of the Bioregistry:
+
+    1. It deduplicates and harmonizes dozens of different resources that
+       curate partially overlapping and conflicting prefix maps
+    2. It contains detailed CURIE prefix synonyms to support standardization
+    3. It enforces the generation of a self-consistent extended prefix map
+
+    The Bioregistry's primary prefixes are all standardized to be lowercase,
+    have minimal punctuation, and be the most idiomatic possible. When this
+    conflicts with your personal preferences/community preferences, you can
+    chain another converter in front of the Bioregistry converter using
+    :func:`curies.chain`.
+
+    However, the Bioregistry itself presents a more
+    sustainable way of documenting these deviations in a community-oriented way
+    using its "context" configurations. See https://bioregistry.io/context/ for
+    more information. One excellent example of a community context is for the
+    OBO community (see https://bioregistry.io/context/obo), which prioritizes
+    OBO capitalized prefixes and makes a few minor changes for backwards compatibility
+    (e.g., renaming Orphanet).
+
+    .. [hoyt2022] `Unifying the identification of biomedical entities with the
+       Bioregistry <https://www.nature.com/articles/s41597-022-01807-3>`_
+    """
     if not web:
         try:
             import bioregistry
