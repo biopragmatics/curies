@@ -65,7 +65,7 @@ class MappingServiceGraph(Graph):  # type:ignore
                     ...,
                 }
             )
-            graph = CURIEServiceGraph(converter=converter)
+            graph = MappingServiceGraph(converter=converter)
 
             res = graph.query('''
                 SELECT ?o WHERE {

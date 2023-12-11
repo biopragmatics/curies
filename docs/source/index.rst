@@ -1,5 +1,43 @@
 curies |release| Documentation
 ==============================
+Uniform resource identifiers (URIs) and compact URIs (CURIEs)
+have become the predominant syntaxes for identifying concepts
+in linked data applications. Therefore, efficient, faultless,
+and idiomatic conversion between them is a crucial low-level
+utility whose need is ubiquitous across many codebases.
+
+:mod:`curies` fills this need. This Python package can be used by a variety of people:
+
+1. **Data Scientist** - someone who consumes and modifies data to suit an analysis or application.
+   For example, they might want to convert tabular data containing CURIEs into IRIs,
+   translate into RDF, then query with SPARQL.
+2. **Curator** - someone who creates data. For example, an ontologist may want to curate using CURIEs
+   but have their toolchain 1) validate the syntax and semantics and 2) convert to IRIs for their data persistence
+3. **Data Consumer** - someone who consumes data. This kind of user likely won't interact with
+   :mod:`curies` directly, but will likely use tools that build on top of it. For example, someone
+   using the Bioregistry resolution service uses this package's expansion utilities indirectly.
+4. **Software Developer** - someone who develops tools to support data creators, data consumers, and other
+   software developers. For example, a software developer might want to make their toolchain more generic
+   for loading, merging, and outputting prefix maps and extended prefix maps.
+
+For many users, expansion (CURIE to URI) and contraction (URI to CURIE) are the two most important tools.
+
+.. code-block:: python
+
+    import curies
+
+    # Get a converter
+    converter = curies.get_obo_converter()
+
+    >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
+    'CHEBI:1'
+
+    >>> converter.expand("CHEBI:1")
+    'http://purl.obolibrary.org/obo/CHEBI_1'
+
+See the tutorial for more pre-defined converters, information on defining custom converters,
+chaining converters, and more.
+
 Installation
 ------------
 The most recent release can be installed from
@@ -15,76 +53,17 @@ The most recent code and data can be installed directly from GitHub with:
 
     $ pip install git+https://github.com/cthoyt/curies.git
 
-.. automodapi:: curies
-   :no-inheritance-diagram:
+This package currently supports both Pydantic v1 and v2. See the
+`Pydantic migration guide <https://docs.pydantic.dev/2.0/migration>`_
+for updating your code.
 
-CLI Usage
----------
-.. automodule:: curies.cli
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
 
-Integrating with :mod:`rdflib`
-------------------------------
-RDFlib is a pure Python package for manipulating RDF data. The following example shows how to bind the
-prefix map from a :class:`curies.Converter` to a graph (:class:`rdflib.Graph`).
-
-.. code-block::
-
-    import curies, rdflib, rdflib.namespace
-
-    converter = curies.get_obo_converter()
-    graph = rdflib.Graph()
-
-    for prefix, uri_prefix in converter.prefix_map.items():
-        graph.bind(prefix, rdflib.Namespace(uri_prefix))
-
-A more flexible approach is to instantiate a namespace manager (:class:`rdflib.namespace.NamespaceManager`)
-and bind directly to that.
-
-.. code-block::
-
-    import curies, rdflib
-
-    converter = curies.get_obo_converter()
-    namespace_manager = rdflib.namespace.NamespaceManager(rdflib.Graph())
-
-    for prefix, uri_prefix in converter.prefix_map.items():
-        namespace_manager.bind(prefix, rdflib.Namespace(uri_prefix))
-
-URI references for use in RDFLib's graph class can be constructed from
-CURIEs using a combination of :meth:`curies.Converter.expand` and :class:`rdflib.URIRef`.
-
-.. code-block::
-
-    import curies, rdflib
-
-    converter = curies.get_obo_converter()
-
-    uri_ref = rdflib.URIRef(converter.expand("CHEBI:138488"))
-
-Incremental Converters
-----------------------
-As suggested in `#13 <https://github.com/cthoyt/curies/issues/33>`_, new prefixes
-can be added to an existing converter like in the following:
-
-.. code-block::
-
-    import curies
-
-    converter = curies.get_obo_converter()
-    converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
-
-Similarly, an empty converter can be instantiated using an empty list
-for the `records` argument and prefixes can be added one at a time
-(note this currently does not allow for adding synonyms separately):
-
-.. code-block::
-
-    import curies
-
-    converter = curies.Converter(records=[])
-    converter.add_prefix("hgnc", "https://bioregistry.io/hgnc:")
-
-Identifier Mapping Service
---------------------------
-.. automodapi:: curies.mapping_service
-   :no-inheritance-diagram:
+   tutorial
+   reconciliation
+   discovery
+   struct
+   api
+   services/index

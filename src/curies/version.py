@@ -7,9 +7,9 @@ __all__ = [
     "get_version",
 ]
 
-VERSION = "0.5.4-dev"
+VERSION = "0.7.5-dev"
 
 
 def get_version() -> str:
-    """Get the :mod:`curies` version string, including a git hash."""
+    """Get the :mod:`curies` version string."""
     return VERSION

@@ -44,14 +44,11 @@
 Idiomatic conversion between URIs and compact URIs (CURIEs).
 
 ```python
-from curies import Converter
+import curies
 
-converter = Converter.from_prefix_map({
+converter = curies.load_prefix_map({
     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-    "GO": "http://purl.obolibrary.org/obo/GO_",
     # ... and so on
-    "OBO": "http://purl.obolibrary.org/obo/",
 })
 
 >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
@@ -59,115 +56,9 @@ converter = Converter.from_prefix_map({
 
 >>> converter.expand("CHEBI:1")
 'http://purl.obolibrary.org/obo/CHEBI_1'
-
-# Unparsable
->>> assert converter.compress("http://example.com/missing:0000000") is None
->>> assert converter.expand("missing:0000000") is None
 ```
-
-When some URI prefixes are partially overlapping (e.g.,
-`http://purl.obolibrary.org/obo/GO_` for `GO` and
-`http://purl.obolibrary.org/obo/` for ``OBO``), the longest
-URI prefix will always be matched. For example, compressing
-`http://purl.obolibrary.org/obo/GO_0032571`
-will return `GO:0032571` instead of `OBO:GO_0032571`.
 
 Full documentation is available at [curies.readthedocs.io](https://curies.readthedocs.io).
-
-### Standardization
-
-The `curies.Converter` data structure supports prefix and URI prefix synonyms.
-The following exampl demonstrates
-using these synonyms to support standardizing prefixes, CURIEs, and URIs. Note below,
-the colloquial prefix `gomf`, sometimes used to represent the subspace in the
-[Gene Ontology (GO)](https://obofoundry.org/ontology/go) corresponding to molecular
-functions, is upgraded to the preferred prefix, `GO`.
-
-```python
-from curies import Converter, Record
-
-converter = Converter([
-    Record(
-        prefix="GO",
-        prefix_synonyms=["gomf", "gocc", "gobp", "go", ...],
-        uri_prefix="http://purl.obolibrary.org/obo/GO_",
-        uri_prefix_synonyms=[
-            "http://amigo.geneontology.org/amigo/term/GO:",
-            "https://identifiers.org/GO:",
-            ...
-        ],
-    ),
-    # And so on
-    ...
-])
-
->>> converter.standardize_prefix("gomf")
-'GO'
->>> converter.standardize_curie('gomf:0032571')
-'GO:0032571'
->>> converter.standardize_uri('http://amigo.geneontology.org/amigo/term/GO:0032571')
-'http://purl.obolibrary.org/obo/GO_0032571'
-```
-
-Note: non-standard URIs can still be parsed with `converter.parse_uri()` and compressed
-into CURIEs with `converter.compress()`.
-
-### Loading Prefix Maps
-
-All loader function work on local file paths, remote URLs, and pre-loaded
-data structures. For example, a converter can be instantiated from a web-based
-resource in JSON-LD format:
-
-```python
-from curies import Converter
-
-url = "https://raw.githubusercontent.com/biopragmatics/bioregistry/main/exports/contexts/semweb.context.jsonld"
-converter = Converter.from_jsonld(url)
-```
-
-Several converters can be instantiated from pre-defined web-based resources:
-
-```python
-import curies
-
-# Uses the Bioregistry, an integrative, comprehensive registry
-bioregistry_converter = curies.get_bioregistry_converter()
-
-# Uses the OBO Foundry, a registry of ontologies
-obo_converter = curies.get_obo_converter()
-
-# Uses the Monarch Initative's project-specific context
-monarch_converter = curies.get_monarch_converter()
-```
-
-### Bulk Operations
-
-Apply in bulk to a `pandas.DataFrame` with `Converter.pd_expand` and
-`Converter.pd_compress`:
-
-```python
-import curies
-import pandas as pd
-
-df = pd.read_csv(...)
-obo_converter = curies.get_obo_converter()
-obo_converter.pd_compress(df, column=0)
-obo_converter.pd_expand(df, column=0)
-```
-
-Apply in bulk to a CSV file with `Converter.file_expand` and
-`Converter.file_compress` (defaults to using tab separator):
-
-```python
-import curies
-
-path = ...
-obo_converter = curies.get_obo_converter()
-# modifies file in place
-obo_converter.file_compress(path, column=0)
-# modifies file in place
-obo_converter.file_expand(path, column=0)
-```
 
 ### CLI Usage
 
@@ -200,6 +91,7 @@ Other packages that convert between CURIEs and URIs:
 - https://github.com/geneontology/curie-util-py (Python)
 - https://github.com/geneontology/curie-util-es5 (Node.js)
 - https://github.com/endoli/curie.rs (Rust)
+- https://github.com/cthoyt/curies4j (Java)
 
 ## 🚀 Installation
 
@@ -209,6 +101,10 @@ The most recent release can be installed from
 ```bash
 $ pip install curies
 ```
+
+This package currently supports both Pydantic v1 and v2. See the
+[Pydantic migration guide](https://docs.pydantic.dev/2.0/migration/)
+for updating your code.
 
 ## 👐 Contributing
 
