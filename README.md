@@ -147,6 +147,18 @@ $ cd curies
 $ pip install -e .
 ```
 
+To test the the curies mapping service SPARQL endpoint federated queries properly work with popular triplestore you will need to start the triplestores locally with `docker` (otherwise the tests defined in `tests/test_sparql.py` will be skipped):
+
+```bash
+$ docker compose up -d
+```
+
+The first time you start the triplestores you will need to initialize them by running a script:
+
+```bash
+$ ./tests/resources/init_triplestores.sh
+```
+
 ### 🥼 Testing
 
 After cloning the repository and installing `tox` with `pip install tox`, the unit tests in the `tests/` folder can be
