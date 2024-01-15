@@ -48,7 +48,10 @@ __all__ = [
     "DuplicateValueError",
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
+    # Utilities
     "chain",
+    "clean_prefix_map",
+    # Loaders
     "load_extended_prefix_map",
     "load_prefix_map",
     "load_jsonld_context",
@@ -2194,7 +2197,22 @@ def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None)
 
 
 def clean_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
-    """Convert a problematic prefix map (i.e., not bijective) into a list of records."""
+    """Convert a problematic prefix map (i.e., not bijective) into a list of records.
+
+    :param prefix_map: A mapping whose keys represent CURIE prefixes and values represent URI prefixes
+    :return: A list of :class:`curies.Record` objects that together constitute an extended prefix map
+
+    >>> from curies import Converter, clean_prefix_map
+    >>> pm = {"a": "https://example.com/a/", "b": "https://example.com/a/"}
+    >>> records = clean_prefix_map(pm)
+    >>> converter = Converter(records)
+    >>> converter.expand("a:1")
+    'https://example.com/a/1'
+    >>> converter.expand("b:1")
+    'https://example.com/a/1'
+    >>> converter.compress("https://example.com/a/1")
+    'a:1'
+    """
     dd = defaultdict(list)
     for curie_prefix, uri_prefix in prefix_map.items():
         dd[uri_prefix].append(curie_prefix)
