@@ -92,6 +92,10 @@ This function also accepts a string with a HTTP, HTTPS, or FTP path to a remote 
     structure for situations when there can be CURIE synonyms or even URI prefix synonyms is
     the *extended prefix map* (see below).
 
+    If you're not in a position where you can fix data issues upstream, you can try using the
+    :func:`curies.clean_prefix_map` to extract a canonical extended prefix map from a non-bijective
+    prefix map.
+
 Loading Extended Prefix Maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Extended prefix maps (EPMs) address the issues with prefix maps by including explicit

@@ -25,6 +25,7 @@ from curies.api import (
     ReferenceTuple,
     URIStandardizationError,
     chain,
+    clean_prefix_map,
 )
 from curies.sources import (
     BIOREGISTRY_CONTEXTS,
@@ -860,3 +861,14 @@ class TestVersion(unittest.TestCase):
         """
         version = get_version()
         self.assertIsInstance(version, str)
+
+
+class TestUtils(unittest.TestCase):
+    """Test utility functions."""
+
+    def test_clean(self):
+        """Test clean."""
+        prefix_map = {"a": "https://example.com/", "b": "https://example.com/"}
+        records = clean_prefix_map(prefix_map)
+        self.assertEqual(1, len(records))
+        self.assertEqual("a", records[0].prefix)

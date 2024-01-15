@@ -2191,3 +2191,15 @@ def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None)
         pattern = pattern.replace("\\", "\\\\")
         line += f'; sh:pattern "{pattern}"'
     return line + " ]"
+
+
+def clean_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
+    """Convert a problematic prefix map (i.e., not bijective) into a list of records."""
+    dd = defaultdict(list)
+    for curie_prefix, uri_prefix in prefix_map.items():
+        dd[uri_prefix].append(curie_prefix)
+    xx = {uri_prefix: sorted(curie_prefixes) for uri_prefix, curie_prefixes in dd.items()}
+    return [
+        Record(prefix=prefix, prefix_synonyms=prefix_synonyms, uri_prefix=uri_prefix)
+        for uri_prefix, (prefix, *prefix_synonyms) in sorted(xx.items())
+    ]
