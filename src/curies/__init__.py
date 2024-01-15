@@ -11,6 +11,7 @@ from .api import (
     Reference,
     ReferenceTuple,
     chain,
+    clean_prefix_map,
     load_extended_prefix_map,
     load_jsonld_context,
     load_prefix_map,
@@ -42,6 +43,7 @@ __all__ = [
     "remap_curie_prefixes",
     "remap_uri_prefixes",
     "rewire",
+    "clean_prefix_map",
     "get_version",
     # i/o
     "load_prefix_map",

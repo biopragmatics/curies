@@ -868,7 +868,14 @@ class TestUtils(unittest.TestCase):
 
     def test_clean(self):
         """Test clean."""
-        prefix_map = {"a": "https://example.com/", "b": "https://example.com/"}
+        prefix_map = {
+            "a": "https://example.com/a/",
+            "b": "https://example.com/a/",
+            "c": "https://example.com/c/",
+        }
         records = clean_prefix_map(prefix_map)
-        self.assertEqual(1, len(records))
+        self.assertEqual(2, len(records))
         self.assertEqual("a", records[0].prefix)
+        self.assertEqual(["b"], records[0].prefix_synonyms)
+        self.assertEqual("https://example.com/a/", records[0].uri_prefix)
+        self.assertEqual([], records[0].uri_prefix_synonyms)
