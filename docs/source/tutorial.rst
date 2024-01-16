@@ -93,7 +93,7 @@ This function also accepts a string with a HTTP, HTTPS, or FTP path to a remote 
     the *extended prefix map* (see below).
 
     If you're not in a position where you can fix data issues upstream, you can try using the
-    :func:`curies.clean_prefix_map` to extract a canonical extended prefix map from a non-bijective
+    :func:`curies.upgrade_prefix_map` to extract a canonical extended prefix map from a non-bijective
     prefix map.
 
 Loading Extended Prefix Maps

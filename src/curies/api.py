@@ -2229,23 +2229,21 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
        applicable in the semantic web and the natural sciences. It gives a good suggestion of what the best
        prefix is. In the OBO in OWL case, it suggests ``oboInOwl``.
     2. Update all related data artifacts to only use that preferred prefix
-    3. Either 1) remove the other synonyms (in this example, ``oio``) from the prefix map _OR_ transition to
-       using extended prefix maps, a more modern data structure for supporting URI and CURIE interconversion.
+    3. Either 1) remove the other synonyms (in this example, ``oio``) from the prefix map *or* 2) transition to
+       using :ref:`epms`, a more modern data structure for supporting URI and CURIE interconversion.
 
     The first part of step 3 in this solution highlights one of the key shortcomings of prefix maps themselves -
     they can't keep track of synonyms, which are often useful in data integration, especially when a single
     prefix map is defined on the level of a project or community. The extended prefix map is a simple data structure
     proposed to address this.
 
-    ---
+    * * *
 
     This function is for people who are not in the position to make the sustainable fix, and want to automate
     the assignment of which is the preferred prefix. It uses a deterministic algorithm to choose from two or more
     CURIE prefixes that have the same URI prefix and generate an extended prefix map in which they have bene collapsed
-    into a single record.
-
-    The algorithm is based on a case-sensitive lexical sort of the prefixes. The first in the sort order becomes
-    the primary prefix and the others become synonyms in the resulting record.
+    into a single record. More specitically, the algorithm is based on a case-sensitive lexical sort of the prefixes.
+    The first in the sort order becomes the primary prefix and the others become synonyms in the resulting record.
 
     :param prefix_map: A mapping whose keys represent CURIE prefixes and values represent URI prefixes
     :return: A list of :class:`curies.Record` objects that together constitute an extended prefix map
@@ -2267,11 +2265,13 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
         `in this discussion <https://github.com/mapping-commons/sssom-py/pull/485#discussion_r1451812733>`_.
 
     """
-    dd = defaultdict(list)
+    uri_prefix_to_curie_synonyms = defaultdict(list)
     for curie_prefix, uri_prefix in prefix_map.items():
-        dd[uri_prefix].append(curie_prefix)
-    xx = {uri_prefix: sorted(curie_prefixes) for uri_prefix, curie_prefixes in dd.items()}
+        uri_prefix_to_curie_synonyms[uri_prefix].append(curie_prefix)
+    priority_prefix_map = {
+        uri_prefix: sorted(curie_prefixes) for uri_prefix, curie_prefixes in uri_prefix_to_curie_synonyms.items()
+    }
     return [
         Record(prefix=prefix, prefix_synonyms=prefix_synonyms, uri_prefix=uri_prefix)
-        for uri_prefix, (prefix, *prefix_synonyms) in sorted(xx.items())
+        for uri_prefix, (prefix, *prefix_synonyms) in sorted(priority_prefix_map.items())
     ]
