@@ -875,7 +875,14 @@ class TestUtils(unittest.TestCase):
         }
         records = upgrade_prefix_map(prefix_map)
         self.assertEqual(2, len(records))
-        self.assertEqual("a", records[0].prefix)
-        self.assertEqual(["b"], records[0].prefix_synonyms)
-        self.assertEqual("https://example.com/a/", records[0].uri_prefix)
-        self.assertEqual([], records[0].uri_prefix_synonyms)
+        a_record, c_record = records
+
+        self.assertEqual("a", a_record.prefix)
+        self.assertEqual(["b"], a_record.prefix_synonyms)
+        self.assertEqual("https://example.com/a/", a_record.uri_prefix)
+        self.assertEqual([], a_record.uri_prefix_synonyms)
+
+        self.assertEqual("c", c_record.prefix)
+        self.assertEqual([], c_record.prefix_synonyms)
+        self.assertEqual("https://example.com/c/", c_record.uri_prefix)
+        self.assertEqual([], c_record.uri_prefix_synonyms)

@@ -2269,7 +2269,8 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
     for curie_prefix, uri_prefix in prefix_map.items():
         uri_prefix_to_curie_synonyms[uri_prefix].append(curie_prefix)
     priority_prefix_map = {
-        uri_prefix: sorted(curie_prefixes) for uri_prefix, curie_prefixes in uri_prefix_to_curie_synonyms.items()
+        uri_prefix: sorted(curie_prefixes)
+        for uri_prefix, curie_prefixes in uri_prefix_to_curie_synonyms.items()
     }
     return [
         Record(prefix=prefix, prefix_synonyms=prefix_synonyms, uri_prefix=uri_prefix)
