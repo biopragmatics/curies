@@ -50,7 +50,7 @@ __all__ = [
     "DuplicateURIPrefixes",
     # Utilities
     "chain",
-    "clean_prefix_map",
+    "upgrade_prefix_map",
     # Loaders
     "load_extended_prefix_map",
     "load_prefix_map",
@@ -2196,15 +2196,63 @@ def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None)
     return line + " ]"
 
 
-def clean_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
-    """Convert a problematic prefix map (i.e., not bijective) into a list of records.
+def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
+    """Convert a (potentially problematic) prefix map (i.e., not bijective) into a list of records.
+
+    A prefix map is bijective if it has no duplicate CURIE prefixes (i.e., keys in a dictionary) and
+    no duplicate URI prefixes (i.e., values in a dictionary). Because of the way that dictionaries work in Python,
+    we are always guaranteed that there are no duplicate keys.
+
+    However, it is both possible and frequent to have duplicate values. This happens because many semantic spaces
+    have multiple synonymous CURIE prefixes. For example, the `OBO in OWL <https://bioregistry.io/oboinowl>`_
+    vocabulary has two common, interchangable prefixes: ``oio`` and ``oboInOwl`` (and the case variant ``oboinowl``).
+    Therefore, a prefix map might contain the following parts that make it non-bijective:
+
+    .. code-block:: json
+
+        {
+          "oio": "http://www.geneontology.org/formats/oboInOwl#",
+          "oboInOwl": "http://www.geneontology.org/formats/oboInOwl#"
+        }
+
+    This is bad because this prefix map can't be used to determinstically compress a URI. For example, should
+    ``http://www.geneontology.org/formats/oboInOwl#hasDbXref`` be compressed to ``oio:hasDbXref`` or
+    ``oboInOwl:hasDbXref``? Neither is necessarily incorrect, but the issue here is that there is not an explicit
+    choice by the data modeler, meaning that data compressed into CURIEs with this non-bijective map might not be
+    readily integrable with other datasets.
+
+    The best solution to this situation is not more code, but rather for the data modeler to address the issue
+    upstream in the following steps:
+
+    1. Choose the which of prefix synonyms is going to be the primary prefix. If you're not sure, the
+       `Bioregistry <https://bioregistry.io/>`_ is a comprehensive registry of prefixes and their syonyms
+       applicable in the semantic web and the natural sciences. It gives a good suggestion of what the best
+       prefix is. In the OBO in OWL case, it suggests ``oboInOwl``.
+    2. Update all related data artifacts to only use that preferred prefix
+    3. Either 1) remove the other synonyms (in this example, ``oio``) from the prefix map _OR_ transition to
+       using extended prefix maps, a more modern data structure for supporting URI and CURIE interconversion.
+
+    The first part of step 3 in this solution highlights one of the key shortcomings of prefix maps themselves -
+    they can't keep track of synonyms, which are often useful in data integration, especially when a single
+    prefix map is defined on the level of a project or community. The extended prefix map is a simple data structure
+    proposed to address this.
+
+    ---
+
+    This function is for people who are not in the position to make the sustainable fix, and want to automate
+    the assignment of which is the preferred prefix. It uses a deterministic algorithm to choose from two or more
+    CURIE prefixes that have the same URI prefix and generate an extended prefix map in which they have bene collapsed
+    into a single record.
+
+    The algorithm is based on a case-sensitive lexical sort of the prefixes. The first in the sort order becomes
+    the primary prefix and the others become synonyms in the resulting record.
 
     :param prefix_map: A mapping whose keys represent CURIE prefixes and values represent URI prefixes
     :return: A list of :class:`curies.Record` objects that together constitute an extended prefix map
 
-    >>> from curies import Converter, clean_prefix_map
+    >>> from curies import Converter, upgrade_prefix_map
     >>> pm = {"a": "https://example.com/a/", "b": "https://example.com/a/"}
-    >>> records = clean_prefix_map(pm)
+    >>> records = upgrade_prefix_map(pm)
     >>> converter = Converter(records)
     >>> converter.expand("a:1")
     'https://example.com/a/1'
@@ -2212,6 +2260,12 @@ def clean_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
     'https://example.com/a/1'
     >>> converter.compress("https://example.com/a/1")
     'a:1'
+
+    .. note::
+
+        Thanks to `Joe Flack <https://github.com/joeflack4>`_ for proposing this algorithm
+        `in this discussion <https://github.com/mapping-commons/sssom-py/pull/485#discussion_r1451812733>`_.
+
     """
     dd = defaultdict(list)
     for curie_prefix, uri_prefix in prefix_map.items():
