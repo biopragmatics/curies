@@ -15,6 +15,7 @@ from .api import (
     load_jsonld_context,
     load_prefix_map,
     load_shacl,
+    upgrade_prefix_map,
     write_extended_prefix_map,
     write_jsonld_context,
     write_shacl,
@@ -42,6 +43,7 @@ __all__ = [
     "remap_curie_prefixes",
     "remap_uri_prefixes",
     "rewire",
+    "upgrade_prefix_map",
     "get_version",
     # i/o
     "load_prefix_map",
