@@ -67,6 +67,24 @@ class TestAddRecord(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.converter.add_record(Record(prefix="GO", uri_prefix=CHEBI_URI_PREFIX))
 
+    def test_get_prefix_synonyms(self):
+        """Test getting prefix synonyms."""
+        self.assertEqual({self.prefix}, self.converter.get_prefixes())
+        self.assertEqual({self.prefix}, self.converter.get_prefixes(include_synonyms=False))
+        self.assertEqual(
+            {self.prefix, self.prefix_synonym},
+            self.converter.get_prefixes(include_synonyms=True),
+        )
+
+    def test_get_uri_prefix_synonyms(self):
+        """Test getting URI prefix synonyms."""
+        self.assertEqual({self.uri_prefix}, self.converter.get_uri_prefixes())
+        self.assertEqual({self.uri_prefix}, self.converter.get_uri_prefixes(include_synonyms=False))
+        self.assertEqual(
+            {self.uri_prefix, self.uri_prefix_synonym},
+            self.converter.get_uri_prefixes(include_synonyms=True),
+        )
+
     def test_extend_on_prefix_match(self):
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
@@ -259,6 +277,9 @@ class TestConverter(unittest.TestCase):
         new_converter = self.converter.get_subconverter(["CHEBI"])
         self.assertEqual(1, len(new_converter.records))
         self.assertEqual({"CHEBI"}, new_converter.get_prefixes())
+        self.assertEqual(
+            {"http://purl.obolibrary.org/obo/CHEBI_"}, new_converter.get_uri_prefixes()
+        )
         self.assertEqual({"CHEBI"}, set(new_converter.bimap))
         self.assertEqual({"CHEBI"}, set(new_converter.prefix_map))
         self.assertEqual(
@@ -282,6 +303,15 @@ class TestConverter(unittest.TestCase):
     def test_convert(self):
         """Test compression."""
         self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())
+        self.assertEqual(
+            {
+                "http://purl.obolibrary.org/obo/CHEBI_",
+                "http://purl.obolibrary.org/obo/MONDO_",
+                "http://purl.obolibrary.org/obo/GO_",
+                "http://purl.obolibrary.org/obo/",
+            },
+            self.converter.get_uri_prefixes(),
+        )
         self._assert_convert(self.converter)
 
     def _assert_convert(self, converter: Converter):
@@ -556,7 +586,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn("GO", c3.bimap)
 
     def test_combine_ci(self):
-        """Test combining case insensitive."""
+        """Test combining case-insensitive."""
         c1 = Converter.from_priority_prefix_map(
             {
                 "CHEBI": [
@@ -573,6 +603,8 @@ class TestConverter(unittest.TestCase):
         )
         converter = chain([c1, c2], case_sensitive=False)
         self.assertEqual({"CHEBI"}, converter.get_prefixes())
+        self.assertEqual({"CHEBI"}, converter.get_prefixes(include_synonyms=False))
+        self.assertEqual({"CHEBI", "chebi"}, converter.get_prefixes(include_synonyms=True))
         for url in [
             "http://purl.obolibrary.org/obo/CHEBI_138488",
             "http://identifiers.org/chebi/138488",
