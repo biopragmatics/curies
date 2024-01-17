@@ -976,7 +976,29 @@ class Converter:
         """
         rv = {record.prefix for record in self.records}
         if include_synonyms:
-            rv.update(ps for record in self.records for ps in record.prefix_synonyms)
+            rv.update(
+                prefix_synonym
+                for record in self.records
+                for prefix_synonym in record.prefix_synonyms
+            )
+        return rv
+
+    def get_uri_prefixes(self, *, include_synonyms: bool = False) -> Set[str]:
+        """Get the set of URI prefixes covered by this converter.
+
+        :param include_synonyms: If true, include secondary prefixes.
+        :return:
+            A set of primary URI prefixes covered by the converter. If ``include_synonyms`` is
+            set to ``True``, secondary URI prefixes (i.e., ones in :data:`Record.uri_prefix_synonyms`
+            are also included
+        """
+        rv = {record.uri_prefix for record in self.records}
+        if include_synonyms:
+            rv.update(
+                uri_prefix_synonym
+                for record in self.records
+                for uri_prefix_synonym in record.uri_prefix_synonyms
+            )
         return rv
 
     def format_curie(self, prefix: str, identifier: str) -> str:

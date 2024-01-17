@@ -259,6 +259,14 @@ class TestConverter(unittest.TestCase):
         new_converter = self.converter.get_subconverter(["CHEBI"])
         self.assertEqual(1, len(new_converter.records))
         self.assertEqual({"CHEBI"}, new_converter.get_prefixes())
+        self.assertEqual({"CHEBI", "chebi"}, new_converter.get_prefixes(include_synonyms=True))
+        self.assertEqual(
+            {"http://purl.obolibrary.org/obo/CHEBI_"}, new_converter.get_uri_prefixes()
+        )
+        self.assertEqual(
+            {"http://purl.obolibrary.org/obo/CHEBI_", "https://bioregistry.io/chebi:"},
+            new_converter.get_uri_prefixes(include_synonyms=True),
+        )
         self.assertEqual({"CHEBI"}, set(new_converter.bimap))
         self.assertEqual({"CHEBI"}, set(new_converter.prefix_map))
         self.assertEqual(
@@ -282,6 +290,15 @@ class TestConverter(unittest.TestCase):
     def test_convert(self):
         """Test compression."""
         self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())
+        self.assertEqual(
+            {
+                "http://purl.obolibrary.org/obo/CHEBI_",
+                "http://purl.obolibrary.org/obo/MONDO_",
+                "http://purl.obolibrary.org/obo/GO_",
+                "http://purl.obolibrary.org/obo/",
+            },
+            self.converter.get_uri_prefixes(),
+        )
         self._assert_convert(self.converter)
 
     def _assert_convert(self, converter: Converter):

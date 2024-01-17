@@ -251,6 +251,52 @@ This works with both :class:`pathlib.Path` and vanilla strings.
     urlretrieve(url, path)
     converter = curies.load_shacl(path)
 
+Introspecting on a Context
+--------------------------
+After loading a context, it's possible to get certain information out of the converter. For example, if you want to
+get all of the CURIE prefixes from the converter, you can use :meth:`Converter.get_prefixes`:
+
+.. code-block:: python
+
+    import curies
+
+    converter = curies.get_bioregistry_converter()
+    prefixes = converter.get_prefixes()
+    assert 'chebi' in prefixes
+    assert 'CHEBIID' not in prefixes, "No synonyms are included by default"
+
+    prefixes = converter.get_prefixes(include_synonyms=True)
+    assert 'chebi' in prefixes
+    assert 'CHEBIID' in prefixes
+
+Similarly, the URI prefixes can be extracted with :meth:`Converter.get_uri_prefixes` like in:
+
+.. code-block:: python
+
+    import curies
+
+    converter = curies.get_bioregistry_converter()
+    uri_prefixes = converter.get_uri_prefixes()
+    assert 'http://purl.obolibrary.org/obo/CHEBI_'' in prefixes
+    assert 'https://bioregistry.io/chebi:' not in prefixes, "No synonyms are included by default"
+
+    uri_prefixes = converter.get_uri_prefixes(include_synonyms=True)
+    assert 'http://purl.obolibrary.org/obo/CHEBI_'' in prefixes
+    assert 'https://bioregistry.io/chebi:' in prefixes
+
+It's also possible to get a bijective prefix map, i.e., a dictionary from primary CURIE prefixes
+to primary URI prefixes. This is useful for compatibility with legacy systems which assume simple prefix maps.
+This can be done with the ``bimap`` property like in the following:
+
+.. code-block:: python
+
+    import curies
+
+    converter = curies.get_bioregistry_converter()
+    prefix_map = converter.bimap
+    >>> prefix_map['chebi']
+    'http://purl.obolibrary.org/obo/CHEBI_'
+
 Modifying a Context
 -------------------
 Incremental Converters
