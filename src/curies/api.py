@@ -965,9 +965,19 @@ class Converter:
         ]
         return cls(records, **kwargs)
 
-    def get_prefixes(self) -> Set[str]:
-        """Get the set of prefixes covered by this converter."""
-        return {record.prefix for record in self.records}
+    def get_prefixes(self, *, include_synonyms: bool = False) -> Set[str]:
+        """Get the set of prefixes covered by this converter.
+
+        :param include_synonyms: If true, include secondary prefixes.
+        :return:
+            A set of primary prefixes covered by the converter. If ``include_synonyms`` is
+            set to ``True``, secondary prefixes (i.e., ones in :data:`Record.prefix_synonyms`
+            are also included
+        """
+        rv = {record.prefix for record in self.records}
+        if include_synonyms:
+            rv.update(ps for record in self.records for ps in record.prefix_synonyms)
+        return rv
 
     def format_curie(self, prefix: str, identifier: str) -> str:
         """Format a prefix and identifier into a CURIE string."""

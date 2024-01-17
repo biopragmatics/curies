@@ -556,7 +556,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn("GO", c3.bimap)
 
     def test_combine_ci(self):
-        """Test combining case insensitive."""
+        """Test combining case-insensitive."""
         c1 = Converter.from_priority_prefix_map(
             {
                 "CHEBI": [
@@ -573,6 +573,8 @@ class TestConverter(unittest.TestCase):
         )
         converter = chain([c1, c2], case_sensitive=False)
         self.assertEqual({"CHEBI"}, converter.get_prefixes())
+        self.assertEqual({"CHEBI"}, converter.get_prefixes(include_synonyms=False))
+        self.assertEqual({"CHEBI", "chebi"}, converter.get_prefixes(include_synonyms=True))
         for url in [
             "http://purl.obolibrary.org/obo/CHEBI_138488",
             "http://identifiers.org/chebi/138488",
