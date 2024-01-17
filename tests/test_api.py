@@ -67,6 +67,24 @@ class TestAddRecord(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.converter.add_record(Record(prefix="GO", uri_prefix=CHEBI_URI_PREFIX))
 
+    def test_get_prefix_synonyms(self):
+        """Test getting prefix synonyms."""
+        self.assertEqual({self.prefix}, self.converter.get_prefixes())
+        self.assertEqual({self.prefix}, self.converter.get_prefixes(include_synonyms=False))
+        self.assertEqual(
+            {self.prefix, self.prefix_synonym},
+            self.converter.get_prefixes(include_synonyms=True),
+        )
+
+    def test_get_uri_prefix_synonyms(self):
+        """Test getting URI prefix synonyms."""
+        self.assertEqual({self.uri_prefix}, self.converter.get_uri_prefixes())
+        self.assertEqual({self.uri_prefix}, self.converter.get_uri_prefixes(include_synonyms=False))
+        self.assertEqual(
+            {self.uri_prefix, self.uri_prefix_synonym},
+            self.converter.get_uri_prefixes(include_synonyms=True),
+        )
+
     def test_extend_on_prefix_match(self):
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
@@ -259,7 +277,7 @@ class TestConverter(unittest.TestCase):
         new_converter = self.converter.get_subconverter(["CHEBI"])
         self.assertEqual(1, len(new_converter.records))
         self.assertEqual({"CHEBI"}, new_converter.get_prefixes())
-        self.assertEqual({"CHEBI", "chebi"}, new_converter.get_prefixes(include_synonyms=True))
+        self.assertEqual({"CHEBI"}, new_converter.get_prefixes(include_synonyms=True))
         self.assertEqual(
             {"http://purl.obolibrary.org/obo/CHEBI_"}, new_converter.get_uri_prefixes()
         )
