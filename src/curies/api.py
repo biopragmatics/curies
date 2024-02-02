@@ -33,7 +33,7 @@ from typing import (
 )
 
 import requests
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from pytrie import StringTrie
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -267,7 +267,7 @@ class Record(BaseModel):  # type:ignore
         "Warning: this is an experimental feature.",
     )
 
-    @validator("prefix_synonyms")  # type:ignore
+    @field_validator("prefix_synonyms")  # type:ignore
     def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical prefix does not apper in the prefix synonym list."""
         prefix = values["prefix"]
@@ -275,7 +275,7 @@ class Record(BaseModel):  # type:ignore
             raise ValueError(f"Duplicate of canonical prefix `{prefix}` in prefix synonyms")
         return v
 
-    @validator("uri_prefix_synonyms")  # type:ignore
+    @field_validator("uri_prefix_synonyms")  # type:ignore
     def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
         uri_prefix = values["uri_prefix"]
