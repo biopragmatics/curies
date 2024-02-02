@@ -278,7 +278,10 @@ class Record(BaseModel):  # type:ignore
     @field_validator("prefix_synonyms")  # type:ignore
     def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical prefix does not apper in the prefix synonym list."""
-        prefix = values.data["prefix"]
+        if pydantic_version.startswith("1."):
+            prefix = values["prefix"]
+        else:
+            prefix = values.data["prefix"]
         if prefix in v:
             raise ValueError(f"Duplicate of canonical prefix `{prefix}` in prefix synonyms")
         return v
@@ -286,7 +289,10 @@ class Record(BaseModel):  # type:ignore
     @field_validator("uri_prefix_synonyms")  # type:ignore
     def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
-        uri_prefix = values.data["uri_prefix"]
+        if pydantic_version.startswith("1."):
+            uri_prefix = values["uri_prefix"]
+        else:
+            uri_prefix = values.data["uri_prefix"]
         if uri_prefix in v:
             raise ValueError(
                 f"Duplicate of canonical URI prefix `{uri_prefix}` in URI prefix synonyms"
