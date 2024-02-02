@@ -281,7 +281,7 @@ class Record(BaseModel):  # type:ignore
         if pydantic_version.startswith("1."):
             prefix = values["prefix"]
         else:
-            prefix = values.data["prefix"]
+            prefix = values.data["prefix"]  # type: ignore
         if prefix in v:
             raise ValueError(f"Duplicate of canonical prefix `{prefix}` in prefix synonyms")
         return v
@@ -292,7 +292,7 @@ class Record(BaseModel):  # type:ignore
         if pydantic_version.startswith("1."):
             uri_prefix = values["uri_prefix"]
         else:
-            uri_prefix = values.data["uri_prefix"]
+            uri_prefix = values.data["uri_prefix"]  # type: ignore
         if uri_prefix in v:
             raise ValueError(
                 f"Duplicate of canonical URI prefix `{uri_prefix}` in URI prefix synonyms"
