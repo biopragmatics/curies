@@ -33,7 +33,15 @@ from typing import (
 )
 
 import requests
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
+from pydantic import __version__ as pydantic_version
+
+# Check if the major version of Pydantic is 1 or 2
+if pydantic_version.startswith("1."):
+    from pydantic import validator as field_validator
+else:
+    from pydantic import field_validator
+
 from pytrie import StringTrie
 
 if TYPE_CHECKING:  # pragma: no cover
