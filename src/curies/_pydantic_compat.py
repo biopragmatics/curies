@@ -16,9 +16,9 @@ else:
     from pydantic import field_validator
 
 
-def get_field_validator_values(values, key: str):
+def get_field_validator_values(values, key: str):  # type:ignore
     """Get the value for the key from a field validator object, cross-compatible with Pydantic 1 and 2."""
     if PYDANTIC_V1:
         return values[key]
     else:
-        return values.data[key]  # type:ignore
+        return values.data[key]

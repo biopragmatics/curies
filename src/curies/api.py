@@ -36,7 +36,7 @@ import requests
 from pydantic import BaseModel, Field
 from pytrie import StringTrie
 
-from ._pydantic_compat import PYDANTIC_V1, field_validator, get_field_validator_values
+from ._pydantic_compat import field_validator, get_field_validator_values
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
