@@ -34,15 +34,9 @@ from typing import (
 
 import requests
 from pydantic import BaseModel, Field
-from pydantic import __version__ as pydantic_version
-
-# Check if the major version of Pydantic is 1 or 2
-if pydantic_version.startswith("1."):
-    from pydantic import validator as field_validator
-else:
-    from pydantic import field_validator
-
 from pytrie import StringTrie
+
+from ._pydantic_compat import PYDANTIC_V1, field_validator, get_field_validator_values
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -278,10 +272,7 @@ class Record(BaseModel):  # type:ignore
     @field_validator("prefix_synonyms")  # type:ignore
     def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical prefix does not apper in the prefix synonym list."""
-        if pydantic_version.startswith("1."):
-            prefix = values["prefix"]
-        else:
-            prefix = values.data["prefix"]  # type:ignore
+        prefix = get_field_validator_values(values, "prefix")
         if prefix in v:
             raise ValueError(f"Duplicate of canonical prefix `{prefix}` in prefix synonyms")
         return v
@@ -289,10 +280,7 @@ class Record(BaseModel):  # type:ignore
     @field_validator("uri_prefix_synonyms")  # type:ignore
     def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
-        if pydantic_version.startswith("1."):
-            uri_prefix = values["uri_prefix"]
-        else:
-            uri_prefix = values.data["uri_prefix"]  # type:ignore
+        uri_prefix = get_field_validator_values(values, "uri_prefix")
         if uri_prefix in v:
             raise ValueError(
                 f"Duplicate of canonical URI prefix `{uri_prefix}` in URI prefix synonyms"
@@ -1048,8 +1036,7 @@ class Converter:
     @overload
     def compress_or_standardize(
         self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1059,8 +1046,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[True] = True,
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1070,8 +1056,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def compress_or_standardize(
         self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
@@ -1128,22 +1113,21 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def compress(self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False) -> str:
-        ...
+    def compress(
+        self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def compress(
         self, uri: str, *, strict: bool = False, passthrough: bool = False
@@ -1238,8 +1222,7 @@ class Converter:
     @overload
     def expand_or_standardize(
         self, curie_or_uri: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1249,8 +1232,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[True] = True,
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1260,8 +1242,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def expand_or_standardize(
         self, curie_or_uri: str, *, strict: bool = False, passthrough: bool = False
@@ -1318,22 +1299,21 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def expand(self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False) -> str:
-        ...
+    def expand(
+        self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def expand(
         self, curie: str, *, strict: bool = False, passthrough: bool = False
@@ -1473,22 +1453,19 @@ class Converter:
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def standardize_prefix(
         self, prefix: str, *, strict: bool = False, passthrough: bool = False
@@ -1532,22 +1509,19 @@ class Converter:
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def standardize_curie(
         self, curie: str, *, strict: bool = False, passthrough: bool = False
@@ -1594,22 +1568,19 @@ class Converter:
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def standardize_uri(
         self, uri: str, *, strict: bool = False, passthrough: bool = False
