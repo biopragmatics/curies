@@ -37,6 +37,7 @@ from pydantic import BaseModel, Field
 from pytrie import StringTrie
 
 from ._pydantic_compat import field_validator, get_field_validator_values
+from .w3c import curie_is_w3c
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -1316,7 +1317,12 @@ class Converter:
     ) -> Optional[str]: ...
 
     def expand(
-        self, curie: str, *, strict: bool = False, passthrough: bool = False
+        self,
+        curie: str,
+        *,
+        strict: bool = False,
+        passthrough: bool = False,
+        require_w3c_spec: bool = False,
     ) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
 
@@ -1326,6 +1332,8 @@ class Converter:
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false. If your strings can either be a CURIE _or_ a URI, consider using
             :meth:`Converter.expand_ambiguous` instead.
+        :param require_w3c_spec: If true, requires CURIEs to be valid against the
+            `W3C CURIE specification <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:
@@ -1350,6 +1358,8 @@ class Converter:
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
             instead of ``OBO:GO_0032571``.
         """
+        if require_w3c_spec and not curie_is_w3c(curie):
+            raise ValueError(f"CURIE is not valid under W3C spec: {curie}")
         prefix, identifier = self.parse_curie(curie)
         rv = self.expand_pair(prefix, identifier)
         if rv:

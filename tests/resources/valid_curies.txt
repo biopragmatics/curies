@@ -1,0 +1,9 @@
+pfx:abc
+:
+pfx:
+abc
+:abc
+
+pfx:/abc
+pfx:/
+:/
