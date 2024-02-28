@@ -1,5 +1,9 @@
 """
 Make it possible to check a CURIE against the W3C specification.
+
+https://github.com/linkml/linkml-runtime/blob/main/linkml_runtime/utils/uri_validator.py
+could serve as a good basis for extending this - adding documentation, improving readability,
+and making a more detailed testing suite would make this go a long way
 """
 
 import re
