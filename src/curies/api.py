@@ -37,7 +37,8 @@ from pydantic import BaseModel, Field
 from pytrie import StringTrie
 
 from ._pydantic_compat import field_validator, get_field_validator_values
-from .w3c import curie_is_w3c
+from .w3c import CURIE_RE
+from .xx import PREFIX_RE
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -306,6 +307,12 @@ class Record(BaseModel):  # type:ignore
             ",".join(sorted(self.uri_prefix_synonyms)),
         )
 
+    def is_w3c_compliant(self) -> bool:
+        """Check if all prefixes in this record are w3c compliant."""
+        all_curie_prefixes_valid = all(curie_prefix_is_w3c(prefix) for prefix in self._all_prefixes)
+        # TODO extend to check URI prefixes?
+        return all_curie_prefixes_valid
+
 
 class DuplicateSummary(NamedTuple):
     """A triple representing two records that are duplicated, either based on a CURIE or URI prefix."""
@@ -472,7 +479,9 @@ class Converter:
     #: .. warning:: patterns are an experimental feature
     pattern_map: Dict[str, str]
 
-    def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True) -> None:
+    def __init__(
+        self, records: List[Record], *, delimiter: str = ":", strict: bool = True, w3c: bool = False
+    ) -> None:
         """Instantiate a converter.
 
         :param records:
@@ -481,6 +490,14 @@ class Converter:
             If true, raises issues on duplicate URI prefixes
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
+        :param w3c:
+            If true, validate all records against the
+            `W3C CURIE Syntax 1.0 <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
+            This includes the following:
+
+              1. Checking CURIE prefixes and CURIE prefix synonyms against the
+                 W3C definition for `NCName <https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName>`_
+
         :raises DuplicatePrefixes: if any records share any synonyms
         :raises DuplicateURIPrefixes: if any records share any URI prefixes
         """
@@ -491,6 +508,11 @@ class Converter:
             duplicate_prefixes = _get_duplicate_prefixes(records)
             if duplicate_prefixes:
                 raise DuplicatePrefixes(duplicate_prefixes)
+
+        if w3c:
+            broken = [record for record in records if not record.is_w3c_compliant()]
+            if broken:
+                raise ValueError(f"Records not conforming to W3C: {broken}")
 
         self.delimiter = delimiter
         self.records = sorted(records, key=lambda r: r.prefix)
@@ -2303,3 +2325,43 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
         Record(prefix=prefix, prefix_synonyms=prefix_synonyms, uri_prefix=uri_prefix)
         for uri_prefix, (prefix, *prefix_synonyms) in sorted(priority_prefix_map.items())
     ]
+
+
+def curie_is_w3c(s: str) -> bool:
+    """Return if the CURIE is valid under the W3C specification.
+
+    :param s: A string to check if it is a valid CURIE under the W3C specification.
+    :return: True if the string is a valid CURIE under the W3C specification.
+
+
+    If no prefix is given, the host language chooses how to assign a default
+    prefix.
+
+    >>> curie_is_w3c(":test")
+    True
+
+    From the specification, regarding using an underscore as the prefix
+
+      The CURIE prefix '_' is reserved for use by languages that support RDF.
+      For this reason, the prefix '_' SHOULD be avoided by authors.
+
+    >>> curie_is_w3c("_:test")
+    True
+
+    This is invalid because a CURIE prefix isn't allowed to start with
+    a number. It has to start with either a letter, or an underscore.
+
+    >>> curie_is_w3c("4cdn:test")
+    False
+
+    Empty strings are explicitly noted as being invalid.
+
+    >>> curie_is_w3c("")
+    False
+    """
+    return bool(CURIE_RE.match(s))
+
+
+def curie_prefix_is_w3c(s: str) -> bool:
+    """Return if the CURIE prefix is valid under the W3C specification."""
+    return bool(PREFIX_RE.match(s))

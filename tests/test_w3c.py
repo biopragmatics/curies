@@ -3,7 +3,7 @@
 import unittest
 from pathlib import Path
 
-from curies.w3c import curie_is_w3c
+from curies.api import curie_is_w3c
 
 HERE = Path(__file__).parent.resolve()
 RESOURCES = HERE.joinpath("resources")

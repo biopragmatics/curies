@@ -41,6 +41,36 @@ CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
 GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
 
 
+class TestRecord(unittest.TestCase):
+    """Tests for the record data structure."""
+
+    def test_w3c_prefix(self):
+        """Test CURIE prefix correctness."""
+        valid_prefixes = [
+            "go",
+            "GO",
+            "NCBITaxon",
+            "ncbi.taxon",
+            "ncbi_taxon",
+            "_",
+            "_secret",
+            "secret_",
+            "_secret",
+        ]
+        invalid_prefixes = ["", "4dn", "GO:GO:", "GO:"]
+        examples = [
+            *((prefix, True) for prefix in valid_prefixes),
+            *((prefix, False) for prefix in invalid_prefixes),
+        ]
+        for prefix, value in examples:
+            uri_prefix = f"https://example.com/{prefix}"
+            r1 = Record(prefix=prefix, uri_prefix=uri_prefix)
+            r2 = Record(prefix="prefix", prefix_synonyms=[prefix], uri_prefix=uri_prefix)
+            with self.subTest(prefix=prefix):
+                self.assertEqual(value, r1.is_w3c_compliant())
+                self.assertEqual(value, r2.is_w3c_compliant())
+
+
 class TestAddRecord(unittest.TestCase):
     """Test adding records."""
 
