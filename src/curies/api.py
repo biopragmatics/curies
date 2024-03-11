@@ -37,8 +37,7 @@ from pydantic import BaseModel, Field
 from pytrie import StringTrie
 
 from ._pydantic_compat import field_validator, get_field_validator_values
-from .w3c import CURIE_RE
-from .xx import PREFIX_RE
+from .w3c import CURIE_RE, PREFIX_RE
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas

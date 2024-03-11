@@ -267,29 +267,6 @@ relative_ref = rf"""\
 )
 """
 
-# -----------------------------------------------------------------------------
-#
-# Define CURIE according W3C CURIE Syntax 1.0
-# https://www.w3.org/TR/curie/#s_syntax
-#
-
-# NCNameChar	::=	Letter | Digit | '.' | '-' | '_' | CombiningChar | Extender
-# !! IMPORTANT NOTE !!
-# As of now this module doesn't support NCNameChar IRI, but
-# relative-refs as defined in URI,
-# NCNameChar	::=	Letter | Digit | '.' | '-' | '_'
-NCNameChar = rf"(?: {ALPHA} | {DIGIT} | \. | \- | _ )"
-
-prefix = rf"(?: {ALPHA} | _ ) (?: {NCNameChar} )*"
-"""The definition of a prefix.
-
-.. seealso:: https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName
-
-.. code-block::
-
-    prefix := NCName
-    NCName := (Letter | '_') (NCNameChar)*
-"""
 
 # reference   :=   irelative-ref (as defined in IRI)
 # !! IMPORTANT NOTE !!
@@ -299,5 +276,5 @@ prefix = rf"(?: {ALPHA} | _ ) (?: {NCNameChar} )*"
 # reference   :=   relative-ref (as defined in URI)
 CURIE = rf"(?P<CURIE> (?: (?P<prefix> {prefix} )? : )? {relative_ref})"
 
-PREFIX_RE = re.compile(f"^{prefix}$", re.VERBOSE)
+
 CURIE_RE = re.compile(f"^{CURIE}$", re.VERBOSE)

@@ -8,7 +8,20 @@ and making a more detailed testing suite would make this go a long way
 
 import re
 
-# Borrowed from https://gist.github.com/niklasl/2506955
+_PREFIX_RE = rf"[A-Za-z_][A-Za-z0-9\.\-_]*"
+"""The definition of a prefix, from https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName.
+
+.. code-block::
+
+    prefix := NCName
+    NCName := (Letter | '_') (NCNameChar)*
+    NCNameChar	::=	Letter | Digit | '.' | '-' | '_'
+"""
+
+PREFIX_RE = re.compile(f"^{_PREFIX_RE}$")
+
+
+#: Borrowed from https://gist.github.com/niklasl/2506955
 CURIE_PATTERN = r"(([\i-[:]][\c-[:]]*)?:)?(/[^\s/][^\s]*|[^\s/][^\s]*|[^\s]?)"
 CURIE_PATTERN = CURIE_PATTERN.replace(r"\i-[:]", r"_A-Za-z").replace(r"\c-[:]", r"-._:A-Za-z0-9")
 CURIE_RE = re.compile(CURIE_PATTERN)
