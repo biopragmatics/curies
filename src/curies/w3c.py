@@ -8,7 +8,7 @@ and making a more detailed testing suite would make this go a long way
 
 import re
 
-_PREFIX_RE = rf"[A-Za-z_][A-Za-z0-9\.\-_]*"
+_PREFIX_RE = r"[A-Za-z_][A-Za-z0-9\.\-_]*"
 """The definition of a prefix, from https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName.
 
 .. code-block::
