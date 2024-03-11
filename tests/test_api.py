@@ -67,8 +67,8 @@ class TestRecord(unittest.TestCase):
             r1 = Record(prefix=prefix, uri_prefix=uri_prefix)
             r2 = Record(prefix="prefix", prefix_synonyms=[prefix], uri_prefix=uri_prefix)
             with self.subTest(prefix=prefix):
-                self.assertEqual(value, r1.is_w3c_compliant())
-                self.assertEqual(value, r2.is_w3c_compliant())
+                self.assertEqual(value, r1.w3c_validate())
+                self.assertEqual(value, r2.w3c_validate())
 
 
 class TestAddRecord(unittest.TestCase):
@@ -818,7 +818,7 @@ class TestConverter(unittest.TestCase):
         curie = "smiles:CC(=O)NC([H])(C)C(=O)O"
         self.assertIsNotNone(converter.expand(curie))
         with self.assertRaises(ValueError):
-            converter.expand(curie, require_w3c_spec=True)
+            converter.expand(curie, w3c_validation=True)
 
     def test_expand_all(self):
         """Test expand all."""

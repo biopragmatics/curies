@@ -307,7 +307,7 @@ class Record(BaseModel):  # type:ignore
             ",".join(sorted(self.uri_prefix_synonyms)),
         )
 
-    def is_w3c_compliant(self) -> bool:
+    def w3c_validate(self) -> bool:
         """Check if all prefixes in this record are w3c compliant."""
         all_curie_prefixes_valid = all(curie_prefix_is_w3c(prefix) for prefix in self._all_prefixes)
         # TODO extend to check URI prefixes?
@@ -480,7 +480,12 @@ class Converter:
     pattern_map: Dict[str, str]
 
     def __init__(
-        self, records: List[Record], *, delimiter: str = ":", strict: bool = True, w3c: bool = False
+        self,
+        records: List[Record],
+        *,
+        delimiter: str = ":",
+        strict: bool = True,
+        w3c_validation: bool = False,
     ) -> None:
         """Instantiate a converter.
 
@@ -490,7 +495,7 @@ class Converter:
             If true, raises issues on duplicate URI prefixes
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
-        :param w3c:
+        :param w3c_validation:
             If true, validate all records against the
             `W3C CURIE Syntax 1.0 <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
             This includes the following:
@@ -500,6 +505,7 @@ class Converter:
 
         :raises DuplicatePrefixes: if any records share any synonyms
         :raises DuplicateURIPrefixes: if any records share any URI prefixes
+        :rasies ValueError: If w3c validation is on and there are non-conformant records
         """
         if strict:
             duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
@@ -509,8 +515,8 @@ class Converter:
             if duplicate_prefixes:
                 raise DuplicatePrefixes(duplicate_prefixes)
 
-        if w3c:
-            broken = [record for record in records if not record.is_w3c_compliant()]
+        if w3c_validation:
+            broken = [record for record in records if not record.w3c_validate()]
             if broken:
                 raise ValueError(f"Records not conforming to W3C: {broken}")
 
@@ -1344,7 +1350,7 @@ class Converter:
         *,
         strict: bool = False,
         passthrough: bool = False,
-        require_w3c_spec: bool = False,
+        w3c_validation: bool = False,
     ) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
 
@@ -1354,12 +1360,14 @@ class Converter:
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false. If your strings can either be a CURIE _or_ a URI, consider using
             :meth:`Converter.expand_ambiguous` instead.
-        :param require_w3c_spec: If true, requires CURIEs to be valid against the
+        :param w3c_validation: If true, requires CURIEs to be valid against the
             `W3C CURIE specification <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:
             If strict is true and the CURIE can't be expanded
+        :raises ValueError:
+            If W3C validation is turned on and the CURIE is not valid under the CURIE specification
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
@@ -1380,7 +1388,7 @@ class Converter:
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
             instead of ``OBO:GO_0032571``.
         """
-        if require_w3c_spec and not curie_is_w3c(curie):
+        if w3c_validation and not curie_is_w3c(curie):
             raise ValueError(f"CURIE is not valid under W3C spec: {curie}")
         prefix, identifier = self.parse_curie(curie)
         rv = self.expand_pair(prefix, identifier)
