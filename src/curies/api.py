@@ -2374,6 +2374,10 @@ def curie_is_w3c(s: str) -> bool:
     """
     if "[" in s or "]" in s:
         return False
+    if not s.strip():
+        return False
+    if s[0].isdigit():
+        return False  # TODO get that into the regex
     return bool(CURIE_RE.match(s))
 
 
