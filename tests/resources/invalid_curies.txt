@@ -2,3 +2,4 @@ pfx://abc
 pfx://
 ://
 /
+smiles:CC(=O)NC([H])(C)C(=O)O

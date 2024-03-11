@@ -1,40 +1,51 @@
-# Copyright Siemens 2023
-# SPDX-License-Identifier: CC0-1.0
+"""A regular expression implementation of the W3C CURIEs Syntax.
 
-
-"""
-Regular-expression-based URI and CURIE validation functions
-
-These regex are directly derived from the official sources mentioned in each
+These regular expressions are directly derived from the official sources mentioned in each
 section.
 
-They should be processed with re.VERBOSE.
+They should be processed with :data:`re.VERBOSE` to remove comments and other
+non-essential annotations.
 
 Python named regular expression groups are being used to better understand the
 URI/CURIE parsing.
+
+adapted from https://github.com/linkml/linkml-runtime/blob/main/linkml_runtime/utils/uri_validator.py, which
+was originally distributed under the CC-0 license
+
+Relevant documents:
+
+1. W3C CURIES Syntax 1.0 in https://www.w3.org/TR/2010/NOTE-curie-20101216/
+2. NCName definition (i.e., prefix) in https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName
+2. IRI definition in https://www.ietf.org/rfc/rfc3987.txt
 """
 
 import re
 
 #: Define DIGIT according RFC2234 section 3.4:
 #: https://datatracker.ietf.org/doc/html/rfc2234/#section-3.4
-DIGIT = r"[0-9]"
+DIGIT = "[0-9]"
 
 #: Define ALPHA (i.e., Letter) according RFC2234 section 6.1:
 #: https://datatracker.ietf.org/doc/html/rfc2234/#section-6.1
-ALPHA = r"[A-Za-z]"
+ALPHA = "[A-Za-z]"
 
 #: Define HEXDIG according RFC2234 section 6.1:
 #: https://datatracker.ietf.org/doc/html/rfc2234/#section-6.1
 HEXDIG = "[0-9A-F]"
 
 #   pct-encoded   = "%" HEXDIG HEXDIG
-pct_encoded = rf"% {HEXDIG}{{2}}"
+pct_encoded = f"%{HEXDIG}{{2}}"
 
-#   unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
-unreserved = rf"(?: {ALPHA} | {DIGIT} | \- | \. | _ | ~ )"
+# unreserved = rf"(?: {ALPHA} | {DIGIT} | \- | \. | _ | ~ )"
+unreserved = r"[A-Za-z0-9\-\._~]"
+"""Defined in page 8 of https://www.ietf.org/rfc/rfc3987.txt as:
 
-#   gen-delims    = ":" / "/" / "?" / "#" / "[" / "]" / "@"
+.. code-block::
+
+    unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
+"""
+
+# gen-delims = ":" / "/" / "?" / "#" / "[" / "]" / "@"
 gen_delims = r"(?: : | / | \? | \# | \[ | \] | @ )"
 
 #   sub-delims    = "!" / "$" / "&" / "'" / "("
@@ -46,23 +57,20 @@ pchar = rf"(?: {unreserved} | {pct_encoded} | {sub_delims} | : | @ )"
 #   reserved      = gen-delims / sub-delims
 reserved = rf"(?: {gen_delims} | {sub_delims} )"
 
-### required for Authority
+dec_octet = rf"(?: {DIGIT} | [1-9]{DIGIT} | 1{DIGIT}{{2}} | 2[0-4]{DIGIT} | 25[0-5])"
+"""A definition of numbers between 1-255.
 
-#   dec-octet     = DIGIT                 ; 0-9
-#                 / %x31-39 DIGIT         ; 10-99
-#                 / "1" 2DIGIT            ; 100-199
-#                 / "2" %x30-34 DIGIT     ; 200-249
-#                 / "25" %x30-35          ; 250-255
-dec_octet = rf"""(?: {DIGIT} |
-                    [1-9] {DIGIT} |
-                    1 {DIGIT}{{2}} |
-                    2 [0-4] {DIGIT} |
-                    25 [0-5]
-                )
+.. code-block::
+
+    dec-octet = DIGIT ; 0-9
+                / %x31-39 DIGIT         ; 10-99
+                / "1" 2DIGIT            ; 100-199
+                / "2" %x30-34 DIGIT     ; 200-249
+                / "25" %x30-35          ; 250-255
 """
 
 #  IPv4address   = dec-octet "." dec-octet "." dec-octet "." dec-octet
-IPv4address = rf"{dec_octet} \. {dec_octet} \. {dec_octet} \. {dec_octet}"
+IPv4address = rf"{dec_octet}\.{dec_octet}\.{dec_octet}\.{dec_octet}"
 
 #  h16           = 1*4HEXDIG
 h16 = rf"(?: {HEXDIG} ){{1,4}}"
@@ -185,12 +193,12 @@ path_empty = r""
 #                 / path-rootless   ; begins with a segment
 #                 / path-empty      ; zero characters
 path = rf"""(?:
-               {path_abempty} |
-               {path_absolute} |
-               {path_noscheme} |
-               {path_rootless} |
-               {path_empty}
-            )
+   {path_abempty} |
+   {path_absolute} |
+   {path_noscheme} |
+   {path_rootless} |
+   {path_empty}
+)
 """
 
 # -----------------------------------------------------------------------------
@@ -222,18 +230,15 @@ fragment = rf"(?P<fragment> (?: {pchar} | / | \? )* )"
 #                 / path-rootless
 #                 / path-empty
 hier_part = rf"""(?P<hier_part>
-                    (?: // {authority} {path_abempty} ) |
-                    {path_absolute} |
-                    {path_rootless} |
-                    {path_empty}
-                )
+    (?: // {authority} {path_abempty} ) |
+    {path_absolute} |
+    {path_rootless} |
+    {path_empty}
+)
 """
 
 #   URI           = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
-URI = rf"""(?P<uri>
-                {scheme} : {hier_part} (?: \? {query} )? (?: \# {fragment} )?
-            )
-"""
+URI = rf"(?P<uri> {scheme} : {hier_part} (?: \? {query} )? (?: \# {fragment} )?)"
 
 # -----------------------------------------------------------------------------
 #
@@ -246,19 +251,20 @@ URI = rf"""(?P<uri>
 #                 / path-noscheme
 #                 / path-empty
 #   relative-ref  = relative-part [ "?" query ] [ "#" fragment ]
-relative_ref = rf"""(?P<relative_ref>
-                        (?:
-                            (?: //
-                                {authority}
-                                (?P<path_abempty> {path_abempty} )
-                            ) |
-                            (?P<path_absolute> {path_absolute} ) |
-                            (?P<path_noscheme> {path_noscheme} ) |
-                            (?P<path_empty> {path_empty} )
-                         )
-                         (?: \? {query} )?
-                         (?: \# {fragment} )?
-                     )
+relative_ref = rf"""\
+(?P<relative_ref>
+    (?:
+        (?: //
+        {authority}
+        (?P<path_abempty> {path_abempty} )
+        ) |
+        (?P<path_absolute> {path_absolute} ) |
+        (?P<path_noscheme> {path_noscheme} ) |
+        (?P<path_empty> {path_empty} )
+        )
+    (?: \? {query} )?
+    (?: \# {fragment} )?
+)
 """
 
 # -----------------------------------------------------------------------------
@@ -274,9 +280,16 @@ relative_ref = rf"""(?P<relative_ref>
 # NCNameChar	::=	Letter | Digit | '.' | '-' | '_'
 NCNameChar = rf"(?: {ALPHA} | {DIGIT} | \. | \- | _ )"
 
-# prefix      :=   NCName
-# NCName  :=   (Letter | '_') (NCNameChar)*
 prefix = rf"(?: {ALPHA} | _ ) (?: {NCNameChar} )*"
+"""The definition of a prefix.
+
+.. seealso:: https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName
+
+.. code-block::
+
+    prefix := NCName
+    NCName := (Letter | '_') (NCNameChar)*
+"""
 
 # reference   :=   irelative-ref (as defined in IRI)
 # !! IMPORTANT NOTE !!
@@ -284,8 +297,7 @@ prefix = rf"(?: {ALPHA} | _ ) (?: {NCNameChar} )*"
 # relative-refs as defined in URI
 # curie       :=   [ [ prefix ] ':' ] reference
 # reference   :=   relative-ref (as defined in URI)
-CURIE = rf"""(?P<CURIE> (?: (?P<prefix> {prefix} )? : )? {relative_ref})
-"""
+CURIE = rf"(?P<CURIE> (?: (?P<prefix> {prefix} )? : )? {relative_ref})"
 
 PREFIX_RE = re.compile(f"^{prefix}$", re.VERBOSE)
 CURIE_RE = re.compile(f"^{CURIE}$", re.VERBOSE)

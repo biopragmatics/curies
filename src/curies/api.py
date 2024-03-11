@@ -2359,6 +2359,8 @@ def curie_is_w3c(s: str) -> bool:
     >>> curie_is_w3c("")
     False
     """
+    if "[" in s or "]" in s:
+        return False
     return bool(CURIE_RE.match(s))
 
 

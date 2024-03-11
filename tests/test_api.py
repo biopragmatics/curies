@@ -808,6 +808,18 @@ class TestConverter(unittest.TestCase):
         converter_2 = Converter.from_rdflib(graph.namespace_manager)
         self._assert_convert(converter_2)
 
+    def test_expand_w3c_invalid(self):
+        """Test that expanding a non-w3c-conformant CURIE can lead to errors."""
+        converter = Converter.from_prefix_map(
+            {
+                "smiles": "https://bioregistry.io/smiles:",
+            }
+        )
+        curie = "smiles:CC(=O)NC([H])(C)C(=O)O"
+        self.assertIsNotNone(converter.expand(curie))
+        with self.assertRaises(ValueError):
+            converter.expand(curie, require_w3c_spec=True)
+
     def test_expand_all(self):
         """Test expand all."""
         priority_prefix_map = {
