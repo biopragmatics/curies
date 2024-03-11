@@ -108,7 +108,7 @@ IP_literal = rf"\[ (?: {IPv6address} | {IPvFuture} ) \]"
 #   reg-name      = *( unreserved / pct-encoded / sub-delims )
 reg_name = rf"(?: {unreserved} | {pct_encoded} | {sub_delims} )*"
 
-### required for Path
+# required for Path
 
 #   segment       = *pchar
 segment = rf"{pchar}*"

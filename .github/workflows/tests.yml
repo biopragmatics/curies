@@ -43,7 +43,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          pip install tox
+          pip install tox tox-uv
           sudo apt-get install graphviz
       - name: Check RST conformity with doc8
         run: tox run -e doc8
