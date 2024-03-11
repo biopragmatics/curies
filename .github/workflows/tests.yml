@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install tox
+        run: pip install tox tox-uv
       - name: Check manifest
         run: tox run -e manifest
       - name: Check code quality with flake8
@@ -66,7 +66,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: pip install tox
+        run: pip install tox tox-uv
       - name: Test with pytest and generate coverage file
         run:
           tox run -e py-pydantic${{ matrix.pydantic }}
