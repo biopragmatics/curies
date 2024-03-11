@@ -24,6 +24,7 @@ from curies.api import (
     Reference,
     ReferenceTuple,
     URIStandardizationError,
+    W3CValidationError,
     chain,
     upgrade_prefix_map,
 )
@@ -817,7 +818,7 @@ class TestConverter(unittest.TestCase):
         )
         curie = "smiles:CC(=O)NC([H])(C)C(=O)O"
         self.assertIsNotNone(converter.expand(curie))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(W3CValidationError):
             converter.expand(curie, w3c_validation=True)
 
     def test_expand_all(self):

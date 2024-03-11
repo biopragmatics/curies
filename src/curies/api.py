@@ -48,9 +48,11 @@ __all__ = [
     "Reference",
     "ReferenceTuple",
     "Record",
+    # Exceptions
     "DuplicateValueError",
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
+    "W3CValidationError",
     # Utilities
     "chain",
     "upgrade_prefix_map",
@@ -377,6 +379,10 @@ class URIStandardizationError(StandardizationError):
     """An error raise when a URI can't be standardized."""
 
 
+class W3CValidationError(ValueError):
+    """An error when W3C validation fails."""
+
+
 def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]:
     return [
         DuplicateSummary(record_1, record_2, uri_prefix)
@@ -504,7 +510,7 @@ class Converter:
 
         :raises DuplicatePrefixes: if any records share any synonyms
         :raises DuplicateURIPrefixes: if any records share any URI prefixes
-        :raises ValueError: If w3c validation is on and there are non-conformant records
+        :raises W3CValidationError: If w3c validation is on and there are non-conformant records
         """
         if strict:
             duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
@@ -517,7 +523,7 @@ class Converter:
         if w3c_validation:
             broken = [record for record in records if not record.w3c_validate()]
             if broken:
-                raise ValueError(f"Records not conforming to W3C: {broken}")
+                raise W3CValidationError(f"Records not conforming to W3C: {broken}")
 
         self.delimiter = delimiter
         self.records = sorted(records, key=lambda r: r.prefix)
@@ -1365,7 +1371,7 @@ class Converter:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:
             If strict is true and the CURIE can't be expanded
-        :raises ValueError:
+        :raises W3CValidationError:
             If W3C validation is turned on and the CURIE is not valid under the CURIE specification
 
         >>> from curies import Converter
@@ -1388,7 +1394,7 @@ class Converter:
             instead of ``OBO:GO_0032571``.
         """
         if w3c_validation and not curie_is_w3c(curie):
-            raise ValueError(f"CURIE is not valid under W3C spec: {curie}")
+            raise W3CValidationError(f"CURIE is not valid under W3C spec: {curie}")
         prefix, identifier = self.parse_curie(curie)
         rv = self.expand_pair(prefix, identifier)
         if rv:
