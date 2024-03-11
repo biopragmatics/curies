@@ -500,12 +500,12 @@ class Converter:
             `W3C CURIE Syntax 1.0 <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
             This includes the following:
 
-              1. Checking CURIE prefixes and CURIE prefix synonyms against the
-                 W3C definition for `NCName <https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName>`_
+            1. Checking CURIE prefixes and CURIE prefix synonyms against the
+               W3C definition for `NCName <https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName>`_
 
         :raises DuplicatePrefixes: if any records share any synonyms
         :raises DuplicateURIPrefixes: if any records share any URI prefixes
-        :rasies ValueError: If w3c validation is on and there are non-conformant records
+        :raises ValueError: If w3c validation is on and there are non-conformant records
         """
         if strict:
             duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
