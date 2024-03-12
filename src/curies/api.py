@@ -2363,7 +2363,6 @@ def curie_is_w3c(s: str) -> bool:
     :param s: A string to check if it is a valid CURIE under the W3C specification.
     :return: True if the string is a valid CURIE under the W3C specification.
 
-
     If no prefix is given, the host language chooses how to assign a default
     prefix.
 
