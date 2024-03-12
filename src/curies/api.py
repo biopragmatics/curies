@@ -37,7 +37,7 @@ from pydantic import BaseModel, Field
 from pytrie import StringTrie
 
 from ._pydantic_compat import field_validator, get_field_validator_values
-from .w3c import CURIE_PREFIX_RE, CURIE_RE, URI_PREFIX_RE
+from .w3c import CURIE_PREFIX_RE, CURIE_RE
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -1224,10 +1224,12 @@ class Converter:
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
 
-    def is_curie(self, s: str) -> bool:
+    def is_curie(self, s: str, *, w3c_validation: bool = False) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
 
         :param s: A string that might be a CURIE
+        :param w3c_validation: If true, requires CURIEs to be valid against the
+            `W3C CURIE specification <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
         :returns: If the string can be parsed as a CURIE by this converter.
             Note that some valid CURIEs, when passed to this function, will
             result in False if their prefixes are not registered with this
@@ -1248,7 +1250,7 @@ class Converter:
         False
         """
         try:
-            return self.expand(s) is not None
+            return self.expand(s, w3c_validation=w3c_validation) is not None
         except ValueError:
             return False
 
@@ -1334,19 +1336,34 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def expand(
-        self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False
+        self,
+        curie: str,
+        *,
+        strict: Literal[True] = True,
+        passthrough: bool = ...,
+        w3c_validation: bool = ...,
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
-        self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
+        self,
+        curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[True] = True,
+        w3c_validation: bool = ...,
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
-        self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
+        self,
+        curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[False] = False,
+        w3c_validation: bool = ...,
     ) -> Optional[str]: ...
 
     def expand(

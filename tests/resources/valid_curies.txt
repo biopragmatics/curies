@@ -3,6 +3,7 @@ pfx:abc
 pfx:
 abc
 :abc
+_:abc
 pfx:/abc
 pfx:/
 :/

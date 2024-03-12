@@ -23,10 +23,10 @@ CURIE_PREFIX_RE = re.compile(f"^{_CURIE_PREFIX_RE}$")
 #: Borrowed from https://github.com/linkml/prefixmaps/blob/82bfdbc/src/prefixmaps/datamodel/context.py#L26C1-L26C60
 #: Still needs adapting to see if there's an actual standard to match this to,
 #: or if this is an opinionated implementation
-URI_PREFIX_RE = re.compile(r"http[s]?://[\w\.\-\/]+[#/_:]$")
+URI_PREFIX_RE = re.compile(r"^http[s]?://[\w\.\-\/]+[#/_:]$")
 
 #: Adapted from https://gist.github.com/niklasl/2506955
 _IDENTIFIER_RE = r"(/[^\s/][^\s]*|[^\s/][^\s]*|[^\s]?)"
 
-CURIE_PATTERN = rf"({_CURIE_PREFIX_RE}?:)?{_IDENTIFIER_RE}"
+CURIE_PATTERN = rf"^({_CURIE_PREFIX_RE}?:)?{_IDENTIFIER_RE}$"
 CURIE_RE = re.compile(CURIE_PATTERN)
