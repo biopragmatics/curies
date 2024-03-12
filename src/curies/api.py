@@ -1144,16 +1144,27 @@ class Converter:
         :raises CompressionError:
             If strict is set to true and the URI can't be compressed
 
-
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
         ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
         ...    "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...    "OBO": "http://purl.obolibrary.org/obo/",
         ... })
-        >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
-        'CHEBI:138488'
+        >>> converter.compress("http://purl.obolibrary.org/obo/GO_0032571")
+        'GO:0032571'
+        >>> converter.compress("http://purl.obolibrary.org/obo/go.owl")
+        'OBO:go.owl'
         >>> converter.compress("http://example.org/missing:0000000")
+
+        .. note::
+
+            If there are partially overlapping *URI prefixes* in this converter
+            (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest
+            URI prefix will always be matched. For example, parsing
+            ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
+            instead of ``OBO:GO_0032571``.
         """
         prefix, identifier = self.parse_uri(uri)
         if prefix and identifier:
@@ -1340,15 +1351,6 @@ class Converter:
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
-
-        .. note::
-
-            If there are partially overlapping *URI prefixes* in this converter
-            (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
-            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest
-            URI prefix will always be matched. For example, parsing
-            ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
-            instead of ``OBO:GO_0032571``.
         """
         prefix, identifier = self.parse_curie(curie)
         rv = self.expand_pair(prefix, identifier)
