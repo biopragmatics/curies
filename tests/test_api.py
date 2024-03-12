@@ -68,8 +68,8 @@ class TestRecord(unittest.TestCase):
             r1 = Record(prefix=prefix, uri_prefix=uri_prefix)
             r2 = Record(prefix="prefix", prefix_synonyms=[prefix], uri_prefix=uri_prefix)
             with self.subTest(prefix=prefix):
-                self.assertEqual(value, r1.w3c_validate())
-                self.assertEqual(value, r2.w3c_validate())
+                self.assertEqual(value, r1._w3c_validate())
+                self.assertEqual(value, r2._w3c_validate())
 
 
 class TestAddRecord(unittest.TestCase):

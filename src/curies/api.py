@@ -308,7 +308,7 @@ class Record(BaseModel):  # type:ignore
             ",".join(sorted(self.uri_prefix_synonyms)),
         )
 
-    def w3c_validate(self) -> bool:
+    def _w3c_validate(self) -> bool:
         """Check if all prefixes in this record are w3c compliant."""
         all_curie_prefixes_valid = all(curie_prefix_is_w3c(prefix) for prefix in self._all_prefixes)
         # TODO extend to check URI prefixes?
@@ -521,7 +521,7 @@ class Converter:
                 raise DuplicatePrefixes(duplicate_prefixes)
 
         if w3c_validation:
-            broken = [record for record in records if not record.w3c_validate()]
+            broken = [record for record in records if not record._w3c_validate()]
             if broken:
                 msg = "\n".join(f"  - {record!r}" for record in records)
                 raise W3CValidationError(f"Records not conforming to W3C:\n\n{msg}")
