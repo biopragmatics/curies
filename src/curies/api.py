@@ -1178,16 +1178,27 @@ class Converter:
         :raises CompressionError:
             If strict is set to true and the URI can't be compressed
 
-
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
         ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
         ...    "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...    "OBO": "http://purl.obolibrary.org/obo/",
         ... })
-        >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
-        'CHEBI:138488'
+        >>> converter.compress("http://purl.obolibrary.org/obo/GO_0032571")
+        'GO:0032571'
+        >>> converter.compress("http://purl.obolibrary.org/obo/go.owl")
+        'OBO:go.owl'
         >>> converter.compress("http://example.org/missing:0000000")
+
+        .. note::
+
+            If there are partially overlapping *URI prefixes* in this converter
+            (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest
+            URI prefix will always be matched. For example, parsing
+            ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
+            instead of ``OBO:GO_0032571``.
         """
         prefix, identifier = self.parse_uri(uri)
         if prefix and identifier:
@@ -1380,8 +1391,8 @@ class Converter:
             A string representing a compact URI (CURIE)
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
-            Defaults to false. If your strings can either be a CURIE _or_ a URI, consider using
-            :meth:`Converter.expand_ambiguous` instead.
+            Defaults to false. If your strings can either be a CURIE or a URI, consider using
+            :meth:`Converter.expand_or_standardize` instead.
         :param w3c_validation: If true, requires CURIEs to be valid against the
             `W3C CURIE specification <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
         :returns:
@@ -1400,15 +1411,6 @@ class Converter:
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
-
-        .. note::
-
-            If there are partially overlapping *URI prefixes* in this converter
-            (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
-            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest
-            URI prefix will always be matched. For example, parsing
-            ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
-            instead of ``OBO:GO_0032571``.
         """
         if w3c_validation and not curie_is_w3c(curie):
             raise W3CValidationError(f"CURIE is not valid under W3C spec: {curie}")
