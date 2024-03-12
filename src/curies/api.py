@@ -1035,7 +1035,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def compress_or_standardize(
-        self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = False
+        self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = ...
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
@@ -1114,7 +1114,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def compress(
-        self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False
+        self, uri: str, *, strict: Literal[True] = True, passthrough: bool = ...
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
@@ -1232,7 +1232,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def expand_or_standardize(
-        self, curie_or_uri: str, *, strict: Literal[True] = True, passthrough: bool = False
+        self, curie_or_uri: str, *, strict: Literal[True] = True, passthrough: bool = ...
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
@@ -1311,7 +1311,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def expand(
-        self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False
+        self, curie: str, *, strict: Literal[True] = True, passthrough: bool = ...
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
