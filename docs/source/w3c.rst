@@ -29,6 +29,63 @@ A first step towards accomplishing this was implemented in https://github.com/bi
 by adding a ``w3c_validation`` flag to both the initialization of a :mod:`curies.Converter` as well as in the
 :meth:`curies.Converter.expand` function.
 
+Here's an example of using W3C validation during expansion:
+
+.. code-block::
+
+    import curies
+
+    converter = curies.Converter.from_prefix_map({
+        "smiles": "https://bioregistry.io/smiles:",
+    })
+
+    >>> converter.expand("smiles:CC(=O)NC([H])(C)C(=O)O")
+    https://bioregistry.io/smiles:CC(=O)NC([H])(C)C(=O)O
+
+    >>> converter.expand("smiles:CC(=O)NC([H])(C)C(=O)O", w3c_validation=True)
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "/Users/cthoyt/dev/curies/src/curies/api.py", line 1362, in expand
+        raise W3CValidationError(f"CURIE is not valid under W3C spec: {curie}")
+    W3CValidationError: CURIE is not valid under W3C spec: smiles:CC(=O)NC([H])(C)C(=O)O
+
+This can also be used to extend :meth:`curies.Converter.is_curie`
+
+.. code-block::
+
+    import curies
+
+    converter = curies.Converter.from_prefix_map({
+        "smiles": "https://bioregistry.io/smiles:",
+    })
+
+    >>> converter.is_curie("smiles:CC(=O)NC([H])(C)C(=O)O")
+    True
+    >>> converter.is_curie("smiles:CC(=O)NC([H])(C)C(=O)O", w3c_validation=True)
+    False
+
+Finally, this can be used during instantiation of a converter:
+
+.. code-block::
+
+    import curies
+
+    >>> curies.Converter.from_prefix_map(
+    ...     {"4dn.biosource": "https://data.4dnucleome.org/biosources/"},
+    ...     w3c_validation=True,
+    ... )
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "/Users/cthoyt/dev/curies/src/curies/api.py", line 816, in from_prefix_map
+        return cls(
+               ^^^^
+      File "/Users/cthoyt/dev/curies/src/curies/api.py", line 527, in __init__
+        raise W3CValidationError(f"Records not conforming to W3C:\n\n{msg}")
+    curies.api.W3CValidationError: Records not conforming to W3C:
+
+      - Record(prefix='4dn.biosource', uri_prefix='https://data.4dnucleome.org/biosources/', prefix_synonyms=[], uri_prefix_synonyms=[], pattern=None)
+
+
 .. seealso::
 
     1. Discussion on the ``curies`` issue tracker about handling CURIEs that include e.g. square brackets

@@ -523,7 +523,8 @@ class Converter:
         if w3c_validation:
             broken = [record for record in records if not record.w3c_validate()]
             if broken:
-                raise W3CValidationError(f"Records not conforming to W3C: {broken}")
+                msg = "\n".join(f"  - {record!r}" for record in records)
+                raise W3CValidationError(f"Records not conforming to W3C:\n\n{msg}")
 
         self.delimiter = delimiter
         self.records = sorted(records, key=lambda r: r.prefix)
