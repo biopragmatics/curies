@@ -6,3 +6,6 @@ abc
 pfx:/abc
 pfx:/
 :/
+bioregistry:bioregistry
+GO:0000012
+go:0123456

@@ -37,7 +37,7 @@ from pydantic import BaseModel, Field
 from pytrie import StringTrie
 
 from ._pydantic_compat import field_validator, get_field_validator_values
-from .w3c import CURIE_RE, PREFIX_RE
+from .w3c import CURIE_PREFIX_RE, CURIE_RE, URI_PREFIX_RE
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -2383,4 +2383,4 @@ def curie_is_w3c(s: str) -> bool:
 
 def curie_prefix_is_w3c(s: str) -> bool:
     """Return if the CURIE prefix is valid under the W3C specification."""
-    return bool(PREFIX_RE.match(s))
+    return bool(CURIE_PREFIX_RE.match(s))
