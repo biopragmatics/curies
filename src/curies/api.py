@@ -62,6 +62,7 @@ __all__ = [
     "write_extended_prefix_map",
     "write_jsonld_context",
     "write_shacl",
+    "write_tsv",
 ]
 
 logger = logging.getLogger(__name__)
@@ -2259,6 +2260,40 @@ def write_shacl(
                     _get_shacl_line(prefix_synonym, record.uri_prefix, pattern=record.pattern)
                 )
     path.write_text(text.format(entries=",\n".join(lines)))
+
+
+def write_tsv(
+    converter: Converter, path: Union[str, Path], *, header: Tuple[str, str] = ("prefix", "base")
+) -> None:
+    """Write a simple prefix map CSV file.
+
+    :param converter: The converter to export
+    :param path: The path to a file to write to
+    :param header: The header used in the file, with the first element being the label
+        for CURIE prefixes and the second element being the label for URI prefixes
+
+    .. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_tsv(converter, "example_context.tsv")
+
+    .. code-block:: csv
+
+        prefix\tbase
+        CHEBI\thttp://purl.obolibrary.org/obo/CHEBI_
+    """
+    import csv
+
+    path = _ensure_path(path)
+
+    with path.open("w") as csvfile:
+        writer = csv.writer(csvfile, delimiter="\t")
+        writer.writerow(header)
+        for record in converter.records:
+            writer.writerow((record.prefix, record.uri_prefix))
 
 
 def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None) -> str:
