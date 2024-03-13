@@ -2280,7 +2280,7 @@ def write_tsv(
         })
         curies.write_tsv(converter, "example_context.tsv")
 
-    .. code-block:: csv
+    .. code-block::
 
         prefix  base
         CHEBI   http://purl.obolibrary.org/obo/CHEBI_
