@@ -428,6 +428,28 @@ a context to a file:
 - :func:`curies.write_shacl`
 - :func:`curies.write_tsv`
 
+Here's a self-contained example on how this works:
+
+.. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_shacl(converter, "example_shacl.ttl")
+
+which outputs the following file:
+
+.. code-block::
+
+    @prefix sh: <http://www.w3.org/ns/shacl#> .
+    @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+    [
+      sh:declare
+        [ sh:prefix "CHEBI" ; sh:namespace "http://purl.obolibrary.org/obo/CHEBI_"^^xsd:anyURI  ]
+    ] .
+
 Faultless handling of overlapping URI prefixes
 ----------------------------------------------
 Most implementations of URI parsing iterate through the CURIE prefix/URI prefix pairs
