@@ -37,6 +37,7 @@ from pydantic import BaseModel, Field
 from pytrie import StringTrie
 
 from ._pydantic_compat import field_validator, get_field_validator_values
+from .w3c import CURIE_PREFIX_RE, CURIE_RE
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -47,9 +48,11 @@ __all__ = [
     "Reference",
     "ReferenceTuple",
     "Record",
+    # Exceptions
     "DuplicateValueError",
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
+    "W3CValidationError",
     # Utilities
     "chain",
     "upgrade_prefix_map",
@@ -306,6 +309,12 @@ class Record(BaseModel):  # type:ignore
             ",".join(sorted(self.uri_prefix_synonyms)),
         )
 
+    def _w3c_validate(self) -> bool:
+        """Check if all prefixes in this record are w3c compliant."""
+        all_curie_prefixes_valid = all(curie_prefix_is_w3c(prefix) for prefix in self._all_prefixes)
+        # TODO extend to check URI prefixes?
+        return all_curie_prefixes_valid
+
 
 class DuplicateSummary(NamedTuple):
     """A triple representing two records that are duplicated, either based on a CURIE or URI prefix."""
@@ -369,6 +378,10 @@ class CURIEStandardizationError(StandardizationError):
 
 class URIStandardizationError(StandardizationError):
     """An error raise when a URI can't be standardized."""
+
+
+class W3CValidationError(ValueError):
+    """An error when W3C validation fails."""
 
 
 def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]:
@@ -472,7 +485,14 @@ class Converter:
     #: .. warning:: patterns are an experimental feature
     pattern_map: Dict[str, str]
 
-    def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True) -> None:
+    def __init__(
+        self,
+        records: List[Record],
+        *,
+        delimiter: str = ":",
+        strict: bool = True,
+        w3c_validation: bool = False,
+    ) -> None:
         """Instantiate a converter.
 
         :param records:
@@ -481,8 +501,17 @@ class Converter:
             If true, raises issues on duplicate URI prefixes
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
+        :param w3c_validation:
+            If true, validate all records against the
+            `W3C CURIE Syntax 1.0 <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
+            This includes the following:
+
+            1. Checking CURIE prefixes and CURIE prefix synonyms against the
+               W3C definition for `NCName <https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName>`_
+
         :raises DuplicatePrefixes: if any records share any synonyms
         :raises DuplicateURIPrefixes: if any records share any URI prefixes
+        :raises W3CValidationError: If w3c validation is on and there are non-conformant records
         """
         if strict:
             duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
@@ -491,6 +520,12 @@ class Converter:
             duplicate_prefixes = _get_duplicate_prefixes(records)
             if duplicate_prefixes:
                 raise DuplicatePrefixes(duplicate_prefixes)
+
+        if w3c_validation:
+            broken = [record for record in records if not record._w3c_validate()]
+            if broken:
+                msg = "\n".join(f"  - {record!r}" for record in records)
+                raise W3CValidationError(f"Records not conforming to W3C:\n\n{msg}")
 
         self.delimiter = delimiter
         self.records = sorted(records, key=lambda r: r.prefix)
@@ -1202,10 +1237,12 @@ class Converter:
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
 
-    def is_curie(self, s: str) -> bool:
+    def is_curie(self, s: str, *, w3c_validation: bool = False) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
 
         :param s: A string that might be a CURIE
+        :param w3c_validation: If true, requires CURIEs to be valid against the
+            `W3C CURIE specification <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
         :returns: If the string can be parsed as a CURIE by this converter.
             Note that some valid CURIEs, when passed to this function, will
             result in False if their prefixes are not registered with this
@@ -1226,7 +1263,7 @@ class Converter:
         False
         """
         try:
-            return self.expand(s) is not None
+            return self.expand(s, w3c_validation=w3c_validation) is not None
         except ValueError:
             return False
 
@@ -1312,23 +1349,43 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def expand(
-        self, curie: str, *, strict: Literal[True] = True, passthrough: bool = ...
+        self,
+        curie: str,
+        *,
+        strict: Literal[True] = True,
+        passthrough: bool = ...,
+        w3c_validation: bool = ...,
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
-        self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
+        self,
+        curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[True] = True,
+        w3c_validation: bool = ...,
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
-        self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
+        self,
+        curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[False] = False,
+        w3c_validation: bool = ...,
     ) -> Optional[str]: ...
 
     def expand(
-        self, curie: str, *, strict: bool = False, passthrough: bool = False
+        self,
+        curie: str,
+        *,
+        strict: bool = False,
+        passthrough: bool = False,
+        w3c_validation: bool = False,
     ) -> Optional[str]:
         """Expand a CURIE to a URI, if possible.
 
@@ -1336,12 +1393,16 @@ class Converter:
             A string representing a compact URI (CURIE)
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
-            Defaults to false. If your strings can either be a CURIE _or_ a URI, consider using
+            Defaults to false. If your strings can either be a CURIE or a URI, consider using
             :meth:`Converter.expand_or_standardize` instead.
+        :param w3c_validation: If true, requires CURIEs to be valid against the
+            `W3C CURIE specification <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:
             If strict is true and the CURIE can't be expanded
+        :raises W3CValidationError:
+            If W3C validation is turned on and the CURIE is not valid under the CURIE specification
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
@@ -1353,6 +1414,8 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
         """
+        if w3c_validation and not curie_is_w3c(curie):
+            raise W3CValidationError(f"CURIE is not valid under W3C spec: {curie}")
         prefix, identifier = self.parse_curie(curie)
         rv = self.expand_pair(prefix, identifier)
         if rv:
@@ -2403,3 +2466,48 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
         Record(prefix=prefix, prefix_synonyms=prefix_synonyms, uri_prefix=uri_prefix)
         for uri_prefix, (prefix, *prefix_synonyms) in sorted(priority_prefix_map.items())
     ]
+
+
+def curie_is_w3c(s: str) -> bool:
+    """Return if the CURIE is valid under the W3C specification.
+
+    :param s: A string to check if it is a valid CURIE under the W3C specification.
+    :return: True if the string is a valid CURIE under the W3C specification.
+
+    If no prefix is given, the host language chooses how to assign a default
+    prefix.
+
+    >>> curie_is_w3c(":test")
+    True
+
+    From the specification, regarding using an underscore as the prefix
+
+      The CURIE prefix '_' is reserved for use by languages that support RDF.
+      For this reason, the prefix '_' SHOULD be avoided by authors.
+
+    >>> curie_is_w3c("_:test")
+    True
+
+    This is invalid because a CURIE prefix isn't allowed to start with
+    a number. It has to start with either a letter, or an underscore.
+
+    >>> curie_is_w3c("4cdn:test")
+    False
+
+    Empty strings are explicitly noted as being invalid.
+
+    >>> curie_is_w3c("")
+    False
+    """
+    if "[" in s or "]" in s:
+        return False
+    if not s.strip():
+        return False
+    if s[0].isdigit():
+        return False  # TODO get that into the regex
+    return bool(CURIE_RE.match(s))
+
+
+def curie_prefix_is_w3c(s: str) -> bool:
+    """Return if the CURIE prefix is valid under the W3C specification."""
+    return bool(CURIE_PREFIX_RE.match(s))

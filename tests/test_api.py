@@ -24,6 +24,7 @@ from curies.api import (
     Reference,
     ReferenceTuple,
     URIStandardizationError,
+    W3CValidationError,
     chain,
     upgrade_prefix_map,
 )
@@ -39,6 +40,36 @@ from tests.constants import SLOW
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
 GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
+
+
+class TestRecord(unittest.TestCase):
+    """Tests for the record data structure."""
+
+    def test_w3c_prefix(self):
+        """Test CURIE prefix correctness."""
+        valid_prefixes = [
+            "go",
+            "GO",
+            "NCBITaxon",
+            "ncbi.taxon",
+            "ncbi_taxon",
+            "_",
+            "_secret",
+            "secret_",
+            "_secret",
+        ]
+        invalid_prefixes = ["", "4dn", "GO:GO:", "GO:"]
+        examples = [
+            *((prefix, True) for prefix in valid_prefixes),
+            *((prefix, False) for prefix in invalid_prefixes),
+        ]
+        for prefix, value in examples:
+            uri_prefix = f"https://example.com/{prefix}"
+            r1 = Record(prefix=prefix, uri_prefix=uri_prefix)
+            r2 = Record(prefix="prefix", prefix_synonyms=[prefix], uri_prefix=uri_prefix)
+            with self.subTest(prefix=prefix):
+                self.assertEqual(value, r1._w3c_validate())
+                self.assertEqual(value, r2._w3c_validate())
 
 
 class TestAddRecord(unittest.TestCase):
@@ -777,6 +808,18 @@ class TestConverter(unittest.TestCase):
 
         converter_2 = Converter.from_rdflib(graph.namespace_manager)
         self._assert_convert(converter_2)
+
+    def test_expand_w3c_invalid(self):
+        """Test that expanding a non-w3c-conformant CURIE can lead to errors."""
+        converter = Converter.from_prefix_map(
+            {
+                "smiles": "https://bioregistry.io/smiles:",
+            }
+        )
+        curie = "smiles:CC(=O)NC([H])(C)C(=O)O"
+        self.assertIsNotNone(converter.expand(curie))
+        with self.assertRaises(W3CValidationError):
+            converter.expand(curie, w3c_validation=True)
 
     def test_expand_all(self):
         """Test expand all."""
