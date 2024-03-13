@@ -2132,7 +2132,7 @@ def _ensure_path(path: Union[str, Path]) -> Path:
 
 def _get_jsonld_context(
     converter: Converter, *, expand: bool = False, include_synonyms: bool = False
-):
+) -> Dict:
     """Get a JSON-LD context based on the converter."""
     context = {}
     for record in converter.records:
@@ -2282,8 +2282,8 @@ def write_tsv(
 
     .. code-block:: csv
 
-        prefix\tbase
-        CHEBI\thttp://purl.obolibrary.org/obo/CHEBI_
+        prefix  base
+        CHEBI   http://purl.obolibrary.org/obo/CHEBI_
     """
     import csv
 

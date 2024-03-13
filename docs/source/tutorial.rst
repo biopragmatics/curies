@@ -418,6 +418,16 @@ project.
 >>> converter = curies.get_bioregistry_converter()
 >>> slim_converter = converter.get_subconverter(prefixes)
 
+Writing a Context
+-----------------
+After loading and modifying a context, there are several functions for writing
+a context to a file:
+
+- :func:`curies.write_extended_prefix_map`
+- :func:`curies.write_jsonld_context`
+- :func:`curies.write_shacl`
+- :func:`curies.write_tsv`
+
 Faultless handling of overlapping URI prefixes
 ----------------------------------------------
 Most implementations of URI parsing iterate through the CURIE prefix/URI prefix pairs

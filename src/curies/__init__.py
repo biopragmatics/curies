@@ -54,6 +54,7 @@ __all__ = [
     "write_extended_prefix_map",
     "write_jsonld_context",
     "write_shacl",
+    "write_tsv",
     # sources
     "get_obo_converter",
     "get_prefixcommons_converter",
