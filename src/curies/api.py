@@ -2129,15 +2129,10 @@ def _ensure_path(path: Union[str, Path]) -> Path:
     return path
 
 
-def write_jsonld_context(
-    converter: Converter,
-    path: Union[str, Path],
-    *,
-    include_synonyms: bool = False,
-    expand: bool = False,
-) -> None:
-    """Write the converter's bijective map as a JSON-LD context to a file."""
-    path = _ensure_path(path)
+def _get_jsonld_context(
+    converter: Converter, *, expand: bool = False, include_synonyms: bool = False
+):
+    """Get a JSON-LD context based on the converter."""
     context = {}
     for record in converter.records:
         term = _get_expanded_term(record, expand=expand)
@@ -2145,13 +2140,72 @@ def write_jsonld_context(
         if include_synonyms:
             for prefix_synonym in record.prefix_synonyms:
                 context[prefix_synonym] = term
+    return {"@context": context}
+
+
+def write_jsonld_context(
+    converter: Converter,
+    path: Union[str, Path],
+    *,
+    include_synonyms: bool = False,
+    expand: bool = False,
+) -> None:
+    """Write the converter's bijective map as a JSON-LD context to a file.
+
+    :param converter: The converter to export
+    :param path: The path to a file to write to
+    :param include_synonyms: If true, includes CURIE prefix synonyms.
+        URI prefix synonyms are not output.
+    :param expand: If False, output a dictionary-like ``@context`` element.
+        If True, use ``@prefix`` and ``@id`` as keys for the CURIE prefix
+        and URI prefix, respectively, to maximize compatibility.
+
+    The following example shows writing a JSON-LD context:
+
+    .. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_jsonld_context(converter, "example_context.json")
+
+    .. code-block:: json
+
+        {
+          "@context": {
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"
+          }
+        }
+
+    Because some implementations of JSON-LD do not like URI prefixes that end
+    with an underscore ``_``, we can use the ``expand`` keyword to turn on more
+    verbose JSON-LD context output that contains explicit ``@prefix`` and
+    ``@id`` annotations
+
+    .. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_jsonld_context(converter, "example_context.json", expand=True)
+
+    .. code-block:: json
+
+        {
+          "@context": {
+            "CHEBI": {
+              "@id": "http://purl.obolibrary.org/obo/CHEBI_",
+              "@prefix": true
+            }
+          }
+        }
+    """
+    path = _ensure_path(path)
+    obj = _get_jsonld_context(converter, include_synonyms=include_synonyms, expand=expand)
     with path.open("w") as file:
-        json.dump(
-            fp=file,
-            indent=4,
-            sort_keys=True,
-            obj={"@context": context},
-        )
+        json.dump(obj, file, indent=4, sort_keys=True)
 
 
 def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, Dict[str, Any]]:
