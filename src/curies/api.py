@@ -2238,6 +2238,24 @@ def write_shacl(
         URI prefix synonyms are not output.
 
     .. seealso:: https://www.w3.org/TR/shacl/#sparql-prefixes
+
+    .. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_shacl(converter, "example_shacl.ttl")
+
+    .. code-block::
+
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+        [
+          sh:declare
+            [ sh:prefix "CHEBI" ; sh:namespace "http://purl.obolibrary.org/obo/CHEBI_"^^xsd:anyURI  ]
+        ] .
     """
     text = dedent(
         """\
@@ -2269,8 +2287,9 @@ def write_tsv(
 
     :param converter: The converter to export
     :param path: The path to a file to write to
-    :param header: The header used in the file, with the first element being the label
-        for CURIE prefixes and the second element being the label for URI prefixes
+    :param header: A 2-tuple of strings representing the header used in the file,
+        where the first element is the label for CURIE prefixes and the second
+        element is the label for URI prefixes
 
     .. code-block:: python
 
