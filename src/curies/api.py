@@ -36,7 +36,9 @@ import requests
 from pydantic import BaseModel, Field
 from pytrie import StringTrie
 
-from ._pydantic_compat import field_validator, get_field_validator_values
+from ._pydantic_compat import field_validator, get_field_validator_values, PYDANTIC_V1
+if not PYDANTIC_V1:
+    from pydantic import ConfigDict
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -201,10 +203,13 @@ class Reference(BaseModel):  # type:ignore
         ..., description="The local unique identifier used in a compact URI (CURIE)."
     )
 
-    class Config:
-        """Pydantic configuration for references."""
+    if PYDANTIC_V1:
+        class Config:
+            """Pydantic configuration for references."""
+            frozen = True
+    else:
+        model_config = ConfigDict(frozen=True)
 
-        frozen = True
 
     @property
     def curie(self) -> str:
