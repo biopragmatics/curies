@@ -21,10 +21,12 @@ from curies.api import (
     ExpansionError,
     PrefixStandardizationError,
     Record,
+    Records,
     Reference,
     ReferenceTuple,
     URIStandardizationError,
     chain,
+    upgrade_prefix_map,
 )
 from curies.sources import (
     BIOREGISTRY_CONTEXTS,
@@ -38,6 +40,16 @@ from tests.constants import SLOW
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
 GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
+
+
+class TestStruct(unittest.TestCase):
+    """Test the data structures."""
+
+    def test_records(self):
+        """Test a list of records."""
+        records = Records.parse_obj([{"prefix": "chebi", "uri_prefix": CHEBI_URI_PREFIX}])
+        converter = Converter(records=records)
+        self.assertEqual({"chebi"}, converter.get_prefixes())
 
 
 class TestAddRecord(unittest.TestCase):
@@ -65,6 +77,24 @@ class TestAddRecord(unittest.TestCase):
         self.converter.add_prefix("GO", GO_URI_PREFIX)
         with self.assertRaises(ValueError):
             self.converter.add_record(Record(prefix="GO", uri_prefix=CHEBI_URI_PREFIX))
+
+    def test_get_prefix_synonyms(self):
+        """Test getting prefix synonyms."""
+        self.assertEqual({self.prefix}, self.converter.get_prefixes())
+        self.assertEqual({self.prefix}, self.converter.get_prefixes(include_synonyms=False))
+        self.assertEqual(
+            {self.prefix, self.prefix_synonym},
+            self.converter.get_prefixes(include_synonyms=True),
+        )
+
+    def test_get_uri_prefix_synonyms(self):
+        """Test getting URI prefix synonyms."""
+        self.assertEqual({self.uri_prefix}, self.converter.get_uri_prefixes())
+        self.assertEqual({self.uri_prefix}, self.converter.get_uri_prefixes(include_synonyms=False))
+        self.assertEqual(
+            {self.uri_prefix, self.uri_prefix_synonym},
+            self.converter.get_uri_prefixes(include_synonyms=True),
+        )
 
     def test_extend_on_prefix_match(self):
         """Test adding a new prefix in merge mode."""
@@ -258,6 +288,9 @@ class TestConverter(unittest.TestCase):
         new_converter = self.converter.get_subconverter(["CHEBI"])
         self.assertEqual(1, len(new_converter.records))
         self.assertEqual({"CHEBI"}, new_converter.get_prefixes())
+        self.assertEqual(
+            {"http://purl.obolibrary.org/obo/CHEBI_"}, new_converter.get_uri_prefixes()
+        )
         self.assertEqual({"CHEBI"}, set(new_converter.bimap))
         self.assertEqual({"CHEBI"}, set(new_converter.prefix_map))
         self.assertEqual(
@@ -269,9 +302,27 @@ class TestConverter(unittest.TestCase):
         new_converter_2 = self.converter.get_subconverter(["NOPE"])
         self.assertEqual(0, len(new_converter_2.records))
 
+    def test_predicates(self):
+        """Add tests for predicates."""
+        self.assertFalse(self.converter.is_uri(""))
+        self.assertFalse(self.converter.is_uri("nope"))
+        self.assertFalse(self.converter.is_curie(""))
+        self.assertFalse(self.converter.is_curie("nope"))
+        self.assertFalse(self.converter.is_curie(":nope"))
+        self.assertFalse(self.converter.is_curie("nope:"))
+
     def test_convert(self):
         """Test compression."""
         self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())
+        self.assertEqual(
+            {
+                "http://purl.obolibrary.org/obo/CHEBI_",
+                "http://purl.obolibrary.org/obo/MONDO_",
+                "http://purl.obolibrary.org/obo/GO_",
+                "http://purl.obolibrary.org/obo/",
+            },
+            self.converter.get_uri_prefixes(),
+        )
         self._assert_convert(self.converter)
 
     def _assert_convert(self, converter: Converter):
@@ -284,6 +335,10 @@ class TestConverter(unittest.TestCase):
             ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
             ("OBO:unnamespaced", "http://purl.obolibrary.org/obo/unnamespaced"),
         ]:
+            self.assertTrue(converter.is_uri(uri))
+            self.assertTrue(converter.is_curie(curie))
+            self.assertFalse(converter.is_curie(uri))
+            self.assertFalse(converter.is_uri(curie))
             self.assertEqual(curie, converter.compress(uri))
             self.assertEqual(curie, converter.compress_strict(uri))
             self.assertEqual(uri, converter.expand(curie))
@@ -542,7 +597,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn("GO", c3.bimap)
 
     def test_combine_ci(self):
-        """Test combining case insensitive."""
+        """Test combining case-insensitive."""
         c1 = Converter.from_priority_prefix_map(
             {
                 "CHEBI": [
@@ -559,6 +614,8 @@ class TestConverter(unittest.TestCase):
         )
         converter = chain([c1, c2], case_sensitive=False)
         self.assertEqual({"CHEBI"}, converter.get_prefixes())
+        self.assertEqual({"CHEBI"}, converter.get_prefixes(include_synonyms=False))
+        self.assertEqual({"CHEBI", "chebi"}, converter.get_prefixes(include_synonyms=True))
         for url in [
             "http://purl.obolibrary.org/obo/CHEBI_138488",
             "http://identifiers.org/chebi/138488",
@@ -750,6 +807,92 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIsNone(converter.expand_all("NOPE:NOPE"))
 
+    def test_expand_ambiguous(self):
+        """Test expansion of URI or CURIEs."""
+        converter = Converter.from_extended_prefix_map(
+            [
+                Record(
+                    prefix="CHEBI",
+                    prefix_synonyms=["chebi"],
+                    uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                    uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+                ),
+            ]
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand_or_standardize("CHEBI:138488"),
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand_or_standardize("chebi:138488"),
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488"),
+        )
+        self.assertEqual(
+            "http://purl.obolibrary.org/obo/CHEBI_138488",
+            converter.expand_or_standardize("https://identifiers.org/chebi:138488"),
+        )
+
+        self.assertIsNone(converter.expand_or_standardize("missing:0000000"))
+        with self.assertRaises(ExpansionError):
+            converter.expand_or_standardize("missing:0000000", strict=True)
+        self.assertEqual(
+            "missing:0000000", converter.expand_or_standardize("missing:0000000", passthrough=True)
+        )
+
+        self.assertIsNone(converter.expand_or_standardize("https://example.com/missing:0000000"))
+        with self.assertRaises(ExpansionError):
+            converter.expand_or_standardize("https://example.com/missing:0000000", strict=True)
+        self.assertEqual(
+            "https://example.com/missing:0000000",
+            converter.expand_or_standardize(
+                "https://example.com/missing:0000000", passthrough=True
+            ),
+        )
+
+    def test_compress_ambiguous(self):
+        """Test compression of URI or CURIEs."""
+        converter = Converter.from_extended_prefix_map(
+            [
+                Record(
+                    prefix="CHEBI",
+                    prefix_synonyms=["chebi"],
+                    uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                    uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+                ),
+            ]
+        )
+        self.assertEqual("CHEBI:138488", converter.compress_or_standardize("CHEBI:138488"))
+        self.assertEqual("CHEBI:138488", converter.compress_or_standardize("chebi:138488"))
+        self.assertEqual(
+            "CHEBI:138488",
+            converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488"),
+        )
+        self.assertEqual(
+            "CHEBI:138488",
+            converter.compress_or_standardize("https://identifiers.org/chebi:138488"),
+        )
+
+        self.assertIsNone(converter.expand_or_standardize("missing:0000000"))
+        with self.assertRaises(ExpansionError):
+            converter.expand_or_standardize("missing:0000000", strict=True)
+        self.assertEqual(
+            "missing:0000000", converter.expand_or_standardize("missing:0000000", passthrough=True)
+        )
+
+        self.assertIsNone(converter.expand_or_standardize("https://example.com/missing:0000000"))
+        with self.assertRaises(ExpansionError):
+            converter.expand_or_standardize("https://example.com/missing:0000000", strict=True)
+        self.assertEqual(
+            "https://example.com/missing:0000000",
+            converter.expand_or_standardize(
+                "https://example.com/missing:0000000", passthrough=True
+            ),
+        )
+
 
 class TestVersion(unittest.TestCase):
     """Trivially test a version."""
@@ -761,3 +904,28 @@ class TestVersion(unittest.TestCase):
         """
         version = get_version()
         self.assertIsInstance(version, str)
+
+
+class TestUtils(unittest.TestCase):
+    """Test utility functions."""
+
+    def test_clean(self):
+        """Test clean."""
+        prefix_map = {
+            "b": "https://example.com/a/",
+            "a": "https://example.com/a/",
+            "c": "https://example.com/c/",
+        }
+        records = upgrade_prefix_map(prefix_map)
+        self.assertEqual(2, len(records))
+        a_record, c_record = records
+
+        self.assertEqual("a", a_record.prefix)
+        self.assertEqual(["b"], a_record.prefix_synonyms)
+        self.assertEqual("https://example.com/a/", a_record.uri_prefix)
+        self.assertEqual([], a_record.uri_prefix_synonyms)
+
+        self.assertEqual("c", c_record.prefix)
+        self.assertEqual([], c_record.prefix_synonyms)
+        self.assertEqual("https://example.com/c/", c_record.uri_prefix)
+        self.assertEqual([], c_record.uri_prefix_synonyms)

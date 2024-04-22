@@ -33,8 +33,13 @@ from typing import (
 )
 
 import requests
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from pytrie import StringTrie
+
+from ._pydantic_compat import PYDANTIC_V1, field_validator, get_field_validator_values
+
+if not PYDANTIC_V1:
+    from pydantic import ConfigDict
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -45,10 +50,14 @@ __all__ = [
     "Reference",
     "ReferenceTuple",
     "Record",
+    "Records",
     "DuplicateValueError",
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
+    # Utilities
     "chain",
+    "upgrade_prefix_map",
+    # Loaders
     "load_extended_prefix_map",
     "load_prefix_map",
     "load_jsonld_context",
@@ -57,6 +66,7 @@ __all__ = [
     "write_extended_prefix_map",
     "write_jsonld_context",
     "write_shacl",
+    "write_tsv",
 ]
 
 logger = logging.getLogger(__name__)
@@ -195,10 +205,15 @@ class Reference(BaseModel):  # type:ignore
         ..., description="The local unique identifier used in a compact URI (CURIE)."
     )
 
-    class Config:
-        """Pydantic configuration for references."""
+    if PYDANTIC_V1:
 
-        frozen = True
+        class Config:
+            """Pydantic configuration for references."""
+
+            frozen = True
+
+    else:
+        model_config = ConfigDict(frozen=True)
 
     @property
     def curie(self) -> str:
@@ -236,32 +251,41 @@ RecordKey = Tuple[str, str, str, str]
 
 
 class Record(BaseModel):  # type:ignore
-    """A record of some prefixes and their associated URI prefixes."""
+    """A record of some prefixes and their associated URI prefixes.
 
-    prefix: str = Field(..., description="The canonical prefix, used in the reverse prefix map")
-    uri_prefix: str = Field(
-        ..., description="The canonical URI prefix, used in the forward prefix map"
+    .. seealso:: https://github.com/cthoyt/curies/issues/70
+    """
+
+    prefix: str = Field(
+        ...,
+        title="CURIE prefix",
+        description="The canonical CURIE prefix, used in the reverse prefix map",
     )
-    prefix_synonyms: List[str] = Field(default_factory=list)
-    uri_prefix_synonyms: List[str] = Field(default_factory=list)
+    uri_prefix: str = Field(
+        ...,
+        title="URI prefix",
+        description="The canonical URI prefix, used in the forward prefix map",
+    )
+    prefix_synonyms: List[str] = Field(default_factory=list, title="CURIE prefix synonyms")
+    uri_prefix_synonyms: List[str] = Field(default_factory=list, title="URI prefix synonyms")
     pattern: Optional[str] = Field(
         default=None,
         description="The regular expression pattern for entries in this semantic space. "
         "Warning: this is an experimental feature.",
     )
 
-    @validator("prefix_synonyms")  # type:ignore
+    @field_validator("prefix_synonyms")  # type:ignore
     def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical prefix does not apper in the prefix synonym list."""
-        prefix = values["prefix"]
+        prefix = get_field_validator_values(values, "prefix")
         if prefix in v:
             raise ValueError(f"Duplicate of canonical prefix `{prefix}` in prefix synonyms")
         return v
 
-    @validator("uri_prefix_synonyms")  # type:ignore
+    @field_validator("uri_prefix_synonyms")  # type:ignore
     def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
-        uri_prefix = values["uri_prefix"]
+        uri_prefix = get_field_validator_values(values, "uri_prefix")
         if uri_prefix in v:
             raise ValueError(
                 f"Duplicate of canonical URI prefix `{uri_prefix}` in URI prefix synonyms"
@@ -285,6 +309,40 @@ class Record(BaseModel):  # type:ignore
             ",".join(sorted(self.prefix_synonyms)),
             ",".join(sorted(self.uri_prefix_synonyms)),
         )
+
+
+if PYDANTIC_V1:
+    # An explanation of RootModels in Pydantic V1 can be found on
+    # https://docs.pydantic.dev/1.10/usage/models/#custom-root-types
+
+    from pydantic import BaseModel
+
+    class Records(BaseModel):  # type:ignore
+        """A list of records."""
+
+        class Config:
+            """Configuration for the records."""
+
+            arbitrary_types_allowed = True
+
+        __root__: List[Record]
+
+        def __iter__(self) -> Iterable[Record]:
+            """Iterate over records."""
+            return cast(Iterable[Record], iter(self.__root__))
+
+else:
+    # An explanation of RootModels in Pydantic V2 can be found on
+    # https://docs.pydantic.dev/latest/concepts/models/#rootmodel-and-custom-root-types
+
+    from pydantic import RootModel
+
+    class Records(RootModel[List[Record]]):  # type:ignore
+        """A list of records."""
+
+        def __iter__(self) -> Iterable[Record]:
+            """Iterate over records."""
+            return cast(Iterable[Record], iter(self.root))
 
 
 class DuplicateSummary(NamedTuple):
@@ -520,7 +578,8 @@ class Converter:
         """Append a record to the converter."""
         matched = self._match_record(record, case_sensitive=case_sensitive)
         if len(matched) > 1:
-            raise ValueError(f"new record has duplicates: {matched}")
+            msg = "".join(f"\n  {m} -> {v}" for m, v in matched.items())
+            raise ValueError(f"new record has duplicates:{msg}")
         if len(matched) == 1:
             if not merge:
                 raise ValueError(f"new record already exists and merge=False: {matched}")
@@ -948,13 +1007,145 @@ class Converter:
         ]
         return cls(records, **kwargs)
 
-    def get_prefixes(self) -> Set[str]:
-        """Get the set of prefixes covered by this converter."""
-        return {record.prefix for record in self.records}
+    def get_prefixes(self, *, include_synonyms: bool = False) -> Set[str]:
+        """Get the set of prefixes covered by this converter.
+
+        :param include_synonyms: If true, include secondary prefixes.
+        :return:
+            A set of primary prefixes covered by the converter. If ``include_synonyms`` is
+            set to ``True``, secondary prefixes (i.e., ones in :data:`Record.prefix_synonyms`
+            are also included
+        """
+        rv = {record.prefix for record in self.records}
+        if include_synonyms:
+            rv.update(
+                prefix_synonym
+                for record in self.records
+                for prefix_synonym in record.prefix_synonyms
+            )
+        return rv
+
+    def get_uri_prefixes(self, *, include_synonyms: bool = False) -> Set[str]:
+        """Get the set of URI prefixes covered by this converter.
+
+        :param include_synonyms: If true, include secondary prefixes.
+        :return:
+            A set of primary URI prefixes covered by the converter. If ``include_synonyms`` is
+            set to ``True``, secondary URI prefixes (i.e., ones in :data:`Record.uri_prefix_synonyms`
+            are also included
+        """
+        rv = {record.uri_prefix for record in self.records}
+        if include_synonyms:
+            rv.update(
+                uri_prefix_synonym
+                for record in self.records
+                for uri_prefix_synonym in record.uri_prefix_synonyms
+            )
+        return rv
 
     def format_curie(self, prefix: str, identifier: str) -> str:
         """Format a prefix and identifier into a CURIE string."""
         return f"{prefix}{self.delimiter}{identifier}"
+
+    def is_uri(self, s: str) -> bool:
+        """Check if the string can be parsed as a URI by this converter.
+
+        :param s: A string that might be a URI
+        :returns: If the string can be parsed as a URI by this converter.
+            Note that some valid URIs, when passed to this function, will
+            result in False if their URI prefixes are not registered with this
+            converter.
+
+        >>> import curies
+        >>> converter = curies.get_obo_converter()
+        >>> converter.is_uri("http://purl.obolibrary.org/obo/GO_1234567")
+        True
+        >>> converter.is_uri("GO:1234567")
+        False
+
+        The following is a valid URI, but the prefix is not registered
+        with the converter based on the OBO Foundry prefix map, so it returns
+        False.
+
+        >>> converter.is_uri("http://proteopedia.org/wiki/index.php/2gc4")
+        False
+        """
+        return self.compress(s) is not None
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def compress_or_standardize(
+        self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = ...
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def compress_or_standardize(
+        self,
+        uri_or_curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[True] = True,
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def compress_or_standardize(
+        self,
+        uri_or_curie: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[False] = False,
+    ) -> Optional[str]: ...
+
+    def compress_or_standardize(
+        self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
+        """Compress a URI or standardize a CURIE.
+
+        :param uri_or_curie:
+            A string representing a compact URI (CURIE) or a URI.
+        :param strict: If true and the string is neither a URI that can be compressed nor a CURIE that can be
+            standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the string is neither a URI that can be compressed
+            nor a CURIE that can be standardized, return the input. Defaults to false.
+        :returns:
+            If the string is a URI, and it can be compressed, returns the corresponding CURIE.
+            If the string is a CURIE, and it can be standardized, returns the standard CURIE.
+        :raises CompressionError:
+            If strict is true and the URI can't be compressed
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(
+        ...          prefix="CHEBI",
+        ...          prefix_synonyms=["chebi"],
+        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...     ),
+        ... ])
+        >>> converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'CHEBI:138488'
+        >>> converter.compress_or_standardize("https://identifiers.org/chebi:138488")
+        'CHEBI:138488'
+
+        >>> converter.compress_or_standardize("CHEBI:138488")
+        'CHEBI:138488'
+        >>> converter.compress_or_standardize("chebi:138488")
+        'CHEBI:138488'
+
+        >>> converter.compress_or_standardize("missing:0000000")
+        >>> converter.compress_or_standardize("https://example.com/missing:0000000")
+        """
+        if self.is_uri(uri_or_curie):
+            return self.compress(uri_or_curie, strict=True)
+        if self.is_curie(uri_or_curie):
+            return self.standardize_curie(uri_or_curie, strict=True)
+        if strict:
+            raise CompressionError(uri_or_curie)
+        if passthrough:
+            return uri_or_curie
+        return None
 
     def compress_strict(self, uri: str) -> str:
         """Compress a URI to a CURIE, and raise an error of not possible."""
@@ -962,22 +1153,21 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def compress(self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False) -> str:
-        ...
+    def compress(
+        self, uri: str, *, strict: Literal[True] = True, passthrough: bool = ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def compress(
         self, uri: str, *, strict: bool = False, passthrough: bool = False
@@ -994,16 +1184,27 @@ class Converter:
         :raises CompressionError:
             If strict is set to true and the URI can't be compressed
 
-
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
         ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
         ...    "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...    "OBO": "http://purl.obolibrary.org/obo/",
         ... })
-        >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
-        'CHEBI:138488'
+        >>> converter.compress("http://purl.obolibrary.org/obo/GO_0032571")
+        'GO:0032571'
+        >>> converter.compress("http://purl.obolibrary.org/obo/go.owl")
+        'OBO:go.owl'
         >>> converter.compress("http://example.org/missing:0000000")
+
+        .. note::
+
+            If there are partially overlapping *URI prefixes* in this converter
+            (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest
+            URI prefix will always be matched. For example, parsing
+            ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
+            instead of ``OBO:GO_0032571``.
         """
         prefix, identifier = self.parse_uri(uri)
         if prefix and identifier:
@@ -1040,28 +1241,130 @@ class Converter:
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
 
+    def is_curie(self, s: str) -> bool:
+        """Check if the string can be parsed as a CURIE by this converter.
+
+        :param s: A string that might be a CURIE
+        :returns: If the string can be parsed as a CURIE by this converter.
+            Note that some valid CURIEs, when passed to this function, will
+            result in False if their prefixes are not registered with this
+            converter.
+
+        >>> import curies
+        >>> converter = curies.get_obo_converter()
+        >>> converter.is_curie("GO:1234567")
+        True
+        >>> converter.is_curie("http://purl.obolibrary.org/obo/GO_1234567")
+        False
+
+        The following is a valid CURIE, but the prefix is not registered
+        with the converter based on the OBO Foundry prefix map, so it returns
+        False.
+
+        >>> converter.is_curie("pdb:2gc4")
+        False
+        """
+        try:
+            return self.expand(s) is not None
+        except ValueError:
+            return False
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_or_standardize(
+        self, curie_or_uri: str, *, strict: Literal[True] = True, passthrough: bool = ...
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_or_standardize(
+        self,
+        curie_or_uri: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[True] = True,
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_or_standardize(
+        self,
+        curie_or_uri: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: Literal[False] = False,
+    ) -> Optional[str]: ...
+
+    def expand_or_standardize(
+        self, curie_or_uri: str, *, strict: bool = False, passthrough: bool = False
+    ) -> Optional[str]:
+        """Expand a CURIE or standardize a URI.
+
+        :param curie_or_uri:
+            A string representing a compact URI (CURIE) or a URI.
+        :param strict: If true and the string is neither a CURIE that can be expanded nor a URI that can be
+            standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the string is neither a CURIE that can be expanded
+            nor a URI that can be standardized, return the input. Defaults to false.
+        :returns:
+            If the string is a CURIE, and it can be expanded, returns the corresponding URI.
+            If the string is a URI, and it can be standardized, returns the standard URI.
+        :raises ExpansionError:
+            If strict is true and the CURIE can't be expanded
+
+        >>> from curies import Converter, Record
+        >>> converter = Converter.from_extended_prefix_map([
+        ...     Record(
+        ...          prefix="CHEBI",
+        ...          prefix_synonyms=["chebi"],
+        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...     ),
+        ... ])
+        >>> converter.expand_or_standardize("CHEBI:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+         >>> converter.expand_or_standardize("chebi:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+        >>> converter.expand_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+        >>> converter.expand_or_standardize("https://identifiers.org/chebi:138488")
+        'http://purl.obolibrary.org/obo/CHEBI_138488'
+
+        >>> converter.expand_or_standardize("missing:0000000")
+        >>> converter.expand_or_standardize("https://example.com/missing:0000000")
+        """
+        if self.is_curie(curie_or_uri):
+            return self.expand(curie_or_uri, strict=True)
+        if self.is_uri(curie_or_uri):
+            return self.standardize_uri(curie_or_uri, strict=True)
+        if strict:
+            raise ExpansionError(curie_or_uri)
+        if passthrough:
+            return curie_or_uri
+        return None
+
     def expand_strict(self, curie: str) -> str:
         """Expand a CURIE to a URI, and raise an error of not possible."""
         return self.expand(curie, strict=True)
 
     # docstr-coverage:excused `overload`
     @overload
-    def expand(self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False) -> str:
-        ...
+    def expand(
+        self, curie: str, *, strict: Literal[True] = True, passthrough: bool = ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def expand(
         self, curie: str, *, strict: bool = False, passthrough: bool = False
@@ -1069,14 +1372,15 @@ class Converter:
         """Expand a CURIE to a URI, if possible.
 
         :param curie:
-            A string representing a compact URI
+            A string representing a compact URI (CURIE)
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
-            Defaults to false.
+            Defaults to false. If your strings can either be a CURIE _or_ a URI, consider using
+            :meth:`Converter.expand_or_standardize` instead.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
         :raises ExpansionError:
-            If struct is true and the URI can't be expanded
+            If strict is true and the CURIE can't be expanded
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map({
@@ -1087,15 +1391,6 @@ class Converter:
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
-
-        .. note::
-
-            If there are partially overlapping *URI prefixes* in this converter
-            (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
-            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest
-            URI prefix will always be matched. For example, parsing
-            ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
-            instead of ``OBO:GO_0032571``.
         """
         prefix, identifier = self.parse_curie(curie)
         rv = self.expand_pair(prefix, identifier)
@@ -1200,22 +1495,19 @@ class Converter:
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def standardize_prefix(
         self, prefix: str, *, strict: bool = False, passthrough: bool = False
@@ -1259,22 +1551,19 @@ class Converter:
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def standardize_curie(
         self, curie: str, *, strict: bool = False, passthrough: bool = False
@@ -1321,22 +1610,19 @@ class Converter:
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]:
-        ...
+    ) -> Optional[str]: ...
 
     def standardize_uri(
         self, uri: str, *, strict: bool = False, passthrough: bool = False
@@ -1392,6 +1678,7 @@ class Converter:
         target_column: Union[None, str, int] = None,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all URIs in the given column to CURIEs.
 
@@ -1401,8 +1688,10 @@ class Converter:
         :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.compress, strict=strict, passthrough=passthrough)
+        pre_func = self.compress_or_standardize if ambiguous else self.compress
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_expand(
@@ -1412,6 +1701,7 @@ class Converter:
         target_column: Union[None, str, int] = None,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all CURIEs in the given column to URIs.
 
@@ -1421,8 +1711,10 @@ class Converter:
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.expand, strict=strict, passthrough=passthrough)
+        pre_func = self.expand_or_standardize if ambiguous else self.expand
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_prefix(
@@ -1472,7 +1764,6 @@ class Converter:
 
         >>> import curies
         >>> import pandas as pd
-        >>> import itertools as itt
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
         >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
         >>> df = pd.read_csv(url, sep="\t", comment='#')
@@ -1507,10 +1798,12 @@ class Converter:
         self,
         path: Union[str, Path],
         column: int,
+        *,
         sep: Optional[str] = None,
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all URIs in the given column of a CSV file to CURIEs.
 
@@ -1521,18 +1814,22 @@ class Converter:
         :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.compress, strict=strict, passthrough=passthrough)
+        pre_func = self.compress_or_standardize if ambiguous else self.compress
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     def file_expand(
         self,
         path: Union[str, Path],
         column: int,
+        *,
         sep: Optional[str] = None,
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
+        ambiguous: bool = False,
     ) -> None:
         """Convert all CURIEs in the given column of a CSV file to URIs.
 
@@ -1543,8 +1840,10 @@ class Converter:
         :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        func = partial(self.expand, strict=strict, passthrough=passthrough)
+        pre_func = self.expand_or_standardize if ambiguous else self.expand
+        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     @staticmethod
@@ -1870,15 +2169,10 @@ def _ensure_path(path: Union[str, Path]) -> Path:
     return path
 
 
-def write_jsonld_context(
-    converter: Converter,
-    path: Union[str, Path],
-    *,
-    include_synonyms: bool = False,
-    expand: bool = False,
-) -> None:
-    """Write the converter's bijective map as a JSON-LD context to a file."""
-    path = _ensure_path(path)
+def _get_jsonld_context(
+    converter: Converter, *, expand: bool = False, include_synonyms: bool = False
+) -> Dict[str, Any]:
+    """Get a JSON-LD context based on the converter."""
     context = {}
     for record in converter.records:
         term = _get_expanded_term(record, expand=expand)
@@ -1886,13 +2180,72 @@ def write_jsonld_context(
         if include_synonyms:
             for prefix_synonym in record.prefix_synonyms:
                 context[prefix_synonym] = term
+    return {"@context": context}
+
+
+def write_jsonld_context(
+    converter: Converter,
+    path: Union[str, Path],
+    *,
+    include_synonyms: bool = False,
+    expand: bool = False,
+) -> None:
+    """Write the converter's bijective map as a JSON-LD context to a file.
+
+    :param converter: The converter to export
+    :param path: The path to a file to write to
+    :param include_synonyms: If true, includes CURIE prefix synonyms.
+        URI prefix synonyms are not output.
+    :param expand: If False, output a dictionary-like ``@context`` element.
+        If True, use ``@prefix`` and ``@id`` as keys for the CURIE prefix
+        and URI prefix, respectively, to maximize compatibility.
+
+    The following example shows writing a JSON-LD context:
+
+    .. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_jsonld_context(converter, "example_context.json")
+
+    .. code-block:: json
+
+        {
+          "@context": {
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"
+          }
+        }
+
+    Because some implementations of JSON-LD do not like URI prefixes that end
+    with an underscore ``_``, we can use the ``expand`` keyword to turn on more
+    verbose JSON-LD context output that contains explicit ``@prefix`` and
+    ``@id`` annotations
+
+    .. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_jsonld_context(converter, "example_context.json", expand=True)
+
+    .. code-block:: json
+
+        {
+          "@context": {
+            "CHEBI": {
+              "@id": "http://purl.obolibrary.org/obo/CHEBI_",
+              "@prefix": true
+            }
+          }
+        }
+    """
+    path = _ensure_path(path)
+    obj = _get_jsonld_context(converter, include_synonyms=include_synonyms, expand=expand)
     with path.open("w") as file:
-        json.dump(
-            fp=file,
-            indent=4,
-            sort_keys=True,
-            obj={"@context": context},
-        )
+        json.dump(obj, file, indent=4, sort_keys=True)
 
 
 def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, Dict[str, Any]]:
@@ -1924,6 +2277,24 @@ def write_shacl(
         URI prefix synonyms are not output.
 
     .. seealso:: https://www.w3.org/TR/shacl/#sparql-prefixes
+
+    .. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_shacl(converter, "example_shacl.ttl")
+
+    .. code-block::
+
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+        [
+          sh:declare
+            [ sh:prefix "CHEBI" ; sh:namespace "http://purl.obolibrary.org/obo/CHEBI_"^^xsd:anyURI  ]
+        ] .
     """
     text = dedent(
         """\
@@ -1948,9 +2319,126 @@ def write_shacl(
     path.write_text(text.format(entries=",\n".join(lines)))
 
 
+def write_tsv(
+    converter: Converter, path: Union[str, Path], *, header: Tuple[str, str] = ("prefix", "base")
+) -> None:
+    """Write a simple prefix map CSV file.
+
+    :param converter: The converter to export
+    :param path: The path to a file to write to
+    :param header: A 2-tuple of strings representing the header used in the file,
+        where the first element is the label for CURIE prefixes and the second
+        element is the label for URI prefixes
+
+    .. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_tsv(converter, "example_context.tsv")
+
+    .. code-block::
+
+        prefix  base
+        CHEBI   http://purl.obolibrary.org/obo/CHEBI_
+    """
+    import csv
+
+    path = _ensure_path(path)
+
+    with path.open("w") as csvfile:
+        writer = csv.writer(csvfile, delimiter="\t")
+        writer.writerow(header)
+        for record in converter.records:
+            writer.writerow((record.prefix, record.uri_prefix))
+
+
 def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None) -> str:
     line = f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI '
     if pattern:
         pattern = pattern.replace("\\", "\\\\")
         line += f'; sh:pattern "{pattern}"'
     return line + " ]"
+
+
+def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
+    """Convert a (potentially problematic) prefix map (i.e., not bijective) into a list of records.
+
+    A prefix map is bijective if it has no duplicate CURIE prefixes (i.e., keys in a dictionary) and
+    no duplicate URI prefixes (i.e., values in a dictionary). Because of the way that dictionaries work in Python,
+    we are always guaranteed that there are no duplicate keys.
+
+    However, it is both possible and frequent to have duplicate values. This happens because many semantic spaces
+    have multiple synonymous CURIE prefixes. For example, the `OBO in OWL <https://bioregistry.io/oboinowl>`_
+    vocabulary has two common, interchangable prefixes: ``oio`` and ``oboInOwl`` (and the case variant ``oboinowl``).
+    Therefore, a prefix map might contain the following parts that make it non-bijective:
+
+    .. code-block:: json
+
+        {
+          "oio": "http://www.geneontology.org/formats/oboInOwl#",
+          "oboInOwl": "http://www.geneontology.org/formats/oboInOwl#"
+        }
+
+    This is bad because this prefix map can't be used to determinstically compress a URI. For example, should
+    ``http://www.geneontology.org/formats/oboInOwl#hasDbXref`` be compressed to ``oio:hasDbXref`` or
+    ``oboInOwl:hasDbXref``? Neither is necessarily incorrect, but the issue here is that there is not an explicit
+    choice by the data modeler, meaning that data compressed into CURIEs with this non-bijective map might not be
+    readily integrable with other datasets.
+
+    The best solution to this situation is not more code, but rather for the data modeler to address the issue
+    upstream in the following steps:
+
+    1. Choose the which of prefix synonyms is going to be the primary prefix. If you're not sure, the
+       `Bioregistry <https://bioregistry.io/>`_ is a comprehensive registry of prefixes and their syonyms
+       applicable in the semantic web and the natural sciences. It gives a good suggestion of what the best
+       prefix is. In the OBO in OWL case, it suggests ``oboInOwl``.
+    2. Update all related data artifacts to only use that preferred prefix
+    3. Either 1) remove the other synonyms (in this example, ``oio``) from the prefix map *or* 2) transition to
+       using :ref:`epms`, a more modern data structure for supporting URI and CURIE interconversion.
+
+    The first part of step 3 in this solution highlights one of the key shortcomings of prefix maps themselves -
+    they can't keep track of synonyms, which are often useful in data integration, especially when a single
+    prefix map is defined on the level of a project or community. The extended prefix map is a simple data structure
+    proposed to address this.
+
+    * * *
+
+    This function is for people who are not in the position to make the sustainable fix, and want to automate
+    the assignment of which is the preferred prefix. It uses a deterministic algorithm to choose from two or more
+    CURIE prefixes that have the same URI prefix and generate an extended prefix map in which they have bene collapsed
+    into a single record. More specitically, the algorithm is based on a case-sensitive lexical sort of the prefixes.
+    The first in the sort order becomes the primary prefix and the others become synonyms in the resulting record.
+
+    :param prefix_map: A mapping whose keys represent CURIE prefixes and values represent URI prefixes
+    :return: A list of :class:`curies.Record` objects that together constitute an extended prefix map
+
+    >>> from curies import Converter, upgrade_prefix_map
+    >>> pm = {"a": "https://example.com/a/", "b": "https://example.com/a/"}
+    >>> records = upgrade_prefix_map(pm)
+    >>> converter = Converter(records)
+    >>> converter.expand("a:1")
+    'https://example.com/a/1'
+    >>> converter.expand("b:1")
+    'https://example.com/a/1'
+    >>> converter.compress("https://example.com/a/1")
+    'a:1'
+
+    .. note::
+
+        Thanks to `Joe Flack <https://github.com/joeflack4>`_ for proposing this algorithm
+        `in this discussion <https://github.com/mapping-commons/sssom-py/pull/485#discussion_r1451812733>`_.
+
+    """
+    uri_prefix_to_curie_synonyms = defaultdict(list)
+    for curie_prefix, uri_prefix in prefix_map.items():
+        uri_prefix_to_curie_synonyms[uri_prefix].append(curie_prefix)
+    priority_prefix_map = {
+        uri_prefix: sorted(curie_prefixes)
+        for uri_prefix, curie_prefixes in uri_prefix_to_curie_synonyms.items()
+    }
+    return [
+        Record(prefix=prefix, prefix_synonyms=prefix_synonyms, uri_prefix=uri_prefix)
+        for uri_prefix, (prefix, *prefix_synonyms) in sorted(priority_prefix_map.items())
+    ]

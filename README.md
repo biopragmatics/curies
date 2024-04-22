@@ -9,8 +9,8 @@
 </h1>
 
 <p align="center">
-    <a href="https://github.com/cthoyt/curies/actions?query=workflow%3ATests">
-        <img alt="Tests" src="https://github.com/cthoyt/curies/workflows/Tests/badge.svg" />
+    <a href="https://github.com/biopragmatics/curies/actions/workflows/tests.yml">
+        <img alt="Tests" src="https://github.com/biopragmatics/curies/actions/workflows/tests.yml/badge.svg" />
     </a>
     <a href="https://pypi.org/project/curies">
         <img alt="PyPI" src="https://img.shields.io/pypi/v/curies" />
@@ -92,6 +92,7 @@ Other packages that convert between CURIEs and URIs:
 - https://github.com/geneontology/curie-util-es5 (Node.js)
 - https://github.com/endoli/curie.rs (Rust)
 - https://github.com/cthoyt/curies4j (Java)
+- https://github.com/biopragmatics/curies.rs (Rust, Node.js, Python)
 
 ## 🚀 Installation
 

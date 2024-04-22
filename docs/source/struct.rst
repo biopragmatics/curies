@@ -86,6 +86,8 @@ and URI prefixes for most semantic spaces as well as specify which CURIE prefix 
 URI prefix is the "preferred" one in a given context. Prefix maps, unfortunately, have no way to
 address this. Therefore, we're going to introduce a new data structure.
 
+.. _epms:
+
 Extended Prefix Maps
 --------------------
 Extended Prefix Maps (EPMs) address the issues with prefix maps by including explicit
@@ -106,8 +108,10 @@ containing an entry for ChEBI) looks like:
        }
    ]
 
-EPMs have the benefit that they are still encoded in JSON and can easily be encoded in
-YAML, TOML, RDF, and other schemata.
+An EPM is simply a list of records (see :class:`curies.Record` and :class:`curies.Records`).
+EPMs have the benefit that they are still
+encoded in JSON and can easily be encoded in YAML, TOML, RDF, and other schemata. Further, prefix maps can be
+automatically upgraded into EPMs (with some caveats) using :func:`curies.upgrade_prefix_map`.
 
 .. note::
 
@@ -115,3 +119,6 @@ YAML, TOML, RDF, and other schemata.
     can be loaded using :meth:`curies.Converter.from_extended_prefix_map`.
     We provide a Pydantic model representing it. Later, we hope to have an external, stable definition
     of this data schema.
+
+A JSON schema for EPMs is available at https://w3id.org/biopragmatics/schema/epm.json.
+It can be updated at https://github.com/biopragmatics/curies/tree/main/docs/make_schema.py.
