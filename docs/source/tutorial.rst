@@ -92,6 +92,10 @@ This function also accepts a string with a HTTP, HTTPS, or FTP path to a remote 
     structure for situations when there can be CURIE synonyms or even URI prefix synonyms is
     the *extended prefix map* (see below).
 
+    If you're not in a position where you can fix data issues upstream, you can try using the
+    :func:`curies.upgrade_prefix_map` to extract a canonical extended prefix map from a non-bijective
+    prefix map.
+
 Loading Extended Prefix Maps
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Extended prefix maps (EPMs) address the issues with prefix maps by including explicit
@@ -247,6 +251,52 @@ This works with both :class:`pathlib.Path` and vanilla strings.
     urlretrieve(url, path)
     converter = curies.load_shacl(path)
 
+Introspecting on a Context
+--------------------------
+After loading a context, it's possible to get certain information out of the converter. For example, if you want to
+get all of the CURIE prefixes from the converter, you can use :meth:`Converter.get_prefixes`:
+
+.. code-block:: python
+
+    import curies
+
+    converter = curies.get_bioregistry_converter()
+    prefixes = converter.get_prefixes()
+    assert 'chebi' in prefixes
+    assert 'CHEBIID' not in prefixes, "No synonyms are included by default"
+
+    prefixes = converter.get_prefixes(include_synonyms=True)
+    assert 'chebi' in prefixes
+    assert 'CHEBIID' in prefixes
+
+Similarly, the URI prefixes can be extracted with :meth:`Converter.get_uri_prefixes` like in:
+
+.. code-block:: python
+
+    import curies
+
+    converter = curies.get_bioregistry_converter()
+    uri_prefixes = converter.get_uri_prefixes()
+    assert 'http://purl.obolibrary.org/obo/CHEBI_'' in prefixes
+    assert 'https://bioregistry.io/chebi:' not in prefixes, "No synonyms are included by default"
+
+    uri_prefixes = converter.get_uri_prefixes(include_synonyms=True)
+    assert 'http://purl.obolibrary.org/obo/CHEBI_'' in prefixes
+    assert 'https://bioregistry.io/chebi:' in prefixes
+
+It's also possible to get a bijective prefix map, i.e., a dictionary from primary CURIE prefixes
+to primary URI prefixes. This is useful for compatibility with legacy systems which assume simple prefix maps.
+This can be done with the ``bimap`` property like in the following:
+
+.. code-block:: python
+
+    import curies
+
+    converter = curies.get_bioregistry_converter()
+    prefix_map = converter.bimap
+    >>> prefix_map['chebi']
+    'http://purl.obolibrary.org/obo/CHEBI_'
+
 Modifying a Context
 -------------------
 Incremental Converters
@@ -367,6 +417,38 @@ project.
 ... }
 >>> converter = curies.get_bioregistry_converter()
 >>> slim_converter = converter.get_subconverter(prefixes)
+
+Writing a Context
+-----------------
+After loading and modifying a context, there are several functions for writing
+a context to a file:
+
+- :func:`curies.write_extended_prefix_map`
+- :func:`curies.write_jsonld_context`
+- :func:`curies.write_shacl`
+- :func:`curies.write_tsv`
+
+Here's a self-contained example on how this works:
+
+.. code-block:: python
+
+        import curies
+        converter = curies.load_prefix_map({
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        })
+        curies.write_shacl(converter, "example_shacl.ttl")
+
+which outputs the following file:
+
+.. code-block::
+
+    @prefix sh: <http://www.w3.org/ns/shacl#> .
+    @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+    [
+      sh:declare
+        [ sh:prefix "CHEBI" ; sh:namespace "http://purl.obolibrary.org/obo/CHEBI_"^^xsd:anyURI  ]
+    ] .
 
 Faultless handling of overlapping URI prefixes
 ----------------------------------------------
