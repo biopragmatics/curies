@@ -50,6 +50,7 @@ __all__ = [
     "Reference",
     "ReferenceTuple",
     "Record",
+    "Records",
     "DuplicateValueError",
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
@@ -252,26 +253,21 @@ RecordKey = Tuple[str, str, str, str]
 class Record(BaseModel):  # type:ignore
     """A record of some prefixes and their associated URI prefixes.
 
-    A list of records can be annotated in a FastAPI setting with the following:
-
-    .. code-block:: python
-
-        from typing import List
-        from curies import Record
-        from pydantic import BaseModel
-
-        class Records(BaseModel):
-            __root__ = List[Record]
-
     .. seealso:: https://github.com/cthoyt/curies/issues/70
     """
 
-    prefix: str = Field(..., description="The canonical prefix, used in the reverse prefix map")
-    uri_prefix: str = Field(
-        ..., description="The canonical URI prefix, used in the forward prefix map"
+    prefix: str = Field(
+        ...,
+        title="CURIE prefix",
+        description="The canonical CURIE prefix, used in the reverse prefix map",
     )
-    prefix_synonyms: List[str] = Field(default_factory=list)
-    uri_prefix_synonyms: List[str] = Field(default_factory=list)
+    uri_prefix: str = Field(
+        ...,
+        title="URI prefix",
+        description="The canonical URI prefix, used in the forward prefix map",
+    )
+    prefix_synonyms: List[str] = Field(default_factory=list, title="CURIE prefix synonyms")
+    uri_prefix_synonyms: List[str] = Field(default_factory=list, title="URI prefix synonyms")
     pattern: Optional[str] = Field(
         default=None,
         description="The regular expression pattern for entries in this semantic space. "
@@ -313,6 +309,40 @@ class Record(BaseModel):  # type:ignore
             ",".join(sorted(self.prefix_synonyms)),
             ",".join(sorted(self.uri_prefix_synonyms)),
         )
+
+
+if PYDANTIC_V1:
+    # An explanation of RootModels in Pydantic V1 can be found on
+    # https://docs.pydantic.dev/1.10/usage/models/#custom-root-types
+
+    from pydantic import BaseModel
+
+    class Records(BaseModel):  # type:ignore
+        """A list of records."""
+
+        class Config:
+            """Configuration for the records."""
+
+            arbitrary_types_allowed = True
+
+        __root__: List[Record]
+
+        def __iter__(self) -> Iterable[Record]:
+            """Iterate over records."""
+            return cast(Iterable[Record], iter(self.__root__))
+
+else:
+    # An explanation of RootModels in Pydantic V2 can be found on
+    # https://docs.pydantic.dev/latest/concepts/models/#rootmodel-and-custom-root-types
+
+    from pydantic import RootModel
+
+    class Records(RootModel[List[Record]]):  # type:ignore
+        """A list of records."""
+
+        def __iter__(self) -> Iterable[Record]:
+            """Iterate over records."""
+            return cast(Iterable[Record], iter(self.root))
 
 
 class DuplicateSummary(NamedTuple):
@@ -548,7 +578,8 @@ class Converter:
         """Append a record to the converter."""
         matched = self._match_record(record, case_sensitive=case_sensitive)
         if len(matched) > 1:
-            raise ValueError(f"new record has duplicates: {matched}")
+            msg = "".join(f"\n  {m} -> {v}" for m, v in matched.items())
+            raise ValueError(f"new record has duplicates:{msg}")
         if len(matched) == 1:
             if not merge:
                 raise ValueError(f"new record already exists and merge=False: {matched}")

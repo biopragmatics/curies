@@ -8,6 +8,7 @@ from .api import (
     DuplicateURIPrefixes,
     DuplicateValueError,
     Record,
+    Records,
     Reference,
     ReferenceTuple,
     chain,
@@ -35,6 +36,7 @@ from .version import get_version
 __all__ = [
     "Converter",
     "Record",
+    "Records",
     "ReferenceTuple",
     "Reference",
     "DuplicateValueError",
