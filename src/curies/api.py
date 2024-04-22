@@ -327,6 +327,10 @@ if PYDANTIC_V1:
 
         __root__: List[Record]
 
+        def __iter__(self) -> Iterable[Record]:
+            """Iterate over records."""
+            return cast(Iterable[Record], iter(self.__root__))
+
 else:
     # An explanation of RootModels in Pydantic V2 can be found on
     # https://docs.pydantic.dev/latest/concepts/models/#rootmodel-and-custom-root-types
