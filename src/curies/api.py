@@ -317,10 +317,12 @@ if PYDANTIC_V1:
 
     from pydantic import BaseModel
 
-    class Records(BaseModel):
+    class Records(BaseModel):  # type:ignore
         """A list of records."""
 
         class Config:
+            """Configuration for the records."""
+
             arbitrary_types_allowed = True
 
         __root__: List[Record]
@@ -331,10 +333,12 @@ else:
 
     from pydantic import RootModel
 
-    class Records(RootModel):
+    class Records(RootModel[List[Record]]):  # type:ignore
         """A list of records."""
 
-        root: List[Record]
+        def __iter__(self) -> Iterable[Record]:
+            """Iterate over records."""
+            return cast(Iterable[Record], iter(self.root))
 
 
 class DuplicateSummary(NamedTuple):

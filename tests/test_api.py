@@ -21,6 +21,7 @@ from curies.api import (
     ExpansionError,
     PrefixStandardizationError,
     Record,
+    Records,
     Reference,
     ReferenceTuple,
     URIStandardizationError,
@@ -39,6 +40,16 @@ from tests.constants import SLOW
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
 GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
+
+
+class TestStruct(unittest.TestCase):
+    """Test the data structures."""
+
+    def test_records(self):
+        """Test a list of records."""
+        records = Records.parse_obj([{"prefix": "chebi", "uri_prefix": CHEBI_URI_PREFIX}])
+        converter = Converter(records=records)
+        self.assertEqual({"chebi"}, converter.get_prefixes())
 
 
 class TestAddRecord(unittest.TestCase):
