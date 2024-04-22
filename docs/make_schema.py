@@ -9,7 +9,14 @@ from curies._pydantic_compat import PYDANTIC_V1
 HERE = Path(__file__).parent.resolve()
 PATH = HERE.joinpath("schema.json")
 TITLE = "Extended Prefix Map"
-DESCRIPTION = ""
+DESCRIPTION = (
+    """\
+An extended prefix map is a generalization of a prefix map that
+includes synonyms for URI prefixes and CURIE prefixes.
+""".strip()
+    .replace("\n", " ")
+    .replace("  ", " ")
+)
 URL = "https://w3id.org/biopragmatics/schema/epm.json"
 
 

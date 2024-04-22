@@ -59,5 +59,6 @@
       "type": "array"
     }
   },
-  "title": "Extended Prefix Map"
+  "title": "Extended Prefix Map",
+  "description": "An extended prefix map is a generalization of a prefix map that includes synonyms for URI prefixes and CURIE prefixes."
 }
