@@ -57,7 +57,7 @@ class MappingServiceSPARQLProcessor(SPARQLProcessor):
         initBindings=None,  # noqa:N803
         initNs=None,  # noqa:N803
         base=None,
-        DEBUG=False,
+        DEBUG=False,  # noqa:N803
     ):
         """Evaluate a SPARQL query on this processor's graph."""
         if isinstance(query, str):
