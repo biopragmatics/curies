@@ -275,6 +275,7 @@ class Record(BaseModel):  # type:ignore
     )
 
     @field_validator("prefix_synonyms")  # type:ignore
+    @classmethod
     def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical prefix does not apper in the prefix synonym list."""
         prefix = get_field_validator_values(values, "prefix")
@@ -283,6 +284,7 @@ class Record(BaseModel):  # type:ignore
         return v
 
     @field_validator("uri_prefix_synonyms")  # type:ignore
+    @classmethod
     def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
         uri_prefix = get_field_validator_values(values, "uri_prefix")
