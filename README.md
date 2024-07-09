@@ -107,6 +107,11 @@ This package currently supports both Pydantic v1 and v2. See the
 [Pydantic migration guide](https://docs.pydantic.dev/2.0/migration/)
 for updating your code.
 
+> [!WARNING]  
+> Pydantic v1 support will be dropped on October 31<sup>st</sup>, 2024,
+> coincident with the [obsolescence of Python 3.8](https://endoflife.date/python).
+> This will be accompanied by the v0.8.0 release of the `curies` package.
+
 ## 👐 Contributing
 
 Contributions, whether filing an issue, making a pull request, or forking, are appreciated. See
