@@ -77,6 +77,59 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(InconsistentMapping):
             _order_curie_remapping(converter, curie_remapping)
 
+    def test_remapping_with_synonym(self):
+        """Test that remapping with synonym prefixes works as expected."""
+        r1 = Record(
+            prefix="geo",  # also should not survive
+            prefix_synonyms=["GEO", "should_not_survive"],
+            uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+            pattern="^G(PL|SM|SE|DS)\\d+$",
+        )
+        r2 = Record(
+            prefix="geogeo",
+            prefix_synonyms=["GEOGEO"],
+            uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+            pattern="^\\d{9}$",
+        )
+        c1 = Converter([r1, r2])
+        remapping = {
+            "GEO": "ncbi.geo",
+            "geogeo": "GEO",
+        }
+        c2 = remap_curie_prefixes(c1, remapping)
+        r3 = Record(
+            prefix="ncbi.geo",
+            uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+            pattern="^G(PL|SM|SE|DS)\\d+$",
+        )
+        r4 = Record(
+            prefix="GEO",
+            prefix_synonyms=["GEOGEO", "geogeo"],
+            uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+            pattern="^\\d{9}$",
+        )
+        self.assertEqual([r4, r3], c2.records)
+
+    def test_remapping_invalid_mode(self):
+        """Test that remapping with synonym prefixes works as expected."""
+        r1 = Record(
+            prefix="geo",  # also should not survive
+            prefix_synonyms=["GEO", "should_not_survive"],
+            uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+        )
+        r2 = Record(
+            prefix="geogeo",
+            prefix_synonyms=["GEOGEO"],
+            uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+        )
+        c1 = Converter([r1, r2])
+        remapping = {
+            "GEO": "ncbi.geo",
+            "geogeo": "GEO",
+        }
+        with self.assertRaises(TypeError):
+            remap_curie_prefixes(c1, remapping, intersection_resolution="nope")
+
     def test_cycles(self):
         """Test detecting bad mapping with cycles."""
         converter = Converter(
