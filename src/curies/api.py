@@ -33,13 +33,8 @@ from typing import (
 )
 
 import requests
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, RootModel, field_validator
 from pytrie import StringTrie
-
-from ._pydantic_compat import PYDANTIC_V1, field_validator, get_field_validator_values
-
-if not PYDANTIC_V1:
-    from pydantic import ConfigDict
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -73,6 +68,11 @@ logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
 LocationOr = Union[str, Path, X]
+
+
+def _get_field_validator_values(values, key: str):  # type:ignore
+    """Get the value for the key from a field validator object, cross-compatible with Pydantic 1 and 2."""
+    return values.data[key]
 
 
 class ReferenceTuple(NamedTuple):
@@ -205,15 +205,7 @@ class Reference(BaseModel):  # type:ignore
         ..., description="The local unique identifier used in a compact URI (CURIE)."
     )
 
-    if PYDANTIC_V1:
-
-        class Config:
-            """Pydantic configuration for references."""
-
-            frozen = True
-
-    else:
-        model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True)
 
     @property
     def curie(self) -> str:
@@ -278,7 +270,7 @@ class Record(BaseModel):  # type:ignore
     @classmethod
     def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical prefix does not apper in the prefix synonym list."""
-        prefix = get_field_validator_values(values, "prefix")
+        prefix = _get_field_validator_values(values, "prefix")
         if prefix in v:
             raise ValueError(f"Duplicate of canonical prefix `{prefix}` in prefix synonyms")
         return v
@@ -287,7 +279,7 @@ class Record(BaseModel):  # type:ignore
     @classmethod
     def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
-        uri_prefix = get_field_validator_values(values, "uri_prefix")
+        uri_prefix = _get_field_validator_values(values, "uri_prefix")
         if uri_prefix in v:
             raise ValueError(
                 f"Duplicate of canonical URI prefix `{uri_prefix}` in URI prefix synonyms"
@@ -313,38 +305,14 @@ class Record(BaseModel):  # type:ignore
         )
 
 
-if PYDANTIC_V1:
-    # An explanation of RootModels in Pydantic V1 can be found on
-    # https://docs.pydantic.dev/1.10/usage/models/#custom-root-types
+# An explanation of RootModels in Pydantic V2 can be found on
+# https://docs.pydantic.dev/latest/concepts/models/#rootmodel-and-custom-root-types
+class Records(RootModel[List[Record]]):  # type:ignore
+    """A list of records."""
 
-    from pydantic import BaseModel
-
-    class Records(BaseModel):  # type:ignore
-        """A list of records."""
-
-        class Config:
-            """Configuration for the records."""
-
-            arbitrary_types_allowed = True
-
-        __root__: List[Record]
-
-        def __iter__(self) -> Iterable[Record]:
-            """Iterate over records."""
-            return cast(Iterable[Record], iter(self.__root__))
-
-else:
-    # An explanation of RootModels in Pydantic V2 can be found on
-    # https://docs.pydantic.dev/latest/concepts/models/#rootmodel-and-custom-root-types
-
-    from pydantic import RootModel
-
-    class Records(RootModel[List[Record]]):  # type:ignore
-        """A list of records."""
-
-        def __iter__(self) -> Iterable[Record]:
-            """Iterate over records."""
-            return cast(Iterable[Record], iter(self.root))
+    def __iter__(self) -> Iterable[Record]:
+        """Iterate over records."""
+        return cast(Iterable[Record], iter(self.root))
 
 
 class DuplicateSummary(NamedTuple):
