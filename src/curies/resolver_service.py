@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
-
 """A simple web service for resolving CURIEs."""
 
-from typing import TYPE_CHECKING, Any, Mapping, Optional
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Optional
 
 from .api import Converter
 
@@ -203,12 +202,12 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
     @api_router.get(f"/{{prefix}}{converter.delimiter}{{identifier}}")  # type:ignore
     def resolve(
-        prefix: str = Path(  # noqa:B008
+        prefix: str = Path(
             title="Prefix",
             description="The Bioregistry prefix corresponding to an identifier resource.",
             examples=["doid"],
         ),
-        identifier: str = Path(  # noqa:B008
+        identifier: str = Path(
             title="Local Unique Identifier",
             description="The local unique identifier in the identifier resource referenced by the prefix.",
         ),

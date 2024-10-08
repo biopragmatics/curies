@@ -95,4 +95,4 @@ class TestIO(unittest.TestCase):
             }
         """
         results = graph.query(query)
-        self.assertEqual({self.prefix, self.prefix_synonym}, {str(prefix) for prefix, in results})
+        self.assertEqual({self.prefix, self.prefix_synonym}, {str(prefix) for (prefix,) in results})

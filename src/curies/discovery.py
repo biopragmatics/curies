@@ -40,8 +40,9 @@ After identifying putative URI prefixes, the second part of the algorithm does t
 """
 
 from collections import defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import PurePath
-from typing import IO, TYPE_CHECKING, Any, Iterable, Mapping, Optional, Sequence, Set, TextIO, Union
+from typing import IO, TYPE_CHECKING, Any, Optional, TextIO, Union
 
 from typing_extensions import Literal
 
@@ -94,7 +95,7 @@ def discover_from_rdf(
 
 def get_uris_from_rdf(
     graph: Union[GraphInput, "rdflib.Graph"], *, format: Optional[GraphFormats] = None
-) -> Set[str]:
+) -> set[str]:
     """Get a set of URIs from a graph."""
     graph = _ensure_graph(graph=graph, format=format)
     return set(_yield_uris(graph=graph))
@@ -220,7 +221,7 @@ def _get_uri_prefix_to_luids(
     converter: Optional[Converter] = None,
     uris: Iterable[str],
     delimiters: Optional[Sequence[str]] = None,
-) -> Mapping[str, Set[str]]:
+) -> Mapping[str, set[str]]:
     """Get a mapping from putative URI prefixes to corresponding putative local unique identifiers.
 
     :param converter:

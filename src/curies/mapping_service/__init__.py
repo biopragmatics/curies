@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Identifier mappings service.
 
 This contains an implementation of the service described in `SPARQL-enabled identifier

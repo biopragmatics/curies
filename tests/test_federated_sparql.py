@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-
 """Tests federated SPARQL queries with a locally deployed triple store."""
 
 import itertools as itt
 import time
 import unittest
 from multiprocessing import Process
-from typing import ClassVar, List
+from typing import ClassVar
 
 import uvicorn
 
@@ -116,12 +114,12 @@ class TestFederatedSparql(FederationMixin):
     """Test the identifier mapping service."""
 
     endpoint: ClassVar[str] = BLAZEGRAPH_ENDPOINT
-    mimetypes: ClassVar[List[str]] = [
+    mimetypes: ClassVar[list[str]] = [
         "application/sparql-results+json",
         "application/sparql-results+xml",
         "text/csv",  # for some reason, Blazegraph wants this instead of application/sparql-results+csv
     ]
-    query_formats: ClassVar[List[str]] = [
+    query_formats: ClassVar[list[str]] = [
         SPARQL_VALUES_FMT,
         SPARQL_VALUES_FMT_2,
         SPARQL_VALUES_FMT_3,

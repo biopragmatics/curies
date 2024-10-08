@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-
 """Tests for the identifier mapping service."""
 
 import unittest
-from typing import Iterable, Set, Tuple
+from collections.abc import Iterable
 from urllib.parse import quote
 
 from fastapi.testclient import TestClient
@@ -96,7 +94,7 @@ EXPECTED = {
 }
 
 
-def _stm(rows: Iterable[ResultRow]) -> Set[Tuple[str, str]]:
+def _stm(rows: Iterable[ResultRow]) -> set[tuple[str, str]]:
     return {(str(row.s), str(row.o)) for row in rows}
 
 

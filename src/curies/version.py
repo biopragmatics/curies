@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Version information for :mod:`curies`."""
 
 __all__ = [

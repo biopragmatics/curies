@@ -1,15 +1,213 @@
 # See https://setuptools.readthedocs.io/en/latest/build_meta.html
 [build-system]
 requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta:__legacy__"
+build-backend = "setuptools.build_meta"
 
-[tool.black]
+[project]
+name = "curies"
+version = "0.7.11-dev"
+description = "Idiomatic conversion between URIs and compact URIs (CURIEs)"
+readme = "README.md"
+authors = [
+    { name = "Charles Tapley Hoyt", email = "cthoyt@gmail.com" }
+]
+maintainers = [
+    { name = "Charles Tapley Hoyt", email = "cthoyt@gmail.com" }
+]
+
+# See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#classifiers
+# Search tags using the controlled vocabulary at https://pypi.org/classifiers
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Framework :: Pytest",
+    "Framework :: tox",
+    "Framework :: Sphinx",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+]
+keywords = [
+    "snekpack", # please keep this keyword to credit the cookiecutter-snekpack template
+    "cookiecutter",
+    "semantic web",
+    "compact uniform resource identifiers",
+    "uniform resource identifiers",
+    "curies",
+    "IRIs",
+    "URIs",
+]
+
+# License Information. This can be any valid SPDX identifiers that can be resolved
+# with URLs like https://spdx.org/licenses/MIT
+# See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
+license = { file = "LICENSE" }
+
+requires-python = ">=3.9"
+dependencies = [
+    "pytrie",
+    "pydantic>=2.0",
+    "requests",
+]
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "coverage",
+]
+pandas = [
+    "pandas",
+]
+flask = [
+    "flask",
+    "defusedxml",
+]
+fastapi = [
+    "fastapi",
+    "python-multipart",
+    "httpx",
+    "defusedxml",
+    "uvicorn",
+]
+rdflib = [
+    "rdflib"
+]
+docs = [
+    "sphinx>=8",
+    "sphinx-rtd-theme>=3.0",
+    "sphinx_automodapi",
+]
+
+# See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls
+[project.urls]
+"Bug Tracker" = "https://github.com/biopragmatics/curies/issues"
+Homepage = "https://github.com/biopragmatics/curies"
+Repository = "https://github.com/biopragmatics/curies.git"
+Documentation = "https://curies.readthedocs.io"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+# this implicitly sets `packages = ":find"`
+where = ["src"]  # list of folders that contain the packages (["."] by default)
+
+# See https://setuptools.pypa.io/en/latest/userguide/datafiles.html
+[tool.setuptools.package-data]
+"*" = ["*.*"]
+
+
+[project.scripts]
+curies = "curies.cli:main"
+
+
+[tool.cruft]
+skip = [
+    "**/__init__.py",
+    "tests/*"
+]
+
+# MyPy, see https://mypy.readthedocs.io/en/stable/config_file.html
+[tool.mypy]
+plugins = [
+    "pydantic.mypy",
+]
+
+# Doc8, see https://doc8.readthedocs.io/en/stable/readme.html#ini-file-usage
+[tool.doc8]
+max-line-length = 120
+
+# Pytest, see https://docs.pytest.org/en/stable/reference/customize.html#pyproject-toml
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+]
+
+# Coverage, see https://coverage.readthedocs.io/en/latest/config.html
+[tool.coverage.run]
+branch = true
+source = [
+    "curies",
+]
+omit = [
+    "tests/*",
+    "docs/*",
+]
+
+[tool.coverage.paths]
+source = [
+    "src/curies",
+    ".tox/*/lib/python*/site-packages/curies",
+]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == \"__main__\":",
+    "if TYPE_CHECKING:",
+    "def __str__",
+    "def __repr__",
+]
+
+[tool.ruff]
 line-length = 100
-target-version = ["py39", "py310", "py311", "py312", "py313"]
+extend-include = ["*.ipynb"]
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 100
-include_trailing_comma = true
-reverse_relative = true
+[tool.ruff.lint]
+# See https://docs.astral.sh/ruff/rules
+extend-select = [
+    "F", # pyflakes
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "C90", # mccabe
+    "I", # isort
+    "UP", # pyupgrade
+    "D", # pydocstyle
+    "B", # bugbear
+    "S", # bandit
+    "T20", # print
+    "N", # pep8 naming
+    "ERA", # eradicate commented out code
+    "NPY", # numpy checks
+    "RUF", # ruff rules
+    "C4", # comprehensions
+]
+ignore = [
+    "D105", # Missing docstring in magic method
+    "E203", # Black conflicts with the following
+    "ERA001", # TODO remove
+    "E501", # TODO remove
+    "N818", # TODO remove
+    "C901", # TODO remove?
+]
+
+# See https://docs.astral.sh/ruff/settings/#per-file-ignores
+[tool.ruff.lint.per-file-ignores]
+# Ignore security issues in the version.py, which are inconsistent
+"src/curies/version.py" = ["S603", "S607"]
+# Ignore commented out code in Sphinx configuration file
+"docs/source/conf.py" = ["ERA001"]
+# Prints are okay in notebooks
+"notebooks/**/*.ipynb" = ["T201"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.ruff.lint.isort]
+relative-imports-order = "closest-to-furthest"
+known-third-party = [
+    "tqdm",
+]
+known-first-party = [
+    "curies",
+    "tests",
+]

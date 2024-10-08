@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Data structures and algorithms for :mod:`curies`."""
 
 import csv
@@ -7,6 +5,7 @@ import itertools as itt
 import json
 import logging
 from collections import defaultdict
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
@@ -14,18 +13,9 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Collection,
-    DefaultDict,
-    Dict,
-    Iterable,
-    List,
     Literal,
-    Mapping,
     NamedTuple,
     Optional,
-    Sequence,
-    Set,
-    Tuple,
     TypeVar,
     Union,
     cast,
@@ -153,7 +143,7 @@ class ReferenceTuple(NamedTuple):
         return cls(prefix, identifier)
 
 
-class Reference(BaseModel):  # type:ignore
+class Reference(BaseModel):
     """A reference to an entity in a given identifier space.
 
     This class uses Pydantic to make it easier to build other
@@ -239,10 +229,10 @@ class Reference(BaseModel):  # type:ignore
         return cls(prefix=prefix, identifier=identifier)
 
 
-RecordKey = Tuple[str, str, str, str]
+RecordKey = tuple[str, str, str, str]
 
 
-class Record(BaseModel):  # type:ignore
+class Record(BaseModel):
     """A record of some prefixes and their associated URI prefixes.
 
     .. seealso:: https://github.com/cthoyt/curies/issues/70
@@ -258,8 +248,8 @@ class Record(BaseModel):  # type:ignore
         title="URI prefix",
         description="The canonical URI prefix, used in the forward prefix map",
     )
-    prefix_synonyms: List[str] = Field(default_factory=list, title="CURIE prefix synonyms")
-    uri_prefix_synonyms: List[str] = Field(default_factory=list, title="URI prefix synonyms")
+    prefix_synonyms: list[str] = Field(default_factory=list, title="CURIE prefix synonyms")
+    uri_prefix_synonyms: list[str] = Field(default_factory=list, title="URI prefix synonyms")
     pattern: Optional[str] = Field(
         default=None,
         description="The regular expression pattern for entries in this semantic space. "
@@ -268,7 +258,7 @@ class Record(BaseModel):  # type:ignore
 
     @field_validator("prefix_synonyms")  # type:ignore
     @classmethod
-    def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
+    def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:
         """Check that the canonical prefix does not apper in the prefix synonym list."""
         prefix = _get_field_validator_values(values, "prefix")
         if prefix in v:
@@ -277,7 +267,7 @@ class Record(BaseModel):  # type:ignore
 
     @field_validator("uri_prefix_synonyms")  # type:ignore
     @classmethod
-    def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
+    def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
         uri_prefix = _get_field_validator_values(values, "uri_prefix")
         if uri_prefix in v:
@@ -287,11 +277,11 @@ class Record(BaseModel):  # type:ignore
         return v
 
     @property
-    def _all_prefixes(self) -> List[str]:
+    def _all_prefixes(self) -> list[str]:
         return [self.prefix, *self.prefix_synonyms]
 
     @property
-    def _all_uri_prefixes(self) -> List[str]:
+    def _all_uri_prefixes(self) -> list[str]:
         return [self.uri_prefix, *self.uri_prefix_synonyms]
 
     @property
@@ -307,12 +297,12 @@ class Record(BaseModel):  # type:ignore
 
 # An explanation of RootModels in Pydantic V2 can be found on
 # https://docs.pydantic.dev/latest/concepts/models/#rootmodel-and-custom-root-types
-class Records(RootModel[List[Record]]):  # type:ignore
+class Records(RootModel[list[Record]]):
     """A list of records."""
 
-    def __iter__(self) -> Iterable[Record]:
+    def __iter__(self) -> Iterator[Record]:  # type:ignore[override]
         """Iterate over records."""
-        return cast(Iterable[Record], iter(self.root))
+        return iter(self.root)
 
 
 class DuplicateSummary(NamedTuple):
@@ -326,7 +316,7 @@ class DuplicateSummary(NamedTuple):
 class DuplicateValueError(ValueError):
     """An error raised with constructing a converter with data containing duplicate values."""
 
-    def __init__(self, duplicates: List[DuplicateSummary]) -> None:
+    def __init__(self, duplicates: list[DuplicateSummary]) -> None:
         """Initialize the error."""
         self.duplicates = duplicates
 
@@ -340,14 +330,14 @@ class DuplicateValueError(ValueError):
 class DuplicateURIPrefixes(DuplicateValueError):
     """An error raised with constructing a converter with data containing duplicate URI prefixes."""
 
-    def __str__(self) -> str:  # noqa:D105
+    def __str__(self) -> str:
         return f"Duplicate URI prefixes:\n{self._str()}"
 
 
 class DuplicatePrefixes(DuplicateValueError):
     """An error raised with constructing a converter with data containing duplicate prefixes."""
 
-    def __str__(self) -> str:  # noqa:D105
+    def __str__(self) -> str:
         return f"Duplicate prefixes:\n{self._str()}"
 
 
@@ -379,7 +369,7 @@ class URIStandardizationError(StandardizationError):
     """An error raise when a URI can't be standardized."""
 
 
-def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]:
+def _get_duplicate_uri_prefixes(records: list[Record]) -> list[DuplicateSummary]:
     return [
         DuplicateSummary(record_1, record_2, uri_prefix)
         for record_1, record_2 in itt.combinations(records, 2)
@@ -388,7 +378,7 @@ def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]
     ]
 
 
-def _get_duplicate_prefixes(records: List[Record]) -> List[DuplicateSummary]:
+def _get_duplicate_prefixes(records: list[Record]) -> list[DuplicateSummary]:
     return [
         DuplicateSummary(record_1, record_2, prefix)
         for record_1, record_2 in itt.combinations(records, 2)
@@ -397,7 +387,7 @@ def _get_duplicate_prefixes(records: List[Record]) -> List[DuplicateSummary]:
     ]
 
 
-def _get_prefix_map(records: List[Record]) -> Dict[str, str]:
+def _get_prefix_map(records: list[Record]) -> dict[str, str]:
     rv = {}
     for record in records:
         rv[record.prefix] = record.uri_prefix
@@ -406,11 +396,11 @@ def _get_prefix_map(records: List[Record]) -> Dict[str, str]:
     return rv
 
 
-def _get_pattern_map(records: List[Record]) -> Dict[str, str]:
+def _get_pattern_map(records: list[Record]) -> dict[str, str]:
     return {record.prefix: record.pattern for record in records if record.pattern}
 
 
-def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
+def _get_reverse_prefix_map(records: list[Record]) -> dict[str, str]:
     rv = {}
     for record in records:
         rv[record.uri_prefix] = record.prefix
@@ -419,7 +409,7 @@ def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
     return rv
 
 
-def _get_prefix_synmap(records: List[Record]) -> Dict[str, str]:
+def _get_prefix_synmap(records: list[Record]) -> dict[str, str]:
     rv = {}
     for record in records:
         rv[record.prefix] = record.prefix
@@ -434,7 +424,7 @@ def _prepare(data: LocationOr[X]) -> X:
             return cast(X, json.load(file))
     elif isinstance(data, str):
         if any(data.startswith(p) for p in ("https://", "http://", "ftp://")):
-            res = requests.get(data)
+            res = requests.get(data, timeout=15)
             res.raise_for_status()
             return cast(X, res.json())
         with open(data) as file:
@@ -470,17 +460,17 @@ class Converter:
     """
 
     #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
-    prefix_map: Dict[str, str]
+    prefix_map: dict[str, str]
     #: The mapping from URI prefixes to prefixes
-    reverse_prefix_map: Dict[str, str]
+    reverse_prefix_map: dict[str, str]
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
     #: A mapping from prefix to regular expression pattern. Not necessarily complete wrt the prefix map.
     #:
     #: .. warning:: patterns are an experimental feature
-    pattern_map: Dict[str, str]
+    pattern_map: dict[str, str]
 
-    def __init__(self, records: List[Record], *, delimiter: str = ":", strict: bool = True) -> None:
+    def __init__(self, records: list[Record], *, delimiter: str = ":", strict: bool = True) -> None:
         """Instantiate a converter.
 
         :param records:
@@ -515,9 +505,9 @@ class Converter:
 
     def _match_record(
         self, external: Record, case_sensitive: bool = True
-    ) -> Mapping[RecordKey, List[str]]:
+    ) -> Mapping[RecordKey, list[str]]:
         """Match the given record to existing records."""
-        rv: DefaultDict[RecordKey, List[str]] = defaultdict(list)
+        rv: defaultdict[RecordKey, list[str]] = defaultdict(list)
         for record in self.records:
             # Match CURIE prefixes
             if _eq(external.prefix, record.prefix, case_sensitive=case_sensitive):
@@ -554,7 +544,7 @@ class Converter:
             if not merge:
                 raise ValueError(f"new record already exists and merge=False: {matched}")
 
-            key = list(matched)[0]
+            key = next(iter(matched))
             existing_record = next(r for r in self.records if r._key == key)
             self._merge(record, into=existing_record)
             self._index(existing_record)
@@ -648,7 +638,7 @@ class Converter:
 
     @classmethod
     def from_extended_prefix_map(
-        cls, records: LocationOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
+        cls, records: LocationOr[Iterable[Union[Record, dict[str, Any]]]], **kwargs: Any
     ) -> "Converter":
         """Get a converter from a list of dictionaries by creating records out of them.
 
@@ -723,7 +713,7 @@ class Converter:
 
     @classmethod
     def from_priority_prefix_map(
-        cls, data: LocationOr[Mapping[str, List[str]]], **kwargs: Any
+        cls, data: LocationOr[Mapping[str, list[str]]], **kwargs: Any
     ) -> "Converter":
         """Get a converter from a priority prefix map.
 
@@ -842,7 +832,7 @@ class Converter:
         return cls(records, **kwargs)
 
     @classmethod
-    def from_jsonld(cls, data: LocationOr[Dict[str, Any]], **kwargs: Any) -> "Converter":
+    def from_jsonld(cls, data: LocationOr[dict[str, Any]], **kwargs: Any) -> "Converter":
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
         :param data:
@@ -977,7 +967,7 @@ class Converter:
         ]
         return cls(records, **kwargs)
 
-    def get_prefixes(self, *, include_synonyms: bool = False) -> Set[str]:
+    def get_prefixes(self, *, include_synonyms: bool = False) -> set[str]:
         """Get the set of prefixes covered by this converter.
 
         :param include_synonyms: If true, include secondary prefixes.
@@ -995,7 +985,7 @@ class Converter:
             )
         return rv
 
-    def get_uri_prefixes(self, *, include_synonyms: bool = False) -> Set[str]:
+    def get_uri_prefixes(self, *, include_synonyms: bool = False) -> set[str]:
         """Get the set of URI prefixes covered by this converter.
 
         :param include_synonyms: If true, include secondary prefixes.
@@ -1185,7 +1175,7 @@ class Converter:
             return uri
         return None
 
-    def parse_uri(self, uri: str) -> Union[ReferenceTuple, Tuple[None, None]]:
+    def parse_uri(self, uri: str) -> Union[ReferenceTuple, tuple[None, None]]:
         """Compress a URI to a CURIE pair.
 
         :param uri:
@@ -2005,7 +1995,7 @@ def load_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) ->
 
 
 def load_extended_prefix_map(
-    records: LocationOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
+    records: LocationOr[Iterable[Union[Record, dict[str, Any]]]], **kwargs: Any
 ) -> Converter:
     """Get a converter from a list of dictionaries by creating records out of them.
 
@@ -2074,7 +2064,7 @@ def load_extended_prefix_map(
     return Converter.from_extended_prefix_map(records, **kwargs)
 
 
-def load_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Converter:
+def load_jsonld_context(data: LocationOr[dict[str, Any]], **kwargs: Any) -> Converter:
     """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
     :param data:
@@ -2118,9 +2108,9 @@ def write_extended_prefix_map(converter: Converter, path: Union[str, Path]) -> N
     )
 
 
-def _record_to_dict(record: Record) -> Mapping[str, Union[str, List[str]]]:
+def _record_to_dict(record: Record) -> Mapping[str, Union[str, list[str]]]:
     """Convert a record to a dict."""
-    rv: Dict[str, Union[str, List[str]]] = {
+    rv: dict[str, Union[str, list[str]]] = {
         "prefix": record.prefix,
         "uri_prefix": record.uri_prefix,
     }
@@ -2141,7 +2131,7 @@ def _ensure_path(path: Union[str, Path]) -> Path:
 
 def _get_jsonld_context(
     converter: Converter, *, expand: bool = False, include_synonyms: bool = False
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get a JSON-LD context based on the converter."""
     context = {}
     for record in converter.records:
@@ -2218,7 +2208,7 @@ def write_jsonld_context(
         json.dump(obj, file, indent=4, sort_keys=True)
 
 
-def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, Dict[str, Any]]:
+def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, dict[str, Any]]:
     if not expand:
         return record.uri_prefix
 
@@ -2290,7 +2280,7 @@ def write_shacl(
 
 
 def write_tsv(
-    converter: Converter, path: Union[str, Path], *, header: Tuple[str, str] = ("prefix", "base")
+    converter: Converter, path: Union[str, Path], *, header: tuple[str, str] = ("prefix", "base")
 ) -> None:
     """Write a simple prefix map CSV file.
 
@@ -2332,7 +2322,7 @@ def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None)
     return line + " ]"
 
 
-def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
+def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> list[Record]:
     """Convert a (potentially problematic) prefix map (i.e., not bijective) into a list of records.
 
     A prefix map is bijective if it has no duplicate CURIE prefixes (i.e., keys in a dictionary) and

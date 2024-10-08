@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Trivial version test."""
 
 import json
@@ -733,7 +731,7 @@ class TestConverter(unittest.TestCase):
                 path = Path(directory).joinpath("test.tsv")
                 with path.open("w") as file:
                     for row in rows:
-                        print(*row, sep="\t", file=file)  # noqa:T201
+                        print(*row, sep="\t", file=file)
 
                 idx = 1 if header else 0
 

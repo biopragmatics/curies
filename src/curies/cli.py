@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # type:ignore
 
 """This package comes with a built-in CLI for running a resolver web application.
@@ -27,7 +26,8 @@ The same flags and arguments are applicable.
 """
 
 import sys
-from typing import Callable, Mapping
+from collections.abc import Mapping
+from typing import Callable
 
 import click
 
@@ -134,7 +134,11 @@ def main():
     """Run the `curies` CLI."""
 
 
-@main.command()
+@main.command(
+    help="""\
+Location can either be the name of a built-in converter, a file path, or a URL.
+"""
+)
 @LOCATION_ARGUMENT
 @FRAMEWORK_OPTION
 @SERVER_OPTION
@@ -142,16 +146,17 @@ def main():
 @HOST_OPTION
 @PORT_OPTION
 def resolver(location, host: str, port: int, framework: str, format: str, server: str):
-    """Serve a resolver app.
-
-    Location can either be the name of a built-in converter, a file path, or a URL.
-    """
+    """Serve a resolver app."""
     converter = _get_converter(location, format)
     app = _get_resolver_app(converter, framework=framework)
     _run_app(app, server=server, host=host, port=port)
 
 
-@main.command()
+@main.command(
+    help="""\
+Location can either be the name of a built-in converter, a file path, or a URL.
+"""
+)
 @LOCATION_ARGUMENT
 @FRAMEWORK_OPTION
 @SERVER_OPTION
@@ -159,10 +164,7 @@ def resolver(location, host: str, port: int, framework: str, format: str, server
 @HOST_OPTION
 @PORT_OPTION
 def mapper(location, host: str, port: int, framework: str, format: str, server: str):
-    """Serve a mapper app.
-
-    Location can either be the name of a built-in converter, a file path, or a URL.
-    """
+    """Serve a mapper app."""
     converter = _get_converter(location, format)
     app = _get_mapper_app(converter, framework=framework)
     _run_app(app, server=server, host=host, port=port)

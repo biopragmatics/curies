@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Idiomatic conversion between URIs and compact URIs (CURIEs)."""
 
 from .api import (
