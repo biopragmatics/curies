@@ -5,7 +5,7 @@ import itertools as itt
 import json
 import logging
 from collections import defaultdict
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
@@ -143,7 +143,7 @@ class ReferenceTuple(NamedTuple):
         return cls(prefix, identifier)
 
 
-class Reference(BaseModel):  # type:ignore
+class Reference(BaseModel):
     """A reference to an entity in a given identifier space.
 
     This class uses Pydantic to make it easier to build other
@@ -232,7 +232,7 @@ class Reference(BaseModel):  # type:ignore
 RecordKey = tuple[str, str, str, str]
 
 
-class Record(BaseModel):  # type:ignore
+class Record(BaseModel):
     """A record of some prefixes and their associated URI prefixes.
 
     .. seealso:: https://github.com/cthoyt/curies/issues/70
@@ -297,12 +297,12 @@ class Record(BaseModel):  # type:ignore
 
 # An explanation of RootModels in Pydantic V2 can be found on
 # https://docs.pydantic.dev/latest/concepts/models/#rootmodel-and-custom-root-types
-class Records(RootModel[list[Record]]):  # type:ignore
+class Records(RootModel[list[Record]]):
     """A list of records."""
 
-    def __iter__(self) -> Iterable[Record]:
+    def __iter__(self) -> Iterator[Record]:  # type:ignore[override]
         """Iterate over records."""
-        return cast(Iterable[Record], iter(self.root))
+        return iter(self.root)
 
 
 class DuplicateSummary(NamedTuple):
