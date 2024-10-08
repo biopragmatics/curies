@@ -1,7 +1,8 @@
 """Implementation of mapping service."""
 
 import itertools as itt
-from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
+from collections.abc import Collection, Iterable
+from typing import TYPE_CHECKING, Any, Union, cast
 
 from rdflib import OWL, Graph, URIRef
 from rdflib.term import _is_valid_uri
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     import flask
 
 
-def _prepare_predicates(predicates: Union[None, str, Collection[str]] = None) -> Set[URIRef]:
+def _prepare_predicates(predicates: Union[None, str, Collection[str]] = None) -> set[URIRef]:
     if predicates is None:
         return {OWL.sameAs}
     if isinstance(predicates, str):
@@ -27,13 +28,13 @@ class MappingServiceGraph(Graph):  # type:ignore
     """A service that implements identifier mapping based on a converter."""
 
     converter: Converter
-    predicates: Set[URIRef]
+    predicates: set[URIRef]
 
     def __init__(
         self,
         *args: Any,
         converter: Converter,
-        predicates: Union[None, str, List[str]] = None,
+        predicates: Union[None, str, list[str]] = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate the graph.
@@ -91,7 +92,7 @@ class MappingServiceGraph(Graph):  # type:ignore
         self.predicates = _prepare_predicates(predicates)
         super().__init__(*args, **kwargs)
 
-    def _expand_pair_all(self, uri_in: str) -> List[URIRef]:
+    def _expand_pair_all(self, uri_in: str) -> list[URIRef]:
         prefix, identifier = self.converter.parse_uri(uri_in)
         if prefix is None or identifier is None:
             return []
@@ -101,8 +102,8 @@ class MappingServiceGraph(Graph):  # type:ignore
         return [URIRef(uri) for uri in uris if _is_valid_uri(uri)]
 
     def triples(
-        self, triple: Tuple[URIRef, URIRef, URIRef]
-    ) -> Iterable[Tuple[URIRef, URIRef, URIRef]]:
+        self, triple: tuple[URIRef, URIRef, URIRef]
+    ) -> Iterable[tuple[URIRef, URIRef, URIRef]]:
         """Generate triples, overriden to dynamically generate mappings based on this graph's converter."""
         subj_query, pred_query, obj_query = triple
         if pred_query in self.predicates:
@@ -172,16 +173,16 @@ def get_fastapi_router(
 
     @api_router.get(route)  # type:ignore
     def resolve_get(
-        query: str = Query(description="The SPARQL query to run"),  # noqa:B008
-        accept: str = Header(),  # noqa:B008
+        query: str = Query(description="The SPARQL query to run"),
+        accept: str = Header(),
     ) -> Response:
         """Run a SPARQL query and serve the results."""
         return _resolve(accept, query)
 
     @api_router.post(route)  # type:ignore
     def resolve_post(
-        query: str = Form(description="The SPARQL query to run"),  # noqa:B008
-        accept: str = Header(),  # noqa:B008
+        query: str = Form(description="The SPARQL query to run"),
+        accept: str = Header(),
     ) -> Response:
         """Run a SPARQL query and serve the results."""
         return _resolve(accept, query)

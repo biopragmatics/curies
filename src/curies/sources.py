@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """External sources of contexts."""
 
 from typing import Any

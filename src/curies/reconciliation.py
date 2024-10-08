@@ -2,7 +2,8 @@
 
 import logging
 from collections import Counter, defaultdict
-from typing import Collection, List, Mapping, Optional, Tuple
+from collections.abc import Collection, Mapping
+from typing import Optional
 
 from .api import Converter, Record
 
@@ -196,7 +197,7 @@ class CycleDetected(ValueError):
 
 def _order_curie_remapping(
     converter: Converter, curie_remapping: Mapping[str, str]
-) -> List[Tuple[str, str]]:
+) -> list[tuple[str, str]]:
     # Check that no keys of the remapping actually correspond to the same primary prefix
     key_counter = defaultdict(list)
     for key in curie_remapping:

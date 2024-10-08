@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # type: ignore
 
 """A custom SPARQL processor that optimizes the query based on https://github.com/RDFLib/rdflib/pull/2257."""

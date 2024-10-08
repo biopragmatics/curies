@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
-
 """Utilities for the mapping service."""
 
 import json
 import json.decoder
 import unittest
-from typing import Callable, List, Mapping, Optional, Set, Tuple
+from collections.abc import Mapping
+from typing import Callable, Optional
 
 import requests
 from defusedxml import ElementTree
@@ -22,7 +21,7 @@ __all__ = [
 ]
 
 Record = Mapping[str, str]
-Records = List[Record]
+Records = list[Record]
 
 #: A SPARQL query used to ping a SPARQL endpoint
 PING_SPARQL = 'SELECT ?s ?o WHERE { BIND("hello" as ?s) . BIND("there" as ?o) . }'
@@ -91,6 +90,7 @@ def get_sparql_records(endpoint: str, sparql: str, accept: str) -> Records:
     """Get a response from a given SPARQL query."""
     res = requests.get(
         endpoint,
+        timeout=60,
         params={"query": sparql},
         headers={"accept": accept},
     )
@@ -99,7 +99,7 @@ def get_sparql_records(endpoint: str, sparql: str, accept: str) -> Records:
     return func(res.text)
 
 
-def get_sparql_record_so_tuples(records: Records) -> Set[Tuple[str, str]]:
+def get_sparql_record_so_tuples(records: Records) -> set[tuple[str, str]]:
     """Get subject/object pairs from records."""
     return {(record["s"], record["o"]) for record in records}
 
@@ -113,14 +113,14 @@ def sparql_service_available(endpoint: str) -> bool:
     return {("hello", "there")} == get_sparql_record_so_tuples(records)
 
 
-def _handle_part(part: str) -> Tuple[str, float]:
+def _handle_part(part: str) -> tuple[str, float]:
     if ";q=" not in part:
         return part, 1.0
     key, q = part.split(";q=", 1)
     return key, float(q)
 
 
-def parse_header(header: str) -> List[str]:
+def parse_header(header: str) -> list[str]:
     """Parse the header and sort in descending order of q value."""
     parts = dict(_handle_part(part) for part in header.split(","))
     return sorted(parts, key=parts.__getitem__, reverse=True)

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # type:ignore
 
 """This package comes with a built-in CLI for running a resolver web application.
@@ -27,7 +26,8 @@ The same flags and arguments are applicable.
 """
 
 import sys
-from typing import Callable, Mapping
+from collections.abc import Mapping
+from typing import Callable
 
 import click
 
