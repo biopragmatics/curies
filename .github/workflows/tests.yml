@@ -58,7 +58,6 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
         python-version: [ "3.9", "3.12" ]
-        pydantic: [ "1", "2" ]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -69,7 +68,7 @@ jobs:
         run: pip install tox tox-uv
       - name: Test with pytest and generate coverage file
         run:
-          tox run -e py-pydantic${{ matrix.pydantic }}
+          tox run -e py
       - name: Doctests
         run:
           tox run -e doctests
