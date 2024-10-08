@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "curies"
-version = "0.8.0-dev"
+version = "0.8.0"
 description = "Idiomatic conversion between URIs and compact URIs (CURIEs)"
 readme = "README.md"
 authors = [
