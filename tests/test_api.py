@@ -43,6 +43,24 @@ GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
 class TestStruct(unittest.TestCase):
     """Test the data structures."""
 
+    def test_default_prefix(self) -> None:
+        """Test a default (empty) prefix."""
+        ref = Reference.from_curie(":something")
+        self.assertEqual("", ref.prefix)
+        self.assertEqual("something", ref.identifier)
+
+    def test_default_identifier(self) -> None:
+        """Test a default (empty) identifier."""
+        ref = Reference.from_curie("p1:")
+        self.assertEqual("p1", ref.prefix)
+        self.assertEqual("", ref.identifier)
+
+    def test_multiple_delimiters(self) -> None:
+        """Test a default (empty) identifier."""
+        ref = Reference.from_curie("a1:b2:c3")
+        self.assertEqual("a1", ref.prefix)
+        self.assertEqual("b2:c3", ref.identifier)
+
     def test_records(self):
         """Test a list of records."""
         records = Records.parse_obj([{"prefix": "chebi", "uri_prefix": CHEBI_URI_PREFIX}])
@@ -62,6 +80,18 @@ class TestStruct(unittest.TestCase):
             Reference.from_curie("def:1234"),
         ]
         self.assertEqual(expected, sorted(start))
+
+    def test_set_membership(self):
+        """Test membership in sets."""
+        collection = {
+            Reference.from_curie("def:1234"),
+            Reference.from_curie("abc:1234"),
+            Reference.from_curie("abc:1235"),
+        }
+        self.assertIn(Reference.from_curie("def:1234"), collection)
+        self.assertNotIn(Reference.from_curie("xyz:1234"), collection)
+        self.assertNotIn(Reference.from_curie(":1234"), collection)
+        self.assertNotIn(Reference.from_curie("abc:"), collection)
 
 
 class TestAddRecord(unittest.TestCase):
