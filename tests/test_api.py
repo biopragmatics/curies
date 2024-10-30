@@ -63,6 +63,14 @@ class TestStruct(unittest.TestCase):
         ]
         self.assertEqual(expected, sorted(start))
 
+    def test_set_membership(self):
+        """Test set membership isn't affected by name status."""
+        references = {
+            NamedReference.from_curie("a:1", "name1"),
+            NamedReference.from_curie("a:2", "name2"),
+        }
+        self.assertIn(Reference.from_curie("a:1"), references)
+
 
 class TestAddRecord(unittest.TestCase):
     """Test adding records."""
