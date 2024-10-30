@@ -142,6 +142,7 @@ class ReferenceTuple(NamedTuple):
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
+        :param sep: The separator
         :return: A reference tuple
 
         >>> ReferenceTuple.from_curie("chebi:1234")
@@ -234,6 +235,7 @@ class Reference(BaseModel):
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
+        :param sep: The separator
         :return: A reference object
 
         >>> Reference.from_curie("chebi:1234")
@@ -254,6 +256,7 @@ class NamedReferenceTuple(ReferenceTuple):
 
         :param curie: A string representation of a compact URI (CURIE)
         :param name: A name
+        :param sep: The separator
         :return: A reference tuple
 
         >>> NamedReferenceTuple.from_curie("chebi:1234", "name")
@@ -284,6 +287,7 @@ class NamedReference(Reference):
 
         :param curie: A string representation of a compact URI (CURIE)
         :param name: The name of the reference
+        :param sep: The separator
         :return: A reference object
 
         >>> NamedReference.from_curie("chebi:1234", "name")
