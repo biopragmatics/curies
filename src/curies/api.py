@@ -204,6 +204,10 @@ class Reference(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    def __lt__(self, other: "Reference") -> bool:
+        """Sort the reference lexically first by prefix, then by identifier."""
+        return self.pair < other.pair
+
     @property
     def curie(self) -> str:
         """Get the reference as a CURIE string.
