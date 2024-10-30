@@ -34,6 +34,8 @@ __all__ = [
     "Converter",
     "Reference",
     "ReferenceTuple",
+    "NamedReferenceTuple",
+    "NamedReference",
     "Record",
     "Records",
     "DuplicateValueError",
@@ -129,17 +131,16 @@ class ReferenceTuple(NamedTuple):
         return f"{self.prefix}:{self.identifier}"
 
     @classmethod
-    def from_curie(cls, curie: str, sep: str = ":") -> "ReferenceTuple":
+    def from_curie(cls, curie: str) -> "ReferenceTuple":
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
-        :param sep: The separator
         :return: A reference tuple
 
         >>> ReferenceTuple.from_curie("chebi:1234")
         ReferenceTuple(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(sep, 1)
+        prefix, identifier = curie.split(":", 1)
         return cls(prefix, identifier)
 
 
@@ -197,6 +198,10 @@ class Reference(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    def __lt__(self, other: "Reference") -> bool:
+        """Sort the reference lexically first by prefix, then by identifier."""
+        return self.pair < other.pair
+
     @property
     def curie(self) -> str:
         """Get the reference as a CURIE string.
@@ -215,18 +220,65 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(cls, curie: str, sep: str = ":") -> "Reference":
+    def from_curie(cls, curie: str) -> "Reference":
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
-        :param sep: The separator
         :return: A reference object
 
         >>> Reference.from_curie("chebi:1234")
         Reference(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(sep, 1)
+        prefix, identifier = curie.split(":", 1)
         return cls(prefix=prefix, identifier=identifier)
+
+
+class NamedReferenceTuple(ReferenceTuple):
+    """A reference tuple with a name."""
+
+    name: str
+
+    @classmethod
+    def from_curie(cls, curie: str, name: str) -> "NamedReferenceTuple":
+        """Parse a CURIE string and populate a reference tuple.
+
+        :param curie: A string representation of a compact URI (CURIE)
+        :param name: A name
+        :return: A reference tuple
+
+        >>> NamedReferenceTuple.from_curie("chebi:1234", "name")
+        NamedReferenceTuple(prefix='chebi', identifier='1234', name='name')
+        """
+        prefix, identifier = curie.split(":", 1)
+        return cls(prefix, identifier, name)
+
+
+class NamedReference(Reference):
+    """A reference with a name."""
+
+    name: str
+
+    def __hash__(self) -> int:
+        return hash((self.prefix, self.identifier))
+
+    @property
+    def triple(self) -> NamedReferenceTuple:
+        """Get the reference as a 2-tuple of prefix and identifier."""
+        return NamedReferenceTuple(self.prefix, self.identifier, self.name)
+
+    @classmethod
+    def from_curie(cls, curie: str, name: str) -> "Reference":
+        """Parse a CURIE string and populate a reference.
+
+        :param curie: A string representation of a compact URI (CURIE)
+        :param name: The name of the reference
+        :return: A reference object
+
+        >>> NamedReference.from_curie("chebi:1234", "name")
+        NamedReference(prefix='chebi', identifier='1234', name='name')
+        """
+        prefix, identifier = curie.split(":", 1)
+        return cls(prefix=prefix, identifier=identifier, name=name)
 
 
 RecordKey = tuple[str, str, str, str]
