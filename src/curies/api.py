@@ -22,7 +22,6 @@ from typing import (
     overload,
 )
 
-import requests
 from pydantic import BaseModel, ConfigDict, Field, RootModel, field_validator
 from pytrie import StringTrie
 
@@ -482,13 +481,19 @@ def _prepare(data: LocationOr[X]) -> X:
             return cast(X, json.load(file))
     elif isinstance(data, str):
         if any(data.startswith(p) for p in ("https://", "http://", "ftp://")):
-            res = requests.get(data, timeout=15)
-            res.raise_for_status()
-            return cast(X, res.json())
+            return cast(X, _get_remote_json(data))
         with open(data) as file:
             return cast(X, json.load(file))
     else:
         return data
+
+
+def _get_remote_json(url: str, timeout: int = 15) -> Any:
+    import urllib.request
+
+    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa:S310
+        json_str_data = response.read().decode()
+    return json.loads(json_str_data)
 
 
 class Converter:

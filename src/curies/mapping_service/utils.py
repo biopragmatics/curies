@@ -6,7 +6,6 @@ import unittest
 from collections.abc import Mapping
 from typing import Callable, Optional
 
-import requests
 from defusedxml import ElementTree
 
 __all__ = [
@@ -88,6 +87,8 @@ CONTENT_TYPE_TO_HANDLER: Mapping[str, Callable[[str], Records]] = {
 
 def get_sparql_records(endpoint: str, sparql: str, accept: str) -> Records:
     """Get a response from a given SPARQL query."""
+    import requests
+
     res = requests.get(
         endpoint,
         timeout=60,
@@ -108,7 +109,7 @@ def sparql_service_available(endpoint: str) -> bool:
     """Test if a SPARQL service is running."""
     try:
         records = get_sparql_records(endpoint, PING_SPARQL, "application/json")
-    except (requests.exceptions.ConnectionError, json.decoder.JSONDecodeError):
+    except (OSError, json.decoder.JSONDecodeError):
         return False
     return {("hello", "there")} == get_sparql_record_so_tuples(records)
 
