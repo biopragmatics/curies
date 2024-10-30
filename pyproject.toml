@@ -54,13 +54,13 @@ requires-python = ">=3.9"
 dependencies = [
     "pytrie",
     "pydantic>=2.0",
-    "requests",
 ]
 
 [project.optional-dependencies]
 tests = [
     "pytest",
     "coverage",
+    "requests",
 ]
 pandas = [
     "pandas",
