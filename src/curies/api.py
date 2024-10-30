@@ -65,6 +65,13 @@ def _get_field_validator_values(values, key: str):  # type:ignore
     return values.data[key]
 
 
+def _split(curie: str, *, sep: str = ":") -> tuple[str, str]:
+    prefix, delimiter, identifier = curie.partition(sep)
+    if not delimiter:
+        raise NoCURIEDelimiterError(curie)
+    return prefix, identifier
+
+
 class ReferenceTuple(NamedTuple):
     """A pair of a prefix (corresponding to a semantic space) and a local unique identifier in that semantic space.
 
@@ -129,7 +136,7 @@ class ReferenceTuple(NamedTuple):
         return f"{self.prefix}:{self.identifier}"
 
     @classmethod
-    def from_curie(cls, curie: str, sep: str = ":") -> "ReferenceTuple":
+    def from_curie(cls, curie: str, *, sep: str = ":") -> "ReferenceTuple":
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -139,7 +146,7 @@ class ReferenceTuple(NamedTuple):
         >>> ReferenceTuple.from_curie("chebi:1234")
         ReferenceTuple(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(sep, 1)
+        prefix, identifier = _split(curie, sep=sep)
         return cls(prefix, identifier)
 
 
@@ -219,7 +226,7 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(cls, curie: str, sep: str = ":") -> "Reference":
+    def from_curie(cls, curie: str, *, sep: str = ":") -> "Reference":
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -229,7 +236,7 @@ class Reference(BaseModel):
         >>> Reference.from_curie("chebi:1234")
         Reference(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(sep, 1)
+        prefix, identifier = _split(curie, sep=sep)
         return cls(prefix=prefix, identifier=identifier)
 
 
@@ -315,6 +322,17 @@ class DuplicateSummary(NamedTuple):
     record_1: Record
     record_2: Record
     prefix: str
+
+
+class NoCURIEDelimiterError(ValueError):
+    """An error thrown on a string with no delimiter."""
+
+    def __init__(self, curie: str):
+        """Initialize the error."""
+        self.curie = curie
+
+    def __str__(self) -> str:
+        return f"{self.curie} does not appear to be a CURIE - missing a delimiter"
 
 
 class DuplicateValueError(ValueError):

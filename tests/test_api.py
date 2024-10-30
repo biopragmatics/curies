@@ -17,6 +17,7 @@ from curies.api import (
     DuplicatePrefixes,
     DuplicateURIPrefixes,
     ExpansionError,
+    NoCURIEDelimiterError,
     PrefixStandardizationError,
     Record,
     Records,
@@ -42,6 +43,12 @@ GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
 
 class TestStruct(unittest.TestCase):
     """Test the data structures."""
+
+    def test_not_curie(self):
+        """Test a malformed CURIE."""
+        with self.assertRaises(NoCURIEDelimiterError) as e:
+            Reference.from_curie("not a curie")
+        self.assertIn("does not appear to be a CURIE", str(e.exception))
 
     def test_default_prefix(self) -> None:
         """Test a default (empty) prefix."""
