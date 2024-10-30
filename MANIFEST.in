@@ -3,17 +3,9 @@ graft tests
 prune scripts
 prune notebooks
 prune tests/.pytest_cache
+prune docs
 
-prune docs/build
-prune docs/source/api
-
-recursive-include docs/source *.py
-recursive-include docs/source *.rst
-recursive-include docs/source *.png
-recursive-include docs/source *.svg
-
-global-exclude *.py[cod] __pycache__ *.so *.dylib .DS_Store *.gpickle
+global-exclude *.py[cod] __pycache__ *.so *.dylib .DS_Store *.gpickle .idea/**
 
 include README.md LICENSE
-exclude tox.ini .flake8 .bumpversion.cfg .readthedocs.yml codecov.yml
-exclude docs/make_schema.py docs/schema.json
+exclude tox.ini .readthedocs.yml .cruft.json
