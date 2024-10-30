@@ -101,6 +101,11 @@ class TestStruct(unittest.TestCase):
         self.assertNotIn(Reference.from_curie(":1234"), collection)
         self.assertNotIn(Reference.from_curie("abc:"), collection)
 
+    def test_named_reference_construction(self):
+        """Test named reference construction."""
+        nr1 = NamedReference.from_curie("a:1", "n1")
+        self.assertEqual(("a", "1", "n1"), tuple(nr1.triple))
+
     def test_named_set_membership(self):
         """Test membership in sets of named references."""
         references = {

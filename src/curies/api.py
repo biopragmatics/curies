@@ -213,6 +213,13 @@ class Reference(BaseModel):
     def __hash__(self) -> int:
         return hash((self.prefix, self.identifier))
 
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, Reference)
+            and self.prefix == other.prefix
+            and self.identifier == other.identifier
+        )
+
     @property
     def curie(self) -> str:
         """Get the reference as a CURIE string.
@@ -251,7 +258,7 @@ class NamedReferenceTuple(ReferenceTuple):
     name: str
 
     @classmethod
-    def from_curie(cls, curie: str, name: str, sep: str = ":") -> "NamedReferenceTuple":
+    def from_curie(cls, curie: str, name: str, sep: str = ":") -> "NamedReferenceTuple":  # type:ignore
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -263,7 +270,7 @@ class NamedReferenceTuple(ReferenceTuple):
         NamedReferenceTuple(prefix='chebi', identifier='1234', name='name')
         """
         prefix, identifier = _split(curie, sep=sep)
-        return cls(prefix, identifier, name)
+        return NamedReferenceTuple(prefix, identifier, name)
 
 
 class NamedReference(Reference):
@@ -273,16 +280,13 @@ class NamedReference(Reference):
 
     model_config = ConfigDict(frozen=True)
 
-    def __hash__(self) -> int:
-        return hash((self.prefix, self.identifier))
-
     @property
     def triple(self) -> NamedReferenceTuple:
-        """Get the reference as a 2-tuple of prefix and identifier."""
+        """Get the reference as a 3-tuple of prefix, identifier, and name."""
         return NamedReferenceTuple(self.prefix, self.identifier, self.name)
 
     @classmethod
-    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> "Reference":
+    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> "NamedReference":  # type:ignore
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
