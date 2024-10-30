@@ -67,8 +67,8 @@ def _get_field_validator_values(values, key: str):  # type:ignore
     return values.data[key]
 
 
-def _split(curie: str) -> tuple[str, str]:
-    prefix, delimiter, identifier = curie.partition(":")
+def _split(curie: str, *, sep: str = ":") -> tuple[str, str]:
+    prefix, delimiter, identifier = curie.partition(sep)
     if not delimiter:
         raise NoCURIEDelimiterError(curie)
     return prefix, identifier
@@ -138,7 +138,7 @@ class ReferenceTuple(NamedTuple):
         return f"{self.prefix}:{self.identifier}"
 
     @classmethod
-    def from_curie(cls, curie: str) -> "ReferenceTuple":
+    def from_curie(cls, curie: str, *, sep: str = ":") -> "ReferenceTuple":
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -147,7 +147,7 @@ class ReferenceTuple(NamedTuple):
         >>> ReferenceTuple.from_curie("chebi:1234")
         ReferenceTuple(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = _split(curie)
+        prefix, identifier = _split(curie, sep=sep)
         return cls(prefix, identifier)
 
 
@@ -230,7 +230,7 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(cls, curie: str) -> "Reference":
+    def from_curie(cls, curie: str, *, sep: str = ":") -> "Reference":
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -239,7 +239,7 @@ class Reference(BaseModel):
         >>> Reference.from_curie("chebi:1234")
         Reference(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = _split(curie)
+        prefix, identifier = _split(curie, sep=sep)
         return cls(prefix=prefix, identifier=identifier)
 
 
@@ -249,7 +249,7 @@ class NamedReferenceTuple(ReferenceTuple):
     name: str
 
     @classmethod
-    def from_curie(cls, curie: str, name: str) -> "NamedReferenceTuple":
+    def from_curie(cls, curie: str, name: str, sep: str = ":") -> "NamedReferenceTuple":
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -259,7 +259,7 @@ class NamedReferenceTuple(ReferenceTuple):
         >>> NamedReferenceTuple.from_curie("chebi:1234", "name")
         NamedReferenceTuple(prefix='chebi', identifier='1234', name='name')
         """
-        prefix, identifier = _split(curie)
+        prefix, identifier = _split(curie, sep=sep)
         return cls(prefix, identifier, name)
 
 
@@ -279,7 +279,7 @@ class NamedReference(Reference):
         return NamedReferenceTuple(self.prefix, self.identifier, self.name)
 
     @classmethod
-    def from_curie(cls, curie: str, name: str) -> "Reference":
+    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> "Reference":
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -289,7 +289,7 @@ class NamedReference(Reference):
         >>> NamedReference.from_curie("chebi:1234", "name")
         NamedReference(prefix='chebi', identifier='1234', name='name')
         """
-        prefix, identifier = _split(curie)
+        prefix, identifier = _split(curie, sep=sep)
         return cls(prefix=prefix, identifier=identifier, name=name)
 
 
