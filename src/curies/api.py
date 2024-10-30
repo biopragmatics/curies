@@ -33,6 +33,7 @@ __all__ = [
     "Converter",
     "Reference",
     "ReferenceTuple",
+    "NamedReference",
     "Record",
     "Records",
     "DuplicateValueError",
@@ -62,6 +63,13 @@ LocationOr = Union[str, Path, X]
 def _get_field_validator_values(values, key: str):  # type:ignore
     """Get the value for the key from a field validator object, cross-compatible with Pydantic 1 and 2."""
     return values.data[key]
+
+
+def _split(curie: str, *, sep: str = ":") -> tuple[str, str]:
+    prefix, delimiter, identifier = curie.partition(sep)
+    if not delimiter:
+        raise NoCURIEDelimiterError(curie)
+    return prefix, identifier
 
 
 class ReferenceTuple(NamedTuple):
@@ -128,7 +136,7 @@ class ReferenceTuple(NamedTuple):
         return f"{self.prefix}:{self.identifier}"
 
     @classmethod
-    def from_curie(cls, curie: str, sep: str = ":") -> "ReferenceTuple":
+    def from_curie(cls, curie: str, *, sep: str = ":") -> "ReferenceTuple":
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -138,7 +146,7 @@ class ReferenceTuple(NamedTuple):
         >>> ReferenceTuple.from_curie("chebi:1234")
         ReferenceTuple(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(sep, 1)
+        prefix, identifier = _split(curie, sep=sep)
         return cls(prefix, identifier)
 
 
@@ -200,6 +208,16 @@ class Reference(BaseModel):
         """Sort the reference lexically first by prefix, then by identifier."""
         return self.pair < other.pair
 
+    def __hash__(self) -> int:
+        return hash((self.prefix, self.identifier))
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, Reference)
+            and self.prefix == other.prefix
+            and self.identifier == other.identifier
+        )
+
     @property
     def curie(self) -> str:
         """Get the reference as a CURIE string.
@@ -218,7 +236,7 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(cls, curie: str, sep: str = ":") -> "Reference":
+    def from_curie(cls, curie: str, *, sep: str = ":") -> "Reference":
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -228,8 +246,33 @@ class Reference(BaseModel):
         >>> Reference.from_curie("chebi:1234")
         Reference(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(sep, 1)
+        prefix, identifier = _split(curie, sep=sep)
         return cls(prefix=prefix, identifier=identifier)
+
+
+class NamedReference(Reference):
+    """A reference with a name."""
+
+    name: str = Field(
+        ..., description="The name of the entity referenced by this object's prefix and identifier."
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+    @classmethod
+    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> "NamedReference":  # type:ignore
+        """Parse a CURIE string and populate a reference.
+
+        :param curie: A string representation of a compact URI (CURIE)
+        :param name: The name of the reference
+        :param sep: The separator
+        :return: A reference object
+
+        >>> NamedReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
+        NamedReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
+        """
+        prefix, identifier = _split(curie, sep=sep)
+        return cls(prefix=prefix, identifier=identifier, name=name)
 
 
 RecordKey = tuple[str, str, str, str]
@@ -314,6 +357,17 @@ class DuplicateSummary(NamedTuple):
     record_1: Record
     record_2: Record
     prefix: str
+
+
+class NoCURIEDelimiterError(ValueError):
+    """An error thrown on a string with no delimiter."""
+
+    def __init__(self, curie: str):
+        """Initialize the error."""
+        self.curie = curie
+
+    def __str__(self) -> str:
+        return f"{self.curie} does not appear to be a CURIE - missing a delimiter"
 
 
 class DuplicateValueError(ValueError):
@@ -1420,8 +1474,7 @@ class Converter:
 
     def parse_curie(self, curie: str) -> ReferenceTuple:
         """Parse a CURIE."""
-        reference = Reference.from_curie(curie, sep=self.delimiter)
-        return reference.pair
+        return ReferenceTuple.from_curie(curie, sep=self.delimiter)
 
     def expand_pair(self, prefix: str, identifier: str) -> Optional[str]:
         """Expand a CURIE pair to the standard URI.

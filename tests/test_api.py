@@ -17,6 +17,8 @@ from curies.api import (
     DuplicatePrefixes,
     DuplicateURIPrefixes,
     ExpansionError,
+    NamedReference,
+    NoCURIEDelimiterError,
     PrefixStandardizationError,
     Record,
     Records,
@@ -42,6 +44,12 @@ GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
 
 class TestStruct(unittest.TestCase):
     """Test the data structures."""
+
+    def test_not_curie(self):
+        """Test a malformed CURIE."""
+        with self.assertRaises(NoCURIEDelimiterError) as e:
+            Reference.from_curie("not a curie")
+        self.assertIn("does not appear to be a CURIE", str(e.exception))
 
     def test_default_prefix(self) -> None:
         """Test a default (empty) prefix."""
@@ -92,6 +100,24 @@ class TestStruct(unittest.TestCase):
         self.assertNotIn(Reference.from_curie("xyz:1234"), collection)
         self.assertNotIn(Reference.from_curie(":1234"), collection)
         self.assertNotIn(Reference.from_curie("abc:"), collection)
+
+    def test_named_set_membership(self):
+        """Test membership in sets of named references."""
+        references = {
+            NamedReference.from_curie("a:1", "name1"),
+            NamedReference.from_curie("a:2", "name2"),
+        }
+        self.assertIn(Reference.from_curie("a:1"), references)
+        self.assertIn(NamedReference.from_curie("a:1", "name1"), references)
+        # the following is a weird case, but shows how this works
+        self.assertIn(NamedReference.from_curie("a:1", "name2"), references)
+
+        references_2 = {
+            Reference.from_curie("a:1"),
+            Reference.from_curie("a:2"),
+        }
+        self.assertIn(Reference.from_curie("a:1"), references_2)
+        self.assertIn(NamedReference.from_curie("a:1", "name1"), references_2)
 
 
 class TestAddRecord(unittest.TestCase):
