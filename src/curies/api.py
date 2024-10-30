@@ -34,7 +34,6 @@ __all__ = [
     "Converter",
     "Reference",
     "ReferenceTuple",
-    "NamedReferenceTuple",
     "NamedReference",
     "Record",
     "Records",
@@ -252,38 +251,14 @@ class Reference(BaseModel):
         return cls(prefix=prefix, identifier=identifier)
 
 
-class NamedReferenceTuple(ReferenceTuple):
-    """A reference tuple with a name."""
-
-    name: str
-
-    @classmethod
-    def from_curie(cls, curie: str, name: str, sep: str = ":") -> "NamedReferenceTuple":  # type:ignore
-        """Parse a CURIE string and populate a reference tuple.
-
-        :param curie: A string representation of a compact URI (CURIE)
-        :param name: A name
-        :param sep: The separator
-        :return: A reference tuple
-
-        >>> NamedReferenceTuple.from_curie("chebi:1234", "name")
-        NamedReferenceTuple(prefix='chebi', identifier='1234', name='name')
-        """
-        prefix, identifier = _split(curie, sep=sep)
-        return NamedReferenceTuple(prefix, identifier, name)
-
-
 class NamedReference(Reference):
     """A reference with a name."""
 
-    name: str
+    name: str = Field(
+        ..., description="The name of the entity referenced by this object's prefix and identifier."
+    )
 
     model_config = ConfigDict(frozen=True)
-
-    @property
-    def triple(self) -> NamedReferenceTuple:
-        """Get the reference as a 3-tuple of prefix, identifier, and name."""
-        return NamedReferenceTuple(self.prefix, self.identifier, self.name)
 
     @classmethod
     def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> "NamedReference":  # type:ignore
@@ -294,8 +269,8 @@ class NamedReference(Reference):
         :param sep: The separator
         :return: A reference object
 
-        >>> NamedReference.from_curie("chebi:1234", "name")
-        NamedReference(prefix='chebi', identifier='1234', name='name')
+        >>> NamedReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
+        NamedReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
         """
         prefix, identifier = _split(curie, sep=sep)
         return cls(prefix=prefix, identifier=identifier, name=name)
