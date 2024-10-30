@@ -63,6 +63,18 @@ class TestStruct(unittest.TestCase):
         ]
         self.assertEqual(expected, sorted(start))
 
+    def test_set_membership(self):
+        """Test membership in sets."""
+        collection = {
+            Reference.from_curie("def:1234"),
+            Reference.from_curie("abc:1234"),
+            Reference.from_curie("abc:1235"),
+        }
+        self.assertIn(Reference.from_curie("def:1234"), collection)
+        self.assertNotIn(Reference.from_curie("xyz:1234"), collection)
+        self.assertNotIn(Reference.from_curie(":1234"), collection)
+        self.assertNotIn(Reference.from_curie("abc:"), collection)
+
 
 class TestAddRecord(unittest.TestCase):
     """Test adding records."""
