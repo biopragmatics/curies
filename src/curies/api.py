@@ -427,15 +427,19 @@ def _prepare(data: LocationOr[X]) -> X:
             return cast(X, json.load(file))
     elif isinstance(data, str):
         if any(data.startswith(p) for p in ("https://", "http://", "ftp://")):
-            import urllib.request
-
-            with urllib.request.urlopen(data, timeout=15) as response:  # noqa:S310
-                json_str_data = response.read().decode()
-            return cast(X, json.loads(json_str_data))
+            return cast(X, _get_remote_json(data))
         with open(data) as file:
             return cast(X, json.load(file))
     else:
         return data
+
+
+def _get_remote_json(url: str, timeout: int = 15) -> Any:
+    import urllib.request
+
+    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa:S310
+        json_str_data = response.read().decode()
+    return json.loads(json_str_data)
 
 
 class Converter:
