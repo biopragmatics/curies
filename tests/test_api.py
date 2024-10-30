@@ -49,6 +49,20 @@ class TestStruct(unittest.TestCase):
         converter = Converter(records=records)
         self.assertEqual({"chebi"}, converter.get_prefixes())
 
+    def test_sort(self):
+        """Test sorting."""
+        start = [
+            Reference.from_curie("def:1234"),
+            Reference.from_curie("abc:1234"),
+            Reference.from_curie("abc:1235"),
+        ]
+        expected = [
+            Reference.from_curie("abc:1234"),
+            Reference.from_curie("abc:1235"),
+            Reference.from_curie("def:1234"),
+        ]
+        self.assertEqual(expected, sorted(start))
+
 
 class TestAddRecord(unittest.TestCase):
     """Test adding records."""
