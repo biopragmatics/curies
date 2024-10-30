@@ -439,12 +439,14 @@ class Converter:
     .. code-block::
 
         # Construct a prefix map:
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ...    "OBO": "http://purl.obolibrary.org/obo/",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...         "OBO": "http://purl.obolibrary.org/obo/",
+        ...     }
+        ... )
 
         # Compression and Expansion:
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
@@ -669,7 +671,9 @@ class Converter:
         ...         "prefix": "CHEBI",
         ...         "prefix_synonyms": ["chebi", "ChEBI"],
         ...         "uri_prefix": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...         "uri_prefix_synonyms": ["https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:"],
+        ...         "uri_prefix_synonyms": [
+        ...             "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:"
+        ...         ],
         ...     },
         ...     {
         ...         "prefix": "GO",
@@ -767,12 +771,14 @@ class Converter:
         :returns:
             A converter
 
-        >>> converter = Converter.from_prefix_map({
-        ...     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...     "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...     "GO": "http://purl.obolibrary.org/obo/GO_",
-        ...     "OBO": "http://purl.obolibrary.org/obo/",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...         "OBO": "http://purl.obolibrary.org/obo/",
+        ...     }
+        ... )
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
@@ -800,11 +806,13 @@ class Converter:
         :return:
             A converter
 
-        >>> converter = Converter.from_reverse_prefix_map({
-        ...     "http://purl.obolibrary.org/obo/CHEBI_": "CHEBI",
-        ...     "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=": "CHEBI",
-        ...     "http://purl.obolibrary.org/obo/MONDO_": "MONDO",
-        ... })
+        >>> converter = Converter.from_reverse_prefix_map(
+        ...     {
+        ...         "http://purl.obolibrary.org/obo/CHEBI_": "CHEBI",
+        ...         "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=": "CHEBI",
+        ...         "http://purl.obolibrary.org/obo/MONDO_": "MONDO",
+        ...     }
+        ... )
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
@@ -885,8 +893,11 @@ class Converter:
             If the given path doesn't end in a .jsonld file name
 
         >>> converter = Converter.from_jsonld_github(
-        ...     "biopragmatics", "bioregistry", "exports",
-        ...     "contexts", "semweb.context.jsonld",
+        ...     "biopragmatics",
+        ...     "bioregistry",
+        ...     "exports",
+        ...     "contexts",
+        ...     "semweb.context.jsonld",
         ... )
         >>> "rdf" in converter.prefix_map
         True
@@ -1076,14 +1087,16 @@ class Converter:
             If strict is true and the URI can't be compressed
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(
-        ...          prefix="CHEBI",
-        ...          prefix_synonyms=["chebi"],
-        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
-        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
-        ...     ),
-        ... ])
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(
+        ...             prefix="CHEBI",
+        ...             prefix_synonyms=["chebi"],
+        ...             uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...             uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...         ),
+        ...     ]
+        ... )
         >>> converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
         'CHEBI:138488'
         >>> converter.compress_or_standardize("https://identifiers.org/chebi:138488")
@@ -1145,12 +1158,14 @@ class Converter:
             If strict is set to true and the URI can't be compressed
 
         >>> from curies import Converter
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ...    "OBO": "http://purl.obolibrary.org/obo/",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...         "OBO": "http://purl.obolibrary.org/obo/",
+        ...     }
+        ... )
         >>> converter.compress("http://purl.obolibrary.org/obo/GO_0032571")
         'GO:0032571'
         >>> converter.compress("http://purl.obolibrary.org/obo/go.owl")
@@ -1184,11 +1199,13 @@ class Converter:
             A CURIE pair if the URI could be parsed, otherwise a pair of None's
 
         >>> from curies import Converter
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...     }
+        ... )
         >>> converter.parse_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
         ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
@@ -1273,14 +1290,16 @@ class Converter:
             If strict is true and the CURIE can't be expanded
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(
-        ...          prefix="CHEBI",
-        ...          prefix_synonyms=["chebi"],
-        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
-        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
-        ...     ),
-        ... ])
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(
+        ...             prefix="CHEBI",
+        ...             prefix_synonyms=["chebi"],
+        ...             uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...             uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...         ),
+        ...     ]
+        ... )
         >>> converter.expand_or_standardize("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
          >>> converter.expand_or_standardize("chebi:138488")
@@ -1343,11 +1362,13 @@ class Converter:
             If strict is true and the CURIE can't be expanded
 
         >>> from curies import Converter
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...     }
+        ... )
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
@@ -1404,11 +1425,13 @@ class Converter:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
 
         >>> from curies import Converter
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...     }
+        ... )
         >>> converter.expand_pair("CHEBI", "138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand_pair("missing", "0000000")
@@ -1486,9 +1509,11 @@ class Converter:
             If strict is true and the prefix can't be standardied
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(prefix="CHEBI", prefix_synonyms=["chebi"], uri_prefix="..."),
-        ... ])
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(prefix="CHEBI", prefix_synonyms=["chebi"], uri_prefix="..."),
+        ...     ]
+        ... )
         >>> converter.standardize_prefix("chebi")
         'CHEBI'
         >>> converter.standardize_prefix("CHEBI")
@@ -1544,9 +1569,15 @@ class Converter:
             If strict is true and the CURIE can't be standardized
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(prefix="CHEBI", prefix_synonyms=["chebi"], uri_prefix="http://purl.obolibrary.org/obo/CHEBI_"),
-        ... ])
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(
+        ...             prefix="CHEBI",
+        ...             prefix_synonyms=["chebi"],
+        ...             uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...         ),
+        ...     ]
+        ... )
         >>> converter.standardize_curie("chebi:138488")
         'CHEBI:138488'
         >>> converter.standardize_curie("CHEBI:138488")
@@ -1603,16 +1634,20 @@ class Converter:
             If strict is true and the URI can't be standardized
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(
-        ...         prefix="CHEBI",
-        ...         uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
-        ...         uri_prefix_synonyms=[
-        ...             "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
-        ...         ],
-        ...     ),
-        ... ])
-        >>> converter.standardize_uri("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(
+        ...             prefix="CHEBI",
+        ...             uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...             uri_prefix_synonyms=[
+        ...                 "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+        ...             ],
+        ...         ),
+        ...     ]
+        ... )
+        >>> converter.standardize_uri(
+        ...     "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488"
+        ... )
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.standardize_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
@@ -1726,7 +1761,7 @@ class Converter:
         >>> import pandas as pd
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
         >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
-        >>> df = pd.read_csv(url, sep="\t", comment='#')
+        >>> df = pd.read_csv(url, sep="\t", comment="#")
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
         """
@@ -1868,7 +1903,7 @@ class Converter:
         >>> import itertools as itt
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
         >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
-        >>> df = pd.read_csv(url, sep="\t", comment='#')
+        >>> df = pd.read_csv(url, sep="\t", comment="#")
         >>> prefixes = {
         ...     curies.Reference.from_curie(curie).prefix
         ...     for column in ["subject_id", "predicate_id", "object_id"]
@@ -1935,17 +1970,19 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
 
     >>> import curies
     >>> from curies import Converter, chain, get_bioregistry_converter
-    >>> overrides = curies.load_extended_prefix_map([
-    ...     {
-    ...         "prefix": "PMID",
-    ...         "prefix_synonyms": ["pubmed", "PubMed"],
-    ...         "uri_prefix": "https://www.ncbi.nlm.nih.gov/pubmed/",
-    ...         "uri_prefix_synonyms": [
-    ...             "https://identifiers.org/pubmed:",
-    ...             "http://bio2rdf.org/pubmed:",
-    ...         ],
-    ...     },
-    ... ])
+    >>> overrides = curies.load_extended_prefix_map(
+    ...     [
+    ...         {
+    ...             "prefix": "PMID",
+    ...             "prefix_synonyms": ["pubmed", "PubMed"],
+    ...             "uri_prefix": "https://www.ncbi.nlm.nih.gov/pubmed/",
+    ...             "uri_prefix_synonyms": [
+    ...                 "https://identifiers.org/pubmed:",
+    ...                 "http://bio2rdf.org/pubmed:",
+    ...             ],
+    ...         },
+    ...     ]
+    ... )
     >>> converter = curies.chain([overrides, bioregistry_converter])
     >>> converter.bimap["PMID"]
     'https://www.ncbi.nlm.nih.gov/pubmed/'
@@ -1983,9 +2020,11 @@ def load_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) ->
         A converter
 
     >>> import curies
-    >>> converter = curies.load_prefix_map({
-    ...     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-    ... })
+    >>> converter = curies.load_prefix_map(
+    ...     {
+    ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+    ...     }
+    ... )
     >>> converter.expand("CHEBI:138488")
     'http://purl.obolibrary.org/obo/CHEBI_138488'
     >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
@@ -2165,9 +2204,12 @@ def write_jsonld_context(
     .. code-block:: python
 
         import curies
-        converter = curies.load_prefix_map({
-            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        })
+
+        converter = curies.load_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
         curies.write_jsonld_context(converter, "example_context.json")
 
     .. code-block:: json
@@ -2186,9 +2228,12 @@ def write_jsonld_context(
     .. code-block:: python
 
         import curies
-        converter = curies.load_prefix_map({
-            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        })
+
+        converter = curies.load_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
         curies.write_jsonld_context(converter, "example_context.json", expand=True)
 
     .. code-block:: json
@@ -2241,9 +2286,12 @@ def write_shacl(
     .. code-block:: python
 
         import curies
-        converter = curies.load_prefix_map({
-            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        })
+
+        converter = curies.load_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
         curies.write_shacl(converter, "example_shacl.ttl")
 
     .. code-block::
@@ -2293,9 +2341,12 @@ def write_tsv(
     .. code-block:: python
 
         import curies
-        converter = curies.load_prefix_map({
-            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        })
+
+        converter = curies.load_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
         curies.write_tsv(converter, "example_context.tsv")
 
     .. code-block::
