@@ -321,7 +321,10 @@ class DuplicateSummary(NamedTuple):
 
 
 class NoCURIEDelimiterError(ValueError):
+    """An error thrown on a string with no delimiter."""
+
     def __init__(self, curie: str):
+        """Initialize the error."""
         self.curie = curie
 
     def __str__(self) -> str:
