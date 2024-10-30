@@ -1415,8 +1415,7 @@ class Converter:
 
     def parse_curie(self, curie: str) -> ReferenceTuple:
         """Parse a CURIE."""
-        reference = Reference.from_curie(curie, sep=self.delimiter)
-        return reference.pair
+        return ReferenceTuple.from_curie(curie, sep=self.delimiter)
 
     def expand_pair(self, prefix: str, identifier: str) -> Optional[str]:
         """Expand a CURIE pair to the standard URI.
