@@ -67,6 +67,13 @@ def _get_field_validator_values(values, key: str):  # type:ignore
     return values.data[key]
 
 
+def _split(curie: str) -> tuple[str, str]:
+    prefix, delimiter, identifier = curie.partition(":")
+    if not delimiter:
+        raise NoCURIEDelimiterError(curie)
+    return prefix, identifier
+
+
 class ReferenceTuple(NamedTuple):
     """A pair of a prefix (corresponding to a semantic space) and a local unique identifier in that semantic space.
 
@@ -140,7 +147,7 @@ class ReferenceTuple(NamedTuple):
         >>> ReferenceTuple.from_curie("chebi:1234")
         ReferenceTuple(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(":", 1)
+        prefix, identifier = _split(curie)
         return cls(prefix, identifier)
 
 
@@ -202,6 +209,9 @@ class Reference(BaseModel):
         """Sort the reference lexically first by prefix, then by identifier."""
         return self.pair < other.pair
 
+    def __hash__(self) -> int:
+        return hash((self.prefix, self.identifier))
+
     @property
     def curie(self) -> str:
         """Get the reference as a CURIE string.
@@ -229,7 +239,7 @@ class Reference(BaseModel):
         >>> Reference.from_curie("chebi:1234")
         Reference(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(":", 1)
+        prefix, identifier = _split(curie)
         return cls(prefix=prefix, identifier=identifier)
 
 
@@ -249,7 +259,7 @@ class NamedReferenceTuple(ReferenceTuple):
         >>> NamedReferenceTuple.from_curie("chebi:1234", "name")
         NamedReferenceTuple(prefix='chebi', identifier='1234', name='name')
         """
-        prefix, identifier = curie.split(":", 1)
+        prefix, identifier = _split(curie)
         return cls(prefix, identifier, name)
 
 
@@ -257,6 +267,8 @@ class NamedReference(Reference):
     """A reference with a name."""
 
     name: str
+
+    model_config = ConfigDict(frozen=True)
 
     def __hash__(self) -> int:
         return hash((self.prefix, self.identifier))
@@ -277,7 +289,7 @@ class NamedReference(Reference):
         >>> NamedReference.from_curie("chebi:1234", "name")
         NamedReference(prefix='chebi', identifier='1234', name='name')
         """
-        prefix, identifier = curie.split(":", 1)
+        prefix, identifier = _split(curie)
         return cls(prefix=prefix, identifier=identifier, name=name)
 
 
@@ -363,6 +375,14 @@ class DuplicateSummary(NamedTuple):
     record_1: Record
     record_2: Record
     prefix: str
+
+
+class NoCURIEDelimiterError(ValueError):
+    def __init__(self, curie: str):
+        self.curie = curie
+
+    def __str__(self) -> str:
+        return f"{self.curie} does not appear to be a CURIE - missing a delimiter"
 
 
 class DuplicateValueError(ValueError):
