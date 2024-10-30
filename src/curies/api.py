@@ -34,6 +34,7 @@ __all__ = [
     "Converter",
     "Reference",
     "ReferenceTuple",
+    "NamedReference",
     "Record",
     "Records",
     "DuplicateValueError",
@@ -208,6 +209,16 @@ class Reference(BaseModel):
         """Sort the reference lexically first by prefix, then by identifier."""
         return self.pair < other.pair
 
+    def __hash__(self) -> int:
+        return hash((self.prefix, self.identifier))
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, Reference)
+            and self.prefix == other.prefix
+            and self.identifier == other.identifier
+        )
+
     @property
     def curie(self) -> str:
         """Get the reference as a CURIE string.
@@ -238,6 +249,31 @@ class Reference(BaseModel):
         """
         prefix, identifier = _split(curie, sep=sep)
         return cls(prefix=prefix, identifier=identifier)
+
+
+class NamedReference(Reference):
+    """A reference with a name."""
+
+    name: str = Field(
+        ..., description="The name of the entity referenced by this object's prefix and identifier."
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+    @classmethod
+    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> "NamedReference":  # type:ignore
+        """Parse a CURIE string and populate a reference.
+
+        :param curie: A string representation of a compact URI (CURIE)
+        :param name: The name of the reference
+        :param sep: The separator
+        :return: A reference object
+
+        >>> NamedReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
+        NamedReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
+        """
+        prefix, identifier = _split(curie, sep=sep)
+        return cls(prefix=prefix, identifier=identifier, name=name)
 
 
 RecordKey = tuple[str, str, str, str]
