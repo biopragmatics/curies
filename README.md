@@ -156,7 +156,7 @@ available [here](https://github.com/cruft/cruft?tab=readme-ov-file#updating-a-pr
 ### 🥼 Testing
 
 After cloning the repository and installing `tox` with
-`python3 -m pip install tox tox-uv`, 
+`python3 -m pip install tox tox-uv`,
 the unit tests in the `tests/` folder can be run reproducibly with:
 
 ```console
