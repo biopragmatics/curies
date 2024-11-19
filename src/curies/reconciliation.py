@@ -5,6 +5,8 @@ from collections import Counter, defaultdict
 from collections.abc import Collection, Mapping
 from typing import Optional
 
+from typing_extensions import Literal
+
 from .api import Converter, Record
 
 __all__ = [
@@ -35,7 +37,12 @@ class TransitiveError(NotImplementedError):
         )
 
 
-def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Converter:
+def remap_curie_prefixes(
+    converter: Converter,
+    remapping: Mapping[str, str],
+    *,
+    intersection_resolution: Literal["overwrite", "drop"] = "drop",
+) -> Converter:
     """Apply CURIE prefix remappings.
 
     :param converter: A converter
@@ -69,9 +76,16 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
                 new_record,
             )
         elif old in intersection:
-            record.prefix_synonyms = sorted(
-                set(record.prefix_synonyms).difference({old, new_prefix})
-            )
+            if intersection_resolution == "drop":
+                # throw away all synonyms from intersections,
+                # since there can be non-trivial overlaps
+                record.prefix_synonyms = []
+            elif intersection_resolution == "overwrite":
+                record.prefix_synonyms = sorted(
+                    set(record.prefix_synonyms).difference({old, new_prefix})
+                )
+            else:
+                raise TypeError(f"invalid intersection resolution mode: {intersection_resolution}")
             record.prefix = new_prefix
         else:
             record.prefix_synonyms = sorted(
