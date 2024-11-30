@@ -27,29 +27,6 @@ def _get_converter_from_context(info: core_schema.ValidationInfo) -> Converter |
         raise TypeError
 
 
-class _StandardizableStr(str):
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, source: type[Any], handler: GetCoreSchemaHandler
-    ) -> core_schema.AfterValidatorFunctionSchema:
-        return core_schema.with_info_after_validator_function(
-            cls._validate,
-            # TODO check what strict means
-            core_schema.str_schema(pattern=NCNAME_RE, strict=False),
-        )
-
-    @classmethod
-    def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
-        converter = _get_converter_from_context(info)
-        if converter is None:
-            return cls(__input_value)
-        return cls(converter.standardize_prefix(__input_value, strict=True))
-
-    @staticmethod
-    def _vh(s: str, converter: Converter) -> str:
-        raise NotImplementedError
-
-
 class Prefix(str):
     """A string that is validated as a prefix.
 
