@@ -1,9 +1,12 @@
 """Typing utilities."""
 
-from typing import Any, Self
+from __future__ import annotations
+
+from typing import Any
 
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
+from typing_extensions import Self
 
 from .api import Converter
 
