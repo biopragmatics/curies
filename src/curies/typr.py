@@ -31,7 +31,7 @@ def _get_converter_from_context(info: core_schema.ValidationInfo) -> Converter |
 
 
 class Prefix(str):
-    """A string that is validated as a CURIE prefix.
+    """A string that is validated by Pydantic as a CURIE prefix.
 
     This class is a subclass of Python's built-in string class,
     so you can wrap any string with it:
@@ -61,21 +61,27 @@ class Prefix(str):
         from curies import Prefix
         from pydantic import BaseModel
 
+
         class ResourceInfo(BaseModel):
             prefix: Prefix
             name: str
 
-        model = ResourceInfo.model_validate({
-            "prefix": "CHEBI",
-            "name": "Chemical Entities of Biological Interest",
-        })
+
+        model = ResourceInfo.model_validate(
+            {
+                "prefix": "CHEBI",
+                "name": "Chemical Entities of Biological Interest",
+            }
+        )
 
         # raises a pydantic.ValidationError, because the prefix
         # doesn't match the NCName pattern
-        ResourceInfo.model_validate({
-            "prefix": "$nope",
-            "name": "An invalid semantic space!",
-        })
+        ResourceInfo.model_validate(
+            {
+                "prefix": "$nope",
+                "name": "An invalid semantic space!",
+            }
+        )
 
     This class implements a hook that uses Pydantic's "context"
     for validation that lets you pass a :class:`Converter` to check
@@ -100,9 +106,9 @@ class Prefix(str):
             context=converter,
         )
 
-        # The following fails because the prefix is not registered
-        # in the OBO Foundry, and is therefore not part of the
-        # OBO converter
+        # raises a pydantic.ValidationError, because the prefix
+        # is not registered in the OBO Foundry, and is therefore
+        # not part of the OBO converter
         ResourceInfo.model_validate(
             {
                 "prefix": "efo",
@@ -112,8 +118,8 @@ class Prefix(str):
         )
 
         # In case you need to pass more arbitrary
-        # context, you can also use a dict
-
+        # context, you can also use a dict with the key
+        # "converter"
         ResourceInfo.model_validate(
             {
                 "prefix": "CHEBI",
@@ -145,11 +151,92 @@ class Prefix(str):
 
 
 class CURIE(str):
-    """A string that is validated as a CURIE.
+    """A string that is validated by Pydantic as a CURIE.
 
-    If an optional converter is passed as context during validation,
-    then additionally checks if it's standardized with respect to the
-    converter.
+    This class is a subclass of Python's built-in string class,
+    so you can wrap any string with it:
+
+    .. code-block:: python
+
+        from curies import CURIE
+
+        curie = CURIE("CHEBI:16236")
+
+    You can implicitly type annotate data with this class:
+
+    .. code-block:: python
+
+        from curies import CURIE
+
+        chemical_to_smiles: dict[CURIE, str] = {
+            "CHEBI:16236": "CCO",
+            "CHEBI:28831": "CCCO",
+        }
+
+    .. seealso::
+
+        We haven't yet established a reliable regular expression
+        for validating CURIEs. Therefore, unlike :class:`Prefix`,
+        there's no direct validation (yet). Here are a few places
+        to look for discussion:
+
+        - https://www.w3.org/2010/02/rdfa/track/issues/138
+        - https://gist.github.com/niklasl/2506955
+        - https://github.com/biopragmatics/curies/issues/77
+        - https://github.com/linkml/linkml-runtime/pull/280
+
+
+    When used inside a Pydantic model in combination with passing
+    a :class:`Converter` to the "context" to the ``model_validate``
+    function, it can check for valid CURIEs.
+
+    This class implements a hook that uses Pydantic's "context"
+    for validation that lets you pass a :class:`Converter` to check
+    for existence and standardization with respect to the context
+    in the converter:
+
+    .. code-block:: python
+
+        from curies import CURIE, get_obo_converter
+        from pydantic import BaseModel
+
+        class SmilesAnnotation(BaseModel):
+            curie: CURIE
+            name: str
+
+        converter = get_obo_converter()
+        model = SmilesAnnotation.model_validate(
+            {
+                "prefix": "CHEBI:16236",
+                "curie": "CCO",
+            },
+            context=converter,
+        )
+
+        # raises a pydantic.ValidationError, because the prefix
+        # is not registered in the OBO Foundry, and is therefore
+        # not part of the OBO converter
+        SmilesAnnotation.model_validate(
+            {
+                "curie": "efo:12345",
+                "smiles": "CC0",
+            },
+            context=converter,
+        )
+
+        # In case you need to pass more arbitrary
+        # context, you can also use a dict with the key
+        # "converter"
+        SmilesAnnotation.model_validate(
+            {
+                "prefix": "CHEBI:16236",
+                "curie": "CCO",
+            },
+            context={
+                "converter": converter,
+                ...
+            },
+        )
     """
 
     @classmethod
