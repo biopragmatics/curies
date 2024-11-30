@@ -110,6 +110,20 @@ class Prefix(str):
             },
             context=converter,
         )
+
+        # In case you need to pass more arbitrary
+        # context, you can also use a dict
+
+        ResourceInfo.model_validate(
+            {
+                "prefix": "CHEBI",
+                "name": "Chemical Entities of Biological Interest",
+            },
+            context={
+                "converter": converter,
+                ...
+            },
+        )
     """
 
     @classmethod
