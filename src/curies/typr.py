@@ -31,11 +31,85 @@ def _get_converter_from_context(info: core_schema.ValidationInfo) -> Converter |
 
 
 class Prefix(str):
-    """A string that is validated as a prefix.
+    """A string that is validated as a CURIE prefix.
 
-    If an optional converter is passed as context during validation,
-    then additionally checks if it's standardized with respect to the
-    converter.
+    This class is a subclass of Python's built-in string class,
+    so you can wrap any string with it:
+
+    .. code-block:: python
+
+        from curies import Prefix
+
+        prefix = Prefix("CHEBI")
+
+    You can implicitly type annotate data with this class:
+
+    .. code-block:: python
+
+        from curies import Prefix
+
+        prefix_map: dict[Prefix, str] = {
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        }
+
+    When used inside a Pydantic model, this class knows how to
+    do validation that the prefix matches the regular expression
+    for an XSD NCName. Here's an example usage with Pydantic:
+
+    .. code-block:: python
+
+        from curies import Prefix
+        from pydantic import BaseModel
+
+        class ResourceInfo(BaseModel):
+            prefix: Prefix
+            name: str
+
+        model = ResourceInfo.model_validate({
+            "prefix": "CHEBI",
+            "name": "Chemical Entities of Biological Interest",
+        })
+
+        # raises a pydantic.ValidationError, because the prefix
+        # doesn't match the NCName pattern
+        ResourceInfo.model_validate({
+            "prefix": "$nope",
+            "name": "An invalid semantic space!",
+        })
+
+    This class implements a hook that uses Pydantic's "context"
+    for validation that lets you pass a :class:`Converter` to check
+    for existence and standardization with respect to the context
+    in the converter:
+
+    .. code-block:: python
+
+        from curies import Prefix, get_obo_converter
+        from pydantic import BaseModel
+
+        class ResourceInfo(BaseModel):
+            prefix: Prefix
+            name: str
+
+        converter = get_obo_converter()
+        model = ResourceInfo.model_validate(
+            {
+                "prefix": "CHEBI",
+                "name": "Chemical Entities of Biological Interest",
+            },
+            context=converter,
+        )
+
+        # The following fails because the prefix is not registered
+        # in the OBO Foundry, and is therefore not part of the
+        # OBO converter
+        ResourceInfo.model_validate(
+            {
+                "prefix": "efo",
+                "name": "Experimental Factor Ontology",
+            },
+            context=converter,
+        )
     """
 
     @classmethod
