@@ -8,6 +8,7 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 import rdflib
+from pydantic import BaseModel
 
 import curies
 from curies.api import (
@@ -118,6 +119,21 @@ class TestStruct(unittest.TestCase):
         }
         self.assertIn(Reference.from_curie("a:1"), references_2)
         self.assertIn(NamedReference.from_curie("a:1", "name1"), references_2)
+
+    def test_discriminator(self):
+        """Test discriminator."""
+
+        class Derived(BaseModel):
+            reference: NamedReference | Reference
+
+        data = dict(reference=dict(prefix="a", identifier="b", name="c"))
+        model = Derived.model_validate(data)
+        self.assertIsInstance(model.reference, NamedReference)
+
+        data2 = dict(reference=dict(prefix="a", identifier="b"))
+        model2 = Derived.model_validate(data2)
+        self.assertIsInstance(model2.reference, Reference)
+        self.assertNotIsInstance(model2.reference, NamedReference)
 
 
 class TestAddRecord(unittest.TestCase):
