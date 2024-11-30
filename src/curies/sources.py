@@ -5,11 +5,11 @@ from typing import Any
 from .api import Converter
 
 __all__ = [
+    "get_bioregistry_converter",
+    "get_go_converter",
+    "get_monarch_converter",
     "get_obo_converter",
     "get_prefixcommons_converter",
-    "get_monarch_converter",
-    "get_go_converter",
-    "get_bioregistry_converter",
 ]
 
 BIOREGISTRY_CONTEXTS = (

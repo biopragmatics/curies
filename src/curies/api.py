@@ -31,23 +31,20 @@ if TYPE_CHECKING:  # pragma: no cover
 
 __all__ = [
     "Converter",
-    "Reference",
-    "ReferenceTuple",
+    "DuplicatePrefixes",
+    "DuplicateURIPrefixes",
+    "DuplicateValueError",
     "NamedReference",
     "Record",
     "Records",
-    "DuplicateValueError",
-    "DuplicatePrefixes",
-    "DuplicateURIPrefixes",
-    # Utilities
+    "Reference",
+    "ReferenceTuple",
     "chain",
-    "upgrade_prefix_map",
-    # Loaders
     "load_extended_prefix_map",
-    "load_prefix_map",
     "load_jsonld_context",
+    "load_prefix_map",
     "load_shacl",
-    # Writers
+    "upgrade_prefix_map",
     "write_extended_prefix_map",
     "write_jsonld_context",
     "write_shacl",

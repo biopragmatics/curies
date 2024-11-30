@@ -11,10 +11,10 @@ if TYPE_CHECKING:
     from werkzeug.wrappers import Response
 
 __all__ = [
-    "get_flask_blueprint",
-    "get_flask_app",
-    "get_fastapi_router",
     "get_fastapi_app",
+    "get_fastapi_router",
+    "get_flask_app",
+    "get_flask_blueprint",
 ]
 
 #: The code for `Unprocessable Entity <https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422>`_

@@ -9,14 +9,14 @@ from typing import Callable, Optional
 from defusedxml import ElementTree
 
 __all__ = [
-    "handle_csv",
-    "handle_json",
-    "handle_xml",
     "CONTENT_TYPE_TO_HANDLER",
     "get_sparql_records",
-    "sparql_service_available",
-    "parse_header",
+    "handle_csv",
     "handle_header",
+    "handle_json",
+    "handle_xml",
+    "parse_header",
+    "sparql_service_available",
 ]
 
 Record = Mapping[str, str]
