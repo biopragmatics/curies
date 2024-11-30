@@ -30,17 +30,21 @@ from .sources import (
     get_obo_converter,
     get_prefixcommons_converter,
 )
+from .typr import CURIE, Prefix, URI
 from .version import get_version
 
 __all__ = [
+    "CURIE",
     "Converter",
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "DuplicateValueError",
     "NamedReference",
+    "Prefix",
     "Record",
     "Records",
     "Reference",
+    "URI",
     "ReferenceTuple",
     "chain",
     "discover",

@@ -1,3 +1,5 @@
+"""Typing utilities."""
+
 from typing import Any, Self
 
 from pydantic import GetCoreSchemaHandler
@@ -7,6 +9,7 @@ from .api import Converter
 
 __all__ = [
     "CURIE",
+    "URI",
     "Prefix",
 ]
 
@@ -22,6 +25,29 @@ def _get_converter_from_context(info: core_schema.ValidationInfo) -> Converter |
         return context.get("converter")
     else:
         raise TypeError
+
+
+class _StandardizableStr(str):
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[Any], handler: GetCoreSchemaHandler
+    ) -> core_schema.AfterValidatorFunctionSchema:
+        return core_schema.with_info_after_validator_function(
+            cls._validate,
+            # TODO check what strict means
+            core_schema.str_schema(pattern=NCNAME_RE, strict=False),
+        )
+
+    @classmethod
+    def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
+        converter = _get_converter_from_context(info)
+        if converter is None:
+            return cls(__input_value)
+        return cls(converter.standardize_prefix(__input_value, strict=True))
+
+    @staticmethod
+    def _vh(s: str, converter: Converter) -> str:
+        raise NotImplementedError
 
 
 class Prefix(str):
@@ -44,7 +70,7 @@ class Prefix(str):
 
     @classmethod
     def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
-        converter: _get_converter_from_context(info)
+        converter = _get_converter_from_context(info)
         if converter is None:
             return cls(__input_value)
         return cls(converter.standardize_prefix(__input_value, strict=True))
@@ -73,3 +99,28 @@ class CURIE(str):
         if converter is None:
             return cls(__input_value)
         return cls(converter.standardize_curie(__input_value, strict=True))
+
+
+class URI(str):
+    """A string that is validated as a URI.
+
+    If an optional converter is passed as context during validation,
+    then additionally checks if it's standardized with respect to the
+    converter.
+    """
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[Any], handler: GetCoreSchemaHandler
+    ) -> core_schema.AfterValidatorFunctionSchema:
+        return core_schema.with_info_after_validator_function(
+            cls._validate,
+            core_schema.str_schema(strict=False),
+        )
+
+    @classmethod
+    def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
+        converter = _get_converter_from_context(info)
+        if converter is None:
+            return cls(__input_value)
+        return cls(converter.standardize_uri(__input_value, strict=True))

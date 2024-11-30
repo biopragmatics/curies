@@ -31,10 +31,11 @@ class TestTypes(unittest.TestCase):
 
         converter = Converter.from_extended_prefix_map(
             [
-                {"prefix": "chebi",
-                 "prefix_synonyms": ["CHEBI"],
-                 "uri_prefix": "http://purl.obolibary.org/obo/CHEBI_",
-                 }
+                {
+                    "prefix": "chebi",
+                    "prefix_synonyms": ["CHEBI"],
+                    "uri_prefix": "http://purl.obolibary.org/obo/CHEBI_",
+                }
             ]
         )
 
