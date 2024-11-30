@@ -207,7 +207,7 @@ class CURIE(str):
         converter = get_obo_converter()
         model = SmilesAnnotation.model_validate(
             {
-                "prefix": "CHEBI:16236",
+                "curie": "CHEBI:16236",
                 "curie": "CCO",
             },
             context=converter,
@@ -219,7 +219,7 @@ class CURIE(str):
         SmilesAnnotation.model_validate(
             {
                 "curie": "efo:12345",
-                "smiles": "CC0",
+                "smiles": "CCO",
             },
             context=converter,
         )
@@ -229,7 +229,7 @@ class CURIE(str):
         # "converter"
         SmilesAnnotation.model_validate(
             {
-                "prefix": "CHEBI:16236",
+                "curie": "CHEBI:16236",
                 "curie": "CCO",
             },
             context={
@@ -257,11 +257,90 @@ class CURIE(str):
 
 
 class URI(str):
-    """A string that is validated as a URI.
+    """A string that is validated by Pydantic as a URI.
 
-    If an optional converter is passed as context during validation,
-    then additionally checks if it's standardized with respect to the
-    converter.
+    This class is a subclass of Python's built-in string class,
+    so you can wrap any string with it:
+
+    .. code-block:: python
+
+        from curies import URI
+
+        uri = URI("http://purl.obolibrary.org/obo/CHEBI_16236")
+
+    You can implicitly type annotate data with this class:
+
+    .. code-block:: python
+
+        from curies import URI
+
+        chemical_to_smiles: dict[URI, str] = {
+            "http://purl.obolibrary.org/obo/CHEBI_16236": "CCO",
+            "http://purl.obolibrary.org/obo/CHEBI_28831": "CCCO",
+        }
+
+    When used inside a Pydantic model in combination with passing
+    a :class:`Converter` to the "context" to the ``model_validate``
+    function, it can check for valid URIs
+    (i.e., ones that can be compressed!).
+
+    .. code-block:: python
+
+        from curies import URI, get_obo_converter
+        from pydantic import BaseModel
+
+        class URISmilesAnnotation(BaseModel):
+            uri: URI
+            name: str
+
+        converter = get_obo_converter()
+        model = URISmilesAnnotation.model_validate(
+            {
+                "uri": "http://purl.obolibrary.org/obo/CHEBI_16236",
+                "curie": "CCO",
+            },
+            context=converter,
+        )
+
+        # raises a pydantic.ValidationError, because the prefix
+        # is not registered in the OBO Foundry, and is therefore
+        # not part of the OBO converter
+        URISmilesAnnotation.model_validate(
+            {
+                "uri": "http://www.ebi.ac.uk/efo/EFO_12345",
+                "smiles": "CCO",
+            },
+            context=converter,
+        )
+
+        # In case you need to pass more arbitrary
+        # context, you can also use a dict with the key
+        # "converter"
+        URISmilesAnnotation.model_validate(
+            {
+                "uri": "http://purl.obolibrary.org/obo/CHEBI_16236",
+                "curie": "CCO",
+            },
+            context={
+                "converter": converter,
+                ...
+            },
+        )
+
+    .. warning::
+
+        Many semantic web applications can accept "any" URI in
+        some places, even ones that aren't part of a well-defined semantic
+        space. If your application works this way, then don't use this field
+        for validation!
+
+        One example where this might happen is if you're using old-school
+        URLs for annotating licenses. This means you might want to write
+        https://creativecommons.org/publicdomain/zero/1.0/ for the
+        Creative Commons Zero 1.0 license,
+        but this itself isn't part of some semantic space for licenses,
+        so it's not an appropriate place to annotate your data model with
+        :class:`URI` if license URLs go there.
     """
 
     @classmethod
