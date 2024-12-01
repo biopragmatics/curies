@@ -43,7 +43,7 @@ __all__ = [
     "main",
 ]
 
-AppHint: TypeAlias = flask.Flask | fastapi.FastAPI
+AppHint: TypeAlias = "flask.Flask | fastapi.FastAPI"
 
 
 LOADERS: dict[str, Callable[[str], Converter]] = {
