@@ -1,5 +1,7 @@
 """Data structures and algorithms for :mod:`curies`."""
 
+from __future__ import annotations
+
 import csv
 import itertools as itt
 import json
@@ -15,7 +17,6 @@ from typing import (
     Callable,
     Literal,
     NamedTuple,
-    Optional,
     TypeVar,
     Union,
     cast,
@@ -133,7 +134,7 @@ class ReferenceTuple(NamedTuple):
         return f"{self.prefix}:{self.identifier}"
 
     @classmethod
-    def from_curie(cls, curie: str, *, sep: str = ":") -> "ReferenceTuple":
+    def from_curie(cls, curie: str, *, sep: str = ":") -> ReferenceTuple:
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -201,7 +202,7 @@ class Reference(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    def __lt__(self, other: "Reference") -> bool:
+    def __lt__(self, other: Reference) -> bool:
         """Sort the reference lexically first by prefix, then by identifier."""
         return self.pair < other.pair
 
@@ -233,7 +234,7 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(cls, curie: str, *, sep: str = ":") -> "Reference":
+    def from_curie(cls, curie: str, *, sep: str = ":") -> Reference:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -257,7 +258,7 @@ class NamedReference(Reference):
     model_config = ConfigDict(frozen=True)
 
     @classmethod
-    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> "NamedReference":  # type:ignore
+    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> NamedReference:  # type:ignore
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -293,7 +294,7 @@ class Record(BaseModel):
     )
     prefix_synonyms: list[str] = Field(default_factory=list, title="CURIE prefix synonyms")
     uri_prefix_synonyms: list[str] = Field(default_factory=list, title="URI prefix synonyms")
-    pattern: Optional[str] = Field(
+    pattern: str | None = Field(
         default=None,
         description="The regular expression pattern for entries in this semantic space. "
         "Warning: this is an experimental feature.",
@@ -647,8 +648,8 @@ class Converter:
         self,
         prefix: str,
         uri_prefix: str,
-        prefix_synonyms: Optional[Collection[str]] = None,
-        uri_prefix_synonyms: Optional[Collection[str]] = None,
+        prefix_synonyms: Collection[str] | None = None,
+        uri_prefix_synonyms: Collection[str] | None = None,
         *,
         case_sensitive: bool = True,
         merge: bool = False,
@@ -700,8 +701,8 @@ class Converter:
 
     @classmethod
     def from_extended_prefix_map(
-        cls, records: LocationOr[Iterable[Union[Record, dict[str, Any]]]], **kwargs: Any
-    ) -> "Converter":
+        cls, records: LocationOr[Iterable[Record | dict[str, Any]]], **kwargs: Any
+    ) -> Converter:
         """Get a converter from a list of dictionaries by creating records out of them.
 
         :param records:
@@ -778,7 +779,7 @@ class Converter:
     @classmethod
     def from_priority_prefix_map(
         cls, data: LocationOr[Mapping[str, list[str]]], **kwargs: Any
-    ) -> "Converter":
+    ) -> Converter:
         """Get a converter from a priority prefix map.
 
         :param data:
@@ -815,9 +816,7 @@ class Converter:
         )
 
     @classmethod
-    def from_prefix_map(
-        cls, prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any
-    ) -> "Converter":
+    def from_prefix_map(cls, prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) -> Converter:
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
@@ -855,7 +854,7 @@ class Converter:
     @classmethod
     def from_reverse_prefix_map(
         cls, reverse_prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any
-    ) -> "Converter":
+    ) -> Converter:
         """Get a converter from a reverse prefix map.
 
         :param reverse_prefix_map:
@@ -900,7 +899,7 @@ class Converter:
         return cls(records, **kwargs)
 
     @classmethod
-    def from_jsonld(cls, data: LocationOr[dict[str, Any]], **kwargs: Any) -> "Converter":
+    def from_jsonld(cls, data: LocationOr[dict[str, Any]], **kwargs: Any) -> Converter:
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
         :param data:
@@ -938,7 +937,7 @@ class Converter:
     @classmethod
     def from_jsonld_github(
         cls, owner: str, repo: str, *path: str, branch: str = "main", **kwargs: Any
-    ) -> "Converter":
+    ) -> Converter:
         """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld`.
 
         :param owner: A github repository owner or organization (e.g., ``biopragmatics``)
@@ -971,9 +970,9 @@ class Converter:
     @classmethod
     def from_rdflib(
         cls,
-        graph_or_manager: Union["rdflib.Graph", "rdflib.namespace.NamespaceManager"],
+        graph_or_manager: rdflib.Graph | rdflib.namespace.NamespaceManager,
         **kwargs: Any,
-    ) -> "Converter":
+    ) -> Converter:
         """Get a converter from an RDFLib graph or namespace manager.
 
         :param graph_or_manager: A RDFLib graph or manager object
@@ -1004,10 +1003,10 @@ class Converter:
     @classmethod
     def from_shacl(
         cls,
-        graph: Union[str, Path, "rdflib.Graph"],
-        format: Optional[str] = None,
+        graph: str | Path | rdflib.Graph,
+        format: str | None = None,
         **kwargs: Any,
-    ) -> "Converter":
+    ) -> Converter:
         """Get a converter from SHACL, either in a turtle f.
 
         :param graph: A RDFLib graph, a Path, a string representing a file path, or a string URL
@@ -1019,7 +1018,7 @@ class Converter:
             import rdflib
 
             temporary_graph = rdflib.Graph()
-            temporary_graph.parse(location=graph, format=format)
+            temporary_graph.parse(location=Path(graph).resolve().as_posix(), format=format)
             graph = temporary_graph
 
         query = """\
@@ -1031,7 +1030,7 @@ class Converter:
                 OPTIONAL { ?bnode2 sh:pattern ?pattern . }
             }
         """
-        results = graph.query(query)
+        results = cast(Iterable[tuple[str, str, str]], graph.query(query))
         records = [
             Record(prefix=str(prefix), uri_prefix=str(uri_prefix), pattern=pattern and str(pattern))
             for prefix, uri_prefix, pattern in results
@@ -1127,11 +1126,11 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def compress_or_standardize(
         self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Compress a URI or standardize a CURIE.
 
         :param uri_or_curie:
@@ -1200,11 +1199,9 @@ class Converter:
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
-    def compress(
-        self, uri: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    def compress(self, uri: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
         """Compress a URI to a CURIE, if possible.
 
         :param uri:
@@ -1250,7 +1247,7 @@ class Converter:
             return uri
         return None
 
-    def parse_uri(self, uri: str) -> Union[ReferenceTuple, tuple[None, None]]:
+    def parse_uri(self, uri: str) -> ReferenceTuple | tuple[None, None]:
         """Compress a URI to a CURIE pair.
 
         :param uri:
@@ -1330,11 +1327,11 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def expand_or_standardize(
         self, curie_or_uri: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Expand a CURIE or standardize a URI.
 
         :param curie_or_uri:
@@ -1403,11 +1400,9 @@ class Converter:
     @overload
     def expand(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
-    def expand(
-        self, curie: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    def expand(self, curie: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
         """Expand a CURIE to a URI, if possible.
 
         :param curie:
@@ -1443,7 +1438,7 @@ class Converter:
             return curie
         return None
 
-    def expand_all(self, curie: str) -> Optional[Collection[str]]:
+    def expand_all(self, curie: str) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param curie:
@@ -1473,7 +1468,7 @@ class Converter:
         """Parse a CURIE."""
         return ReferenceTuple.from_curie(curie, sep=self.delimiter)
 
-    def expand_pair(self, prefix: str, identifier: str) -> Optional[str]:
+    def expand_pair(self, prefix: str, identifier: str) -> str | None:
         """Expand a CURIE pair to the standard URI.
 
         :param prefix:
@@ -1500,7 +1495,7 @@ class Converter:
             return None
         return uri_prefix + identifier
 
-    def expand_pair_all(self, prefix: str, identifier: str) -> Optional[Collection[str]]:
+    def expand_pair_all(self, prefix: str, identifier: str) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param prefix:
@@ -1549,11 +1544,11 @@ class Converter:
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def standardize_prefix(
         self, prefix: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Standardize a prefix.
 
         :param prefix:
@@ -1607,11 +1602,11 @@ class Converter:
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def standardize_curie(
         self, curie: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Standardize a CURIE.
 
         :param curie:
@@ -1672,11 +1667,11 @@ class Converter:
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def standardize_uri(
         self, uri: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Standardize a URI.
 
         :param uri:
@@ -1727,9 +1722,9 @@ class Converter:
 
     def pd_compress(
         self,
-        df: "pandas.DataFrame",
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        df: pandas.DataFrame,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
         ambiguous: bool = False,
@@ -1750,9 +1745,9 @@ class Converter:
 
     def pd_expand(
         self,
-        df: "pandas.DataFrame",
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        df: pandas.DataFrame,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
         ambiguous: bool = False,
@@ -1773,10 +1768,10 @@ class Converter:
 
     def pd_standardize_prefix(
         self,
-        df: "pandas.DataFrame",
+        df: pandas.DataFrame,
         *,
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -1794,10 +1789,10 @@ class Converter:
 
     def pd_standardize_curie(
         self,
-        df: "pandas.DataFrame",
+        df: pandas.DataFrame,
         *,
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -1829,10 +1824,10 @@ class Converter:
 
     def pd_standardize_uri(
         self,
-        df: "pandas.DataFrame",
+        df: pandas.DataFrame,
         *,
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -1850,10 +1845,10 @@ class Converter:
 
     def file_compress(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         column: int,
         *,
-        sep: Optional[str] = None,
+        sep: str | None = None,
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
@@ -1876,10 +1871,10 @@ class Converter:
 
     def file_expand(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         column: int,
         *,
-        sep: Optional[str] = None,
+        sep: str | None = None,
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
@@ -1902,10 +1897,10 @@ class Converter:
 
     @staticmethod
     def _file_helper(
-        func: Callable[[str], Optional[str]],
-        path: Union[str, Path],
+        func: Callable[[str], str | None],
+        path: str | Path,
         column: int,
-        sep: Optional[str] = None,
+        sep: str | None = None,
         header: bool = True,
     ) -> None:
         path = Path(path).expanduser().resolve()
@@ -1923,7 +1918,7 @@ class Converter:
                 writer.writerow(_header)
             writer.writerows(rows)
 
-    def get_record(self, prefix: str) -> Optional[Record]:
+    def get_record(self, prefix: str) -> Record | None:
         """Get the record for the prefix."""
         # TODO better data structure for this
         for record in self.records:
@@ -1931,7 +1926,7 @@ class Converter:
                 return record
         return None
 
-    def get_subconverter(self, prefixes: Iterable[str]) -> "Converter":
+    def get_subconverter(self, prefixes: Iterable[str]) -> Converter:
         r"""Get a converter with a subset of prefixes.
 
         :param prefixes: A list of prefixes to keep from this converter. These can
@@ -2093,7 +2088,7 @@ def load_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) ->
 
 
 def load_extended_prefix_map(
-    records: LocationOr[Iterable[Union[Record, dict[str, Any]]]], **kwargs: Any
+    records: LocationOr[Iterable[Record | dict[str, Any]]], **kwargs: Any
 ) -> Converter:
     """Get a converter from a list of dictionaries by creating records out of them.
 
@@ -2181,7 +2176,7 @@ def load_jsonld_context(data: LocationOr[dict[str, Any]], **kwargs: Any) -> Conv
     return Converter.from_jsonld(data, **kwargs)
 
 
-def load_shacl(data: LocationOr["rdflib.Graph"], **kwargs: Any) -> Converter:
+def load_shacl(data: LocationOr[rdflib.Graph], **kwargs: Any) -> Converter:
     """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
     :param data:
@@ -2193,7 +2188,7 @@ def load_shacl(data: LocationOr["rdflib.Graph"], **kwargs: Any) -> Converter:
     return Converter.from_shacl(data, **kwargs)
 
 
-def write_extended_prefix_map(converter: Converter, path: Union[str, Path]) -> None:
+def write_extended_prefix_map(converter: Converter, path: str | Path) -> None:
     """Write an extended prefix map as JSON to a file."""
     path = _ensure_path(path)
     path.write_text(
@@ -2206,9 +2201,9 @@ def write_extended_prefix_map(converter: Converter, path: Union[str, Path]) -> N
     )
 
 
-def _record_to_dict(record: Record) -> Mapping[str, Union[str, list[str]]]:
+def _record_to_dict(record: Record) -> Mapping[str, str | list[str]]:
     """Convert a record to a dict."""
-    rv: dict[str, Union[str, list[str]]] = {
+    rv: dict[str, str | list[str]] = {
         "prefix": record.prefix,
         "uri_prefix": record.uri_prefix,
     }
@@ -2221,7 +2216,7 @@ def _record_to_dict(record: Record) -> Mapping[str, Union[str, list[str]]]:
     return rv
 
 
-def _ensure_path(path: Union[str, Path]) -> Path:
+def _ensure_path(path: str | Path) -> Path:
     if isinstance(path, str):
         path = Path(path).resolve()
     return path
@@ -2243,7 +2238,7 @@ def _get_jsonld_context(
 
 def write_jsonld_context(
     converter: Converter,
-    path: Union[str, Path],
+    path: str | Path,
     *,
     include_synonyms: bool = False,
     expand: bool = False,
@@ -2312,7 +2307,7 @@ def write_jsonld_context(
         json.dump(obj, file, indent=4, sort_keys=True)
 
 
-def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, dict[str, Any]]:
+def _get_expanded_term(record: Record, *, expand: bool) -> str | dict[str, Any]:
     if not expand:
         return record.uri_prefix
 
@@ -2329,7 +2324,7 @@ def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, dict[str, 
 
 def write_shacl(
     converter: Converter,
-    path: Union[str, Path],
+    path: str | Path,
     *,
     include_synonyms: bool = False,
 ) -> None:
@@ -2387,7 +2382,7 @@ def write_shacl(
 
 
 def write_tsv(
-    converter: Converter, path: Union[str, Path], *, header: tuple[str, str] = ("prefix", "base")
+    converter: Converter, path: str | Path, *, header: tuple[str, str] = ("prefix", "base")
 ) -> None:
     """Write a simple prefix map CSV file.
 
@@ -2424,7 +2419,7 @@ def write_tsv(
             writer.writerow((record.prefix, record.uri_prefix))
 
 
-def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None) -> str:
+def _get_shacl_line(prefix: str, uri_prefix: str, pattern: str | None = None) -> str:
     line = f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI '
     if pattern:
         pattern = pattern.replace("\\", "\\\\")
