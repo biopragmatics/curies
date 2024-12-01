@@ -4,8 +4,8 @@ import unittest
 
 from pydantic import BaseModel, ValidationError
 
-from curies import Converter
-from curies.typr import CURIE, URI, Prefix
+from curies import Converter, Prefix
+from curies.typr import CURIE, URI
 
 
 class WrappedPrefix(BaseModel):
