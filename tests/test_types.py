@@ -4,7 +4,7 @@ import unittest
 
 from pydantic import BaseModel, ValidationError
 
-from curies import Converter, Prefix
+from curies import Converter, Prefix, PrefixMap
 from curies.typr import CURIE, URI
 
 
@@ -29,8 +29,8 @@ class WrappedURI(BaseModel):
 converter = Converter.from_extended_prefix_map(
     [
         {
-            "prefix": "chebi",
-            "prefix_synonyms": ["CHEBI"],
+            "prefix": "CHEBI",
+            "prefix_synonyms": ["chebi"],
             "uri_prefix": "http://purl.obolibrary.org/obo/CHEBI_",
             "uri_prefix_synonyms": [
                 "https://identifiers.org/chebi:",
@@ -57,23 +57,23 @@ class TestTypes(unittest.TestCase):
 
         # Test that a synonym gets standardized properly
         model_3 = WrappedPrefix.model_validate({"prefix": "CHEBI"}, context=converter)
-        self.assertEqual("chebi", model_3.prefix)
+        self.assertEqual("CHEBI", model_3.prefix)
 
         # Test that a canonical prefix is passed through
         model_4 = WrappedPrefix.model_validate({"prefix": "chebi"}, context=converter)
-        self.assertEqual("chebi", model_4.prefix)
+        self.assertEqual("CHEBI", model_4.prefix)
 
         # Test that a synonym gets standardized properly, when passing context in a dict
         model_5 = WrappedPrefix.model_validate(
             {"prefix": "CHEBI"}, context={"converter": converter}
         )
-        self.assertEqual("chebi", model_5.prefix)
+        self.assertEqual("CHEBI", model_5.prefix)
 
         # Test that a canonical prefix is passed through, when passing context in a dict
         model_6 = WrappedPrefix.model_validate(
             {"prefix": "chebi"}, context={"converter": converter}
         )
-        self.assertEqual("chebi", model_6.prefix)
+        self.assertEqual("CHEBI", model_6.prefix)
 
         # Test an invalid prefix raises an error, when passing a converter directly
         with self.assertRaises(ValidationError):
@@ -82,6 +82,36 @@ class TestTypes(unittest.TestCase):
         # Test an invalid prefix raises an error, when passing a converter in a dict
         with self.assertRaises(ValidationError):
             WrappedPrefix.model_validate({"prefix": "nope"}, context={"converter": converter})
+
+    def test_prefix_root_model(self):
+        """Test the root model."""
+        dd = {
+            "": "http://example.org",
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        }
+        prefix_map = PrefixMap.model_validate(dd)
+        self.assertEqual(dd, prefix_map.root)
+
+        prefix_map = PrefixMap.model_validate(
+            {
+                "chebi": "http://purl.obolibrary.org/obo/CHEBI_",
+            },
+            context=converter,
+        )
+        self.assertEqual(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            },
+            prefix_map.root,
+        )
+
+        with self.assertRaises(ValidationError):
+            PrefixMap.model_validate(
+                {
+                    "$": "",
+                    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                }
+            )
 
     def test_curie(self):
         """Test instantiating CURIEs."""
@@ -93,23 +123,23 @@ class TestTypes(unittest.TestCase):
 
         # Test that a synonym gets standardized properly
         model_3 = WrappedCURIE.model_validate({"curie": "CHEBI:1234"}, context=converter)
-        self.assertEqual("chebi:1234", model_3.curie)
+        self.assertEqual("CHEBI:1234", model_3.curie)
 
         # Test that a canonical prefix is passed through
         model_4 = WrappedCURIE.model_validate({"curie": "chebi:1234"}, context=converter)
-        self.assertEqual("chebi:1234", model_4.curie)
+        self.assertEqual("CHEBI:1234", model_4.curie)
 
         # Test that a synonym gets standardized properly, when passing context in a dict
         model_5 = WrappedCURIE.model_validate(
             {"curie": "CHEBI:1234"}, context={"converter": converter}
         )
-        self.assertEqual("chebi:1234", model_5.curie)
+        self.assertEqual("CHEBI:1234", model_5.curie)
 
         # Test that a canonical prefix is passed through, when passing context in a dict
         model_6 = WrappedCURIE.model_validate(
             {"curie": "chebi:1234"}, context={"converter": converter}
         )
-        self.assertEqual("chebi:1234", model_6.curie)
+        self.assertEqual("CHEBI:1234", model_6.curie)
 
         # Test an invalid prefix raises an error, when passing a converter directly
         with self.assertRaises(ValidationError):

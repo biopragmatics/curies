@@ -8,7 +8,7 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
 from typing_extensions import Self
 
-from .api import _get_converter_from_context
+from .api import _converter_from_validation_info
 
 __all__ = [
     "CURIE",
@@ -116,7 +116,7 @@ class CURIE(str):
 
     @classmethod
     def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
-        converter = _get_converter_from_context(info)
+        converter = _converter_from_validation_info(info)
         if converter is None:
             return cls(__input_value)
         return cls(converter.standardize_curie(__input_value, strict=True))
@@ -220,7 +220,7 @@ class URI(str):
 
     @classmethod
     def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
-        converter = _get_converter_from_context(info)
+        converter = _converter_from_validation_info(info)
         if converter is None:
             return cls(__input_value)
         return cls(converter.standardize_uri(__input_value, strict=True))

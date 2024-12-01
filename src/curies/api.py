@@ -39,6 +39,7 @@ __all__ = [
     "DuplicateValueError",
     "NamedReference",
     "Prefix",
+    "PrefixMap",
     "Record",
     "Records",
     "Reference",
@@ -177,6 +178,22 @@ class Prefix(str):
             "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         }
 
+    You can more explicitly type annotate data with this class using
+    Pydantic's `root model <https://docs.pydantic.dev/2.3/usage/models/#rootmodel-and-custom-root-types>`_:
+
+    .. code-block:: python
+
+        from pydantic import RootModel
+        from curies import Prefix
+
+        PrefixMap = RootModel[dict[Prefix, str]]
+
+        prefix_map = PrefixMap.model_validate(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        ).root
+
     When used inside a Pydantic model, this class knows how to
     do validation that the prefix matches the regular expression
     for an XSD NCName. Here's an example usage with Pydantic:
@@ -268,10 +285,18 @@ class Prefix(str):
 
     @classmethod
     def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
-        converter = _get_converter_from_context(info)
+        converter = _converter_from_validation_info(info)
         if converter is None:
             return cls(__input_value)
         return cls(converter.standardize_prefix(__input_value, strict=True))
+
+
+class URIPrefix(str):
+    """A string that is validated by Pydantic as a URI prefix."""
+
+
+class PrefixMap(RootModel[dict[Prefix, URIPrefix]]):
+    """A simple prefix map."""
 
 
 class Reference(BaseModel):
@@ -2638,7 +2663,7 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> list[Record]:
     ]
 
 
-def _get_converter_from_context(info: core_schema.ValidationInfo) -> Converter | None:
+def _converter_from_validation_info(info: core_schema.ValidationInfo) -> Converter | None:
     context = info.context or {}
     if isinstance(context, Converter):
         return context
