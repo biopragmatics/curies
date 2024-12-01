@@ -1,8 +1,10 @@
 """Implementation of mapping service."""
 
+from __future__ import annotations
+
 import itertools as itt
 from collections.abc import Collection, Iterable
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from rdflib import OWL, Graph, URIRef
 from rdflib.term import _is_valid_uri
@@ -16,7 +18,7 @@ if TYPE_CHECKING:
     import flask
 
 
-def _prepare_predicates(predicates: Union[None, str, Collection[str]] = None) -> set[URIRef]:
+def _prepare_predicates(predicates: None | str | Collection[str] = None) -> set[URIRef]:
     if predicates is None:
         return {OWL.sameAs}
     if isinstance(predicates, str):
@@ -34,7 +36,7 @@ class MappingServiceGraph(Graph):  # type:ignore
         self,
         *args: Any,
         converter: Converter,
-        predicates: Union[None, str, list[str]] = None,
+        predicates: None | str | list[str] = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate the graph.
@@ -119,7 +121,7 @@ class MappingServiceGraph(Graph):  # type:ignore
 
 def get_flask_mapping_blueprint(
     converter: Converter, route: str = "/sparql", **kwargs: Any
-) -> "flask.Blueprint":
+) -> flask.Blueprint:
     """Get a blueprint for :class:`flask.Flask`.
 
     :param converter: A converter
@@ -134,7 +136,7 @@ def get_flask_mapping_blueprint(
     processor = MappingServiceSPARQLProcessor(graph=graph)
 
     @blueprint.route(route, methods=["GET", "POST"])  # type:ignore
-    def serve_sparql() -> "Response":
+    def serve_sparql() -> Response:
         """Run a SPARQL query and serve the results."""
         sparql = request.values.get("query")
         if not sparql:
@@ -151,7 +153,7 @@ def get_flask_mapping_blueprint(
 
 def get_fastapi_router(
     converter: Converter, route: str = "/sparql", **kwargs: Any
-) -> "fastapi.APIRouter":
+) -> fastapi.APIRouter:
     """Get a router for :class:`fastapi.FastAPI`.
 
     :param converter: A converter
@@ -190,7 +192,7 @@ def get_fastapi_router(
     return api_router
 
 
-def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
+def get_flask_mapping_app(converter: Converter) -> flask.Flask:
     """Get a Flask app for the mapping service."""
     from flask import Flask
 
@@ -200,7 +202,7 @@ def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
     return app
 
 
-def get_fastapi_mapping_app(converter: Converter) -> "fastapi.FastAPI":
+def get_fastapi_mapping_app(converter: Converter) -> fastapi.FastAPI:
     """Get a FastAPI app.
 
     :param converter: A converter

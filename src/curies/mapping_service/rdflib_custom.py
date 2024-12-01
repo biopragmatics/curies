@@ -2,7 +2,7 @@
 
 """A custom SPARQL processor that optimizes the query based on https://github.com/RDFLib/rdflib/pull/2257."""
 
-from typing import Union
+from __future__ import annotations
 
 from rdflib.plugins.sparql.algebra import translateQuery
 from rdflib.plugins.sparql.evaluate import evalQuery
@@ -52,7 +52,7 @@ class MappingServiceSPARQLProcessor(SPARQLProcessor):
 
     def query(
         self,
-        query: Union[str, Query],
+        query: str | Query,
         initBindings=None,  # noqa:N803
         initNs=None,  # noqa:N803
         base=None,
