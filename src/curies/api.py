@@ -360,7 +360,9 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(cls, curie: str, *, sep: str = ":", converter: Converter | None = None) -> Reference:
+    def from_curie(
+        cls, curie: str, *, sep: str = ":", converter: Converter | None = None
+    ) -> Reference:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -424,7 +426,7 @@ class Record(BaseModel):
     pattern: str | None = Field(
         default=None,
         description="The regular expression pattern for entries in this semantic space. "
-                    "Warning: this is an experimental feature.",
+        "Warning: this is an experimental feature.",
     )
 
     @field_validator("prefix_synonyms")  # type:ignore
@@ -1233,8 +1235,7 @@ class Converter:
     @overload
     def compress_or_standardize(
         self, uri_or_curie: str, *, strict: Literal[True] = True, passthrough: bool = ...
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1244,8 +1245,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[True] = True,
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1255,8 +1255,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
-    ) -> str | None:
-        ...
+    ) -> str | None: ...
 
     def compress_or_standardize(
         self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
@@ -1317,22 +1316,19 @@ class Converter:
     @overload
     def compress(
         self, uri: str, *, strict: Literal[True] = True, passthrough: bool = ...
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> str | None:
-        ...
+    ) -> str | None: ...
 
     def compress(self, uri: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
         """Compress a URI to a CURIE, if possible.
@@ -1406,7 +1402,7 @@ class Converter:
         except KeyError:
             return None, None
         else:
-            return ReferenceTuple(prefix, uri[len(value):])
+            return ReferenceTuple(prefix, uri[len(value) :])
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
@@ -1440,8 +1436,7 @@ class Converter:
     @overload
     def expand_or_standardize(
         self, curie_or_uri: str, *, strict: Literal[True] = True, passthrough: bool = ...
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1451,8 +1446,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[True] = True,
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1462,8 +1456,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
-    ) -> str | None:
-        ...
+    ) -> str | None: ...
 
     def expand_or_standardize(
         self, curie_or_uri: str, *, strict: bool = False, passthrough: bool = False
@@ -1524,22 +1517,19 @@ class Converter:
     @overload
     def expand(
         self, curie: str, *, strict: Literal[True] = True, passthrough: bool = ...
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def expand(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> str | None:
-        ...
+    ) -> str | None: ...
 
     def expand(self, curie: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
         """Expand a CURIE to a URI, if possible.
@@ -1671,22 +1661,19 @@ class Converter:
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> str | None:
-        ...
+    ) -> str | None: ...
 
     def standardize_prefix(
         self, prefix: str, *, strict: bool = False, passthrough: bool = False
@@ -1732,22 +1719,19 @@ class Converter:
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> str | None:
-        ...
+    ) -> str | None: ...
 
     def standardize_curie(
         self, curie: str, *, strict: bool = False, passthrough: bool = False
@@ -1800,22 +1784,19 @@ class Converter:
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[True] = True, passthrough: bool = False
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> str | None:
-        ...
+    ) -> str | None: ...
 
     def standardize_uri(
         self, uri: str, *, strict: bool = False, passthrough: bool = False
