@@ -67,3 +67,4 @@ for updating your code.
    struct
    api
    services/index
+   typing

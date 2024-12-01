@@ -6,6 +6,8 @@ from .api import (
     DuplicateURIPrefixes,
     DuplicateValueError,
     NamedReference,
+    Prefix,
+    PrefixMap,
     Record,
     Records,
     Reference,
@@ -30,14 +32,19 @@ from .sources import (
     get_obo_converter,
     get_prefixcommons_converter,
 )
+from .typr import CURIE, URI
 from .version import get_version
 
 __all__ = [
+    "CURIE",
+    "URI",
     "Converter",
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "DuplicateValueError",
     "NamedReference",
+    "Prefix",
+    "PrefixMap",
     "Record",
     "Records",
     "Reference",
