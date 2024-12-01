@@ -1,7 +1,9 @@
 """A simple web service for resolving CURIEs."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from .api import Converter
 
@@ -21,7 +23,7 @@ __all__ = [
 FAILURE_CODE = 422
 
 
-def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint":
+def get_flask_blueprint(converter: Converter, **kwargs: Any) -> flask.Blueprint:
     """Get a blueprint for :class:`flask.Flask`.
 
     :param converter: A converter
@@ -69,8 +71,8 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
 
     blueprint = Blueprint("metaresolver", __name__, **kwargs)
 
-    @blueprint.route(f"/<prefix>{converter.delimiter}<path:identifier>")  # type:ignore
-    def resolve(prefix: str, identifier: str) -> "Response":
+    @blueprint.route(f"/<prefix>{converter.delimiter}<path:identifier>")
+    def resolve(prefix: str, identifier: str) -> Response:
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
         if location is None:
@@ -83,10 +85,10 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
 
 def get_flask_app(
     converter: Converter,
-    blueprint_kwargs: Optional[Mapping[str, Any]] = None,
-    flask_kwargs: Optional[Mapping[str, Any]] = None,
-    register_kwargs: Optional[Mapping[str, Any]] = None,
-) -> "flask.Flask":
+    blueprint_kwargs: Mapping[str, Any] | None = None,
+    flask_kwargs: Mapping[str, Any] | None = None,
+    register_kwargs: Mapping[str, Any] | None = None,
+) -> flask.Flask:
     """Get a Flask app.
 
     :param converter: A converter
@@ -152,7 +154,7 @@ def get_flask_app(
     return app
 
 
-def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRouter":
+def get_fastapi_router(converter: Converter, **kwargs: Any) -> fastapi.APIRouter:
     """Get a router for :class:`fastapi.FastAPI`.
 
     :param converter: A converter
@@ -200,7 +202,7 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
     api_router = APIRouter(**kwargs)
 
-    @api_router.get(f"/{{prefix}}{converter.delimiter}{{identifier}}")  # type:ignore
+    @api_router.get(f"/{{prefix}}{converter.delimiter}{{identifier}}")
     def resolve(
         prefix: str = Path(
             title="Prefix",
@@ -227,10 +229,10 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
 def get_fastapi_app(
     converter: Converter,
-    router_kwargs: Optional[Mapping[str, Any]] = None,
-    fastapi_kwargs: Optional[Mapping[str, Any]] = None,
-    include_kwargs: Optional[Mapping[str, Any]] = None,
-) -> "fastapi.FastAPI":
+    router_kwargs: Mapping[str, Any] | None = None,
+    fastapi_kwargs: Mapping[str, Any] | None = None,
+    include_kwargs: Mapping[str, Any] | None = None,
+) -> fastapi.FastAPI:
     """Get a FastAPI app.
 
     :param converter: A converter

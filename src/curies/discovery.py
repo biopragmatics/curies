@@ -39,10 +39,12 @@ After identifying putative URI prefixes, the second part of the algorithm does t
 4. Construct a converter from this prefix map and return it
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import PurePath
-from typing import IO, TYPE_CHECKING, Any, Optional, TextIO, Union
+from typing import IO, TYPE_CHECKING, Any, TextIO, Union
 
 from typing_extensions import Literal
 
@@ -62,9 +64,9 @@ GraphInput = Union[IO[bytes], TextIO, "rdflib.parser.InputSource", str, bytes, P
 
 
 def discover_from_rdf(
-    graph: Union[GraphInput, "rdflib.Graph"],
+    graph: GraphInput | rdflib.Graph,
     *,
-    format: Optional[GraphFormats] = None,
+    format: GraphFormats | None = None,
     **kwargs: Any,
 ) -> Converter:
     """Discover new URI prefixes from RDF content via :mod:`rdflib`.
@@ -94,7 +96,7 @@ def discover_from_rdf(
 
 
 def get_uris_from_rdf(
-    graph: Union[GraphInput, "rdflib.Graph"], *, format: Optional[GraphFormats] = None
+    graph: GraphInput | rdflib.Graph, *, format: GraphFormats | None = None
 ) -> set[str]:
     """Get a set of URIs from a graph."""
     graph = _ensure_graph(graph=graph, format=format)
@@ -102,8 +104,8 @@ def get_uris_from_rdf(
 
 
 def _ensure_graph(
-    *, graph: Union[GraphInput, "rdflib.Graph"], format: Optional[GraphFormats] = None
-) -> "rdflib.Graph":
+    *, graph: GraphInput | rdflib.Graph, format: GraphFormats | None = None
+) -> rdflib.Graph:
     import rdflib
 
     if not isinstance(graph, rdflib.Graph):
@@ -114,7 +116,7 @@ def _ensure_graph(
     return graph
 
 
-def _yield_uris(*, graph: "rdflib.Graph") -> Iterable[str]:
+def _yield_uris(*, graph: rdflib.Graph) -> Iterable[str]:
     import rdflib
 
     for parts in graph.triples((None, None, None)):
@@ -126,10 +128,10 @@ def _yield_uris(*, graph: "rdflib.Graph") -> Iterable[str]:
 def discover(
     uris: Iterable[str],
     *,
-    delimiters: Optional[Sequence[str]] = None,
-    cutoff: Optional[int] = None,
+    delimiters: Sequence[str] | None = None,
+    cutoff: int | None = None,
     metaprefix: str = "ns",
-    converter: Optional[Converter] = None,
+    converter: Converter | None = None,
 ) -> Converter:
     """Discover new URI prefixes and construct a converter with a unique dummy CURIE prefix for each.
 
@@ -218,9 +220,9 @@ DEFAULT_DELIMITERS = ("#", "/", "_")
 
 def _get_uri_prefix_to_luids(
     *,
-    converter: Optional[Converter] = None,
+    converter: Converter | None = None,
     uris: Iterable[str],
-    delimiters: Optional[Sequence[str]] = None,
+    delimiters: Sequence[str] | None = None,
 ) -> Mapping[str, set[str]]:
     """Get a mapping from putative URI prefixes to corresponding putative local unique identifiers.
 

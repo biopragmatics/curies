@@ -1,10 +1,12 @@
 """Utilities for the mapping service."""
 
+from __future__ import annotations
+
 import json
 import json.decoder
 import unittest
 from collections.abc import Mapping
-from typing import Callable, Optional
+from typing import Callable
 
 from defusedxml import ElementTree
 
@@ -127,7 +129,7 @@ def parse_header(header: str) -> list[str]:
     return sorted(parts, key=parts.__getitem__, reverse=True)
 
 
-def handle_header(header: Optional[str], default: str = DEFAULT_CONTENT_TYPE) -> str:
+def handle_header(header: str | None, default: str = DEFAULT_CONTENT_TYPE) -> str:
     """Canonicalize a header."""
     if not header:
         return default
