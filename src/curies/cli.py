@@ -30,7 +30,6 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING, Callable
 
 import click
-import fastapi
 from typing_extensions import TypeAlias
 
 from curies import Converter, sources
