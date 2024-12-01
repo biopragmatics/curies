@@ -51,10 +51,10 @@ def get_obo_converter() -> Converter:
     return Converter.from_jsonld(url)
 
 
-def get_prefixcommons_converter(name: str) -> Converter:
+def get_prefixcommons_converter(name: str = "monarch_context") -> Converter:
     """Get a Prefix Commons-maintained context.
 
-    :param name: The name of the JSON-LD file (e.g., ``monarch_context``).
+    :param name: The name of the JSON-LD file (e.g., defaults to ``monarch_context``).
         See the full list at https://github.com/prefixcommons/prefixcommons-py/tree/master/prefixcommons/registry.
     :returns:
         A converter

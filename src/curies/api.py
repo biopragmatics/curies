@@ -1018,7 +1018,7 @@ class Converter:
             import rdflib
 
             temporary_graph = rdflib.Graph()
-            temporary_graph.parse(location=graph, format=format)
+            temporary_graph.parse(location=Path(graph).resolve().as_posix(), format=format)
             graph = temporary_graph
 
         query = """\
@@ -1030,7 +1030,7 @@ class Converter:
                 OPTIONAL { ?bnode2 sh:pattern ?pattern . }
             }
         """
-        results = graph.query(query)
+        results = cast(Iterable[tuple[str, str, str]], graph.query(query))
         records = [
             Record(prefix=str(prefix), uri_prefix=str(uri_prefix), pattern=pattern and str(pattern))
             for prefix, uri_prefix, pattern in results
