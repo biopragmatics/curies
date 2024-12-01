@@ -23,6 +23,8 @@ Similarly, there's a built-in CLI for running a mapper web application.
 The same flags and arguments are applicable.
 """
 
+from __future__ import annotations
+
 import sys
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Callable
