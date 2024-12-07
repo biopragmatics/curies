@@ -566,6 +566,11 @@ class Converter:
         """Get the bijective mapping between CURIE prefixes and URI prefixes."""
         return {r.prefix: r.uri_prefix for r in self.records}
 
+    @property
+    def reverse_bimap(self) -> Mapping[str, str]:
+        """Get the bijective mapping between URI CURIE prefixes and CURIE prefixes."""
+        return {r.uri_prefix: r.prefix for r in self.records}
+
     def _match_record(
         self, external: Record, case_sensitive: bool = True
     ) -> Mapping[RecordKey, list[str]]:
