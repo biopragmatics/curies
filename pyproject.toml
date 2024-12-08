@@ -98,6 +98,7 @@ Documentation = "https://curies.readthedocs.io"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
+license-files = []
 
 [tool.setuptools.packages.find]
 # this implicitly sets `packages = ":find"`
