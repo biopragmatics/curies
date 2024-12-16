@@ -1,0 +1,59 @@
+diff a/pyproject.toml b/pyproject.toml	(rejected hunks)
+@@ -24,9 +24,7 @@ classifiers = [
+     "License :: OSI Approved :: MIT License",
+     "Operating System :: OS Independent",
+     "Framework :: Pytest",
+-    
+     "Framework :: tox",
+-    
+     "Framework :: Sphinx",
+     "Natural Language :: English",
+     "Programming Language :: Python",
+@@ -53,21 +51,19 @@ requires-python = ">=3.10"
+ dependencies = [
+     "more_itertools", # missing from itertools in stdlib
+     "tqdm", # progress bars
+-    
+     "click",
+     "more_click",
+-    
++    "typing-extensions",
+ ]
+ 
+ [project.optional-dependencies]
+ tests = [
+     "pytest",
+-    "coverage",
++    "coverage[toml]",
+ ]
+ docs = [
+     "sphinx>=8",
+-    "sphinx-rtd-theme>=3.0",
+-    "sphinx-click", 
++    "sphinx-rtd-theme>=3.0","sphinx-click", 
+     "sphinx_automodapi",
+     # Include if your project uses Pydantic:
+     # "autodoc_pydantic",
+@@ -77,14 +73,22 @@ docs = [
+ ]
+ 
+ # See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls
++# and also https://packaging.python.org/en/latest/specifications/well-known-project-urls/
+ [project.urls]
+ "Bug Tracker" = "https://github.com/biopragmatics/curies/issues"
+ Homepage = "https://github.com/biopragmatics/curies"
+ Repository = "https://github.com/biopragmatics/curies.git"
+ Documentation = "https://curies.readthedocs.io"
++Funding = "https://github.com/sponsors/"
+ 
+ [tool.setuptools]
+ package-dir = { "" = "src" }
++# This fix is here as a final tombstone before getting rid of setuptools and
++# replacing with uv's build backend. It appears that the setuptools team hasn't
++# prioritized fixing the fully breaking bug in metadata emission described in
++# https://github.com/pypa/setuptools/issues/4759. Luckily, the license
++# is inferred from the trove classifier for MIT license.
++license-files = []
+ 
+ [tool.setuptools.packages.find]
+ # this implicitly sets `packages = ":find"`

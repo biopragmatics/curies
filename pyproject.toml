@@ -108,10 +108,8 @@ where = ["src"]  # list of folders that contain the packages (["."] by default)
 [tool.setuptools.package-data]
 "*" = ["*.*"]
 
-
 [project.scripts]
 curies = "curies.cli:main"
-
 
 [tool.cruft]
 skip = [
