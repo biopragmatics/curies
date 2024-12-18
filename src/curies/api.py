@@ -61,10 +61,6 @@ logger = logging.getLogger(__name__)
 X = TypeVar("X")
 LocationOr = Union[str, Path, X]
 
-#: From https://stackoverflow.com/a/55038380, with the addition
-#: of being able to match an empty string
-NCNAME_RE = r"^$|^[a-zA-Z_][\w.-]*$"
-
 
 def _get_field_validator_values(values, key: str):  # type:ignore
     """Get the value for the key from a field validator object, cross-compatible with Pydantic 1 and 2."""
@@ -282,7 +278,10 @@ class Prefix(str):
     ) -> core_schema.AfterValidatorFunctionSchema:
         return core_schema.with_info_after_validator_function(
             cls._validate,
-            core_schema.str_schema(pattern=NCNAME_RE, strict=False),
+            # TODO consider if we should use strict NCNAME pattern
+            #  here like ^$|^[a-zA-Z_][\w.-]*$. See also
+            #  https://cthoyt.com/2023/01/11/bioregistry-w3c-compliance.html
+            core_schema.str_schema(strict=False),
         )
 
     @classmethod

@@ -41,10 +41,6 @@ class TestTypes(unittest.TestCase):
         model_1 = WrappedPrefix.model_validate({"prefix": "hello"})
         self.assertEqual("hello", model_1.prefix)
 
-        # this doesn't match the regex for prefixes
-        with self.assertRaises(ValidationError):
-            WrappedPrefix.model_validate({"prefix": "!!!"})
-
         model_2 = WrappedPrefix.model_validate({"prefix": "CHEBI"})
         self.assertEqual("CHEBI", model_2.prefix)
 
@@ -101,9 +97,9 @@ class TestTypes(unittest.TestCase):
         with self.assertRaises(ValidationError):
             PrefixMap.model_validate(
                 {
-                    "$": "",
-                    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-                }
+                    "NOPE": "http://purl.obolibrary.org/obo/CHEBI_",
+                },
+                context=converter,
             )
 
     def test_prefix_map_wrapped(self):
