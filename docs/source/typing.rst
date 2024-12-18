@@ -1,24 +1,18 @@
 Typing
 ======
-
 This package comes with utilities for better typing other resources.
-
-TODO:
-
-1. demonstrate using converter to create validator using prefix, CURIE, and URI
-
 
 Let's say you have a table like this:
 
-===========  ========  ======
-curie        name      smiles
-===========  ========  ======
-CHEBI:16236  ethanol   CCO
-CHEBI:28831  propanol  CCCO
-CHOBI:44884  pentanol  CCCCCO
-===========  ========  ======
+======  ==========  ========  ======
+prefix  identifier  name      smiles
+======  ==========  ========  ======
+CHEBI   16236       ethanol   CCO
+CHEBI   28831       propanol  CCCO
+CHOBI   44884       pentanol  CCCCCO
+======  ==========  ========  ======
 
-Note that there's a typo in the CURIE on the fourth row in the prefix because it
+Note that there's a typo in the prefix on the fourth row in the prefix because it
 uses ``CHOBI`` instead of ``CHEBI``. In the following code, we simulate reading that
 file and show where the error shows up:
 
@@ -26,21 +20,22 @@ file and show where the error shows up:
 
     import csv
     from pydantic import BaseModel, ValidationError
-    from curies import CURIE, Converter
+    from curies import Converter, Prefix
 
     converter = Converter.from_prefix_map({
         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
     })
 
     class Row(BaseModel):
-        curie: CURIE
+        prefix: Prefix
+        identifier: str
         name: str
         smiles: str
 
     records = [
-        {"curie": "CHEBI:16236", "name": "ethanol", "smiles": "CCO"},
-        {"curie": "CHEBI:28831", "name": "propanol", "smiles": "CCCO"},
-        {"curie": "CHOBI:44884", "name": "pentanol", "smiles": "CCCCCO"},
+        {"prefix": "CHEBI", "identifier": "16236", "name": "ethanol", "smiles": "CCO"},
+        {"prefix": "CHEBI", "identifier": "28831", "name": "propanol", "smiles": "CCCO"},
+        {"prefix": "CHOBI", "identifier": "44884", "name": "pentanol", "smiles": "CCCCCO"},
     ]
 
     for record in records:
@@ -49,3 +44,7 @@ file and show where the error shows up:
         except ValidationError as e:
             print(f"Issue parsing record {record}: {e}")
             continue
+
+Note that :meth:`pydantic.BaseModel.model_validate` allows for passing a "context".
+The :class:`curies.Prefix` class implements custom context handling, so if you pass
+a converter, it knows how to check using prefixes in the converter.
