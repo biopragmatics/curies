@@ -396,7 +396,9 @@ class TestConverter(unittest.TestCase):
     def _assert_convert(self, converter: Converter):
         self.assertIn("GO", converter.prefix_map)
         self.assertIn("GO", converter.bimap)
+        self.assertIn("GO", converter.reverse_bimap.values())
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_prefix_map)
+        self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_bimap)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.trie)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.bimap.values())
         for curie, uri in [
