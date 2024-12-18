@@ -291,11 +291,7 @@ class Prefix(str):
         return cls(converter.standardize_prefix(__input_value, strict=True))
 
 
-class URIPrefix(str):
-    """A string that is validated by Pydantic as a URI prefix."""
-
-
-class PrefixMap(RootModel[dict[Prefix, URIPrefix]]):
+class PrefixMap(RootModel[dict[Prefix, str]]):
     """A simple prefix map."""
 
 
