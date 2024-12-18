@@ -194,6 +194,8 @@ class Prefix(str):
             }
         ).root
 
+    This pattern is common enough that it's included in :class:`curies.PrefixMap`.
+
     When used inside a Pydantic model, this class knows how to
     do validation that the prefix matches the regular expression
     for an XSD NCName. Here's an example usage with Pydantic:
@@ -292,7 +294,51 @@ class Prefix(str):
 
 
 class PrefixMap(RootModel[dict[Prefix, str]]):
-    """A simple prefix map."""
+    """A simple prefix map.
+
+    This can be used to validate dictionaries:
+
+    .. code-block:: python
+
+        from curies import PrefixMap
+
+        prefix_map_model = PrefixMap.model_validate(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
+
+        # note that you have to unpack it
+        prefix_map_dict = prefix_map_model.root
+
+    Similarly, a prefix map can be used as part of another Pydantic model
+    like in:
+
+    .. code-block:: python
+
+        from pydantic import BaseModel
+        from curies import PrefixMap
+
+
+        class RDFContent(BaseModel):
+            prefix_map: PrefixMap
+            triples: list[tuple[str, str, str]]
+
+
+        rdf_content = RDFContent.model_validate(
+            {
+                "prefix_map": {
+                    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                },
+                "triples": [
+                    ("CHEBI:1234", "RO:0000001", "CHEBI:5678"),
+                ],
+            }
+        )
+
+        # note that you have to unpack the resulting prefix map
+        prefix_map = rdf_content.prefix_map.root
+    """
 
 
 class Reference(BaseModel):

@@ -13,6 +13,12 @@ class WrappedPrefix(BaseModel):
     prefix: Prefix
 
 
+class WrappedPrefixMap(BaseModel):
+    """A model wrapping a prefix map."""
+
+    prefix_map: PrefixMap
+
+
 converter = Converter.from_extended_prefix_map(
     [
         {
@@ -99,3 +105,13 @@ class TestTypes(unittest.TestCase):
                     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
                 }
             )
+
+    def test_prefix_map_wrapped(self):
+        """Test a wrapped prefix map."""
+        dd = {
+            "prefix_map": {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        }
+        wpm = WrappedPrefixMap.model_validate(dd)
+        self.assertIn("CHEBI", wpm.prefix_map.root)
