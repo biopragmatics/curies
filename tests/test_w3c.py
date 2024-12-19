@@ -34,8 +34,8 @@ class TestValidators(unittest.TestCase):
         """Test CURIE validation."""
         for curie in _read(VALID_CURIES_PATH):
             with self.subTest(curie=curie):
-                self.assertTrue(is_w3c_curie(curie))
+                self.assertTrue(is_w3c_curie(curie), msg="CURIE should test as valid, but did not")
 
         for curie in _read(INVALID_CURIES_PATH):
             with self.subTest(curie=curie):
-                self.assertFalse(is_w3c_curie(curie))
+                self.assertFalse(is_w3c_curie(curie), msg="CURIE should test as invalid, but did not")
