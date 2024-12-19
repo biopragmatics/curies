@@ -453,19 +453,24 @@ class NamedReference(Reference):
     model_config = ConfigDict(frozen=True)
 
     @classmethod
-    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> NamedReference:  # type:ignore
+    def from_curie(  # type:ignore
+        cls, curie: str, name: str, *, sep: str = ":", converter: Converter | None = None
+    ) -> NamedReference:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
         :param name: The name of the reference
         :param sep: The separator
+        :param converter: The converter to use as context when parsing
         :return: A reference object
 
         >>> NamedReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
         NamedReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
         """
         prefix, identifier = _split(curie, sep=sep)
-        return cls(prefix=prefix, identifier=identifier, name=name)
+        return cls.model_validate(
+            {"prefix": prefix, "identifier": identifier, "name": name}, context=converter
+        )
 
 
 RecordKey = tuple[str, str, str, str]
