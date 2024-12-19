@@ -11,6 +11,9 @@ build:
     - graphviz
   tools:
     python: "3.12"
+  jobs:
+    pre_create_environment:
+      - export UV_PREVIEW="1"
 
 python:
   install:
