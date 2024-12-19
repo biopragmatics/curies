@@ -234,18 +234,54 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(cls, curie: str, *, sep: str = ":") -> Reference:
+    @overload
+    def from_curie(
+        cls,
+        curie: str,
+        *,
+        name: str,
+        sep: str = ...,
+    ) -> NamedReference: ...
+
+    @classmethod
+    @overload
+    def from_curie(
+        cls,
+        curie: str,
+        *,
+        name: None,
+        sep: str = ...,
+    ) -> Reference: ...
+
+    @classmethod
+    def from_curie(
+        cls,
+        curie: str,
+        name: str | None = None,
+        *,
+        sep: str = ":",
+    ) -> Reference:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
+        :param name: An optional name for the reference
         :param sep: The separator
         :return: A reference object
 
         >>> Reference.from_curie("chebi:1234")
         Reference(prefix='chebi', identifier='1234')
+
+        If you add a second argument, you can create a named reference
+
+        >>> Reference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
+        NamedReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
         """
         prefix, identifier = _split(curie, sep=sep)
-        return cls(prefix=prefix, identifier=identifier)
+        if name is not None:
+            return NamedReference.model_validate(
+                {"prefix": prefix, "identifier": identifier, "name": name}
+            )
+        return cls.model_validate({"prefix": prefix, "identifier": identifier})
 
 
 class NamedReference(Reference):
@@ -256,21 +292,6 @@ class NamedReference(Reference):
     )
 
     model_config = ConfigDict(frozen=True)
-
-    @classmethod
-    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> NamedReference:  # type:ignore
-        """Parse a CURIE string and populate a reference.
-
-        :param curie: A string representation of a compact URI (CURIE)
-        :param name: The name of the reference
-        :param sep: The separator
-        :return: A reference object
-
-        >>> NamedReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
-        NamedReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
-        """
-        prefix, identifier = _split(curie, sep=sep)
-        return cls(prefix=prefix, identifier=identifier, name=name)
 
 
 RecordKey = tuple[str, str, str, str]
