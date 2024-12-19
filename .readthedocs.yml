@@ -12,6 +12,7 @@ build:
   tools:
     python: "3.12"
   jobs:
+    # see https://docs.readthedocs.io/en/stable/build-customization.html#extend-the-build-process
     pre_create_environment:
       - export UV_PREVIEW="1"
 
