@@ -23,8 +23,10 @@ from typing import (
     overload,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, field_validator
+from pydantic import BaseModel, ConfigDict, Field, GetCoreSchemaHandler, RootModel, field_validator
+from pydantic_core import core_schema
 from pytrie import StringTrie
+from typing_extensions import Self
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -36,6 +38,8 @@ __all__ = [
     "DuplicateURIPrefixes",
     "DuplicateValueError",
     "NamedReference",
+    "Prefix",
+    "PrefixMap",
     "Record",
     "Records",
     "Reference",
@@ -148,6 +152,194 @@ class ReferenceTuple(NamedTuple):
         return cls(prefix, identifier)
 
 
+class Prefix(str):
+    """A string that is validated by Pydantic as a CURIE prefix.
+
+    This class is a subclass of Python's built-in string class,
+    so you can wrap any string with it:
+
+    .. code-block:: python
+
+        from curies import Prefix
+
+        prefix = Prefix("CHEBI")
+
+    You can implicitly type annotate data with this class:
+
+    .. code-block:: python
+
+        from curies import Prefix
+
+        prefix_map: dict[Prefix, str] = {
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        }
+
+    You can more explicitly type annotate data with this class using
+    Pydantic's `root model <https://docs.pydantic.dev/2.3/usage/models/#rootmodel-and-custom-root-types>`_:
+
+    .. code-block:: python
+
+        from pydantic import RootModel
+        from curies import Prefix
+
+        PrefixMap = RootModel[dict[Prefix, str]]
+
+        prefix_map = PrefixMap.model_validate(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        ).root
+
+    This pattern is common enough that it's included in :class:`curies.PrefixMap`.
+
+    When used inside a Pydantic model, this class knows how to
+    do validation that the prefix matches the regular expression
+    for an XSD NCName. Here's an example usage with Pydantic:
+
+    .. code-block:: python
+
+        from curies import Prefix
+        from pydantic import BaseModel
+
+
+        class ResourceInfo(BaseModel):
+            prefix: Prefix
+            name: str
+
+
+        model = ResourceInfo.model_validate(
+            {
+                "prefix": "CHEBI",
+                "name": "Chemical Entities of Biological Interest",
+            }
+        )
+
+        # raises a pydantic.ValidationError, because the prefix
+        # doesn't match the NCName pattern
+        ResourceInfo.model_validate(
+            {
+                "prefix": "$nope",
+                "name": "An invalid semantic space!",
+            }
+        )
+
+    This class implements a hook that uses Pydantic's "context"
+    for validation that lets you pass a :class:`Converter` to check
+    for existence and standardization with respect to the context
+    in the converter:
+
+    .. code-block:: python
+
+        from curies import Prefix, get_obo_converter
+        from pydantic import BaseModel
+
+        class ResourceInfo(BaseModel):
+            prefix: Prefix
+            name: str
+
+        converter = get_obo_converter()
+        model = ResourceInfo.model_validate(
+            {
+                "prefix": "CHEBI",
+                "name": "Chemical Entities of Biological Interest",
+            },
+            context=converter,
+        )
+
+        # raises a pydantic.ValidationError, because the prefix
+        # is not registered in the OBO Foundry, and is therefore
+        # not part of the OBO converter
+        ResourceInfo.model_validate(
+            {
+                "prefix": "efo",
+                "name": "Experimental Factor Ontology",
+            },
+            context=converter,
+        )
+
+        # In case you need to pass more arbitrary
+        # context, you can also use a dict with the key
+        # "converter"
+        ResourceInfo.model_validate(
+            {
+                "prefix": "CHEBI",
+                "name": "Chemical Entities of Biological Interest",
+            },
+            context={
+                "converter": converter,
+                ...
+            },
+        )
+    """
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[Any], handler: GetCoreSchemaHandler
+    ) -> core_schema.AfterValidatorFunctionSchema:
+        return core_schema.with_info_after_validator_function(
+            cls._validate,
+            # TODO consider if we should use strict NCNAME pattern
+            #  here like ^$|^[a-zA-Z_][\w.-]*$. See also
+            #  https://cthoyt.com/2023/01/11/bioregistry-w3c-compliance.html
+            core_schema.str_schema(strict=False),
+        )
+
+    @classmethod
+    def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
+        converter = _converter_from_validation_info(info)
+        if converter is None:
+            return cls(__input_value)
+        return cls(converter.standardize_prefix(__input_value, strict=True))
+
+
+class PrefixMap(RootModel[dict[Prefix, str]]):
+    """A simple prefix map.
+
+    This can be used to validate dictionaries:
+
+    .. code-block:: python
+
+        from curies import PrefixMap
+
+        prefix_map_model = PrefixMap.model_validate(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
+
+        # note that you have to unpack it
+        prefix_map_dict = prefix_map_model.root
+
+    Similarly, a prefix map can be used as part of another Pydantic model
+    like in:
+
+    .. code-block:: python
+
+        from pydantic import BaseModel
+        from curies import PrefixMap
+
+
+        class RDFContent(BaseModel):
+            prefix_map: PrefixMap
+            triples: list[tuple[str, str, str]]
+
+
+        rdf_content = RDFContent.model_validate(
+            {
+                "prefix_map": {
+                    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                },
+                "triples": [
+                    ("CHEBI:1234", "RO:0000001", "CHEBI:5678"),
+                ],
+            }
+        )
+
+        # note that you have to unpack the resulting prefix map
+        prefix_map = rdf_content.prefix_map.root
+    """
+
+
 class Reference(BaseModel):
     """A reference to an entity in a given identifier space.
 
@@ -192,7 +384,7 @@ class Reference(BaseModel):
     ReferenceTuple(prefix='chebi', identifier='1234')
     """
 
-    prefix: str = Field(
+    prefix: Prefix = Field(
         ...,
         description="The prefix used in a compact URI (CURIE).",
     )
@@ -234,18 +426,21 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(cls, curie: str, *, sep: str = ":") -> Reference:
+    def from_curie(
+        cls, curie: str, *, sep: str = ":", converter: Converter | None = None
+    ) -> Reference:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
         :param sep: The separator
+        :param converter: The converter to use as context when parsing
         :return: A reference object
 
         >>> Reference.from_curie("chebi:1234")
         Reference(prefix='chebi', identifier='1234')
         """
         prefix, identifier = _split(curie, sep=sep)
-        return cls(prefix=prefix, identifier=identifier)
+        return cls.model_validate({"prefix": prefix, "identifier": identifier}, context=converter)
 
 
 class NamedReference(Reference):
@@ -258,19 +453,24 @@ class NamedReference(Reference):
     model_config = ConfigDict(frozen=True)
 
     @classmethod
-    def from_curie(cls, curie: str, name: str, *, sep: str = ":") -> NamedReference:  # type:ignore
+    def from_curie(  # type:ignore
+        cls, curie: str, name: str, *, sep: str = ":", converter: Converter | None = None
+    ) -> NamedReference:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
         :param name: The name of the reference
         :param sep: The separator
+        :param converter: The converter to use as context when parsing
         :return: A reference object
 
         >>> NamedReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
         NamedReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
         """
         prefix, identifier = _split(curie, sep=sep)
-        return cls(prefix=prefix, identifier=identifier, name=name)
+        return cls.model_validate(
+            {"prefix": prefix, "identifier": identifier, "name": name}, context=converter
+        )
 
 
 RecordKey = tuple[str, str, str, str]
@@ -2512,3 +2712,13 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> list[Record]:
         Record(prefix=prefix, prefix_synonyms=prefix_synonyms, uri_prefix=uri_prefix)
         for uri_prefix, (prefix, *prefix_synonyms) in sorted(priority_prefix_map.items())
     ]
+
+
+def _converter_from_validation_info(info: core_schema.ValidationInfo) -> Converter | None:
+    context = info.context or {}
+    if isinstance(context, Converter):
+        return context
+    elif isinstance(context, dict):
+        return context.get("converter")
+    else:
+        raise TypeError
