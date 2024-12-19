@@ -45,7 +45,7 @@ GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
 class TestStruct(unittest.TestCase):
     """Test the data structures."""
 
-    def test_not_curie(self):
+    def test_not_curie(self) -> None:
         """Test a malformed CURIE."""
         with self.assertRaises(NoCURIEDelimiterError) as e:
             Reference.from_curie("not a curie")
@@ -69,13 +69,13 @@ class TestStruct(unittest.TestCase):
         self.assertEqual("a1", ref.prefix)
         self.assertEqual("b2:c3", ref.identifier)
 
-    def test_records(self):
+    def test_records(self) -> None:
         """Test a list of records."""
         records = Records.parse_obj([{"prefix": "chebi", "uri_prefix": CHEBI_URI_PREFIX}])
         converter = Converter(records=records)
         self.assertEqual({"chebi"}, converter.get_prefixes())
 
-    def test_sort(self):
+    def test_sort(self) -> None:
         """Test sorting."""
         start = [
             Reference.from_curie("def:1234"),
@@ -89,7 +89,7 @@ class TestStruct(unittest.TestCase):
         ]
         self.assertEqual(expected, sorted(start))
 
-    def test_set_membership(self):
+    def test_set_membership(self) -> None:
         """Test membership in sets."""
         collection = {
             Reference.from_curie("def:1234"),
@@ -101,7 +101,7 @@ class TestStruct(unittest.TestCase):
         self.assertNotIn(Reference.from_curie(":1234"), collection)
         self.assertNotIn(Reference.from_curie("abc:"), collection)
 
-    def test_named_set_membership(self):
+    def test_named_set_membership(self) -> None:
         """Test membership in sets of named references."""
         references = {
             NamedReference.from_curie("a:1", "name1"),
@@ -140,13 +140,13 @@ class TestAddRecord(unittest.TestCase):
             ]
         )
 
-    def test_duplicate_failure(self):
+    def test_duplicate_failure(self) -> None:
         """Test failure caused by double matching."""
         self.converter.add_prefix("GO", GO_URI_PREFIX)
         with self.assertRaises(ValueError):
             self.converter.add_record(Record(prefix="GO", uri_prefix=CHEBI_URI_PREFIX))
 
-    def test_get_prefix_synonyms(self):
+    def test_get_prefix_synonyms(self) -> None:
         """Test getting prefix synonyms."""
         self.assertEqual({self.prefix}, self.converter.get_prefixes())
         self.assertEqual({self.prefix}, self.converter.get_prefixes(include_synonyms=False))
@@ -155,7 +155,7 @@ class TestAddRecord(unittest.TestCase):
             self.converter.get_prefixes(include_synonyms=True),
         )
 
-    def test_get_uri_prefix_synonyms(self):
+    def test_get_uri_prefix_synonyms(self) -> None:
         """Test getting URI prefix synonyms."""
         self.assertEqual({self.uri_prefix}, self.converter.get_uri_prefixes())
         self.assertEqual({self.uri_prefix}, self.converter.get_uri_prefixes(include_synonyms=False))
@@ -164,7 +164,7 @@ class TestAddRecord(unittest.TestCase):
             self.converter.get_uri_prefixes(include_synonyms=True),
         )
 
-    def test_extend_on_prefix_match(self):
+    def test_extend_on_prefix_match(self) -> None:
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
         for record in [
@@ -191,7 +191,7 @@ class TestAddRecord(unittest.TestCase):
             self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
             self.assertEqual({s2, s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
 
-    def test_extend_on_uri_prefix_match(self):
+    def test_extend_on_uri_prefix_match(self) -> None:
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
         for record in [
@@ -218,7 +218,7 @@ class TestAddRecord(unittest.TestCase):
             self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
             self.assertEqual({s2, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
 
-    def test_extend_on_prefix_synonym_match(self):
+    def test_extend_on_prefix_synonym_match(self) -> None:
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
         for record in [
@@ -243,7 +243,7 @@ class TestAddRecord(unittest.TestCase):
             self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
             self.assertEqual({s2, s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
 
-    def test_extend_on_uri_prefix_synonym_match(self):
+    def test_extend_on_uri_prefix_synonym_match(self) -> None:
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
         for record in [
@@ -268,7 +268,7 @@ class TestAddRecord(unittest.TestCase):
             self.assertEqual(CHEBI_URI_PREFIX, record.uri_prefix)
             self.assertEqual({s3, self.uri_prefix_synonym}, set(record.uri_prefix_synonyms))
 
-    def test_extend_on_prefix_match_ci(self):
+    def test_extend_on_prefix_match_ci(self) -> None:
         """Test adding a new prefix in merge mode."""
         s1, s2, s3 = "s1", "s2", "s3"
         record = Record(
@@ -296,19 +296,19 @@ class TestConverter(unittest.TestCase):
         }
         self.converter = Converter.from_prefix_map(self.simple_obo_prefix_map)
 
-    def test_reference_tuple(self):
+    def test_reference_tuple(self) -> None:
         """Test the reference tuple data type."""
         t = ReferenceTuple("chebi", "1234")
         self.assertEqual("chebi:1234", t.curie)
         self.assertEqual(t, ReferenceTuple.from_curie("chebi:1234"))
 
-    def test_reference_pydantic(self):
+    def test_reference_pydantic(self) -> None:
         """Test the reference Pydantic model."""
         t = Reference(prefix="chebi", identifier="1234")
         self.assertEqual("chebi:1234", t.curie)
         self.assertEqual(t, Reference.from_curie("chebi:1234"))
 
-    def test_invalid_record(self):
+    def test_invalid_record(self) -> None:
         """Test throwing an error for invalid records."""
         with self.assertRaises(ValueError):
             Record(
@@ -323,7 +323,7 @@ class TestConverter(unittest.TestCase):
                 uri_prefix_synonyms=["http://purl.obolibrary.org/obo/CHEBI_"],
             )
 
-    def test_invalid_records(self):
+    def test_invalid_records(self) -> None:
         """Test throwing an error for duplicated URI prefixes."""
         with self.assertRaises(DuplicateURIPrefixes) as e:
             curies.load_prefix_map(
@@ -333,14 +333,14 @@ class TestConverter(unittest.TestCase):
                 }
             )
         self.assertIsInstance(str(e.exception), str)
-        with self.assertRaises(DuplicatePrefixes) as e:
+        with self.assertRaises(DuplicatePrefixes) as e2:
             Converter(
                 [
                     Record(prefix="chebi", uri_prefix="https://bioregistry.io/chebi:"),
                     Record(prefix="chebi", uri_prefix="http://purl.obolibrary.org/obo/CHEBI_"),
                 ],
             )
-        self.assertIsInstance(str(e.exception), str)
+        self.assertIsInstance(str(e2.exception), str)
 
         # No failure
         Converter.from_prefix_map(
@@ -351,7 +351,7 @@ class TestConverter(unittest.TestCase):
             strict=False,
         )
 
-    def test_subset(self):
+    def test_subset(self) -> None:
         """Test subsetting a converter."""
         new_converter = self.converter.get_subconverter(["CHEBI"])
         self.assertEqual(1, len(new_converter.records))
@@ -365,12 +365,12 @@ class TestConverter(unittest.TestCase):
             {"http://purl.obolibrary.org/obo/CHEBI_"}, set(new_converter.reverse_prefix_map)
         )
 
-    def test_empty_subset(self):
+    def test_empty_subset(self) -> None:
         """Test subsetting a converter and getting an empty one back."""
         new_converter_2 = self.converter.get_subconverter(["NOPE"])
         self.assertEqual(0, len(new_converter_2.records))
 
-    def test_predicates(self):
+    def test_predicates(self) -> None:
         """Add tests for predicates."""
         self.assertFalse(self.converter.is_uri(""))
         self.assertFalse(self.converter.is_uri("nope"))
@@ -379,7 +379,7 @@ class TestConverter(unittest.TestCase):
         self.assertFalse(self.converter.is_curie(":nope"))
         self.assertFalse(self.converter.is_curie("nope:"))
 
-    def test_convert(self):
+    def test_convert(self) -> None:
         """Test compression."""
         self.assertEqual({"CHEBI", "MONDO", "GO", "OBO"}, self.converter.get_prefixes())
         self.assertEqual(
@@ -393,7 +393,7 @@ class TestConverter(unittest.TestCase):
         )
         self._assert_convert(self.converter)
 
-    def _assert_convert(self, converter: Converter):
+    def _assert_convert(self, converter: Converter) -> None:
         self.assertIn("GO", converter.prefix_map)
         self.assertIn("GO", converter.bimap)
         self.assertIn("GO", converter.reverse_bimap.values())
@@ -430,13 +430,13 @@ class TestConverter(unittest.TestCase):
         self.assertLess(0, len(converter.records), msg="converter has no records")
         self.assertIsNone(converter.get_record("nope"))
         self.assertIsNone(converter.get_record("go"), msg="synonym lookup is not allowed here")
-        record = converter.get_record("GO")
+        record = converter.get_record("GO", strict=True)
         self.assertIsNotNone(record, msg=f"records: {[r.prefix for r in converter.records]}")
         self.assertIsInstance(record, Record)
         self.assertEqual("GO", record.prefix)
 
     @SLOW
-    def test_bioregistry(self):
+    def test_bioregistry(self) -> None:
         """Test loading a remote JSON-LD context."""
         for web in [True, False]:
             bioregistry_converter = get_bioregistry_converter(web=web)
@@ -446,7 +446,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn("chebi", c.prefix_map)
         self.assertNotIn("CHEBI", c.prefix_map)
 
-    def test_jsonld(self):
+    def test_jsonld(self) -> None:
         """Test parsing JSON-LD context."""
         context = {
             "@context": {
@@ -467,7 +467,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn("CHEBI", converter.prefix_map)
 
     @SLOW
-    def test_from_github(self):
+    def test_from_github(self) -> None:
         """Test getting a JSON-LD map from GitHub."""
         with self.assertRaises(ValueError):
             # missing end .jsonld file
@@ -479,21 +479,21 @@ class TestConverter(unittest.TestCase):
         self.assertIn("rdf", semweb_converter.prefix_map)
 
     @SLOW
-    def test_obo(self):
+    def test_obo(self) -> None:
         """Test the OBO converter."""
         obo_converter = get_obo_converter()
         self.assertIn("CHEBI", obo_converter.prefix_map)
         self.assertNotIn("chebi", obo_converter.prefix_map)
 
     @SLOW
-    def test_monarch(self):
+    def test_monarch(self) -> None:
         """Test the Monarch converter."""
         monarch_converter = get_monarch_converter()
         self.assertIn("CHEBI", monarch_converter.prefix_map)
         self.assertNotIn("chebi", monarch_converter.prefix_map)
 
     @SLOW
-    def test_go_registry(self):
+    def test_go_registry(self) -> None:
         """Test the GO registry converter."""
         go_converter = get_go_converter()
         self.assertIn("CHEBI", go_converter.prefix_map)
@@ -518,7 +518,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn(chebi_uri, converter.reverse_prefix_map)
         self.assertEqual("chebi", converter.reverse_prefix_map[chebi_uri])
 
-    def test_load_path(self):
+    def test_load_path(self) -> None:
         """Test loading from paths."""
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory).joinpath("pm.json")
@@ -535,7 +535,7 @@ class TestConverter(unittest.TestCase):
             c2 = Converter.from_prefix_map(str(path))
             self.assertEqual(self.converter.prefix_map, c2.prefix_map)
 
-    def test_reverse_constructor(self):
+    def test_reverse_constructor(self) -> None:
         """Test constructing from a reverse prefix map."""
         converter = Converter.from_reverse_prefix_map(
             {
@@ -556,7 +556,7 @@ class TestConverter(unittest.TestCase):
             converter.compress("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=138488"),
         )
 
-    def test_standardize_curie(self):
+    def test_standardize_curie(self) -> None:
         """Test standardize CURIE."""
         converter = Converter.from_extended_prefix_map(
             [
@@ -592,7 +592,7 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(URIStandardizationError):
             converter.standardize_uri("NOPE:NOPE", strict=True)
 
-    def test_combine(self):
+    def test_combine(self) -> None:
         """Test chaining converters."""
         with self.assertRaises(ValueError):
             chain([])
@@ -642,7 +642,7 @@ class TestConverter(unittest.TestCase):
         )
         self.assertNotIn("nope", converter.get_prefixes())
 
-    def test_combine_with_synonyms(self):
+    def test_combine_with_synonyms(self) -> None:
         """Test combination with synonyms."""
         r1 = Record(prefix="GO", uri_prefix=GO_URI_PREFIX)
         r2 = Record(prefix="go", prefix_synonyms=["GO"], uri_prefix="https://identifiers.org/go:")
@@ -666,7 +666,7 @@ class TestConverter(unittest.TestCase):
         self.assertNotIn("go", c3.bimap)
         self.assertIn("GO", c3.bimap)
 
-    def test_combine_ci(self):
+    def test_combine_ci(self) -> None:
         """Test combining case-insensitive."""
         c1 = Converter.from_priority_prefix_map(
             {
@@ -699,7 +699,7 @@ class TestConverter(unittest.TestCase):
             converter.expand("CHEBI:138488"),
         )
 
-    def test_combine_with_patterns(self):
+    def test_combine_with_patterns(self) -> None:
         """Test chaining with patterns."""
         c1 = Converter([Record(prefix="a", uri_prefix="https://example.org/a/", pattern="^\\d{7}")])
         c2 = Converter([Record(prefix="a", uri_prefix="https://example.org/a/", pattern="^\\d+")])
@@ -709,7 +709,7 @@ class TestConverter(unittest.TestCase):
             converter.records,
         )
 
-    def test_combine_with_patterns_via_synonym(self):
+    def test_combine_with_patterns_via_synonym(self) -> None:
         """Test chaining with patterns."""
         c1 = Converter([Record(prefix="a", uri_prefix="https://example.org/a/", pattern="^\\d{7}")])
         c2 = Converter(
@@ -736,7 +736,7 @@ class TestConverter(unittest.TestCase):
             converter.records,
         )
 
-    def test_df_bulk(self):
+    def test_df_bulk(self) -> None:
         """Test bulk processing in pandas dataframes."""
         rows = [
             ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
@@ -749,7 +749,7 @@ class TestConverter(unittest.TestCase):
         self.converter.pd_compress(df, "uri")
         self.assertTrue((df.curie == df.uri).all())
 
-    def test_df_standardize(self):
+    def test_df_standardize(self) -> None:
         """Test standardizing dataframes."""
         converter = Converter([])
         converter.add_prefix(
@@ -782,7 +782,7 @@ class TestConverter(unittest.TestCase):
             list(df["uri"]),
         )
 
-    def test_file_bulk(self):
+    def test_file_bulk(self) -> None:
         """Test bulk processing of files."""
         with TemporaryDirectory() as directory:
             for rows, header in [
@@ -815,7 +815,7 @@ class TestConverter(unittest.TestCase):
                 lines = [line.strip().split("\t") for line in path.read_text().splitlines()]
                 self.assertEqual("CHEBI:1", lines[idx][0])
 
-    def test_incremental(self):
+    def test_incremental(self) -> None:
         """Test building a converter from an incremental interface."""
         converter = Converter([])
         for prefix, uri_prefix in self.simple_obo_prefix_map.items():
@@ -848,7 +848,7 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(ValueError):
             converter.add_prefix("...", "...", prefix_synonyms=["GO"])
 
-    def test_rdflib(self):
+    def test_rdflib(self) -> None:
         """Test parsing a converter from an RDFLib object."""
         graph = rdflib.Graph()
         for prefix, uri_prefix in self.simple_obo_prefix_map.items():
@@ -859,7 +859,7 @@ class TestConverter(unittest.TestCase):
         converter_2 = Converter.from_rdflib(graph.namespace_manager)
         self._assert_convert(converter_2)
 
-    def test_expand_all(self):
+    def test_expand_all(self) -> None:
         """Test expand all."""
         priority_prefix_map = {
             "CHEBI": [
@@ -877,7 +877,7 @@ class TestConverter(unittest.TestCase):
         )
         self.assertIsNone(converter.expand_all("NOPE:NOPE"))
 
-    def test_expand_ambiguous(self):
+    def test_expand_ambiguous(self) -> None:
         """Test expansion of URI or CURIEs."""
         converter = Converter.from_extended_prefix_map(
             [
@@ -923,7 +923,7 @@ class TestConverter(unittest.TestCase):
             ),
         )
 
-    def test_compress_ambiguous(self):
+    def test_compress_ambiguous(self) -> None:
         """Test compression of URI or CURIEs."""
         converter = Converter.from_extended_prefix_map(
             [
@@ -967,7 +967,7 @@ class TestConverter(unittest.TestCase):
 class TestVersion(unittest.TestCase):
     """Trivially test a version."""
 
-    def test_version_type(self):
+    def test_version_type(self) -> None:
         """Test the version is a string.
 
         This is only meant to be an example test.
@@ -979,7 +979,7 @@ class TestVersion(unittest.TestCase):
 class TestUtils(unittest.TestCase):
     """Test utility functions."""
 
-    def test_clean(self):
+    def test_clean(self) -> None:
         """Test clean."""
         prefix_map = {
             "b": "https://example.com/a/",

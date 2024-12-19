@@ -18,7 +18,7 @@ P = "https://example.org"
 class TestUtils(unittest.TestCase):
     """Test utilities."""
 
-    def test_ordering(self):
+    def test_ordering(self) -> None:
         """Test ordering."""
         converter = Converter(
             [
@@ -38,7 +38,7 @@ class TestUtils(unittest.TestCase):
             [("c", "a"), ("b", "c")], _order_curie_remapping(converter, {"b": "c", "c": "a"})
         )
 
-    def test_duplicate_values(self):
+    def test_duplicate_values(self) -> None:
         """Test detecting bad mapping with duplicate."""
         converter = Converter(
             [
@@ -51,7 +51,7 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(DuplicateValues):
             _order_curie_remapping(converter, curie_remapping)
 
-    def test_duplicate_keys(self):
+    def test_duplicate_keys(self) -> None:
         """Test detecting a bad mapping that contains multiple references to the same record in the keys."""
         converter = Converter(
             [
@@ -64,7 +64,7 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(DuplicateKeys):
             _order_curie_remapping(converter, curie_remapping)
 
-    def test_duplicate_correspondence(self):
+    def test_duplicate_correspondence(self) -> None:
         """Test detecting a bad mapping containing inconsistent references to the same record in the keys and values."""
         converter = Converter(
             [
@@ -77,7 +77,7 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(InconsistentMapping):
             _order_curie_remapping(converter, curie_remapping)
 
-    def test_cycles(self):
+    def test_cycles(self) -> None:
         """Test detecting bad mapping with cycles."""
         converter = Converter(
             [
@@ -98,7 +98,7 @@ class TestUtils(unittest.TestCase):
 class TestCURIERemapping(unittest.TestCase):
     """A test case for CURIE prefix remapping."""
 
-    def test_missing(self):
+    def test_missing(self) -> None:
         """Test simple upgrade."""
         records = [
             Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
@@ -108,7 +108,7 @@ class TestCURIERemapping(unittest.TestCase):
         converter = remap_curie_prefixes(converter, curie_remapping)
         self.assertEqual(records, converter.records)
 
-    def test_simple(self):
+    def test_simple(self) -> None:
         """Test simple upgrade."""
         records = [
             Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
@@ -122,7 +122,7 @@ class TestCURIERemapping(unittest.TestCase):
             converter.records[0],
         )
 
-    def test_synonym(self):
+    def test_synonym(self) -> None:
         """Test that an upgrade configuration that would cause a clash does nothing."""
         records = [
             Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
@@ -136,7 +136,7 @@ class TestCURIERemapping(unittest.TestCase):
             converter.records[0],
         )
 
-    def test_clash(self):
+    def test_clash(self) -> None:
         """Test that an upgrade configuration that would cause a clash does nothing."""
         records = [
             Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
@@ -148,7 +148,7 @@ class TestCURIERemapping(unittest.TestCase):
         self.assertEqual(2, len(converter.records))
         self.assertEqual(records, converter.records)
 
-    def test_clash_synonym(self):
+    def test_clash_synonym(self) -> None:
         """Test a clash on a synonym."""
         records = [
             Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
@@ -160,7 +160,7 @@ class TestCURIERemapping(unittest.TestCase):
         self.assertEqual(2, len(converter.records))
         self.assertEqual(records, converter.records)
 
-    def test_simultaneous(self):
+    def test_simultaneous(self) -> None:
         """Test simultaneous remapping."""
         records = [
             Record(prefix="geo", uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc="),
@@ -184,7 +184,7 @@ class TestCURIERemapping(unittest.TestCase):
             converter.records,
         )
 
-    def test_simultaneous_synonym(self):
+    def test_simultaneous_synonym(self) -> None:
         """Test simultaneous remapping with synonyms raises an error."""
         records = [
             Record(
@@ -203,7 +203,7 @@ class TestCURIERemapping(unittest.TestCase):
 class TestURIRemapping(unittest.TestCase):
     """A test case for URI prefix remapping."""
 
-    def test_transitive_error(self):
+    def test_transitive_error(self) -> None:
         """Test error on transitive remapping."""
         converter = Converter([])
         uri_remapping = {f"{P}/nope/": f"{P}/more-nope/", f"{P}/more-nope/": f"{P}/more-more-nope/"}
@@ -213,7 +213,7 @@ class TestURIRemapping(unittest.TestCase):
         # check that stringification works
         self.assertIn("75", str(e.exception))
 
-    def test_missing(self):
+    def test_missing(self) -> None:
         """Test simple upgrade."""
         records = [
             Record(prefix="a", uri_prefix=f"{P}/a/"),
@@ -223,7 +223,7 @@ class TestURIRemapping(unittest.TestCase):
         converter = remap_uri_prefixes(converter, uri_remapping)
         self.assertEqual(records, converter.records)
 
-    def test_simple(self):
+    def test_simple(self) -> None:
         """Test simple upgrade."""
         records = [
             Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=[f"{P}/a1/"]),
@@ -241,7 +241,7 @@ class TestURIRemapping(unittest.TestCase):
             converter.records[0],
         )
 
-    def test_synonym(self):
+    def test_synonym(self) -> None:
         """Test that an upgrade configuration that would cause a clash does nothing."""
         records = [
             Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=[f"{P}/a1/"]),
@@ -255,7 +255,7 @@ class TestURIRemapping(unittest.TestCase):
             converter.records[0],
         )
 
-    def test_clash_preferred(self):
+    def test_clash_preferred(self) -> None:
         """Test that an upgrade configuration that would cause a clash does nothing."""
         records = [
             Record(prefix="a", prefix_synonyms=["x"], uri_prefix=f"{P}/a/"),
@@ -267,7 +267,7 @@ class TestURIRemapping(unittest.TestCase):
         self.assertEqual(2, len(converter.records))
         self.assertEqual(records, converter.records)
 
-    def test_clash_synonym(self):
+    def test_clash_synonym(self) -> None:
         """Test clashing with a synonym."""
         records = [
             Record(prefix="a", uri_prefix=f"{P}/a/"),
@@ -283,7 +283,7 @@ class TestURIRemapping(unittest.TestCase):
 class TestRewire(unittest.TestCase):
     """A test case for rewiring."""
 
-    def test_idempotent(self):
+    def test_idempotent(self) -> None:
         """Test that a redundant rewiring doesn't do anything."""
         records = [
             Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=["https://a.org/"]),
@@ -293,7 +293,7 @@ class TestRewire(unittest.TestCase):
         converter = rewire(converter, rewiring)
         self.assertEqual(records, converter.records)
 
-    def test_upgrade_uri_prefixes_simple(self):
+    def test_upgrade_uri_prefixes_simple(self) -> None:
         """Test simple upgrade."""
         records = [
             Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=["https://a.org/"]),
@@ -326,7 +326,7 @@ class TestRewire(unittest.TestCase):
     #         converter.records,
     #     )
 
-    def test_upgrade_uri_prefixes_clash(self):
+    def test_upgrade_uri_prefixes_clash(self) -> None:
         """Test an upgrade that does nothing since it would create a clash."""
         records = [
             Record(prefix="a", uri_prefix=f"{P}/a/"),
@@ -344,7 +344,7 @@ class TestRewire(unittest.TestCase):
             converter.records,
         )
 
-    def test_upgrade_uri_upgrade(self):
+    def test_upgrade_uri_upgrade(self) -> None:
         """Test an upgrade of an existing URI prefix synonym."""
         records = [
             Record(prefix="a", uri_prefix=f"{P}/a/", uri_prefix_synonyms=[f"{P}/a1/"]),
@@ -364,7 +364,7 @@ class TestRewire(unittest.TestCase):
             converter.records,
         )
 
-    def test_upgrade_uri_upgrade_with_curie_prefix(self):
+    def test_upgrade_uri_upgrade_with_curie_prefix(self) -> None:
         """Test an upgrade of an existing URI prefix synonym via a CURIE prefix synonym."""
         records = [
             Record(
