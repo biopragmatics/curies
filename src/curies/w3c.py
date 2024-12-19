@@ -40,13 +40,25 @@ NCNAME_PATTERN = r"[A-Za-z_][A-Za-z0-9\.\-_]*"
 NCNAME_RE = re.compile(f"^{NCNAME_PATTERN}$")
 
 LOCAL_UNIQUE_IDENTIFIER_PATTERN = r"(/[^\s/][^\s]*|[^\s/][^\s]*|[^\s]?)"
-"""A regex for local unique identifiers in CURIEs, based on https://www.w3.org/TR/2010/NOTE-curie-20101216
+"""A regex for local unique identifiers in CURIEs, based on https://www.ietf.org/rfc/rfc3987.txt
 
-This pattern was adapted from https://gist.github.com/niklasl/2506955.
+This pattern was adapted from https://gist.github.com/niklasl/2506955, which sort of
+implements RFC3987,
 """
 
+LOCAL_UNIQUE_IDENTIFIER_RE = re.compile(LOCAL_UNIQUE_IDENTIFIER_PATTERN)
+
 CURIE_PATTERN = rf"^({NCNAME_PATTERN}?:)?{LOCAL_UNIQUE_IDENTIFIER_PATTERN}$"
-"""A regex for CURIEs, based on https://www.w3.org/TR/2010/NOTE-curie-20101216"""
+"""A regex for CURIEs, based on https://www.w3.org/TR/2010/NOTE-curie-20101216.
+
+.. code-block::
+
+    curie       :=   [ [ prefix ] ':' ] reference
+    prefix      :=   NCName
+    reference   :=   irelative-ref (as defined in `IRI <https://www.ietf.org/rfc/rfc3987.txt>`_)
+
+`irelative-ref` is defined/documented in :data:`curies.w3c.LOCAL_UNIQUE_IDENTIFIER_PATTERN`.
+"""
 
 CURIE_RE = re.compile(CURIE_PATTERN)
 
@@ -87,6 +99,10 @@ def is_w3c_prefix(prefix: str) -> bool:
     False
     """
     return bool(NCNAME_RE.match(prefix))
+
+
+def _is_w3c_luid(luid: str) -> bool:
+    return bool(LOCAL_UNIQUE_IDENTIFIER_RE.match(luid))
 
 
 def is_w3c_curie(curie: str) -> bool:
@@ -135,8 +151,20 @@ def is_w3c_curie(curie: str) -> bool:
     """
     if "[" in curie or "]" in curie:
         return False
+
+    # empty curie is invalid (for now)
     if not curie.strip():
         return False
-    if curie[0].isdigit():
-        return False  # TODO get that into the regex
-    return bool(CURIE_RE.fullmatch(curie))
+
+    # if there's no colon, then validate the whole thing against the LUID pattern.
+    # this is because
+    prefix, sep, identifier = curie.partition(":")
+    if not sep:
+        return _is_w3c_luid(curie)
+
+    # it's okay for there to be no prefix in a CURIE, even though
+    # the NCName definition is not itself allowed to be empty
+    if not prefix:
+        return _is_w3c_luid(identifier)
+
+    return is_w3c_prefix(prefix) and _is_w3c_luid(identifier)
