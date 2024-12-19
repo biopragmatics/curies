@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/cthoyt/cookiecutter-snekpack",
-  "commit": "1884310d930f56787c96d4eba45bcb4a5225f7cb",
+  "commit": "0491ce7066df95aec19ca2ff5740207804ac1840",
   "checkout": null,
   "context": {
     "cookiecutter": {
@@ -8,6 +8,7 @@
       "package_name_stylized": "CURIEs",
       "short_description": "Idiomatic conversion between URIs and compact URIs (CURIEs)",
       "author_name": "Charles Tapley Hoyt",
+      "author_github": "cthoyt",
       "author_email": "cthoyt@gmail.com",
       "github_organization_name": "biopragmatics",
       "github_repository_name": "curies",

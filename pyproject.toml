@@ -1,7 +1,8 @@
-# See https://setuptools.readthedocs.io/en/latest/build_meta.html
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["uv>=0.5.10,<0.6.0"]
+# The uv backend entered preview mode in https://github.com/astral-sh/uv/pull/8886/files
+# with the 0.5.0 release. See also https://github.com/astral-sh/uv/issues/3957 for tracking.
+build-backend = "uv"
 
 [project]
 name = "curies"
@@ -47,10 +48,11 @@ keywords = [
     "URIs",
 ]
 
-# License Information. This can be any valid SPDX identifiers that can be resolved
-# with URLs like https://spdx.org/licenses/MIT
-# See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
-license = { file = "LICENSE" }
+# License Information.
+# See PEP-639 at https://peps.python.org/pep-0639/#add-license-files-key
+license-files = [
+    "LICENSE",
+]
 
 requires-python = ">=3.9"
 dependencies = [
@@ -63,7 +65,7 @@ dependencies = [
 [project.optional-dependencies]
 tests = [
     "pytest",
-    "coverage",
+    "coverage[toml]",
     "requests",
 ]
 pandas = [
@@ -90,28 +92,16 @@ docs = [
 ]
 
 # See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls
+# and also https://packaging.python.org/en/latest/specifications/well-known-project-urls/
 [project.urls]
 "Bug Tracker" = "https://github.com/biopragmatics/curies/issues"
 Homepage = "https://github.com/biopragmatics/curies"
 Repository = "https://github.com/biopragmatics/curies.git"
 Documentation = "https://curies.readthedocs.io"
-
-[tool.setuptools]
-package-dir = { "" = "src" }
-license-files = []
-
-[tool.setuptools.packages.find]
-# this implicitly sets `packages = ":find"`
-where = ["src"]  # list of folders that contain the packages (["."] by default)
-
-# See https://setuptools.pypa.io/en/latest/userguide/datafiles.html
-[tool.setuptools.package-data]
-"*" = ["*.*"]
-
+Funding = "https://github.com/sponsors/cthoyt"
 
 [project.scripts]
 curies = "curies.cli:main"
-
 
 [tool.cruft]
 skip = [
