@@ -748,7 +748,9 @@ class Converter:
     #: .. warning:: patterns are an experimental feature
     pattern_map: dict[str, str]
 
-    def __init__(self, records: list[Record], *, delimiter: str = ":", strict: bool = True) -> None:
+    def __init__(
+        self, records: Iterable[Record], *, delimiter: str = ":", strict: bool = True
+    ) -> None:
         """Instantiate a converter.
 
         :param records:
@@ -760,6 +762,7 @@ class Converter:
         :raises DuplicatePrefixes: if any records share any synonyms
         :raises DuplicateURIPrefixes: if any records share any URI prefixes
         """
+        records = sorted(records, key=lambda r: r.prefix)
         if strict:
             duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
             if duplicate_uri_prefixes:
@@ -769,7 +772,7 @@ class Converter:
                 raise DuplicatePrefixes(duplicate_prefixes)
 
         self.delimiter = delimiter
-        self.records = sorted(records, key=lambda r: r.prefix)
+        self.records = records
         self.prefix_map = _get_prefix_map(records)
         self.synonym_to_prefix = _get_prefix_synmap(records)
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
@@ -2138,12 +2141,22 @@ class Converter:
                 writer.writerow(_header)
             writer.writerows(rows)
 
-    def get_record(self, prefix: str) -> Record | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def get_record(self, prefix: str, *, strict: Literal[True] = True) -> Record: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def get_record(self, prefix: str, *, strict: Literal[False] = False) -> Record | None: ...
+
+    def get_record(self, prefix: str, *, strict: bool = False) -> Record | None:
         """Get the record for the prefix."""
         # TODO better data structure for this
         for record in self.records:
             if record.prefix == prefix or prefix in record.prefix_synonyms:
                 return record
+        if strict:
+            raise KeyError(f"could not find prefix: {prefix}")
         return None
 
     def get_subconverter(self, prefixes: Iterable[str]) -> Converter:
