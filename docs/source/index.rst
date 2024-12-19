@@ -66,7 +66,6 @@ for updating your code.
    discovery
    struct
    api
-   w3c
    services/index
    typing
    w3c
