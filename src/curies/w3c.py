@@ -39,9 +39,11 @@ NCNAME_PATTERN = r"[A-Za-z_][A-Za-z0-9\.\-_]*"
 
 NCNAME_RE = re.compile(f"^{NCNAME_PATTERN}$")
 
-#: Adapted from https://gist.github.com/niklasl/2506955
 LOCAL_UNIQUE_IDENTIFIER_PATTERN = r"(/[^\s/][^\s]*|[^\s/][^\s]*|[^\s]?)"
-"""A regex for local unique identifiers in CURIEs, based on https://www.w3.org/TR/2010/NOTE-curie-20101216"""
+"""A regex for local unique identifiers in CURIEs, based on https://www.w3.org/TR/2010/NOTE-curie-20101216
+
+This pattern was adapted from https://gist.github.com/niklasl/2506955.
+"""
 
 CURIE_PATTERN = rf"^({NCNAME_PATTERN}?:)?{LOCAL_UNIQUE_IDENTIFIER_PATTERN}$"
 """A regex for CURIEs, based on https://www.w3.org/TR/2010/NOTE-curie-20101216"""
