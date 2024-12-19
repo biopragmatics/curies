@@ -38,7 +38,6 @@ from .version import get_version
 __all__ = [
     "Converter",
     "DuplicatePrefixes",
-    "W3CValidationError",
     "DuplicateURIPrefixes",
     "DuplicateValueError",
     "NamedReference",
@@ -48,6 +47,7 @@ __all__ = [
     "Records",
     "Reference",
     "ReferenceTuple",
+    "W3CValidationError",
     "chain",
     "discover",
     "discover_from_rdf",

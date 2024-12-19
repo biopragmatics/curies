@@ -36,29 +36,31 @@ from pydantic_core import core_schema
 from pytrie import StringTrie
 from typing_extensions import Self
 
+from .w3c import is_w3c_curie, is_w3c_prefix
+
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import rdflib
 
 __all__ = [
     "Converter",
-    "Reference",
-    "ReferenceTuple",
-    "Record",
+    "DuplicatePrefixes",
+    "DuplicatePrefixes",
+    "DuplicateURIPrefixes",
+    "DuplicateURIPrefixes",
     "DuplicateValueError",
-    "DuplicatePrefixes",
-    "DuplicateURIPrefixes",
-    "W3CValidationError",
-    "DuplicatePrefixes",
-    "DuplicateURIPrefixes",
     "DuplicateValueError",
     "NamedReference",
     "Prefix",
     "PrefixMap",
     "Record",
+    "Record",
     "Records",
     "Reference",
+    "Reference",
     "ReferenceTuple",
+    "ReferenceTuple",
+    "W3CValidationError",
     "chain",
     "load_extended_prefix_map",
     "load_jsonld_context",
@@ -562,7 +564,7 @@ class Record(BaseModel):
 
     def _w3c_validate(self) -> bool:
         """Check if all prefixes in this record are w3c compliant."""
-        all_curie_prefixes_valid = all(curie_prefix_is_w3c(prefix) for prefix in self._all_prefixes)
+        all_curie_prefixes_valid = all(is_w3c_prefix(prefix) for prefix in self._all_prefixes)
         # TODO extend to check URI prefixes?
         return all_curie_prefixes_valid
 
@@ -1715,7 +1717,7 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
         """
-        if w3c_validation and not curie_is_w3c(curie):
+        if w3c_validation and not is_w3c_curie(curie):
             raise W3CValidationError(f"CURIE is not valid under W3C spec: {curie}")
         prefix, identifier = self.parse_curie(curie)
         rv = self.expand_pair(prefix, identifier)
