@@ -120,16 +120,23 @@ class TestTypes(unittest.TestCase):
 
     def test_curie(self) -> None:
         """Test a wrapped CURIE."""
-        dd = {
-            "reference": "CHEBI:1234",
-        }
-        wpm = WrappedCURIE.model_validate(dd)
+        wpm = WrappedCURIE.model_validate(
+            {
+                "reference": "CHEBI:1234",
+            }
+        )
         self.assertIn("CHEBI", wpm.reference.prefix)
         self.assertIn("1234", wpm.reference.identifier)
         self.assertIn("CHEBI:1234", wpm.reference.curie)
 
-        dd2 = {
-            "reference": "NOPENOPENOPE",
-        }
         with self.assertRaises(ValidationError):
-            WrappedCURIE.model_validate(dd2)
+            WrappedCURIE.model_validate({"reference": "NOPENOPENOPE"})
+
+        dd = {"reference": "CHEBI:1234"}
+        wpm = WrappedCURIE.model_validate(dd, context=converter)
+        self.assertIn("CHEBI", wpm.reference.prefix)
+        self.assertIn("1234", wpm.reference.identifier)
+        self.assertIn("CHEBI:1234", wpm.reference.curie)
+
+        with self.assertRaises(ValidationError):
+            WrappedCURIE.model_validate({"reference": "MONDO:1234"}, context=converter)
