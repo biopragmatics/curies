@@ -38,4 +38,6 @@ class TestValidators(unittest.TestCase):
 
         for curie in _read(INVALID_CURIES_PATH):
             with self.subTest(curie=curie):
-                self.assertFalse(is_w3c_curie(curie), msg="CURIE should test as invalid, but did not")
+                self.assertFalse(
+                    is_w3c_curie(curie), msg="CURIE should test as invalid, but did not"
+                )
