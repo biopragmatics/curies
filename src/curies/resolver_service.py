@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
-
 """A simple web service for resolving CURIEs."""
 
-from typing import TYPE_CHECKING, Any, Mapping, Optional
+from __future__ import annotations
+
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any
 
 from .api import Converter
 
@@ -12,17 +13,17 @@ if TYPE_CHECKING:
     from werkzeug.wrappers import Response
 
 __all__ = [
-    "get_flask_blueprint",
-    "get_flask_app",
-    "get_fastapi_router",
     "get_fastapi_app",
+    "get_fastapi_router",
+    "get_flask_app",
+    "get_flask_blueprint",
 ]
 
 #: The code for `Unprocessable Entity <https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422>`_
 FAILURE_CODE = 422
 
 
-def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint":
+def get_flask_blueprint(converter: Converter, **kwargs: Any) -> flask.Blueprint:
     """Get a blueprint for :class:`flask.Flask`.
 
     :param converter: A converter
@@ -70,8 +71,8 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
 
     blueprint = Blueprint("metaresolver", __name__, **kwargs)
 
-    @blueprint.route(f"/<prefix>{converter.delimiter}<path:identifier>")  # type:ignore
-    def resolve(prefix: str, identifier: str) -> "Response":
+    @blueprint.route(f"/<prefix>{converter.delimiter}<path:identifier>")
+    def resolve(prefix: str, identifier: str) -> Response:
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
         if location is None:
@@ -84,10 +85,10 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> "flask.Blueprint
 
 def get_flask_app(
     converter: Converter,
-    blueprint_kwargs: Optional[Mapping[str, Any]] = None,
-    flask_kwargs: Optional[Mapping[str, Any]] = None,
-    register_kwargs: Optional[Mapping[str, Any]] = None,
-) -> "flask.Flask":
+    blueprint_kwargs: Mapping[str, Any] | None = None,
+    flask_kwargs: Mapping[str, Any] | None = None,
+    register_kwargs: Mapping[str, Any] | None = None,
+) -> flask.Flask:
     """Get a Flask app.
 
     :param converter: A converter
@@ -153,7 +154,7 @@ def get_flask_app(
     return app
 
 
-def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRouter":
+def get_fastapi_router(converter: Converter, **kwargs: Any) -> fastapi.APIRouter:
     """Get a router for :class:`fastapi.FastAPI`.
 
     :param converter: A converter
@@ -201,14 +202,14 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
     api_router = APIRouter(**kwargs)
 
-    @api_router.get(f"/{{prefix}}{converter.delimiter}{{identifier}}")  # type:ignore
+    @api_router.get(f"/{{prefix}}{converter.delimiter}{{identifier}}")
     def resolve(
-        prefix: str = Path(  # noqa:B008
+        prefix: str = Path(
             title="Prefix",
             description="The Bioregistry prefix corresponding to an identifier resource.",
             examples=["doid"],
         ),
-        identifier: str = Path(  # noqa:B008
+        identifier: str = Path(
             title="Local Unique Identifier",
             description="The local unique identifier in the identifier resource referenced by the prefix.",
         ),
@@ -228,10 +229,10 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> "fastapi.APIRoute
 
 def get_fastapi_app(
     converter: Converter,
-    router_kwargs: Optional[Mapping[str, Any]] = None,
-    fastapi_kwargs: Optional[Mapping[str, Any]] = None,
-    include_kwargs: Optional[Mapping[str, Any]] = None,
-) -> "fastapi.FastAPI":
+    router_kwargs: Mapping[str, Any] | None = None,
+    fastapi_kwargs: Mapping[str, Any] | None = None,
+    include_kwargs: Mapping[str, Any] | None = None,
+) -> fastapi.FastAPI:
     """Get a FastAPI app.
 
     :param converter: A converter

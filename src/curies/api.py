@@ -1,12 +1,13 @@
-# -*- coding: utf-8 -*-
-
 """Data structures and algorithms for :mod:`curies`."""
+
+from __future__ import annotations
 
 import csv
 import itertools as itt
 import json
 import logging
 from collections import defaultdict
+from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
@@ -14,30 +15,26 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Collection,
-    DefaultDict,
-    Dict,
-    Iterable,
-    List,
     Literal,
-    Mapping,
     NamedTuple,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
     TypeVar,
     Union,
     cast,
     overload,
 )
 
-import requests
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    GetCoreSchemaHandler,
+    RootModel,
+    field_validator,
+    model_validator,
+)
+from pydantic_core import core_schema
 from pytrie import StringTrie
-
-from ._pydantic_compat import field_validator, get_field_validator_values
-from .w3c import CURIE_PREFIX_RE, CURIE_RE
+from typing_extensions import Self
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -48,29 +45,48 @@ __all__ = [
     "Reference",
     "ReferenceTuple",
     "Record",
-    # Exceptions
     "DuplicateValueError",
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "W3CValidationError",
-    # Utilities
+    "DuplicatePrefixes",
+    "DuplicateURIPrefixes",
+    "DuplicateValueError",
+    "NamedReference",
+    "Prefix",
+    "PrefixMap",
+    "Record",
+    "Records",
+    "Reference",
+    "ReferenceTuple",
     "chain",
-    "upgrade_prefix_map",
-    # Loaders
     "load_extended_prefix_map",
-    "load_prefix_map",
     "load_jsonld_context",
+    "load_prefix_map",
     "load_shacl",
-    # Writers
+    "upgrade_prefix_map",
     "write_extended_prefix_map",
     "write_jsonld_context",
     "write_shacl",
+    "write_tsv",
 ]
 
 logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
 LocationOr = Union[str, Path, X]
+
+
+def _get_field_validator_values(values, key: str):  # type:ignore
+    """Get the value for the key from a field validator object, cross-compatible with Pydantic 1 and 2."""
+    return values.data[key]
+
+
+def _split(curie: str, *, sep: str = ":") -> tuple[str, str]:
+    prefix, delimiter, identifier = curie.partition(sep)
+    if not delimiter:
+        raise NoCURIEDelimiterError(curie)
+    return prefix, identifier
 
 
 class ReferenceTuple(NamedTuple):
@@ -137,7 +153,7 @@ class ReferenceTuple(NamedTuple):
         return f"{self.prefix}:{self.identifier}"
 
     @classmethod
-    def from_curie(cls, curie: str, sep: str = ":") -> "ReferenceTuple":
+    def from_curie(cls, curie: str, *, sep: str = ":") -> ReferenceTuple:
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -147,11 +163,199 @@ class ReferenceTuple(NamedTuple):
         >>> ReferenceTuple.from_curie("chebi:1234")
         ReferenceTuple(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(sep, 1)
+        prefix, identifier = _split(curie, sep=sep)
         return cls(prefix, identifier)
 
 
-class Reference(BaseModel):  # type:ignore
+class Prefix(str):
+    """A string that is validated by Pydantic as a CURIE prefix.
+
+    This class is a subclass of Python's built-in string class,
+    so you can wrap any string with it:
+
+    .. code-block:: python
+
+        from curies import Prefix
+
+        prefix = Prefix("CHEBI")
+
+    You can implicitly type annotate data with this class:
+
+    .. code-block:: python
+
+        from curies import Prefix
+
+        prefix_map: dict[Prefix, str] = {
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        }
+
+    You can more explicitly type annotate data with this class using
+    Pydantic's `root model <https://docs.pydantic.dev/2.3/usage/models/#rootmodel-and-custom-root-types>`_:
+
+    .. code-block:: python
+
+        from pydantic import RootModel
+        from curies import Prefix
+
+        PrefixMap = RootModel[dict[Prefix, str]]
+
+        prefix_map = PrefixMap.model_validate(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        ).root
+
+    This pattern is common enough that it's included in :class:`curies.PrefixMap`.
+
+    When used inside a Pydantic model, this class knows how to
+    do validation that the prefix matches the regular expression
+    for an XSD NCName. Here's an example usage with Pydantic:
+
+    .. code-block:: python
+
+        from curies import Prefix
+        from pydantic import BaseModel
+
+
+        class ResourceInfo(BaseModel):
+            prefix: Prefix
+            name: str
+
+
+        model = ResourceInfo.model_validate(
+            {
+                "prefix": "CHEBI",
+                "name": "Chemical Entities of Biological Interest",
+            }
+        )
+
+        # raises a pydantic.ValidationError, because the prefix
+        # doesn't match the NCName pattern
+        ResourceInfo.model_validate(
+            {
+                "prefix": "$nope",
+                "name": "An invalid semantic space!",
+            }
+        )
+
+    This class implements a hook that uses Pydantic's "context"
+    for validation that lets you pass a :class:`Converter` to check
+    for existence and standardization with respect to the context
+    in the converter:
+
+    .. code-block:: python
+
+        from curies import Prefix, get_obo_converter
+        from pydantic import BaseModel
+
+        class ResourceInfo(BaseModel):
+            prefix: Prefix
+            name: str
+
+        converter = get_obo_converter()
+        model = ResourceInfo.model_validate(
+            {
+                "prefix": "CHEBI",
+                "name": "Chemical Entities of Biological Interest",
+            },
+            context=converter,
+        )
+
+        # raises a pydantic.ValidationError, because the prefix
+        # is not registered in the OBO Foundry, and is therefore
+        # not part of the OBO converter
+        ResourceInfo.model_validate(
+            {
+                "prefix": "efo",
+                "name": "Experimental Factor Ontology",
+            },
+            context=converter,
+        )
+
+        # In case you need to pass more arbitrary
+        # context, you can also use a dict with the key
+        # "converter"
+        ResourceInfo.model_validate(
+            {
+                "prefix": "CHEBI",
+                "name": "Chemical Entities of Biological Interest",
+            },
+            context={
+                "converter": converter,
+                ...
+            },
+        )
+    """
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: type[Any], handler: GetCoreSchemaHandler
+    ) -> core_schema.AfterValidatorFunctionSchema:
+        return core_schema.with_info_after_validator_function(
+            cls._validate,
+            # TODO consider if we should use strict NCNAME pattern
+            #  here like ^$|^[a-zA-Z_][\w.-]*$. See also
+            #  https://cthoyt.com/2023/01/11/bioregistry-w3c-compliance.html
+            core_schema.str_schema(strict=False),
+        )
+
+    @classmethod
+    def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
+        converter = _converter_from_validation_info(info)
+        if converter is None:
+            return cls(__input_value)
+        return cls(converter.standardize_prefix(__input_value, strict=True))
+
+
+class PrefixMap(RootModel[dict[Prefix, str]]):
+    """A simple prefix map.
+
+    This can be used to validate dictionaries:
+
+    .. code-block:: python
+
+        from curies import PrefixMap
+
+        prefix_map_model = PrefixMap.model_validate(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
+
+        # note that you have to unpack it
+        prefix_map_dict = prefix_map_model.root
+
+    Similarly, a prefix map can be used as part of another Pydantic model
+    like in:
+
+    .. code-block:: python
+
+        from pydantic import BaseModel
+        from curies import PrefixMap
+
+
+        class RDFContent(BaseModel):
+            prefix_map: PrefixMap
+            triples: list[tuple[str, str, str]]
+
+
+        rdf_content = RDFContent.model_validate(
+            {
+                "prefix_map": {
+                    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+                },
+                "triples": [
+                    ("CHEBI:1234", "RO:0000001", "CHEBI:5678"),
+                ],
+            }
+        )
+
+        # note that you have to unpack the resulting prefix map
+        prefix_map = rdf_content.prefix_map.root
+    """
+
+
+class Reference(BaseModel):
     """A reference to an entity in a given identifier space.
 
     This class uses Pydantic to make it easier to build other
@@ -195,7 +399,7 @@ class Reference(BaseModel):  # type:ignore
     ReferenceTuple(prefix='chebi', identifier='1234')
     """
 
-    prefix: str = Field(
+    prefix: Prefix = Field(
         ...,
         description="The prefix used in a compact URI (CURIE).",
     )
@@ -203,10 +407,28 @@ class Reference(BaseModel):  # type:ignore
         ..., description="The local unique identifier used in a compact URI (CURIE)."
     )
 
-    class Config:
-        """Pydantic configuration for references."""
+    model_config = ConfigDict(frozen=True)
 
-        frozen = True
+    @model_validator(mode="before")
+    def _parse_from_string(cls, values: str | dict[str, str]) -> dict[str, str]:  # noqa:N805
+        if isinstance(values, str):
+            prefix, identifier = _split(values)
+            return {"prefix": prefix, "identifier": identifier}
+        return values
+
+    def __lt__(self, other: Reference) -> bool:
+        """Sort the reference lexically first by prefix, then by identifier."""
+        return self.pair < other.pair
+
+    def __hash__(self) -> int:
+        return hash((self.prefix, self.identifier))
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, Reference)
+            and self.prefix == other.prefix
+            and self.identifier == other.identifier
+        )
 
     @property
     def curie(self) -> str:
@@ -226,64 +448,94 @@ class Reference(BaseModel):  # type:ignore
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(cls, curie: str, sep: str = ":") -> "Reference":
+    def from_curie(
+        cls, curie: str, *, sep: str = ":", converter: Converter | None = None
+    ) -> Reference:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
         :param sep: The separator
+        :param converter: The converter to use as context when parsing
         :return: A reference object
 
         >>> Reference.from_curie("chebi:1234")
         Reference(prefix='chebi', identifier='1234')
         """
-        prefix, identifier = curie.split(sep, 1)
-        return cls(prefix=prefix, identifier=identifier)
+        prefix, identifier = _split(curie, sep=sep)
+        return cls.model_validate({"prefix": prefix, "identifier": identifier}, context=converter)
 
 
-RecordKey = Tuple[str, str, str, str]
+class NamedReference(Reference):
+    """A reference with a name."""
+
+    name: str = Field(
+        ..., description="The name of the entity referenced by this object's prefix and identifier."
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+    @classmethod
+    def from_curie(  # type:ignore
+        cls, curie: str, name: str, *, sep: str = ":", converter: Converter | None = None
+    ) -> NamedReference:
+        """Parse a CURIE string and populate a reference.
+
+        :param curie: A string representation of a compact URI (CURIE)
+        :param name: The name of the reference
+        :param sep: The separator
+        :param converter: The converter to use as context when parsing
+        :return: A reference object
+
+        >>> NamedReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
+        NamedReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
+        """
+        prefix, identifier = _split(curie, sep=sep)
+        return cls.model_validate(
+            {"prefix": prefix, "identifier": identifier, "name": name}, context=converter
+        )
 
 
-class Record(BaseModel):  # type:ignore
+RecordKey = tuple[str, str, str, str]
+
+
+class Record(BaseModel):
     """A record of some prefixes and their associated URI prefixes.
-
-    A list of records can be annotated in a FastAPI setting with the following:
-
-    .. code-block:: python
-
-        from typing import List
-        from curies import Record
-        from pydantic import BaseModel
-
-        class Records(BaseModel):
-            __root__ = List[Record]
 
     .. seealso:: https://github.com/cthoyt/curies/issues/70
     """
 
-    prefix: str = Field(..., description="The canonical prefix, used in the reverse prefix map")
-    uri_prefix: str = Field(
-        ..., description="The canonical URI prefix, used in the forward prefix map"
+    prefix: str = Field(
+        ...,
+        title="CURIE prefix",
+        description="The canonical CURIE prefix, used in the reverse prefix map",
     )
-    prefix_synonyms: List[str] = Field(default_factory=list)
-    uri_prefix_synonyms: List[str] = Field(default_factory=list)
-    pattern: Optional[str] = Field(
+    uri_prefix: str = Field(
+        ...,
+        title="URI prefix",
+        description="The canonical URI prefix, used in the forward prefix map",
+    )
+    prefix_synonyms: list[str] = Field(default_factory=list, title="CURIE prefix synonyms")
+    uri_prefix_synonyms: list[str] = Field(default_factory=list, title="URI prefix synonyms")
+    pattern: str | None = Field(
         default=None,
         description="The regular expression pattern for entries in this semantic space. "
         "Warning: this is an experimental feature.",
     )
 
     @field_validator("prefix_synonyms")  # type:ignore
-    def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
+    @classmethod
+    def prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:
         """Check that the canonical prefix does not apper in the prefix synonym list."""
-        prefix = get_field_validator_values(values, "prefix")
+        prefix = _get_field_validator_values(values, "prefix")
         if prefix in v:
             raise ValueError(f"Duplicate of canonical prefix `{prefix}` in prefix synonyms")
         return v
 
     @field_validator("uri_prefix_synonyms")  # type:ignore
-    def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:  # noqa:N805
+    @classmethod
+    def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
-        uri_prefix = get_field_validator_values(values, "uri_prefix")
+        uri_prefix = _get_field_validator_values(values, "uri_prefix")
         if uri_prefix in v:
             raise ValueError(
                 f"Duplicate of canonical URI prefix `{uri_prefix}` in URI prefix synonyms"
@@ -291,11 +543,11 @@ class Record(BaseModel):  # type:ignore
         return v
 
     @property
-    def _all_prefixes(self) -> List[str]:
+    def _all_prefixes(self) -> list[str]:
         return [self.prefix, *self.prefix_synonyms]
 
     @property
-    def _all_uri_prefixes(self) -> List[str]:
+    def _all_uri_prefixes(self) -> list[str]:
         return [self.uri_prefix, *self.uri_prefix_synonyms]
 
     @property
@@ -315,6 +567,16 @@ class Record(BaseModel):  # type:ignore
         return all_curie_prefixes_valid
 
 
+# An explanation of RootModels in Pydantic V2 can be found on
+# https://docs.pydantic.dev/latest/concepts/models/#rootmodel-and-custom-root-types
+class Records(RootModel[list[Record]]):
+    """A list of records."""
+
+    def __iter__(self) -> Iterator[Record]:  # type:ignore[override]
+        """Iterate over records."""
+        return iter(self.root)
+
+
 class DuplicateSummary(NamedTuple):
     """A triple representing two records that are duplicated, either based on a CURIE or URI prefix."""
 
@@ -323,10 +585,21 @@ class DuplicateSummary(NamedTuple):
     prefix: str
 
 
+class NoCURIEDelimiterError(ValueError):
+    """An error thrown on a string with no delimiter."""
+
+    def __init__(self, curie: str):
+        """Initialize the error."""
+        self.curie = curie
+
+    def __str__(self) -> str:
+        return f"{self.curie} does not appear to be a CURIE - missing a delimiter"
+
+
 class DuplicateValueError(ValueError):
     """An error raised with constructing a converter with data containing duplicate values."""
 
-    def __init__(self, duplicates: List[DuplicateSummary]) -> None:
+    def __init__(self, duplicates: list[DuplicateSummary]) -> None:
         """Initialize the error."""
         self.duplicates = duplicates
 
@@ -340,14 +613,14 @@ class DuplicateValueError(ValueError):
 class DuplicateURIPrefixes(DuplicateValueError):
     """An error raised with constructing a converter with data containing duplicate URI prefixes."""
 
-    def __str__(self) -> str:  # noqa:D105
+    def __str__(self) -> str:
         return f"Duplicate URI prefixes:\n{self._str()}"
 
 
 class DuplicatePrefixes(DuplicateValueError):
     """An error raised with constructing a converter with data containing duplicate prefixes."""
 
-    def __str__(self) -> str:  # noqa:D105
+    def __str__(self) -> str:
         return f"Duplicate prefixes:\n{self._str()}"
 
 
@@ -383,7 +656,7 @@ class W3CValidationError(ValueError):
     """An error when W3C validation fails."""
 
 
-def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]:
+def _get_duplicate_uri_prefixes(records: list[Record]) -> list[DuplicateSummary]:
     return [
         DuplicateSummary(record_1, record_2, uri_prefix)
         for record_1, record_2 in itt.combinations(records, 2)
@@ -392,7 +665,7 @@ def _get_duplicate_uri_prefixes(records: List[Record]) -> List[DuplicateSummary]
     ]
 
 
-def _get_duplicate_prefixes(records: List[Record]) -> List[DuplicateSummary]:
+def _get_duplicate_prefixes(records: list[Record]) -> list[DuplicateSummary]:
     return [
         DuplicateSummary(record_1, record_2, prefix)
         for record_1, record_2 in itt.combinations(records, 2)
@@ -401,7 +674,7 @@ def _get_duplicate_prefixes(records: List[Record]) -> List[DuplicateSummary]:
     ]
 
 
-def _get_prefix_map(records: List[Record]) -> Dict[str, str]:
+def _get_prefix_map(records: list[Record]) -> dict[str, str]:
     rv = {}
     for record in records:
         rv[record.prefix] = record.uri_prefix
@@ -410,11 +683,11 @@ def _get_prefix_map(records: List[Record]) -> Dict[str, str]:
     return rv
 
 
-def _get_pattern_map(records: List[Record]) -> Dict[str, str]:
+def _get_pattern_map(records: list[Record]) -> dict[str, str]:
     return {record.prefix: record.pattern for record in records if record.pattern}
 
 
-def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
+def _get_reverse_prefix_map(records: list[Record]) -> dict[str, str]:
     rv = {}
     for record in records:
         rv[record.uri_prefix] = record.prefix
@@ -423,7 +696,7 @@ def _get_reverse_prefix_map(records: List[Record]) -> Dict[str, str]:
     return rv
 
 
-def _get_prefix_synmap(records: List[Record]) -> Dict[str, str]:
+def _get_prefix_synmap(records: list[Record]) -> dict[str, str]:
     rv = {}
     for record in records:
         rv[record.prefix] = record.prefix
@@ -438,13 +711,19 @@ def _prepare(data: LocationOr[X]) -> X:
             return cast(X, json.load(file))
     elif isinstance(data, str):
         if any(data.startswith(p) for p in ("https://", "http://", "ftp://")):
-            res = requests.get(data)
-            res.raise_for_status()
-            return cast(X, res.json())
+            return cast(X, _get_remote_json(data))
         with open(data) as file:
             return cast(X, json.load(file))
     else:
         return data
+
+
+def _get_remote_json(url: str, timeout: int = 15) -> Any:
+    import urllib.request
+
+    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa:S310
+        json_str_data = response.read().decode()
+    return json.loads(json_str_data)
 
 
 class Converter:
@@ -453,12 +732,14 @@ class Converter:
     .. code-block::
 
         # Construct a prefix map:
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ...    "OBO": "http://purl.obolibrary.org/obo/",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...         "OBO": "http://purl.obolibrary.org/obo/",
+        ...     }
+        ... )
 
         # Compression and Expansion:
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
@@ -474,19 +755,19 @@ class Converter:
     """
 
     #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
-    prefix_map: Dict[str, str]
+    prefix_map: dict[str, str]
     #: The mapping from URI prefixes to prefixes
-    reverse_prefix_map: Dict[str, str]
+    reverse_prefix_map: dict[str, str]
     #: A prefix trie for efficient parsing of URIs
     trie: StringTrie
     #: A mapping from prefix to regular expression pattern. Not necessarily complete wrt the prefix map.
     #:
     #: .. warning:: patterns are an experimental feature
-    pattern_map: Dict[str, str]
+    pattern_map: dict[str, str]
 
     def __init__(
         self,
-        records: List[Record],
+        records: list[Record],
         *,
         delimiter: str = ":",
         strict: bool = True,
@@ -539,11 +820,16 @@ class Converter:
         """Get the bijective mapping between CURIE prefixes and URI prefixes."""
         return {r.prefix: r.uri_prefix for r in self.records}
 
+    @property
+    def reverse_bimap(self) -> Mapping[str, str]:
+        """Get the bijective mapping between URI CURIE prefixes and CURIE prefixes."""
+        return {r.uri_prefix: r.prefix for r in self.records}
+
     def _match_record(
         self, external: Record, case_sensitive: bool = True
-    ) -> Mapping[RecordKey, List[str]]:
+    ) -> Mapping[RecordKey, list[str]]:
         """Match the given record to existing records."""
-        rv: DefaultDict[RecordKey, List[str]] = defaultdict(list)
+        rv: defaultdict[RecordKey, list[str]] = defaultdict(list)
         for record in self.records:
             # Match CURIE prefixes
             if _eq(external.prefix, record.prefix, case_sensitive=case_sensitive):
@@ -574,12 +860,13 @@ class Converter:
         """Append a record to the converter."""
         matched = self._match_record(record, case_sensitive=case_sensitive)
         if len(matched) > 1:
-            raise ValueError(f"new record has duplicates: {matched}")
+            msg = "".join(f"\n  {m} -> {v}" for m, v in matched.items())
+            raise ValueError(f"new record has duplicates:{msg}")
         if len(matched) == 1:
             if not merge:
                 raise ValueError(f"new record already exists and merge=False: {matched}")
 
-            key = list(matched)[0]
+            key = next(iter(matched))
             existing_record = next(r for r in self.records if r._key == key)
             self._merge(record, into=existing_record)
             self._index(existing_record)
@@ -620,8 +907,8 @@ class Converter:
         self,
         prefix: str,
         uri_prefix: str,
-        prefix_synonyms: Optional[Collection[str]] = None,
-        uri_prefix_synonyms: Optional[Collection[str]] = None,
+        prefix_synonyms: Collection[str] | None = None,
+        uri_prefix_synonyms: Collection[str] | None = None,
         *,
         case_sensitive: bool = True,
         merge: bool = False,
@@ -673,8 +960,8 @@ class Converter:
 
     @classmethod
     def from_extended_prefix_map(
-        cls, records: LocationOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
-    ) -> "Converter":
+        cls, records: LocationOr[Iterable[Record | dict[str, Any]]], **kwargs: Any
+    ) -> Converter:
         """Get a converter from a list of dictionaries by creating records out of them.
 
         :param records:
@@ -704,7 +991,9 @@ class Converter:
         ...         "prefix": "CHEBI",
         ...         "prefix_synonyms": ["chebi", "ChEBI"],
         ...         "uri_prefix": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...         "uri_prefix_synonyms": ["https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:"],
+        ...         "uri_prefix_synonyms": [
+        ...             "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:"
+        ...         ],
         ...     },
         ...     {
         ...         "prefix": "GO",
@@ -748,8 +1037,8 @@ class Converter:
 
     @classmethod
     def from_priority_prefix_map(
-        cls, data: LocationOr[Mapping[str, List[str]]], **kwargs: Any
-    ) -> "Converter":
+        cls, data: LocationOr[Mapping[str, list[str]]], **kwargs: Any
+    ) -> Converter:
         """Get a converter from a priority prefix map.
 
         :param data:
@@ -786,9 +1075,7 @@ class Converter:
         )
 
     @classmethod
-    def from_prefix_map(
-        cls, prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any
-    ) -> "Converter":
+    def from_prefix_map(cls, prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) -> Converter:
         """Get a converter from a simple prefix map.
 
         :param prefix_map:
@@ -802,12 +1089,14 @@ class Converter:
         :returns:
             A converter
 
-        >>> converter = Converter.from_prefix_map({
-        ...     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...     "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...     "GO": "http://purl.obolibrary.org/obo/GO_",
-        ...     "OBO": "http://purl.obolibrary.org/obo/",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...         "OBO": "http://purl.obolibrary.org/obo/",
+        ...     }
+        ... )
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
@@ -824,7 +1113,7 @@ class Converter:
     @classmethod
     def from_reverse_prefix_map(
         cls, reverse_prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any
-    ) -> "Converter":
+    ) -> Converter:
         """Get a converter from a reverse prefix map.
 
         :param reverse_prefix_map:
@@ -835,11 +1124,13 @@ class Converter:
         :return:
             A converter
 
-        >>> converter = Converter.from_reverse_prefix_map({
-        ...     "http://purl.obolibrary.org/obo/CHEBI_": "CHEBI",
-        ...     "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=": "CHEBI",
-        ...     "http://purl.obolibrary.org/obo/MONDO_": "MONDO",
-        ... })
+        >>> converter = Converter.from_reverse_prefix_map(
+        ...     {
+        ...         "http://purl.obolibrary.org/obo/CHEBI_": "CHEBI",
+        ...         "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=": "CHEBI",
+        ...         "http://purl.obolibrary.org/obo/MONDO_": "MONDO",
+        ...     }
+        ... )
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
@@ -867,7 +1158,7 @@ class Converter:
         return cls(records, **kwargs)
 
     @classmethod
-    def from_jsonld(cls, data: LocationOr[Dict[str, Any]], **kwargs: Any) -> "Converter":
+    def from_jsonld(cls, data: LocationOr[dict[str, Any]], **kwargs: Any) -> Converter:
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
         :param data:
@@ -905,7 +1196,7 @@ class Converter:
     @classmethod
     def from_jsonld_github(
         cls, owner: str, repo: str, *path: str, branch: str = "main", **kwargs: Any
-    ) -> "Converter":
+    ) -> Converter:
         """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld`.
 
         :param owner: A github repository owner or organization (e.g., ``biopragmatics``)
@@ -920,8 +1211,11 @@ class Converter:
             If the given path doesn't end in a .jsonld file name
 
         >>> converter = Converter.from_jsonld_github(
-        ...     "biopragmatics", "bioregistry", "exports",
-        ...     "contexts", "semweb.context.jsonld",
+        ...     "biopragmatics",
+        ...     "bioregistry",
+        ...     "exports",
+        ...     "contexts",
+        ...     "semweb.context.jsonld",
         ... )
         >>> "rdf" in converter.prefix_map
         True
@@ -935,9 +1229,9 @@ class Converter:
     @classmethod
     def from_rdflib(
         cls,
-        graph_or_manager: Union["rdflib.Graph", "rdflib.namespace.NamespaceManager"],
+        graph_or_manager: rdflib.Graph | rdflib.namespace.NamespaceManager,
         **kwargs: Any,
-    ) -> "Converter":
+    ) -> Converter:
         """Get a converter from an RDFLib graph or namespace manager.
 
         :param graph_or_manager: A RDFLib graph or manager object
@@ -968,10 +1262,10 @@ class Converter:
     @classmethod
     def from_shacl(
         cls,
-        graph: Union[str, Path, "rdflib.Graph"],
-        format: Optional[str] = None,
+        graph: str | Path | rdflib.Graph,
+        format: str | None = None,
         **kwargs: Any,
-    ) -> "Converter":
+    ) -> Converter:
         """Get a converter from SHACL, either in a turtle f.
 
         :param graph: A RDFLib graph, a Path, a string representing a file path, or a string URL
@@ -983,7 +1277,7 @@ class Converter:
             import rdflib
 
             temporary_graph = rdflib.Graph()
-            temporary_graph.parse(location=graph, format=format)
+            temporary_graph.parse(location=Path(graph).resolve().as_posix(), format=format)
             graph = temporary_graph
 
         query = """\
@@ -995,14 +1289,14 @@ class Converter:
                 OPTIONAL { ?bnode2 sh:pattern ?pattern . }
             }
         """
-        results = graph.query(query)
+        results = cast(Iterable[tuple[str, str, str]], graph.query(query))
         records = [
             Record(prefix=str(prefix), uri_prefix=str(uri_prefix), pattern=pattern and str(pattern))
             for prefix, uri_prefix, pattern in results
         ]
         return cls(records, **kwargs)
 
-    def get_prefixes(self, *, include_synonyms: bool = False) -> Set[str]:
+    def get_prefixes(self, *, include_synonyms: bool = False) -> set[str]:
         """Get the set of prefixes covered by this converter.
 
         :param include_synonyms: If true, include secondary prefixes.
@@ -1020,7 +1314,7 @@ class Converter:
             )
         return rv
 
-    def get_uri_prefixes(self, *, include_synonyms: bool = False) -> Set[str]:
+    def get_uri_prefixes(self, *, include_synonyms: bool = False) -> set[str]:
         """Get the set of URI prefixes covered by this converter.
 
         :param include_synonyms: If true, include secondary prefixes.
@@ -1091,11 +1385,11 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def compress_or_standardize(
         self, uri_or_curie: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Compress a URI or standardize a CURIE.
 
         :param uri_or_curie:
@@ -1111,14 +1405,16 @@ class Converter:
             If strict is true and the URI can't be compressed
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(
-        ...          prefix="CHEBI",
-        ...          prefix_synonyms=["chebi"],
-        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
-        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
-        ...     ),
-        ... ])
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(
+        ...             prefix="CHEBI",
+        ...             prefix_synonyms=["chebi"],
+        ...             uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...             uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...         ),
+        ...     ]
+        ... )
         >>> converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
         'CHEBI:138488'
         >>> converter.compress_or_standardize("https://identifiers.org/chebi:138488")
@@ -1162,11 +1458,9 @@ class Converter:
     @overload
     def compress(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
-    def compress(
-        self, uri: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    def compress(self, uri: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
         """Compress a URI to a CURIE, if possible.
 
         :param uri:
@@ -1180,12 +1474,14 @@ class Converter:
             If strict is set to true and the URI can't be compressed
 
         >>> from curies import Converter
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ...    "OBO": "http://purl.obolibrary.org/obo/",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...         "OBO": "http://purl.obolibrary.org/obo/",
+        ...     }
+        ... )
         >>> converter.compress("http://purl.obolibrary.org/obo/GO_0032571")
         'GO:0032571'
         >>> converter.compress("http://purl.obolibrary.org/obo/go.owl")
@@ -1210,7 +1506,7 @@ class Converter:
             return uri
         return None
 
-    def parse_uri(self, uri: str) -> Union[ReferenceTuple, Tuple[None, None]]:
+    def parse_uri(self, uri: str) -> ReferenceTuple | tuple[None, None]:
         """Compress a URI to a CURIE pair.
 
         :param uri:
@@ -1219,11 +1515,13 @@ class Converter:
             A CURIE pair if the URI could be parsed, otherwise a pair of None's
 
         >>> from curies import Converter
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...     }
+        ... )
         >>> converter.parse_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
         ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
@@ -1290,11 +1588,11 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def expand_or_standardize(
         self, curie_or_uri: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Expand a CURIE or standardize a URI.
 
         :param curie_or_uri:
@@ -1310,14 +1608,16 @@ class Converter:
             If strict is true and the CURIE can't be expanded
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(
-        ...          prefix="CHEBI",
-        ...          prefix_synonyms=["chebi"],
-        ...          uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
-        ...          uri_prefix_synonyms=["https://identifiers.org/chebi:"],
-        ...     ),
-        ... ])
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(
+        ...             prefix="CHEBI",
+        ...             prefix_synonyms=["chebi"],
+        ...             uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...             uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+        ...         ),
+        ...     ]
+        ... )
         >>> converter.expand_or_standardize("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
          >>> converter.expand_or_standardize("chebi:138488")
@@ -1376,7 +1676,7 @@ class Converter:
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
         w3c_validation: bool = ...,
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def expand(
         self,
@@ -1385,7 +1685,7 @@ class Converter:
         strict: bool = False,
         passthrough: bool = False,
         w3c_validation: bool = False,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Expand a CURIE to a URI, if possible.
 
         :param curie:
@@ -1404,11 +1704,13 @@ class Converter:
             If W3C validation is turned on and the CURIE is not valid under the CURIE specification
 
         >>> from curies import Converter
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...     }
+        ... )
         >>> converter.expand("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
@@ -1425,7 +1727,7 @@ class Converter:
             return curie
         return None
 
-    def expand_all(self, curie: str) -> Optional[Collection[str]]:
+    def expand_all(self, curie: str) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param curie:
@@ -1453,10 +1755,9 @@ class Converter:
 
     def parse_curie(self, curie: str) -> ReferenceTuple:
         """Parse a CURIE."""
-        reference = Reference.from_curie(curie, sep=self.delimiter)
-        return reference.pair
+        return ReferenceTuple.from_curie(curie, sep=self.delimiter)
 
-    def expand_pair(self, prefix: str, identifier: str) -> Optional[str]:
+    def expand_pair(self, prefix: str, identifier: str) -> str | None:
         """Expand a CURIE pair to the standard URI.
 
         :param prefix:
@@ -1467,11 +1768,13 @@ class Converter:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
 
         >>> from curies import Converter
-        >>> converter = Converter.from_prefix_map({
-        ...    "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        ...    "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
-        ...    "GO": "http://purl.obolibrary.org/obo/GO_",
-        ... })
+        >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...         "MONDO": "http://purl.obolibrary.org/obo/MONDO_",
+        ...         "GO": "http://purl.obolibrary.org/obo/GO_",
+        ...     }
+        ... )
         >>> converter.expand_pair("CHEBI", "138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand_pair("missing", "0000000")
@@ -1481,7 +1784,7 @@ class Converter:
             return None
         return uri_prefix + identifier
 
-    def expand_pair_all(self, prefix: str, identifier: str) -> Optional[Collection[str]]:
+    def expand_pair_all(self, prefix: str, identifier: str) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param prefix:
@@ -1530,11 +1833,11 @@ class Converter:
     @overload
     def standardize_prefix(
         self, prefix: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def standardize_prefix(
         self, prefix: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Standardize a prefix.
 
         :param prefix:
@@ -1549,9 +1852,11 @@ class Converter:
             If strict is true and the prefix can't be standardied
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(prefix="CHEBI", prefix_synonyms=["chebi"], uri_prefix="..."),
-        ... ])
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(prefix="CHEBI", prefix_synonyms=["chebi"], uri_prefix="..."),
+        ...     ]
+        ... )
         >>> converter.standardize_prefix("chebi")
         'CHEBI'
         >>> converter.standardize_prefix("CHEBI")
@@ -1586,11 +1891,11 @@ class Converter:
     @overload
     def standardize_curie(
         self, curie: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def standardize_curie(
         self, curie: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Standardize a CURIE.
 
         :param curie:
@@ -1607,9 +1912,15 @@ class Converter:
             If strict is true and the CURIE can't be standardized
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(prefix="CHEBI", prefix_synonyms=["chebi"], uri_prefix="http://purl.obolibrary.org/obo/CHEBI_"),
-        ... ])
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(
+        ...             prefix="CHEBI",
+        ...             prefix_synonyms=["chebi"],
+        ...             uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...         ),
+        ...     ]
+        ... )
         >>> converter.standardize_curie("chebi:138488")
         'CHEBI:138488'
         >>> converter.standardize_curie("CHEBI:138488")
@@ -1645,11 +1956,11 @@ class Converter:
     @overload
     def standardize_uri(
         self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
-    ) -> Optional[str]: ...
+    ) -> str | None: ...
 
     def standardize_uri(
         self, uri: str, *, strict: bool = False, passthrough: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         """Standardize a URI.
 
         :param uri:
@@ -1666,16 +1977,20 @@ class Converter:
             If strict is true and the URI can't be standardized
 
         >>> from curies import Converter, Record
-        >>> converter = Converter.from_extended_prefix_map([
-        ...     Record(
-        ...         prefix="CHEBI",
-        ...         uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
-        ...         uri_prefix_synonyms=[
-        ...             "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
-        ...         ],
-        ...     ),
-        ... ])
-        >>> converter.standardize_uri("https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488")
+        >>> converter = Converter.from_extended_prefix_map(
+        ...     [
+        ...         Record(
+        ...             prefix="CHEBI",
+        ...             uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+        ...             uri_prefix_synonyms=[
+        ...                 "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:",
+        ...             ],
+        ...         ),
+        ...     ]
+        ... )
+        >>> converter.standardize_uri(
+        ...     "https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:138488"
+        ... )
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.standardize_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
@@ -1696,9 +2011,9 @@ class Converter:
 
     def pd_compress(
         self,
-        df: "pandas.DataFrame",
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        df: pandas.DataFrame,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
         ambiguous: bool = False,
@@ -1719,9 +2034,9 @@ class Converter:
 
     def pd_expand(
         self,
-        df: "pandas.DataFrame",
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        df: pandas.DataFrame,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
         ambiguous: bool = False,
@@ -1742,10 +2057,10 @@ class Converter:
 
     def pd_standardize_prefix(
         self,
-        df: "pandas.DataFrame",
+        df: pandas.DataFrame,
         *,
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -1763,10 +2078,10 @@ class Converter:
 
     def pd_standardize_curie(
         self,
-        df: "pandas.DataFrame",
+        df: pandas.DataFrame,
         *,
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -1789,7 +2104,7 @@ class Converter:
         >>> import pandas as pd
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
         >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
-        >>> df = pd.read_csv(url, sep="\t", comment='#')
+        >>> df = pd.read_csv(url, sep="\t", comment="#")
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
         """
@@ -1798,10 +2113,10 @@ class Converter:
 
     def pd_standardize_uri(
         self,
-        df: "pandas.DataFrame",
+        df: pandas.DataFrame,
         *,
-        column: Union[str, int],
-        target_column: Union[None, str, int] = None,
+        column: str | int,
+        target_column: None | str | int = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -1819,10 +2134,10 @@ class Converter:
 
     def file_compress(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         column: int,
         *,
-        sep: Optional[str] = None,
+        sep: str | None = None,
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
@@ -1845,10 +2160,10 @@ class Converter:
 
     def file_expand(
         self,
-        path: Union[str, Path],
+        path: str | Path,
         column: int,
         *,
-        sep: Optional[str] = None,
+        sep: str | None = None,
         header: bool = True,
         strict: bool = False,
         passthrough: bool = False,
@@ -1871,10 +2186,10 @@ class Converter:
 
     @staticmethod
     def _file_helper(
-        func: Callable[[str], Optional[str]],
-        path: Union[str, Path],
+        func: Callable[[str], str | None],
+        path: str | Path,
         column: int,
-        sep: Optional[str] = None,
+        sep: str | None = None,
         header: bool = True,
     ) -> None:
         path = Path(path).expanduser().resolve()
@@ -1892,7 +2207,7 @@ class Converter:
                 writer.writerow(_header)
             writer.writerows(rows)
 
-    def get_record(self, prefix: str) -> Optional[Record]:
+    def get_record(self, prefix: str) -> Record | None:
         """Get the record for the prefix."""
         # TODO better data structure for this
         for record in self.records:
@@ -1900,7 +2215,7 @@ class Converter:
                 return record
         return None
 
-    def get_subconverter(self, prefixes: Iterable[str]) -> "Converter":
+    def get_subconverter(self, prefixes: Iterable[str]) -> Converter:
         r"""Get a converter with a subset of prefixes.
 
         :param prefixes: A list of prefixes to keep from this converter. These can
@@ -1931,7 +2246,7 @@ class Converter:
         >>> import itertools as itt
         >>> commit = "faca4fc335f9a61902b9c47a1facd52a0d3d2f8b"
         >>> url = f"https://raw.githubusercontent.com/mapping-commons/disease-mappings/{commit}/mappings/doid.sssom.tsv"
-        >>> df = pd.read_csv(url, sep="\t", comment='#')
+        >>> df = pd.read_csv(url, sep="\t", comment="#")
         >>> prefixes = {
         ...     curies.Reference.from_curie(curie).prefix
         ...     for column in ["subject_id", "predicate_id", "object_id"]
@@ -1998,17 +2313,19 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
 
     >>> import curies
     >>> from curies import Converter, chain, get_bioregistry_converter
-    >>> overrides = curies.load_extended_prefix_map([
-    ...     {
-    ...         "prefix": "PMID",
-    ...         "prefix_synonyms": ["pubmed", "PubMed"],
-    ...         "uri_prefix": "https://www.ncbi.nlm.nih.gov/pubmed/",
-    ...         "uri_prefix_synonyms": [
-    ...             "https://identifiers.org/pubmed:",
-    ...             "http://bio2rdf.org/pubmed:",
-    ...         ],
-    ...     },
-    ... ])
+    >>> overrides = curies.load_extended_prefix_map(
+    ...     [
+    ...         {
+    ...             "prefix": "PMID",
+    ...             "prefix_synonyms": ["pubmed", "PubMed"],
+    ...             "uri_prefix": "https://www.ncbi.nlm.nih.gov/pubmed/",
+    ...             "uri_prefix_synonyms": [
+    ...                 "https://identifiers.org/pubmed:",
+    ...                 "http://bio2rdf.org/pubmed:",
+    ...             ],
+    ...         },
+    ...     ]
+    ... )
     >>> converter = curies.chain([overrides, bioregistry_converter])
     >>> converter.bimap["PMID"]
     'https://www.ncbi.nlm.nih.gov/pubmed/'
@@ -2046,9 +2363,11 @@ def load_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) ->
         A converter
 
     >>> import curies
-    >>> converter = curies.load_prefix_map({
-    ...     "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-    ... })
+    >>> converter = curies.load_prefix_map(
+    ...     {
+    ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+    ...     }
+    ... )
     >>> converter.expand("CHEBI:138488")
     'http://purl.obolibrary.org/obo/CHEBI_138488'
     >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_138488")
@@ -2058,7 +2377,7 @@ def load_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) ->
 
 
 def load_extended_prefix_map(
-    records: LocationOr[Iterable[Union[Record, Dict[str, Any]]]], **kwargs: Any
+    records: LocationOr[Iterable[Record | dict[str, Any]]], **kwargs: Any
 ) -> Converter:
     """Get a converter from a list of dictionaries by creating records out of them.
 
@@ -2127,7 +2446,7 @@ def load_extended_prefix_map(
     return Converter.from_extended_prefix_map(records, **kwargs)
 
 
-def load_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Converter:
+def load_jsonld_context(data: LocationOr[dict[str, Any]], **kwargs: Any) -> Converter:
     """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
     :param data:
@@ -2146,7 +2465,7 @@ def load_jsonld_context(data: LocationOr[Dict[str, Any]], **kwargs: Any) -> Conv
     return Converter.from_jsonld(data, **kwargs)
 
 
-def load_shacl(data: LocationOr["rdflib.Graph"], **kwargs: Any) -> Converter:
+def load_shacl(data: LocationOr[rdflib.Graph], **kwargs: Any) -> Converter:
     """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
     :param data:
@@ -2158,7 +2477,7 @@ def load_shacl(data: LocationOr["rdflib.Graph"], **kwargs: Any) -> Converter:
     return Converter.from_shacl(data, **kwargs)
 
 
-def write_extended_prefix_map(converter: Converter, path: Union[str, Path]) -> None:
+def write_extended_prefix_map(converter: Converter, path: str | Path) -> None:
     """Write an extended prefix map as JSON to a file."""
     path = _ensure_path(path)
     path.write_text(
@@ -2171,9 +2490,9 @@ def write_extended_prefix_map(converter: Converter, path: Union[str, Path]) -> N
     )
 
 
-def _record_to_dict(record: Record) -> Mapping[str, Union[str, List[str]]]:
+def _record_to_dict(record: Record) -> Mapping[str, str | list[str]]:
     """Convert a record to a dict."""
-    rv: Dict[str, Union[str, List[str]]] = {
+    rv: dict[str, str | list[str]] = {
         "prefix": record.prefix,
         "uri_prefix": record.uri_prefix,
     }
@@ -2186,21 +2505,16 @@ def _record_to_dict(record: Record) -> Mapping[str, Union[str, List[str]]]:
     return rv
 
 
-def _ensure_path(path: Union[str, Path]) -> Path:
+def _ensure_path(path: str | Path) -> Path:
     if isinstance(path, str):
         path = Path(path).resolve()
     return path
 
 
-def write_jsonld_context(
-    converter: Converter,
-    path: Union[str, Path],
-    *,
-    include_synonyms: bool = False,
-    expand: bool = False,
-) -> None:
-    """Write the converter's bijective map as a JSON-LD context to a file."""
-    path = _ensure_path(path)
+def _get_jsonld_context(
+    converter: Converter, *, expand: bool = False, include_synonyms: bool = False
+) -> dict[str, Any]:
+    """Get a JSON-LD context based on the converter."""
     context = {}
     for record in converter.records:
         term = _get_expanded_term(record, expand=expand)
@@ -2208,16 +2522,81 @@ def write_jsonld_context(
         if include_synonyms:
             for prefix_synonym in record.prefix_synonyms:
                 context[prefix_synonym] = term
-    with path.open("w") as file:
-        json.dump(
-            fp=file,
-            indent=4,
-            sort_keys=True,
-            obj={"@context": context},
+    return {"@context": context}
+
+
+def write_jsonld_context(
+    converter: Converter,
+    path: str | Path,
+    *,
+    include_synonyms: bool = False,
+    expand: bool = False,
+) -> None:
+    """Write the converter's bijective map as a JSON-LD context to a file.
+
+    :param converter: The converter to export
+    :param path: The path to a file to write to
+    :param include_synonyms: If true, includes CURIE prefix synonyms.
+        URI prefix synonyms are not output.
+    :param expand: If False, output a dictionary-like ``@context`` element.
+        If True, use ``@prefix`` and ``@id`` as keys for the CURIE prefix
+        and URI prefix, respectively, to maximize compatibility.
+
+    The following example shows writing a JSON-LD context:
+
+    .. code-block:: python
+
+        import curies
+
+        converter = curies.load_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
         )
+        curies.write_jsonld_context(converter, "example_context.json")
+
+    .. code-block:: json
+
+        {
+          "@context": {
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"
+          }
+        }
+
+    Because some implementations of JSON-LD do not like URI prefixes that end
+    with an underscore ``_``, we can use the ``expand`` keyword to turn on more
+    verbose JSON-LD context output that contains explicit ``@prefix`` and
+    ``@id`` annotations
+
+    .. code-block:: python
+
+        import curies
+
+        converter = curies.load_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
+        curies.write_jsonld_context(converter, "example_context.json", expand=True)
+
+    .. code-block:: json
+
+        {
+          "@context": {
+            "CHEBI": {
+              "@id": "http://purl.obolibrary.org/obo/CHEBI_",
+              "@prefix": true
+            }
+          }
+        }
+    """
+    path = _ensure_path(path)
+    obj = _get_jsonld_context(converter, include_synonyms=include_synonyms, expand=expand)
+    with path.open("w") as file:
+        json.dump(obj, file, indent=4, sort_keys=True)
 
 
-def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, Dict[str, Any]]:
+def _get_expanded_term(record: Record, *, expand: bool) -> str | dict[str, Any]:
     if not expand:
         return record.uri_prefix
 
@@ -2234,7 +2613,7 @@ def _get_expanded_term(record: Record, *, expand: bool) -> Union[str, Dict[str, 
 
 def write_shacl(
     converter: Converter,
-    path: Union[str, Path],
+    path: str | Path,
     *,
     include_synonyms: bool = False,
 ) -> None:
@@ -2246,6 +2625,27 @@ def write_shacl(
         URI prefix synonyms are not output.
 
     .. seealso:: https://www.w3.org/TR/shacl/#sparql-prefixes
+
+    .. code-block:: python
+
+        import curies
+
+        converter = curies.load_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
+        curies.write_shacl(converter, "example_shacl.ttl")
+
+    .. code-block::
+
+        @prefix sh: <http://www.w3.org/ns/shacl#> .
+        @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+        [
+          sh:declare
+            [ sh:prefix "CHEBI" ; sh:namespace "http://purl.obolibrary.org/obo/CHEBI_"^^xsd:anyURI  ]
+        ] .
     """
     text = dedent(
         """\
@@ -2270,7 +2670,45 @@ def write_shacl(
     path.write_text(text.format(entries=",\n".join(lines)))
 
 
-def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None) -> str:
+def write_tsv(
+    converter: Converter, path: str | Path, *, header: tuple[str, str] = ("prefix", "base")
+) -> None:
+    """Write a simple prefix map CSV file.
+
+    :param converter: The converter to export
+    :param path: The path to a file to write to
+    :param header: A 2-tuple of strings representing the header used in the file,
+        where the first element is the label for CURIE prefixes and the second
+        element is the label for URI prefixes
+
+    .. code-block:: python
+
+        import curies
+
+        converter = curies.load_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
+        curies.write_tsv(converter, "example_context.tsv")
+
+    .. code-block::
+
+        prefix  base
+        CHEBI   http://purl.obolibrary.org/obo/CHEBI_
+    """
+    import csv
+
+    path = _ensure_path(path)
+
+    with path.open("w") as csvfile:
+        writer = csv.writer(csvfile, delimiter="\t")
+        writer.writerow(header)
+        for record in converter.records:
+            writer.writerow((record.prefix, record.uri_prefix))
+
+
+def _get_shacl_line(prefix: str, uri_prefix: str, pattern: str | None = None) -> str:
     line = f'    [ sh:prefix "{prefix}" ; sh:namespace "{uri_prefix}"^^xsd:anyURI '
     if pattern:
         pattern = pattern.replace("\\", "\\\\")
@@ -2278,7 +2716,7 @@ def _get_shacl_line(prefix: str, uri_prefix: str, pattern: Optional[str] = None)
     return line + " ]"
 
 
-def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
+def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> list[Record]:
     """Convert a (potentially problematic) prefix map (i.e., not bijective) into a list of records.
 
     A prefix map is bijective if it has no duplicate CURIE prefixes (i.e., keys in a dictionary) and
@@ -2360,46 +2798,11 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> List[Record]:
     ]
 
 
-def curie_is_w3c(s: str) -> bool:
-    """Return if the CURIE is valid under the W3C specification.
-
-    :param s: A string to check if it is a valid CURIE under the W3C specification.
-    :return: True if the string is a valid CURIE under the W3C specification.
-
-    If no prefix is given, the host language chooses how to assign a default
-    prefix.
-
-    >>> curie_is_w3c(":test")
-    True
-
-    From the specification, regarding using an underscore as the prefix
-
-      The CURIE prefix '_' is reserved for use by languages that support RDF.
-      For this reason, the prefix '_' SHOULD be avoided by authors.
-
-    >>> curie_is_w3c("_:test")
-    True
-
-    This is invalid because a CURIE prefix isn't allowed to start with
-    a number. It has to start with either a letter, or an underscore.
-
-    >>> curie_is_w3c("4cdn:test")
-    False
-
-    Empty strings are explicitly noted as being invalid.
-
-    >>> curie_is_w3c("")
-    False
-    """
-    if "[" in s or "]" in s:
-        return False
-    if not s.strip():
-        return False
-    if s[0].isdigit():
-        return False  # TODO get that into the regex
-    return bool(CURIE_RE.match(s))
-
-
-def curie_prefix_is_w3c(s: str) -> bool:
-    """Return if the CURIE prefix is valid under the W3C specification."""
-    return bool(CURIE_PREFIX_RE.match(s))
+def _converter_from_validation_info(info: core_schema.ValidationInfo) -> Converter | None:
+    context = info.context or {}
+    if isinstance(context, Converter):
+        return context
+    elif isinstance(context, dict):
+        return context.get("converter")
+    else:
+        raise TypeError

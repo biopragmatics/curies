@@ -68,3 +68,5 @@ for updating your code.
    api
    w3c
    services/index
+   typing
+   w3c

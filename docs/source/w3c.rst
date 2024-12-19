@@ -1,10 +1,9 @@
-W3C Compliance
+W3C Validation
 ==============
-The Worldwide Web Consortium (W3C) provides standards for
-`prefixes <https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName>`_ (i.e., ``NCName``),
-`CURIEs <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_, and
-`IRIs <https://www.ietf.org/rfc/rfc3987.txt>`_, but they are
-highly obfuscated and spread across many documents.
+.. automodapi:: curies.w3c
+   :no-inheritance-diagram:
+   :no-heading:
+   :include-all-objects:
 
 In practice, some usages do not conform to these standards, often due
 to encoding things that aren't _really_ supposed to be CURIEs, such as

@@ -1,8 +1,10 @@
 """Reconciliation."""
 
+from __future__ import annotations
+
 import logging
 from collections import Counter, defaultdict
-from typing import Collection, List, Mapping, Optional, Tuple
+from collections.abc import Collection, Mapping
 
 from .api import Converter, Record
 
@@ -160,7 +162,7 @@ def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
     return Converter(records)
 
 
-def _get_curie_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> Optional[str]:
+def _get_curie_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> str | None:
     if record.prefix in upgrades:
         return upgrades[record.prefix]
     for s in record.prefix_synonyms:
@@ -169,7 +171,7 @@ def _get_curie_preferred_or_synonym(record: Record, upgrades: Mapping[str, str])
     return None
 
 
-def _get_uri_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> Optional[str]:
+def _get_uri_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> str | None:
     if record.uri_prefix in upgrades:
         return upgrades[record.uri_prefix]
     for s in record.uri_prefix_synonyms:
@@ -196,7 +198,7 @@ class CycleDetected(ValueError):
 
 def _order_curie_remapping(
     converter: Converter, curie_remapping: Mapping[str, str]
-) -> List[Tuple[str, str]]:
+) -> list[tuple[str, str]]:
     # Check that no keys of the remapping actually correspond to the same primary prefix
     key_counter = defaultdict(list)
     for key in curie_remapping:

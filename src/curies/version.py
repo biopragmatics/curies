@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Version information for :mod:`curies`."""
 
 __all__ = [
@@ -7,7 +5,7 @@ __all__ = [
     "get_version",
 ]
 
-VERSION = "0.7.8-dev"
+VERSION = "0.9.3-dev"
 
 
 def get_version() -> str:

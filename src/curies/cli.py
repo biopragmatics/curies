@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-# type:ignore
-
 """This package comes with a built-in CLI for running a resolver web application.
 
 .. code-block::
@@ -26,18 +23,29 @@ Similarly, there's a built-in CLI for running a mapper web application.
 The same flags and arguments are applicable.
 """
 
+from __future__ import annotations
+
 import sys
-from typing import Callable, Mapping
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Callable
 
 import click
+from typing_extensions import TypeAlias
 
 from curies import Converter, sources
+
+if TYPE_CHECKING:
+    import fastapi
+    import flask
 
 __all__ = [
     "main",
 ]
 
-LOADERS = {
+AppHint: TypeAlias = "flask.Flask | fastapi.FastAPI"
+
+
+LOADERS: dict[str, Callable[[str], Converter]] = {
     "jsonld": Converter.from_jsonld,
     "prefix_map": Converter.from_prefix_map,
     "extended_prefix_map": Converter.from_extended_prefix_map,
@@ -54,7 +62,7 @@ CONVERTERS: Mapping[str, Callable[[], Converter]] = {
 }
 
 
-def _get_converter(location, format) -> Converter:
+def _get_converter(location: str, format: str | None) -> Converter:
     if location in CONVERTERS:
         return CONVERTERS[location]()
     if format is None:
@@ -63,7 +71,7 @@ def _get_converter(location, format) -> Converter:
     return LOADERS[format](location)
 
 
-def _get_resolver_app(converter: Converter, framework: str):
+def _get_resolver_app(converter: Converter, framework: str) -> AppHint:
     from curies import resolver_service
 
     if framework == "flask":
@@ -74,7 +82,7 @@ def _get_resolver_app(converter: Converter, framework: str):
         raise ValueError(f"Unhandled framework: {framework}")
 
 
-def _get_mapper_app(converter: Converter, framework: str):
+def _get_mapper_app(converter: Converter, framework: str) -> AppHint:
     from curies import mapping_service
 
     if framework == "flask":
@@ -85,13 +93,14 @@ def _get_mapper_app(converter: Converter, framework: str):
         raise ValueError(f"Unhandled framework: {framework}")
 
 
-def _run_app(app, server, host, port):
+def _run_app(app: AppHint, server: str, host: str, port: int) -> None:
     if server == "uvicorn":
         import uvicorn
 
         uvicorn.run(app, host=host, port=port)
     elif server == "werkzeug":
-        app.run(host=host, port=port)
+        # we ignore the type because at this point, we know the app has to be a flask.Flask
+        app.run(host=host, port=port)  # type:ignore[union-attr]
     elif server == "gunicorn":
         raise NotImplementedError
     else:
@@ -130,39 +139,41 @@ PORT_OPTION = click.option(
 
 
 @click.group()
-def main():
+def main() -> None:
     """Run the `curies` CLI."""
 
 
-@main.command()
+@main.command(
+    help="""\
+Location can either be the name of a built-in converter, a file path, or a URL.
+"""
+)
 @LOCATION_ARGUMENT
 @FRAMEWORK_OPTION
 @SERVER_OPTION
 @FORMAT_OPTION
 @HOST_OPTION
 @PORT_OPTION
-def resolver(location, host: str, port: int, framework: str, format: str, server: str):
-    """Serve a resolver app.
-
-    Location can either be the name of a built-in converter, a file path, or a URL.
-    """
+def resolver(location: str, host: str, port: int, framework: str, format: str, server: str) -> None:
+    """Serve a resolver app."""
     converter = _get_converter(location, format)
     app = _get_resolver_app(converter, framework=framework)
     _run_app(app, server=server, host=host, port=port)
 
 
-@main.command()
+@main.command(
+    help="""\
+Location can either be the name of a built-in converter, a file path, or a URL.
+"""
+)
 @LOCATION_ARGUMENT
 @FRAMEWORK_OPTION
 @SERVER_OPTION
 @FORMAT_OPTION
 @HOST_OPTION
 @PORT_OPTION
-def mapper(location, host: str, port: int, framework: str, format: str, server: str):
-    """Serve a mapper app.
-
-    Location can either be the name of a built-in converter, a file path, or a URL.
-    """
+def mapper(location: str, host: str, port: int, framework: str, format: str, server: str) -> None:
+    """Serve a mapper app."""
     converter = _get_converter(location, format)
     app = _get_mapper_app(converter, framework=framework)
     _run_app(app, server=server, host=host, port=port)

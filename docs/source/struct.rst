@@ -108,7 +108,8 @@ containing an entry for ChEBI) looks like:
        }
    ]
 
-An EPM is simply a list of records (see :class:`curies.Record`). EPMs have the benefit that they are still
+An EPM is simply a list of records (see :class:`curies.Record` and :class:`curies.Records`).
+EPMs have the benefit that they are still
 encoded in JSON and can easily be encoded in YAML, TOML, RDF, and other schemata. Further, prefix maps can be
 automatically upgraded into EPMs (with some caveats) using :func:`curies.upgrade_prefix_map`.
 
@@ -118,3 +119,6 @@ automatically upgraded into EPMs (with some caveats) using :func:`curies.upgrade
     can be loaded using :meth:`curies.Converter.from_extended_prefix_map`.
     We provide a Pydantic model representing it. Later, we hope to have an external, stable definition
     of this data schema.
+
+A JSON schema for EPMs is available at https://w3id.org/biopragmatics/schema/epm.json.
+It can be updated at https://github.com/biopragmatics/curies/tree/main/docs/make_schema.py.

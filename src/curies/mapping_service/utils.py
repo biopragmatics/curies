@@ -1,28 +1,28 @@
-# -*- coding: utf-8 -*-
-
 """Utilities for the mapping service."""
+
+from __future__ import annotations
 
 import json
 import json.decoder
 import unittest
-from typing import Callable, List, Mapping, Optional, Set, Tuple
+from collections.abc import Mapping
+from typing import Callable
 
-import requests
 from defusedxml import ElementTree
 
 __all__ = [
-    "handle_csv",
-    "handle_json",
-    "handle_xml",
     "CONTENT_TYPE_TO_HANDLER",
     "get_sparql_records",
-    "sparql_service_available",
-    "parse_header",
+    "handle_csv",
     "handle_header",
+    "handle_json",
+    "handle_xml",
+    "parse_header",
+    "sparql_service_available",
 ]
 
 Record = Mapping[str, str]
-Records = List[Record]
+Records = list[Record]
 
 #: A SPARQL query used to ping a SPARQL endpoint
 PING_SPARQL = 'SELECT ?s ?o WHERE { BIND("hello" as ?s) . BIND("there" as ?o) . }'
@@ -89,8 +89,11 @@ CONTENT_TYPE_TO_HANDLER: Mapping[str, Callable[[str], Records]] = {
 
 def get_sparql_records(endpoint: str, sparql: str, accept: str) -> Records:
     """Get a response from a given SPARQL query."""
+    import requests
+
     res = requests.get(
         endpoint,
+        timeout=60,
         params={"query": sparql},
         headers={"accept": accept},
     )
@@ -99,7 +102,7 @@ def get_sparql_records(endpoint: str, sparql: str, accept: str) -> Records:
     return func(res.text)
 
 
-def get_sparql_record_so_tuples(records: Records) -> Set[Tuple[str, str]]:
+def get_sparql_record_so_tuples(records: Records) -> set[tuple[str, str]]:
     """Get subject/object pairs from records."""
     return {(record["s"], record["o"]) for record in records}
 
@@ -108,25 +111,25 @@ def sparql_service_available(endpoint: str) -> bool:
     """Test if a SPARQL service is running."""
     try:
         records = get_sparql_records(endpoint, PING_SPARQL, "application/json")
-    except (requests.exceptions.ConnectionError, json.decoder.JSONDecodeError):
+    except (OSError, json.decoder.JSONDecodeError):
         return False
     return {("hello", "there")} == get_sparql_record_so_tuples(records)
 
 
-def _handle_part(part: str) -> Tuple[str, float]:
+def _handle_part(part: str) -> tuple[str, float]:
     if ";q=" not in part:
         return part, 1.0
     key, q = part.split(";q=", 1)
     return key, float(q)
 
 
-def parse_header(header: str) -> List[str]:
+def parse_header(header: str) -> list[str]:
     """Parse the header and sort in descending order of q value."""
     parts = dict(_handle_part(part) for part in header.split(","))
     return sorted(parts, key=parts.__getitem__, reverse=True)
 
 
-def handle_header(header: Optional[str], default: str = DEFAULT_CONTENT_TYPE) -> str:
+def handle_header(header: str | None, default: str = DEFAULT_CONTENT_TYPE) -> str:
     """Canonicalize a header."""
     if not header:
         return default

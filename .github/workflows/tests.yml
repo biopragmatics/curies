@@ -1,4 +1,12 @@
+# This file configures the continuous integration (CI) system on GitHub.
+# Introductory materials can be found here: https://docs.github.com/en/actions/learn-github-actions/understanding-github-actions.
+# Documentation for editing this file can be found here: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
+
 name: Tests
+
+# by default, give the GITHUB_TOKEN no permissions
+# See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token
+permissions: {}
 
 on:
   push:
@@ -8,73 +16,76 @@ on:
 
 jobs:
   lint:
-    name: Lint
+    name: Code Quality
+    permissions:
+      # give only read-only access to the contents of the repository
+      # this is the only permission this job requires, so keep it to the least privilege
+      # i.e., not to issues, discussions, actions, etc.
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.8", "3.12" ]
+        python-version: [ "3.12", "3.9" ]
+        tox-command: ["manifest", "lint", "pyroma", "mypy"]
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - name: "Install uv"
+        uses: "astral-sh/setup-uv@v3"
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: pip install tox tox-uv
-      - name: Check manifest
-        run: tox run -e manifest
-      - name: Check code quality with flake8
-        run: tox run -e flake8
-      - name: Check package metadata with Pyroma
-        run: tox run -e pyroma
-      - name: Check static typing with MyPy
-        run: tox run -e mypy
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: "Run command"
+        run: |
+          uvx -p ${{ matrix.python-version }} --with tox-uv tox -e ${{ matrix.tox-command }}
+
   docs:
     name: Documentation
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.8", "3.12" ]
+        # We only test documentation on the latest version
+        # sphinx 8.0 / sphinx-rtd-theme 3.0 discontinued Python 3.9 support
+        # a year early, which prompted re-thinking about this.
+        python-version: [ "3.12" ]
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - name: "Install uv"
+        uses: "astral-sh/setup-uv@v3"
         with:
-          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          pip install tox tox-uv
           sudo apt-get install graphviz
       - name: Check RST conformity with doc8
-        run: tox run -e doc8
+        run: uvx -p ${{ matrix.python-version }} --with tox-uv tox -e doc8
       - name: Check docstring coverage
-        run: tox run -e docstr-coverage
+        run: uvx -p ${{ matrix.python-version }} --with tox-uv tox -e docstr-coverage
       - name: Check documentation build with Sphinx
-        run: tox run -e docs-test
+        run: uvx -p ${{ matrix.python-version }} --with tox-uv tox -e docs-test
   tests:
     name: Tests
+    permissions:
+      contents: read
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ "3.8", "3.12" ]
-        pydantic: [ "1", "2" ]
+        python-version: [ "3.12", "3.9" ]
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
+      - name: "Install uv"
+        uses: "astral-sh/setup-uv@v3"
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: pip install tox tox-uv
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
       - name: Test with pytest and generate coverage file
         run:
-          tox run -e py-pydantic${{ matrix.pydantic }}
-      - name: Doctests
-        run:
-          tox run -e doctests
+          uvx -p ${{ matrix.python-version }} --with tox-uv tox -e py
       - name: Upload coverage report to codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v4
         if: success()
         with:
           file: coverage.xml

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Identifier mappings service.
 
 This contains an implementation of the service described in `SPARQL-enabled identifier
@@ -115,8 +113,8 @@ from .rdflib_custom import MappingServiceSPARQLProcessor  # type:ignore
 __all__ = [
     "MappingServiceGraph",
     "MappingServiceSPARQLProcessor",
-    "get_flask_mapping_blueprint",
-    "get_flask_mapping_app",
-    "get_fastapi_router",
     "get_fastapi_mapping_app",
+    "get_fastapi_router",
+    "get_flask_mapping_app",
+    "get_flask_mapping_blueprint",
 ]
