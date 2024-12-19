@@ -4,7 +4,7 @@ import unittest
 
 from pydantic import BaseModel, ValidationError
 
-from curies import Converter, Prefix, PrefixMap
+from curies import Converter, Prefix, PrefixMap, Reference
 
 
 class WrappedPrefix(BaseModel):
@@ -17,6 +17,12 @@ class WrappedPrefixMap(BaseModel):
     """A model wrapping a prefix map."""
 
     prefix_map: PrefixMap
+
+
+class WrappedCURIE(BaseModel):
+    """A model wrapping a reference."""
+
+    reference: Reference
 
 
 converter = Converter.from_extended_prefix_map(
@@ -111,3 +117,26 @@ class TestTypes(unittest.TestCase):
         }
         wpm = WrappedPrefixMap.model_validate(dd)
         self.assertIn("CHEBI", wpm.prefix_map.root)
+
+    def test_curie(self) -> None:
+        """Test a wrapped CURIE."""
+        wpm = WrappedCURIE.model_validate(
+            {
+                "reference": "CHEBI:1234",
+            }
+        )
+        self.assertIn("CHEBI", wpm.reference.prefix)
+        self.assertIn("1234", wpm.reference.identifier)
+        self.assertIn("CHEBI:1234", wpm.reference.curie)
+
+        with self.assertRaises(ValidationError):
+            WrappedCURIE.model_validate({"reference": "NOPENOPENOPE"})
+
+        dd = {"reference": "CHEBI:1234"}
+        wpm = WrappedCURIE.model_validate(dd, context=converter)
+        self.assertIn("CHEBI", wpm.reference.prefix)
+        self.assertIn("1234", wpm.reference.identifier)
+        self.assertIn("CHEBI:1234", wpm.reference.curie)
+
+        with self.assertRaises(ValidationError):
+            WrappedCURIE.model_validate({"reference": "MONDO:1234"}, context=converter)
