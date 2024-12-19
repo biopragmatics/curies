@@ -11,9 +11,10 @@ build:
     - graphviz
   tools:
     python: "3.12"
+  # adapted from uv recipe at https://docs.readthedocs.io/en/stable/build-customization.html#install-dependencies-with-uv
   commands:
     - asdf plugin add uv
     - asdf install uv latest
     - asdf global uv latest
-    - UV_PREVIEW=1 uv pip install .[docs,pandas,flask,fastapi,rdflib]
-    - UV_PREVIEW=1 uv run -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs $READTHEDOCS_OUTPUT/html
+    - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH UV_PREVIEW=1 uv pip install .[docs,pandas,flask,fastapi,rdflib]
+    - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH UV_PREVIEW=1 uv run -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs $READTHEDOCS_OUTPUT/html
