@@ -23,7 +23,15 @@ from typing import (
     overload,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, GetCoreSchemaHandler, RootModel, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    GetCoreSchemaHandler,
+    RootModel,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import core_schema
 from pytrie import StringTrie
 from typing_extensions import Self
@@ -393,6 +401,13 @@ class Reference(BaseModel):
     )
 
     model_config = ConfigDict(frozen=True)
+
+    @model_validator(mode="before")
+    def _parse_from_string(cls, values: str | dict[str, str]) -> dict[str, str]:  # noqa:N805
+        if isinstance(values, str):
+            prefix, identifier = _split(values)
+            return {"prefix": prefix, "identifier": identifier}
+        return values
 
     def __lt__(self, other: Reference) -> bool:
         """Sort the reference lexically first by prefix, then by identifier."""
