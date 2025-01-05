@@ -1,6 +1,8 @@
 """A module containing pre-defined references."""
 
-from typing import Literal, TypeAlias
+from typing import Literal
+
+from typing_extensions import TypeAlias
 
 from curies import NamedReference as Reference
 
