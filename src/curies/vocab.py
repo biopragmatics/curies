@@ -93,16 +93,65 @@ semantic_mapping_scopes: dict[SemanticMappingScope, Reference] = {
     "RELATED": related_match,
 }
 
-## Matching Types
+## Matching Process Types
 
-unspecified_matching = Reference(
+matching_process = Reference(prefix="semapv", identifier="Matching", name="matching process")
+
+background_knowledge_based_matching_process = Reference(
+    prefix="semapv",
+    identifier="BackgroundKnowledgeBasedMatching",
+    name="background knowledge-based matching process",
+)
+composite_matching_process = Reference(
+    prefix="semapv", identifier="CompositeMatching", name="composite matching process"
+)
+instance_based_matching_process = Reference(
+    prefix="semapv", identifier="InstanceBasedMatching", name="instance-based matching process"
+)
+lexical_matching_process = Reference(
+    prefix="semapv", identifier="LexicalMatching", name="lexical matching process"
+)
+lexical_similarity_threshold_based_matching_process = Reference(
+    prefix="semapv",
+    identifier="LexicalSimilarityThresholdMatching",
+    name="lexical similarity threshold-based matching process",
+)
+logical_reasoning_matching_process = Reference(
+    prefix="semapv", identifier="LogicalReasoning", name="logical reasoning matching process"
+)
+manual_mapping_curation = Reference(
+    prefix="semapv", identifier="ManualMappingCuration", name="manual mapping curation"
+)
+mapping_chaining = Reference(
+    prefix="semapv", identifier="MappingChaining", name="mapping chaining-based matching process"
+)
+mapping_inversion = Reference(
+    prefix="semapv", identifier="MappingInversion", name="mapping inversion-based matching process"
+)
+semantic_similarity = Reference(
+    prefix="semapv",
+    identifier="SemanticSimilarityThresholdMatching",
+    name="semantic similarity threshold-based matching process",
+)
+structural_matching = Reference(
+    prefix="semapv", identifier="StructuralMatching", name="structural matching process"
+)
+unspecified_matching_process = Reference(
     prefix="semapv", identifier="UnspecifiedMatching", name="unspecified matching process"
 )
 
 #: A set of matching types from ``semapv``
-matching_types: set[Reference] = {
-    unspecified_matching,
+matching_process_types: set[Reference] = {
+    background_knowledge_based_matching_process,
+    composite_matching_process,
+    instance_based_matching_process,
+    lexical_matching_process,
+    lexical_similarity_threshold_based_matching_process,
+    logical_reasoning_matching_process,
+    manual_mapping_curation,
+    mapping_chaining,
+    mapping_inversion,
+    semantic_similarity,
+    structural_matching,
+    unspecified_matching_process,
 }
-
-#: A dictionary of all pre-defined references in the :mod:`curies.vocab` module
-references: dict[str, Reference] = {x: y for x, y in locals().items() if isinstance(y, Reference)}
