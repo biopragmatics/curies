@@ -170,3 +170,9 @@ matching_processes: set[Reference] = {
     structural_matching,
     unspecified_matching_process,
 }
+
+# Individuals
+
+#: the author of this package. It's useful to have this reference pre-defined
+#: for testing purposes
+charlie = Reference(prefix="orcid", identifier="0000-0003-4423-4370", name="Charles Tapley Hoyt")
