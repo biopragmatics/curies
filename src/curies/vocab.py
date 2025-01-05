@@ -8,7 +8,10 @@ from curies import NamedReference as Reference
 
 ## Synonym Relations
 
+#: The parent property for having synonyms, see :data:`synonym_scopes`
+#: for a dictionary of all synonym types
 has_synonym = Reference(prefix="oboInOwl", identifier="hasSynonym", name="has synonym")
+
 has_exact_synonym = Reference(
     prefix="oboInOwl", identifier="hasExactSynonym", name="has exact synonym"
 )
@@ -35,6 +38,8 @@ synonym_scopes: dict[SynonymScope, Reference] = {
 
 ## OMO Synonym Types
 
+#: The parent class for all synonym types, see :data:`synonym_types`
+#: for the set of all synonym types
 synonym_type = Reference(prefix="oboInOwl", identifier="SynonymType", name="synonym type")
 
 abbreviation = Reference(prefix="OMO", identifier="0003000", name="abbreviation")
@@ -75,6 +80,10 @@ synonym_types: set[Reference] = {
 
 ## Mapping Relations
 
+#: The parent property for semantic mappings from ``skos``, see :data:`semantic_mapping_scopes`
+#: for a list of all usable properties
+match = Reference(prefix="skos", identifier="mappingRelation", name="is in mapping relation with")
+
 exact_match = Reference(prefix="skos", identifier="exactMatch", name="exact match")
 narrow_match = Reference(prefix="skos", identifier="narrowMatch", name="narrow match")
 broad_match = Reference(prefix="skos", identifier="broadMatch", name="broad match")
@@ -95,6 +104,8 @@ semantic_mapping_scopes: dict[SemanticMappingScope, Reference] = {
 
 ## Matching Process Types
 
+#: The parent class for matching processes, see :data:`matching_processes`
+#: for the set of all matching processes.
 matching_process = Reference(prefix="semapv", identifier="Matching", name="matching process")
 
 background_knowledge_based_matching_process = Reference(
@@ -141,7 +152,7 @@ unspecified_matching_process = Reference(
 )
 
 #: A set of matching types from ``semapv``
-matching_process_types: set[Reference] = {
+matching_processes: set[Reference] = {
     background_knowledge_based_matching_process,
     composite_matching_process,
     instance_based_matching_process,
