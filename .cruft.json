@@ -1,6 +1,6 @@
 {
   "template": "https://github.com/cthoyt/cookiecutter-snekpack",
-  "commit": "e3a8928186124d29d96565e16894fae924b067f9",
+  "commit": "1c1d70b19986f66ad575c279f1ce53a4e6ce8ac0",
   "checkout": null,
   "context": {
     "cookiecutter": {
@@ -20,7 +20,8 @@
       "__runner_pip": "tox tox-uv",
       "__runner_tests": "py",
       "__gh_slug": "biopragmatics/curies",
-      "_template": "https://github.com/cthoyt/cookiecutter-snekpack"
+      "_template": "https://github.com/cthoyt/cookiecutter-snekpack",
+      "_commit": "1c1d70b19986f66ad575c279f1ce53a4e6ce8ac0"
     }
   },
   "directory": null
