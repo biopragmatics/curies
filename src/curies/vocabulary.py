@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Literal
 
 from typing_extensions import TypeAlias
 
 from curies import NamedReference as Reference
+
+# RDF Schema
+
+has_label = Reference(prefix="rdfs", identifier="label", name="has label")
+see_also = Reference(prefix="rdfs", identifier="seeAlso", name="see also")
+has_comment = Reference(prefix="rdfs", identifier="comment", name="comment")
 
 # Synonyms
 
@@ -88,11 +95,24 @@ synonym_types: set[Reference] = {
 #: for a list of all usable properties
 match = Reference(prefix="skos", identifier="mappingRelation", name="is in mapping relation with")
 
+has_dbxref = Reference(
+    prefix="oboInOwl", identifier="hasDbXref", name="has database cross-reference"
+)
+same_as = Reference(prefix="owl", identifier="sameAs", name="same as")
+equivalent_class = Reference(prefix="owl", identifier="equivalentClass", name="equivalent class")
+equivalent_property = Reference(
+    prefix="owl", identifier="equivalentProperty", name="equivalent property"
+)
+
 exact_match = Reference(prefix="skos", identifier="exactMatch", name="exact match")
 narrow_match = Reference(prefix="skos", identifier="narrowMatch", name="narrow match")
 broad_match = Reference(prefix="skos", identifier="broadMatch", name="broad match")
 close_match = Reference(prefix="skos", identifier="closeMatch", name="close match")
 related_match = Reference(prefix="skos", identifier="relatedMatch", name="related match")
+
+# `alternate term` and `term replaced by` can also be considered as mapping relations
+alternative_term = Reference(prefix="IAO", identifier="0000118", name="alternative term")
+term_replaced_by = Reference(prefix="IAO", identifier="0100001", name="term replaced by")
 
 #: A list of strings used to refer to mapping types in ``skos``
 SemanticMappingScope: TypeAlias = Literal["EXACT", "NARROW", "BROAD", "CLOSE", "RELATED"]
@@ -170,6 +190,27 @@ matching_processes: set[Reference] = {
     structural_matching,
     unspecified_matching_process,
 }
+
+#: See https://mapping-commons.github.io/sssom/spec-model/
+match_typedefs: Sequence[Reference] = (
+    broad_match,
+    close_match,
+    exact_match,
+    narrow_match,
+    related_match,
+    same_as,  # for instances
+    equivalent_class,  # for classes
+    equivalent_property,  # for properties
+    has_dbxref,
+    see_also,
+)
+
+# Extension past the SSSOM spec
+extended_match_typedefs: Sequence[Reference] = (
+    *match_typedefs,
+    alternative_term,
+    term_replaced_by,
+)
 
 # Individuals
 
