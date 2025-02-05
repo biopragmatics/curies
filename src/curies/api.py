@@ -45,6 +45,7 @@ __all__ = [
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "DuplicateValueError",
+    "NamableReference",
     "NamedReference",
     "Prefix",
     "PrefixMap",
@@ -458,7 +459,46 @@ class Reference(BaseModel):
         return cls.model_validate({"prefix": prefix, "identifier": identifier}, context=converter)
 
 
-class NamedReference(Reference):
+class NamableReference(Reference):
+    """A reference, maybe with a name."""
+
+    name: str | None = Field(
+        None,
+        description="The name of the entity referenced by this object's prefix and identifier, if exists.",
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+    @classmethod
+    def from_curie(  # type:ignore
+        cls,
+        curie: str,
+        name: str | None = None,
+        *,
+        sep: str = ":",
+        converter: Converter | None = None,
+    ) -> NamableReference:
+        """Parse a CURIE string and populate a reference.
+
+        :param curie: A string representation of a compact URI (CURIE)
+        :param name: The optional name of the reference
+        :param sep: The separator
+        :param converter: The converter to use as context when parsing
+        :return: A reference object
+
+        >>> NamableReference.from_curie("chebi:1234")
+        NamableReference(prefix='chebi', identifier='1234', name=None)
+
+        >>> NamableReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
+        NamableReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
+        """
+        prefix, identifier = _split(curie, sep=sep)
+        return cls.model_validate(
+            {"prefix": prefix, "identifier": identifier, "name": name}, context=converter
+        )
+
+
+class NamedReference(NamableReference):
     """A reference with a name."""
 
     name: str = Field(
