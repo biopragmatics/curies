@@ -17,6 +17,7 @@ from curies.api import (
     DuplicatePrefixes,
     DuplicateURIPrefixes,
     ExpansionError,
+    NamableReference,
     NamedReference,
     NoCURIEDelimiterError,
     PrefixStandardizationError,
@@ -108,7 +109,9 @@ class TestStruct(unittest.TestCase):
             NamedReference.from_curie("a:2", "name2"),
         }
         self.assertIn(Reference.from_curie("a:1"), references)
+        self.assertIn(NamableReference.from_curie("a:1"), references)
         self.assertIn(NamedReference.from_curie("a:1", "name1"), references)
+        self.assertIn(NamableReference.from_curie("a:1", "name1"), references)
         # the following is a weird case, but shows how this works
         self.assertIn(NamedReference.from_curie("a:1", "name2"), references)
 
@@ -117,6 +120,7 @@ class TestStruct(unittest.TestCase):
             Reference.from_curie("a:2"),
         }
         self.assertIn(Reference.from_curie("a:1"), references_2)
+        self.assertIn(NamableReference.from_curie("a:1", "name1"), references_2)
         self.assertIn(NamedReference.from_curie("a:1", "name1"), references_2)
 
 
