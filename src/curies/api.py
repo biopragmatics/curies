@@ -45,6 +45,7 @@ __all__ = [
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "DuplicateValueError",
+    "NamableReference",
     "NamedReference",
     "Prefix",
     "PrefixMap",
@@ -458,7 +459,18 @@ class Reference(BaseModel):
         return cls.model_validate({"prefix": prefix, "identifier": identifier}, context=converter)
 
 
-class NamedReference(Reference):
+class NamableReference(Reference):
+    """A reference, maybe with a name."""
+
+    name: str | None = Field(
+        None,
+        description="The name of the entity referenced by this object's prefix and identifier, if exists.",
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+
+class NamedReference(NamableReference):
     """A reference with a name."""
 
     name: str = Field(
