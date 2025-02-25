@@ -13,7 +13,6 @@ from .api import (
     Records,
     Reference,
     ReferenceTuple,
-    Triple,
     chain,
     load_extended_prefix_map,
     load_jsonld_context,
@@ -34,6 +33,7 @@ from .sources import (
     get_obo_converter,
     get_prefixcommons_converter,
 )
+from .triples import Triple
 from .version import get_version
 
 __all__ = [

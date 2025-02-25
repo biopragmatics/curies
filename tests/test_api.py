@@ -72,7 +72,7 @@ class TestStruct(unittest.TestCase):
 
     def test_records(self) -> None:
         """Test a list of records."""
-        records = Records.parse_obj([{"prefix": "chebi", "uri_prefix": CHEBI_URI_PREFIX}])
+        records = Records.model_validate([{"prefix": "chebi", "uri_prefix": CHEBI_URI_PREFIX}])
         converter = Converter(records=records)
         self.assertEqual({"chebi"}, converter.get_prefixes())
 
