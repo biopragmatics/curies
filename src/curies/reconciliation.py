@@ -23,8 +23,8 @@ class TransitiveError(NotImplementedError):
     def __init__(self, intersection: Collection[str]) -> None:
         """Initialize the exception.
 
-        :param intersection: The strings that appeared both as keys and values
-            in a remapping dictionary (either for CURIEs or URIs)
+        :param intersection: The strings that appeared both as keys and values in a
+            remapping dictionary (either for CURIEs or URIs)
         """
         self.intersection = intersection
 
@@ -40,8 +40,9 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
     """Apply CURIE prefix remappings.
 
     :param converter: A converter
-    :param remapping: A mapping from CURIE prefixes to new CURIE prefixes.
-        Old CURIE prefixes become synonyms in the records (i.e., they aren't forgotten).
+    :param remapping: A mapping from CURIE prefixes to new CURIE prefixes. Old CURIE
+        prefixes become synonyms in the records (i.e., they aren't forgotten).
+
     :returns: An upgraded converter
     """
     ordering = _order_curie_remapping(converter, remapping)
@@ -88,11 +89,13 @@ def remap_uri_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Co
     """Apply URI prefix remappings.
 
     :param converter: A converter
-    :param remapping: A mapping from URI prefixes to new URI prefixes.
-        Old URI prefixes become synonyms in the records (i.e., they aren't forgotten)
+    :param remapping: A mapping from URI prefixes to new URI prefixes. Old URI prefixes
+        become synonyms in the records (i.e., they aren't forgotten)
+
     :returns: An upgraded converter
-    :raises TransitiveError: If there are any strings that appear in both
-        the key and values of the remapping
+
+    :raises TransitiveError: If there are any strings that appear in both the key and
+        values of the remapping
     """
     intersection = set(remapping).intersection(remapping.values())
     if intersection:
@@ -123,9 +126,10 @@ def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
     """Apply URI prefix upgrades.
 
     :param converter: A converter
-    :param rewiring: A mapping from CURIE prefixes to new URI prefixes.
-        If CURIE prefixes are not already in the converter, new records are created.
-        If new URI prefixes clash with any existing ones, they are not added.
+    :param rewiring: A mapping from CURIE prefixes to new URI prefixes. If CURIE
+        prefixes are not already in the converter, new records are created. If new URI
+        prefixes clash with any existing ones, they are not added.
+
     :returns: An upgraded converter
     """
     records = []

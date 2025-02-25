@@ -26,9 +26,10 @@ class MappingServiceSPARQLProcessor(SPARQLProcessor):
             ?s owl:sameAs ?o
         }
 
-    This is fine, since the way that RDFLib parses and constructs an abstract syntax tree, the values
-    for ``?s`` get bound properly when calling a custom :func:`rdflib.Graph.triples`. However, it's also
-    valid SPARQL to have the ``VALUES`` clause outside of the ``WHERE`` clause like
+    This is fine, since the way that RDFLib parses and constructs an abstract syntax
+    tree, the values for ``?s`` get bound properly when calling a custom
+    :func:`rdflib.Graph.triples`. However, it's also valid SPARQL to have the ``VALUES``
+    clause outside of the ``WHERE`` clause like
 
     .. code-block:: sparql
 
@@ -37,17 +38,19 @@ class MappingServiceSPARQLProcessor(SPARQLProcessor):
         }
         VALUES ?s { :a :b ... }
 
-    Unfortunately, this trips up RDFLib since it doesn't know to bind the values before calling ``triples()``,
-    therefore thwarting our custom implementation that dynamically generates triples based on the bound values
-    themselves.
+    Unfortunately, this trips up RDFLib since it doesn't know to bind the values before
+    calling ``triples()``, therefore thwarting our custom implementation that
+    dynamically generates triples based on the bound values themselves.
 
-    This processor, originally by Jerven Bolleman in https://github.com/RDFLib/rdflib/pull/2257,
-    adds some additional logic between parsing + constructing the abstract syntax tree and evaluation
-    of the syntax tree. Basically, the abstract syntax tree has nodes with two or more children. Jerven's
-    clever code (see :func:`_optimize_node` below) finds *Join* nodes that have a ``VALUES`` clause in the
-    second of its two arguments, then flips them around. It does this recursively for the whole tree.
-    This gets us to the goal of having the ``VALUES`` clauses appear first, therefore making sure that their
-    bound values are available to the ``triples`` function.
+    This processor, originally by Jerven Bolleman in
+    https://github.com/RDFLib/rdflib/pull/2257, adds some additional logic between
+    parsing + constructing the abstract syntax tree and evaluation of the syntax tree.
+    Basically, the abstract syntax tree has nodes with two or more children. Jerven's
+    clever code (see :func:`_optimize_node` below) finds *Join* nodes that have a
+    ``VALUES`` clause in the second of its two arguments, then flips them around. It
+    does this recursively for the whole tree. This gets us to the goal of having the
+    ``VALUES`` clauses appear first, therefore making sure that their bound values are
+    available to the ``triples`` function.
     """
 
     def query(
