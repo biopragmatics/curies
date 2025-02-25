@@ -7,11 +7,11 @@ from typing import Literal
 
 from typing_extensions import TypeAlias
 
-from curies import NamedReference as Reference
+from .api import NamedReference
 
 
-def _r(p: str, i: str, n: str) -> Reference:
-    return Reference(prefix=p, identifier=i, name=n)
+def _r(p: str, i: str, n: str) -> NamedReference:
+    return NamedReference(prefix=p, identifier=i, name=n)
 
 
 # RDF Schema
@@ -76,7 +76,7 @@ has_related_synonym = _r("oboInOwl", "hasRelatedSynonym", "has related synonym")
 SynonymScope: TypeAlias = Literal["EXACT", "NARROW", "BROAD", "RELATED"]
 
 #: A mapping from synonym scopes to references
-synonym_scopes: dict[SynonymScope, Reference] = {
+synonym_scopes: dict[SynonymScope, NamedReference] = {
     "EXACT": has_exact_synonym,
     "NARROW": has_narrow_synonym,
     "BROAD": has_broad_synonym,
@@ -106,7 +106,7 @@ acronym = _r("OMO", "0003012", "acronym")
 brand_name = _r("OMO", "0003013", "brand name")
 
 #: A set of synonym types from OMO
-synonym_types: set[Reference] = {
+synonym_types: set[NamedReference] = {
     abbreviation,
     ambiguous_synonym,
     dubious_synonym,
@@ -150,7 +150,7 @@ term_replaced_by = _r("IAO", "0100001", "term replaced by")
 SemanticMappingScope: TypeAlias = Literal["EXACT", "NARROW", "BROAD", "CLOSE", "RELATED"]
 
 #: A mapping from mapping types to references
-semantic_mapping_scopes: dict[SemanticMappingScope, Reference] = {
+semantic_mapping_scopes: dict[SemanticMappingScope, NamedReference] = {
     "EXACT": exact_match,
     "NARROW": narrow_match,
     "BROAD": broad_match,
@@ -194,7 +194,7 @@ structural_matching = _r("semapv", "StructuralMatching", "structural matching pr
 unspecified_matching_process = _r("semapv", "UnspecifiedMatching", "unspecified matching process")
 
 #: A set of matching types from ``semapv``
-matching_processes: set[Reference] = {
+matching_processes: set[NamedReference] = {
     background_knowledge_based_matching_process,
     composite_matching_process,
     instance_based_matching_process,
@@ -210,7 +210,7 @@ matching_processes: set[Reference] = {
 }
 
 #: See https://mapping-commons.github.io/sssom/spec-model/
-match_typedefs: Sequence[Reference] = (
+match_typedefs: Sequence[NamedReference] = (
     broad_match,
     close_match,
     exact_match,
@@ -224,7 +224,7 @@ match_typedefs: Sequence[Reference] = (
 )
 
 # Extension past the SSSOM spec
-extended_match_typedefs: Sequence[Reference] = (
+extended_match_typedefs: Sequence[NamedReference] = (
     *match_typedefs,
     alternative_term,
     term_replaced_by,
