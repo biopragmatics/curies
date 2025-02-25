@@ -79,16 +79,14 @@ class MappingServiceGraph(Graph):
                 }
             ''')
 
-
         The results of this are:
 
-        ======================================  =================================================
-        subject                                 object
-        --------------------------------------  -------------------------------------------------
-        http://purl.obolibrary.org/obo/CHEBI_1  http://purl.obolibrary.org/obo/CHEBI_1
-        http://purl.obolibrary.org/obo/CHEBI_1  http://identifiers.org/chebi/1
-        http://purl.obolibrary.org/obo/CHEBI_1  https://www.ebi.ac.uk/chebi/searchId.do?chebiId=1
-        ======================================  =================================================
+        ====================================== =================================================
+        subject                                object
+        http://purl.obolibrary.org/obo/CHEBI_1 http://purl.obolibrary.org/obo/CHEBI_1
+        http://purl.obolibrary.org/obo/CHEBI_1 http://identifiers.org/chebi/1
+        http://purl.obolibrary.org/obo/CHEBI_1 https://www.ebi.ac.uk/chebi/searchId.do?chebiId=1
+        ====================================== =================================================
         """
         self.converter = converter
         self.query_predicates = _prepare_predicates(predicates)
@@ -125,9 +123,11 @@ def get_flask_mapping_blueprint(
     """Get a blueprint for :class:`flask.Flask`.
 
     :param converter: A converter
-    :param route: The route of the SPARQL service (relative to the base of the Blueprint)
+    :param route: The route of the SPARQL service (relative to the base of the
+        Blueprint)
     :param kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
-    :return: A blueprint
+
+    :returns: A blueprint
     """
     from flask import Blueprint, Response, request
 
@@ -157,9 +157,11 @@ def get_fastapi_router(
     """Get a router for :class:`fastapi.FastAPI`.
 
     :param converter: A converter
-    :param route: The route of the SPARQL service (relative to the base of the API router)
+    :param route: The route of the SPARQL service (relative to the base of the API
+        router)
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
-    :return: A router
+
+    :returns: A router
     """
     from fastapi import APIRouter, Form, Header, Query, Response
 
@@ -206,7 +208,8 @@ def get_fastapi_mapping_app(converter: Converter) -> fastapi.FastAPI:
     """Get a FastAPI app.
 
     :param converter: A converter
-    :return: A FastAPI app
+
+    :returns: A FastAPI app
     """
     from fastapi import FastAPI
 
