@@ -53,6 +53,7 @@ __all__ = [
     "Records",
     "Reference",
     "ReferenceTuple",
+    "Triple",
     "chain",
     "load_extended_prefix_map",
     "load_jsonld_context",
@@ -526,6 +527,14 @@ class NamedReference(NamableReference):
         return cls.model_validate(
             {"prefix": prefix, "identifier": identifier, "name": name}, context=converter
         )
+
+
+class Triple(NamedTuple):
+    """A three-tuple of reference, useful for semantic web applications."""
+
+    subject: Reference
+    predicate: Reference
+    object: Reference
 
 
 RecordKey = tuple[str, str, str, str]
