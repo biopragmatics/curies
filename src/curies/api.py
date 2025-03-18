@@ -1514,13 +1514,26 @@ class Converter:
             return uri
         return None
 
-    def parse_uri(self, uri: str) -> ReferenceTuple | tuple[None, None]:
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self, uri: str, *, strict: Literal[False] = False
+    ) -> ReferenceTuple | tuple[None, None]: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(self, uri: str, *, strict: Literal[True] = True) -> ReferenceTuple: ...
+
+    def parse_uri(self, uri: str, *, strict: bool = False) -> ReferenceTuple | tuple[None, None]:
         """Compress a URI to a CURIE pair.
 
         :param uri:
             A string representing a valid uniform resource identifier (URI)
+        :param strict: If true and the URI can't be parsed, returns an error. Defaults to false.
         :returns:
             A CURIE pair if the URI could be parsed, otherwise a pair of None's
+
+        :raises CompressionError: if strict is set to true and the URI can't be parsed
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map(
@@ -1538,6 +1551,8 @@ class Converter:
         try:
             value, prefix = self.trie.longest_prefix_item(uri)
         except KeyError:
+            if strict:
+                raise CompressionError(uri) from None
             return None, None
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
