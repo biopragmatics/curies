@@ -1568,6 +1568,7 @@ class Converter:
         :param uri:
             A string representing a valid uniform resource identifier (URI)
         :param strict: If true and the URI can't be parsed, returns an error. Defaults to false.
+        :param return_none: Opt into future type returning of a single None instead of a pair of Nones
         :returns:
             A CURIE pair if the URI could be parsed, otherwise a pair of None's
 
