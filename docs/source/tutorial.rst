@@ -277,11 +277,11 @@ Similarly, the URI prefixes can be extracted with :meth:`Converter.get_uri_prefi
 
     converter = curies.get_bioregistry_converter()
     uri_prefixes = converter.get_uri_prefixes()
-    assert 'http://purl.obolibrary.org/obo/CHEBI_'' in prefixes
+    assert 'http://purl.obolibrary.org/obo/CHEBI_' in prefixes
     assert 'https://bioregistry.io/chebi:' not in prefixes, "No synonyms are included by default"
 
     uri_prefixes = converter.get_uri_prefixes(include_synonyms=True)
-    assert 'http://purl.obolibrary.org/obo/CHEBI_'' in prefixes
+    assert 'http://purl.obolibrary.org/obo/CHEBI_' in prefixes
     assert 'https://bioregistry.io/chebi:' in prefixes
 
 It's also possible to get a bijective prefix map, i.e., a dictionary from primary CURIE prefixes
@@ -294,8 +294,8 @@ This can be done with the ``bimap`` property like in the following:
 
     converter = curies.get_bioregistry_converter()
     prefix_map = converter.bimap
-    >>> prefix_map['chebi']
-    'http://purl.obolibrary.org/obo/CHEBI_'
+
+    assert prefix_map['chebi'] == 'http://purl.obolibrary.org/obo/CHEBI_'
 
 Modifying a Context
 -------------------
@@ -351,20 +351,16 @@ sensitivity and fully considers all synonyms.
 having the same prefix but different URI prefixes are given, the first is retained. The second
 is retained as a synonym
 
-.. code-block:: python
-
-    import curies
-
-    c1 = curies.load_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
-    c2 = curies.load_prefix_map({"GO": "https://identifiers.org/go:"})
-    converter = curies.chain([c1, c2])
-
-    >>> converter.expand("GO:1234567")
-    'http://purl.obolibrary.org/obo/GO_1234567'
-    >>> converter.compress("http://purl.obolibrary.org/obo/GO_1234567")
-    'GO:1234567'
-    >>> converter.compress("https://identifiers.org/go:1234567")
-    'GO:1234567'
+>>> import curies
+>>> c1 = curies.load_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+>>> c2 = curies.load_prefix_map({"GO": "https://identifiers.org/go:"})
+>>> converter = curies.chain([c1, c2])
+>>> converter.expand("GO:1234567")
+'http://purl.obolibrary.org/obo/GO_1234567'
+>>> converter.compress("http://purl.obolibrary.org/obo/GO_1234567")
+'GO:1234567'
+>>> converter.compress("https://identifiers.org/go:1234567")
+'GO:1234567'
 
 Chain is the perfect tool if you want to override parts of an existing extended
 prefix map. For example, if you want to use most of the Bioregistry, but you
@@ -379,8 +375,7 @@ can do the following
     bioregistry_converter = curies.get_bioregistry_converter()
     converter = curies.chain([overrides, bioregistry_converter])
 
-    >>> converter.expand("pubmed:1234")
-    'https://identifiers.org/pubmed:1234'
+    assert converter.expand("pubmed:1234") == 'https://identifiers.org/pubmed:1234'
 
 Subsetting
 ~~~~~~~~~~
