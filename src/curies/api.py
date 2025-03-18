@@ -1695,26 +1695,38 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
         """
-        prefix, identifier = self.parse_curie(curie)
-        rv = self.expand_pair(prefix, identifier)
-        if rv:
-            return rv
+        reference = self.parse_curie(curie, strict=False)
+        if reference is not None:
+            return self.expand_reference(reference, strict=strict, passthrough=passthrough)
         if strict:
             raise ExpansionError(curie)
         if passthrough:
             return curie
         return None
 
-    def expand_all(self, curie: str) -> Collection[str] | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_all(
+        self, curie: str, *, strict: Literal[False] = False
+    ) -> Collection[str] | None: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_all(self, curie: str, *, strict: Literal[True] = True) -> Collection[str]: ...
+
+    def expand_all(self, curie: str, *, strict: bool = False) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param curie:
             A string representing a compact URI
+        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
         :returns:
             A list of URIs that this converter can create for the given CURIE. The
             first entry is the "standard" URI then others are based on URI prefix
             synonyms. If the prefix is not registered to this converter, none is
             returned.
+
+        :raises PrefixStandardizationError: if the prefix in the CURIE can not be looked up
 
         >>> priority_prefix_map = {
         ...     "CHEBI": [
@@ -1728,20 +1740,58 @@ class Converter:
         >>> converter.expand_all("NOPE:NOPE") is None
         True
         """
-        prefix, identifier = self.parse_curie(curie)
-        return self.expand_pair_all(prefix, identifier)
+        reference = self.parse_curie(curie, strict=False)
+        if reference is not None:
+            return self.expand_pair_all(reference.prefix, reference.identifier)
+        if strict:
+            raise PrefixStandardizationError(curie)
+        return None
 
-    def parse_curie(self, curie: str) -> ReferenceTuple:
-        """Parse a CURIE."""
-        return ReferenceTuple.from_curie(curie, sep=self.delimiter)
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_curie(
+        self, curie: str, *, strict: Literal[False] = False
+    ) -> ReferenceTuple | None: ...
 
-    def expand_pair(self, prefix: str, identifier: str) -> str | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_curie(self, curie: str, *, strict: Literal[True] = True) -> ReferenceTuple: ...
+
+    def parse_curie(self, curie: str, *, strict: bool = False) -> ReferenceTuple | None:
+        """Parse and standardize a CURIE."""
+        prefix, identifier = _split(curie, sep=self.delimiter)
+        norm_prefix = self.standardize_prefix(prefix, strict=False)
+        if norm_prefix is not None:
+            return ReferenceTuple(norm_prefix, identifier=identifier)
+        if strict:
+            raise PrefixStandardizationError(prefix)
+        return None
+
+    def expand_reference(
+        self, reference: ReferenceTuple, *, strict: bool = False, passthrough: bool = False
+    ) -> str | None:
+        """Expand a reference."""
+        uri_prefix = self.prefix_map.get(reference.prefix)
+        if uri_prefix is not None:
+            return uri_prefix + reference.identifier
+        if strict:
+            raise ExpansionError(reference.prefix)
+        if passthrough:
+            return self.format_curie(reference.prefix, reference.identifier)
+        return None
+
+    def expand_pair(
+        self, prefix: str, identifier: str, *, strict: bool = False, passthrough: bool = False
+    ) -> str | None:
         """Expand a CURIE pair to the standard URI.
 
         :param prefix:
             The prefix of the CURIE
         :param identifier:
             The local unique identifier of the CURIE
+        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the prefix can't be expanded, return the input.
+            Defaults to false.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
 
@@ -1757,23 +1807,39 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand_pair("missing", "0000000")
         """
-        uri_prefix = self.prefix_map.get(prefix)
-        if uri_prefix is None:
-            return None
-        return uri_prefix + identifier
+        return self.expand_reference(
+            ReferenceTuple(prefix, identifier), strict=strict, passthrough=passthrough
+        )
 
-    def expand_pair_all(self, prefix: str, identifier: str) -> Collection[str] | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_pair_all(
+        self, prefix: str, identifier: str, *, strict: Literal[True] = True
+    ) -> Collection[str]: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_pair_all(
+        self, prefix: str, identifier: str, *, strict: Literal[False] = False
+    ) -> Collection[str] | None: ...
+
+    def expand_pair_all(
+        self, prefix: str, identifier: str, *, strict: bool = False
+    ) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param prefix:
             The prefix of the CURIE
         :param identifier:
             The local unique identifier of the CURIE
+        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
         :returns:
             A list of URIs that this converter can create for the given CURIE. The
             first entry is the "standard" URI then others are based on URI prefix
             synonyms. If the prefix is not registered to this converter, none is
             returned.
+
+        :raises ExpansionError: if the prefix in the CURIE can not be looked up
 
         >>> priority_prefix_map = {
         ...     "CHEBI": [
@@ -1788,12 +1854,14 @@ class Converter:
         True
         """
         record = self.get_record(prefix)
-        if record is None:
-            return None
-        rv = [record.uri_prefix + identifier]
-        for uri_prefix_synonyms in record.uri_prefix_synonyms:
-            rv.append(uri_prefix_synonyms + identifier)
-        return rv
+        if record is not None:
+            rv = [record.uri_prefix + identifier]
+            for uri_prefix_synonyms in record.uri_prefix_synonyms:
+                rv.append(uri_prefix_synonyms + identifier)
+            return rv
+        if strict:
+            raise ExpansionError(prefix)
+        return None
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1908,10 +1976,9 @@ class Converter:
         >>> converter.standardize_curie("NOPE:NOPE", passthrough=True)
         'NOPE:NOPE'
         """
-        prefix, identifier = self.parse_curie(curie)
-        norm_prefix = self.standardize_prefix(prefix)
-        if norm_prefix is not None:
-            return self.format_curie(norm_prefix, identifier)
+        rt = self.parse_curie(curie)
+        if rt is not None:
+            return self.format_curie(*rt)
         if strict:
             raise CURIEStandardizationError(curie)
         if passthrough:
