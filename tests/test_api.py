@@ -896,6 +896,85 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(PrefixStandardizationError):
             converter.parse_curie("NOPE:NOPE", strict=True)
 
+    def test_parse(self) -> None:
+        """Test parsing URI or CURIE."""
+        converter = Converter(
+            records=[
+                Record(
+                    prefix="GO",
+                    uri_prefix="http://purl.obolibrary.org/obo/GO_",
+                    prefix_synonyms=["go"],
+                    uri_prefix_synonyms=["https://identifiers.org/GO:"],
+                )
+            ]
+        )
+        curie = "GO:1234567"
+        curie2 = "go:1234567"
+        uri = "http://purl.obolibrary.org/obo/GO_1234567"
+        uri2 = "https://identifiers.org/GO:1234567"
+
+        for s in [curie, curie2, uri, uri2]:
+            self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse(s, strict=True))
+            self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse(s, strict=False))
+
+        # test invalid CURIE parsing
+        self.assertIsNone(converter.parse("NOPE:NOPE", strict=False))
+        with self.assertRaises(ValueError):
+            converter.parse_uri("NOPE:NOPE", strict=True)
+
+        # test invalid URI parsing
+        self.assertIsNone(converter.parse("https://example.org/nope", strict=False))
+        with self.assertRaises(ValueError):
+            converter.parse_uri("https://example.org/nope", strict=True)
+
+        # test whatever's left
+        self.assertIsNone(converter.parse("1234567", strict=False))
+        with self.assertRaises(ValueError):
+            converter.parse_uri("1234567", strict=True)
+
+    def test_compress_or_standardize(self) -> None:
+        """Test standardizing URI or CURIE."""
+        converter = Converter(
+            records=[
+                Record(
+                    prefix="GO",
+                    uri_prefix="http://purl.obolibrary.org/obo/GO_",
+                    prefix_synonyms=["go"],
+                    uri_prefix_synonyms=["https://identifiers.org/GO:"],
+                )
+            ]
+        )
+        curie = "GO:1234567"
+        curie2 = "go:1234567"
+        uri = "http://purl.obolibrary.org/obo/GO_1234567"
+        uri2 = "https://identifiers.org/GO:1234567"
+
+        for s in [curie, curie2, uri, uri2]:
+            self.assertEqual(
+                "GO:1234567", converter.compress_or_standardize(s, strict=True, passthrough=True)
+            )
+            self.assertEqual(
+                "GO:1234567", converter.compress_or_standardize(s, strict=False, passthrough=True)
+            )
+            self.assertEqual(
+                "GO:1234567", converter.compress_or_standardize(s, strict=True, passthrough=False)
+            )
+            self.assertEqual(
+                "GO:1234567", converter.compress_or_standardize(s, strict=False, passthrough=False)
+            )
+
+        self.assertIsNone(
+            converter.compress_or_standardize("NOPE:NOPE", strict=False, passthrough=False)
+        )
+        self.assertEqual(
+            "NOPE:NOPE",
+            converter.compress_or_standardize("NOPE:NOPE", strict=False, passthrough=True),
+        )
+        with self.assertRaises(ValueError):
+            converter.compress_or_standardize("NOPE:NOPE", strict=True, passthrough=True)
+        with self.assertRaises(ValueError):
+            converter.compress_or_standardize("NOPE:NOPE", strict=True, passthrough=False)
+
     def test_parse_uri(self) -> None:
         """Tests for parsing URIs."""
         converter = Converter(
@@ -976,7 +1055,7 @@ class TestConverter(unittest.TestCase):
 
         self.assertIsNone(converter.expand_pair_all("NOPE", "NOPE", strict=False))
         with self.assertRaises(ExpansionError):
-            converter.expand("NOPE:NOPE", strict=True)
+            converter.expand_pair_all("NOPE", "NOPE", strict=True)
 
     def test_expand_reference(self) -> None:
         """Tests for expand."""

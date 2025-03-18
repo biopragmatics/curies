@@ -1437,6 +1437,14 @@ class Converter:
         >>> converter.compress_or_standardize("missing:0000000")
         >>> converter.compress_or_standardize("https://example.com/missing:0000000")
         """
+        reference = self.parse(uri_or_curie, strict=False)
+        if reference is not None:
+            return self.format_curie(reference.prefix, reference.identifier)
+        if strict:
+            raise CompressionError(uri_or_curie)
+        if passthrough:
+            return uri_or_curie
+        return None
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1688,10 +1696,9 @@ class Converter:
         >>> converter.expand_or_standardize("missing:0000000")
         >>> converter.expand_or_standardize("https://example.com/missing:0000000")
         """
-        if self.is_curie(curie_or_uri):
-            return self.expand(curie_or_uri, strict=True)
-        if self.is_uri(curie_or_uri):
-            return self.standardize_uri(curie_or_uri, strict=True)
+        reference = self.parse(curie_or_uri, strict=False)
+        if reference is not None:
+            return self.expand_reference(reference, strict=strict, passthrough=passthrough)
         if strict:
             raise ExpansionError(curie_or_uri)
         if passthrough:
