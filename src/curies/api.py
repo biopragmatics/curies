@@ -1700,10 +1700,9 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
         """
-        prefix, identifier = self.parse_curie(curie)
-        rv = self.expand_pair(prefix, identifier)
-        if rv:
-            return rv
+        reference = self.parse_curie(curie, strict=False)
+        if reference is not None:
+            return self._expand_tuple(reference, strict=strict, passthrough=passthrough)
         if strict:
             raise ExpansionError(curie)
         if passthrough:
@@ -1733,8 +1732,10 @@ class Converter:
         >>> converter.expand_all("NOPE:NOPE") is None
         True
         """
-        prefix, identifier = self.parse_curie(curie)
-        return self.expand_pair_all(prefix, identifier)
+        reference = self.parse_curie(curie, strict=False)
+        if reference is not None:
+            return self.expand_pair_all(reference.prefix, reference.identifier)
+        return None
 
     @overload
     def parse_curie(
@@ -1754,7 +1755,21 @@ class Converter:
             raise PrefixStandardizationError(prefix)
         return None
 
-    def expand_pair(self, prefix: str, identifier: str) -> str | None:
+    def _expand_tuple(
+        self, reference: ReferenceTuple, *, strict: bool = False, passthrough: bool = False
+    ) -> str | None:
+        uri_prefix = self.prefix_map.get(reference.prefix)
+        if uri_prefix is not None:
+            return uri_prefix + reference.identifier
+        if strict:
+            raise ExpansionError(reference.prefix)
+        if passthrough:
+            return self.format_curie(reference.prefix, reference.identifier)
+        return None
+
+    def expand_pair(
+        self, prefix: str, identifier: str, *, strict: bool = False, passthrough: bool = False
+    ) -> str | None:
         """Expand a CURIE pair to the standard URI.
 
         :param prefix:
@@ -1776,10 +1791,9 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand_pair("missing", "0000000")
         """
-        uri_prefix = self.prefix_map.get(prefix)
-        if uri_prefix is None:
-            return None
-        return uri_prefix + identifier
+        return self._expand_tuple(
+            ReferenceTuple(prefix, identifier), strict=strict, passthrough=passthrough
+        )
 
     def expand_pair_all(self, prefix: str, identifier: str) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
