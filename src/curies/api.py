@@ -1738,14 +1738,11 @@ class Converter:
 
     def parse_curie(self, curie: str) -> ReferenceTuple | None:
         """Parse and standardize a CURIE."""
-        prefix, identifier = self._split_curie(curie)
+        prefix, identifier = _split(curie, sep=self.delimiter)
         norm_prefix = self.standardize_prefix(prefix)
         if norm_prefix is None:
             return None
         return ReferenceTuple(norm_prefix, identifier=identifier)
-
-    def _split_curie(self, curie: str) -> ReferenceTuple:
-        return ReferenceTuple.from_curie(curie, sep=self.delimiter)
 
     def expand_pair(self, prefix: str, identifier: str) -> str | None:
         """Expand a CURIE pair to the standard URI.
