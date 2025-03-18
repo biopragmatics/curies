@@ -33,11 +33,9 @@ important tools.
     # Get a converter
     converter = curies.get_obo_converter()
 
-    >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
-    'CHEBI:1'
+    assert converter.compress("http://purl.obolibrary.org/obo/CHEBI_1") == "CHEBI:1"
 
-    >>> converter.expand("CHEBI:1")
-    'http://purl.obolibrary.org/obo/CHEBI_1'
+    assert converter.expand("CHEBI:1") == "http://purl.obolibrary.org/obo/CHEBI_1"
 
 See the tutorial for more pre-defined converters, information on defining custom
 converters, chaining converters, and more.
@@ -57,9 +55,6 @@ The most recent code and data can be installed directly from GitHub with:
 .. code-block:: shell
 
     $ pip install git+https://github.com/cthoyt/curies.git
-
-This package currently supports both Pydantic v1 and v2. See the `Pydantic migration
-guide <https://docs.pydantic.dev/2.0/migration>`_ for updating your code.
 
 .. toctree::
     :maxdepth: 2

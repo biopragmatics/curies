@@ -127,15 +127,19 @@ remappings*) and apply them in the expected way. Therefore, we see the following
 
     from curies import Converter, Record, remap_curie_prefixes
 
-    converter = Converter([
-        Record(prefix="geo", uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc="),
-        Record(prefix="geogeo", uri_prefix="http://purl.obolibrary.org/obo/GEO_"),
-    ])
+    converter = Converter(
+        [
+            Record(
+                prefix="geo",
+                uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+            ),
+            Record(prefix="geogeo", uri_prefix="http://purl.obolibrary.org/obo/GEO_"),
+        ]
+    )
     remapping = {"geo": "ncbi.geo", "geogeo": "geo"}
     converter = remap_curie_prefixes(converter, curie_remapping)
 
-    >>> converter.records
-    [
+    assert converter.records == [
         Record(
             prefix="geo",
             prefix_synonyms=["geogeo"],
