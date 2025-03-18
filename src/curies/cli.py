@@ -6,13 +6,15 @@
 
 The positional argument can be one of the following:
 
-1. A pre-defined prefix map to get from the web (bioregistry, go, obo, monarch, prefixcommons)
-2. A local file path or URL to a prefix map, extended prefix map, or one of several formats. Requires specifying
-   a `--format`.
+1. A pre-defined prefix map to get from the web (bioregistry, go, obo, monarch,
+   prefixcommons)
+2. A local file path or URL to a prefix map, extended prefix map, or one of several
+   formats. Requires specifying a `--format`.
 
 The framework can be swapped to use Flask (default) or FastAPI with `--framework`. The
-server can be swapped to use Werkzeug (default) or Uvicorn with `--server`. These functionalities
-are also available programmatically (see :func:`get_flask_app` and :func:`get_fastapi_app`).
+server can be swapped to use Werkzeug (default) or Uvicorn with `--server`. These
+functionalities are also available programmatically (see :func:`get_flask_app` and
+:func:`get_fastapi_app`).
 
 Similarly, there's a built-in CLI for running a mapper web application.
 
