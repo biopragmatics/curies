@@ -1700,11 +1700,13 @@ class Converter:
             return curie
         return None
 
+    # docstr-coverage:excused `overload`
     @overload
     def expand_all(
         self, curie: str, *, strict: Literal[False] = False
     ) -> Collection[str] | None: ...
 
+    # docstr-coverage:excused `overload`
     @overload
     def expand_all(self, curie: str, *, strict: Literal[True] = True) -> Collection[str]: ...
 
@@ -1713,11 +1715,14 @@ class Converter:
 
         :param curie:
             A string representing a compact URI
+        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
         :returns:
             A list of URIs that this converter can create for the given CURIE. The
             first entry is the "standard" URI then others are based on URI prefix
             synonyms. If the prefix is not registered to this converter, none is
             returned.
+
+        :raises PrefixStandardizationError: if the prefix in the CURIE can not be looked up
 
         >>> priority_prefix_map = {
         ...     "CHEBI": [
@@ -1735,14 +1740,16 @@ class Converter:
         if reference is not None:
             return self.expand_pair_all(reference.prefix, reference.identifier)
         if strict:
-            raise PrefixStandardizationError()
+            raise PrefixStandardizationError(curie)
         return None
 
+    # docstr-coverage:excused `overload`
     @overload
     def parse_curie(
         self, curie: str, *, strict: Literal[False] = False
     ) -> ReferenceTuple | None: ...
 
+    # docstr-coverage:excused `overload`
     @overload
     def parse_curie(self, curie: str, *, strict: Literal[True] = True) -> ReferenceTuple: ...
 
@@ -1800,11 +1807,13 @@ class Converter:
             ReferenceTuple(prefix, identifier), strict=strict, passthrough=passthrough
         )
 
+    # docstr-coverage:excused `overload`
     @overload
     def expand_pair_all(
         self, prefix: str, identifier: str, *, strict: Literal[True] = True
     ) -> Collection[str]: ...
 
+    # docstr-coverage:excused `overload`
     @overload
     def expand_pair_all(
         self, prefix: str, identifier: str, *, strict: Literal[False] = False
@@ -1825,6 +1834,8 @@ class Converter:
             first entry is the "standard" URI then others are based on URI prefix
             synonyms. If the prefix is not registered to this converter, none is
             returned.
+
+        :raises ExpansionError: if the prefix in the CURIE can not be looked up
 
         >>> priority_prefix_map = {
         ...     "CHEBI": [
