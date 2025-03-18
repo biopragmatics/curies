@@ -1733,7 +1733,7 @@ class Converter:
         >>> converter.expand_all("NOPE:NOPE") is None
         True
         """
-        prefix, identifier = self._split_curie(curie)
+        prefix, identifier = self.parse_curie(curie)
         return self.expand_pair_all(prefix, identifier)
 
     def parse_curie(self, curie: str) -> ReferenceTuple | None:
