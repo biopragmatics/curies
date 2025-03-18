@@ -1700,7 +1700,7 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
         """
-        prefix, identifier = self.parse_curie(curie)
+        prefix, identifier = self._split_curie(curie)
         rv = self.expand_pair(prefix, identifier)
         if rv:
             return rv
@@ -1733,11 +1733,18 @@ class Converter:
         >>> converter.expand_all("NOPE:NOPE") is None
         True
         """
-        prefix, identifier = self.parse_curie(curie)
+        prefix, identifier = self._split_curie(curie)
         return self.expand_pair_all(prefix, identifier)
 
-    def parse_curie(self, curie: str) -> ReferenceTuple:
-        """Parse a CURIE."""
+    def parse_curie(self, curie: str) -> ReferenceTuple | None:
+        """Parse and standardize a CURIE."""
+        prefix, identifier = self._split_curie(curie)
+        norm_prefix = self.standardize_prefix(prefix)
+        if norm_prefix is None:
+            return None
+        return ReferenceTuple(norm_prefix, identifier=identifier)
+
+    def _split_curie(self, curie: str) -> ReferenceTuple:
         return ReferenceTuple.from_curie(curie, sep=self.delimiter)
 
     def expand_pair(self, prefix: str, identifier: str) -> str | None:
@@ -1913,10 +1920,9 @@ class Converter:
         >>> converter.standardize_curie("NOPE:NOPE", passthrough=True)
         'NOPE:NOPE'
         """
-        prefix, identifier = self.parse_curie(curie)
-        norm_prefix = self.standardize_prefix(prefix)
-        if norm_prefix is not None:
-            return self.format_curie(norm_prefix, identifier)
+        rt = self.parse_curie(curie)
+        if rt is not None:
+            return self.format_curie(*rt)
         if strict:
             raise CURIEStandardizationError(curie)
         if passthrough:
