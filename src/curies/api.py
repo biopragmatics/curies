@@ -160,6 +160,10 @@ class ReferenceTuple(NamedTuple):
         prefix, identifier = _split(curie, sep=sep)
         return cls(prefix, identifier)
 
+    def to_pydantic(self) -> Reference:
+        """Get a Pydantic model."""
+        return Reference(prefix=self.prefix, identifier=self.identifier)
+
 
 class Prefix(str):
     """A string that is validated by Pydantic as a CURIE prefix.

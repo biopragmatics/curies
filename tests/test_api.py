@@ -123,6 +123,11 @@ class TestStruct(unittest.TestCase):
         self.assertIn(NamableReference.from_curie("a:1", "name1"), references_2)
         self.assertIn(NamedReference.from_curie("a:1", "name1"), references_2)
 
+    def test_tuple(self) -> None:
+        """Test reference tuples."""
+        t = ReferenceTuple.from_curie("a:1")
+        self.assertEqual(Reference(prefix="a", identifier="1"), t.to_pydantic())
+
 
 class TestAddRecord(unittest.TestCase):
     """Test adding records."""
