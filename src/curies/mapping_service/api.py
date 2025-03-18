@@ -93,10 +93,10 @@ class MappingServiceGraph(Graph):
         super().__init__(*args, **kwargs)
 
     def _expand_pair_all(self, uri_in: str) -> list[URIRef]:
-        prefix, identifier = self.converter.parse_uri(uri_in)
-        if prefix is None or identifier is None:
+        reference = self.converter.parse_uri(uri_in, return_none=True)
+        if reference is None:
             return []
-        uris = self.converter.expand_pair_all(prefix, identifier, strict=True)
+        uris = self.converter.expand_pair_all(reference.prefix, reference.identifier, strict=True)
         # do _is_valid_uri check because some configurations e.g. from Bioregistry might
         # produce invalid URIs e.g., containing spaces
         return [URIRef(uri) for uri in uris if _is_valid_uri(uri)]

@@ -6,6 +6,7 @@ import csv
 import itertools as itt
 import json
 import logging
+import warnings
 from collections import defaultdict
 from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
@@ -1436,14 +1437,37 @@ class Converter:
         >>> converter.compress_or_standardize("missing:0000000")
         >>> converter.compress_or_standardize("https://example.com/missing:0000000")
         """
-        if self.is_uri(uri_or_curie):
-            return self.compress(uri_or_curie, strict=True)
-        if self.is_curie(uri_or_curie):
-            return self.standardize_curie(uri_or_curie, strict=True)
+        reference = self.parse(uri_or_curie, strict=False)
+        if reference is not None:
+            return self.format_curie(reference.prefix, reference.identifier)
         if strict:
             raise CompressionError(uri_or_curie)
         if passthrough:
             return uri_or_curie
+        return None
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse(self, uri_or_curie: str, *, strict: Literal[True]) -> ReferenceTuple: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse(self, uri_or_curie: str, *, strict: Literal[False]) -> ReferenceTuple | None: ...
+
+    def parse(self, uri_or_curie: str, *, strict: bool) -> ReferenceTuple | None:
+        """Parse a URI or CURIE."""
+        if self.is_uri(uri_or_curie):
+            if strict:
+                return self.parse_uri(uri_or_curie, strict=True, return_none=True)
+            else:
+                return self.parse_uri(uri_or_curie, strict=False, return_none=True)
+        if self.is_curie(uri_or_curie):
+            if strict:
+                return self.parse_curie(uri_or_curie, strict=True)
+            else:
+                return self.parse_curie(uri_or_curie, strict=False)
+        if strict:
+            raise CompressionError(uri_or_curie)
         return None
 
     def compress_strict(self, uri: str) -> str:
@@ -1505,9 +1529,9 @@ class Converter:
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
             instead of ``OBO:GO_0032571``.
         """
-        prefix, identifier = self.parse_uri(uri)
-        if prefix and identifier:
-            return self.format_curie(prefix, identifier)
+        reference = self.parse_uri(uri, return_none=True)
+        if reference:
+            return self.format_curie(reference.prefix, reference.identifier)
         if strict:
             raise CompressionError(uri)
         if passthrough:
@@ -1517,19 +1541,34 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = False
+        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[False] = False
     ) -> ReferenceTuple | tuple[None, None]: ...
 
     # docstr-coverage:excused `overload`
     @overload
-    def parse_uri(self, uri: str, *, strict: Literal[True] = True) -> ReferenceTuple: ...
+    def parse_uri(
+        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[True] = True
+    ) -> ReferenceTuple | None: ...
 
-    def parse_uri(self, uri: str, *, strict: bool = False) -> ReferenceTuple | tuple[None, None]:
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self,
+        uri: str,
+        *,
+        strict: Literal[True] = True,
+        return_none: bool = ...,
+    ) -> ReferenceTuple: ...
+
+    def parse_uri(
+        self, uri: str, *, strict: bool = False, return_none: bool = False
+    ) -> ReferenceTuple | tuple[None, None] | None:
         """Compress a URI to a CURIE pair.
 
         :param uri:
             A string representing a valid uniform resource identifier (URI)
         :param strict: If true and the URI can't be parsed, returns an error. Defaults to false.
+        :param return_none: Opt into future type returning of a single None instead of a pair of Nones
         :returns:
             A CURIE pair if the URI could be parsed, otherwise a pair of None's
 
@@ -1553,6 +1592,12 @@ class Converter:
         except KeyError:
             if strict:
                 raise CompressionError(uri) from None
+            if return_none:
+                return None
+            warnings.warn(
+                "Converter.parse_uri will switch to returning None instead of (None, None) in curies v0.11.0.",
+                stacklevel=2,
+            )
             return None, None
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
@@ -1652,10 +1697,9 @@ class Converter:
         >>> converter.expand_or_standardize("missing:0000000")
         >>> converter.expand_or_standardize("https://example.com/missing:0000000")
         """
-        if self.is_curie(curie_or_uri):
-            return self.expand(curie_or_uri, strict=True)
-        if self.is_uri(curie_or_uri):
-            return self.standardize_uri(curie_or_uri, strict=True)
+        reference = self.parse(curie_or_uri, strict=False)
+        if reference is not None:
+            return self.expand_reference(reference, strict=strict, passthrough=passthrough)
         if strict:
             raise ExpansionError(curie_or_uri)
         if passthrough:
@@ -2059,10 +2103,10 @@ class Converter:
         >>> converter.standardize_uri("http://example.org/NOPE", passthrough=True)
         'http://example.org/NOPE'
         """
-        prefix, identifier = self.parse_uri(uri)
-        if prefix and identifier:
+        reference = self.parse_uri(uri, strict=False, return_none=True)
+        if reference is not None:
             # prefix is ensured to be in self.prefix_map because of successful parse
-            return self.prefix_map[prefix] + identifier
+            return self.prefix_map[reference.prefix] + reference.identifier
         if strict:
             raise URIStandardizationError(uri)
         if passthrough:
