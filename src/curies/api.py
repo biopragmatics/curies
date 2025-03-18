@@ -1800,6 +1800,16 @@ class Converter:
             ReferenceTuple(prefix, identifier), strict=strict, passthrough=passthrough
         )
 
+    @overload
+    def expand_pair_all(
+        self, prefix: str, identifier: str, *, strict: Literal[True] = True
+    ) -> Collection[str]: ...
+
+    @overload
+    def expand_pair_all(
+        self, prefix: str, identifier: str, *, strict: Literal[False] = False
+    ) -> Collection[str] | None: ...
+
     def expand_pair_all(
         self, prefix: str, identifier: str, *, strict: bool = False
     ) -> Collection[str] | None:

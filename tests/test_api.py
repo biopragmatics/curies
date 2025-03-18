@@ -929,29 +929,21 @@ class TestConverter(unittest.TestCase):
                     prefix="GO",
                     uri_prefix="http://purl.obolibrary.org/obo/GO_",
                     prefix_synonyms=["go"],
-                    uri_prefix_synonyms=["https://identifiers.org/GO:"]
+                    uri_prefix_synonyms=["https://identifiers.org/GO:"],
                 )
             ]
         )
-        uri = "http://purl.obolibrary.org/obo/GO_1234567"
-        self.assertEqual(uri, converter.expand_pair_all("GO:1234567", strict=True, passthrough=True))
-        self.assertEqual(uri, converter.expand("GO:1234567", strict=False, passthrough=True))
-        self.assertEqual(uri, converter.expand("GO:1234567", strict=True, passthrough=False))
-        self.assertEqual(uri, converter.expand("GO:1234567", strict=False, passthrough=False))
+        uris = ["http://purl.obolibrary.org/obo/GO_1234567", "https://identifiers.org/GO:1234567"]
+        self.assertEqual(uris, converter.expand_pair_all("GO", "1234567", strict=True))
+        self.assertEqual(uris, converter.expand_pair_all("GO", "1234567", strict=False))
 
-        self.assertEqual(uri, converter.expand("go:1234567", strict=True, passthrough=True))
-        self.assertEqual(uri, converter.expand("go:1234567", strict=False, passthrough=True))
-        self.assertEqual(uri, converter.expand("go:1234567", strict=True, passthrough=False))
-        self.assertEqual(uri, converter.expand("go:1234567", strict=False, passthrough=False))
+        # with synonym as input
+        self.assertEqual(uris, converter.expand_pair_all("go", "1234567", strict=True))
+        self.assertEqual(uris, converter.expand_pair_all("go", "1234567", strict=False))
 
-        self.assertEqual("NOPE:NOPE", converter.expand("NOPE:NOPE", strict=False, passthrough=True))
-        self.assertIsNone(converter.expand("NOPE:NOPE", strict=False, passthrough=False))
-
+        self.assertIsNone(converter.expand_pair_all("NOPE", "NOPE", strict=False))
         with self.assertRaises(ExpansionError):
-            converter.expand("NOPE:NOPE", strict=True, passthrough=True)
-        with self.assertRaises(ExpansionError):
-            converter.expand("NOPE:NOPE", strict=True, passthrough=False)
-
+            converter.expand("NOPE:NOPE", strict=True)
 
     def test_expand_reference(self) -> None:
         """Tests for expand."""
