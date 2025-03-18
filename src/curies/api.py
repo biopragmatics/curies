@@ -1515,8 +1515,11 @@ class Converter:
 
         :param uri:
             A string representing a valid uniform resource identifier (URI)
+        :param strict: If true and the URI can't be parsed, returns an error. Defaults to false.
         :returns:
             A CURIE pair if the URI could be parsed, otherwise a pair of None's
+
+        :raises CompressionError: if strict is set to true and the URI can't be parsed
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map(
@@ -1535,7 +1538,7 @@ class Converter:
             value, prefix = self.trie.longest_prefix_item(uri)
         except KeyError:
             if strict:
-                raise ValueError
+                raise CompressionError(uri)
             return None, None
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
