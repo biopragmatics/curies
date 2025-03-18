@@ -1510,7 +1510,7 @@ class Converter:
             return uri
         return None
 
-    def parse_uri(self, uri: str) -> ReferenceTuple | tuple[None, None]:
+    def parse_uri(self, uri: str, *, strict: bool = False) -> ReferenceTuple | tuple[None, None]:
         """Compress a URI to a CURIE pair.
 
         :param uri:
@@ -1534,6 +1534,8 @@ class Converter:
         try:
             value, prefix = self.trie.longest_prefix_item(uri)
         except KeyError:
+            if strict:
+                raise ValueError
             return None, None
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
