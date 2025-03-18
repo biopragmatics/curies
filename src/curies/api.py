@@ -1693,14 +1693,22 @@ class Converter:
         """
         reference = self.parse_curie(curie, strict=False)
         if reference is not None:
-            return self._expand_tuple(reference, strict=strict, passthrough=passthrough)
+            return self.expand_reference(reference, strict=strict, passthrough=passthrough)
         if strict:
             raise ExpansionError(curie)
         if passthrough:
             return curie
         return None
 
-    def expand_all(self, curie: str) -> Collection[str] | None:
+    @overload
+    def expand_all(
+        self, curie: str, *, strict: Literal[False] = False
+    ) -> Collection[str] | None: ...
+
+    @overload
+    def expand_all(self, curie: str, *, strict: Literal[True] = True) -> Collection[str]: ...
+
+    def expand_all(self, curie: str, *, strict: bool = False) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param curie:
@@ -1726,6 +1734,8 @@ class Converter:
         reference = self.parse_curie(curie, strict=False)
         if reference is not None:
             return self.expand_pair_all(reference.prefix, reference.identifier)
+        if strict:
+            raise PrefixStandardizationError()
         return None
 
     @overload
@@ -1746,9 +1756,10 @@ class Converter:
             raise PrefixStandardizationError(prefix)
         return None
 
-    def _expand_tuple(
+    def expand_reference(
         self, reference: ReferenceTuple, *, strict: bool = False, passthrough: bool = False
     ) -> str | None:
+        """Expand a reference."""
         uri_prefix = self.prefix_map.get(reference.prefix)
         if uri_prefix is not None:
             return uri_prefix + reference.identifier
@@ -1767,6 +1778,9 @@ class Converter:
             The prefix of the CURIE
         :param identifier:
             The local unique identifier of the CURIE
+        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the prefix can't be expanded, return the input.
+            Defaults to false.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
 
@@ -1782,17 +1796,20 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand_pair("missing", "0000000")
         """
-        return self._expand_tuple(
+        return self.expand_reference(
             ReferenceTuple(prefix, identifier), strict=strict, passthrough=passthrough
         )
 
-    def expand_pair_all(self, prefix: str, identifier: str) -> Collection[str] | None:
+    def expand_pair_all(
+        self, prefix: str, identifier: str, *, strict: bool = False
+    ) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param prefix:
             The prefix of the CURIE
         :param identifier:
             The local unique identifier of the CURIE
+        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
         :returns:
             A list of URIs that this converter can create for the given CURIE. The
             first entry is the "standard" URI then others are based on URI prefix
@@ -1812,12 +1829,14 @@ class Converter:
         True
         """
         record = self.get_record(prefix)
-        if record is None:
-            return None
-        rv = [record.uri_prefix + identifier]
-        for uri_prefix_synonyms in record.uri_prefix_synonyms:
-            rv.append(uri_prefix_synonyms + identifier)
-        return rv
+        if record is not None:
+            rv = [record.uri_prefix + identifier]
+            for uri_prefix_synonyms in record.uri_prefix_synonyms:
+                rv.append(uri_prefix_synonyms + identifier)
+            return rv
+        if strict:
+            raise ExpansionError(prefix)
+        return None
 
     # docstr-coverage:excused `overload`
     @overload
