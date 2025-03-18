@@ -1700,7 +1700,7 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
         """
-        prefix, identifier = self._split_curie(curie)
+        prefix, identifier = self.parse_curie(curie)
         rv = self.expand_pair(prefix, identifier)
         if rv:
             return rv
