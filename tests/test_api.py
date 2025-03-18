@@ -863,6 +863,123 @@ class TestConverter(unittest.TestCase):
         converter_2 = Converter.from_rdflib(graph.namespace_manager)
         self._assert_convert(converter_2)
 
+    def test_parse_curie(self) -> None:
+        """Tests for parse CURIE."""
+        converter = Converter(
+            records=[
+                Record(
+                    prefix="GO",
+                    uri_prefix="http://purl.obolibrary.org/obo/GO_",
+                    prefix_synonyms=["go"],
+                )
+            ]
+        )
+        self.assertEqual(
+            ReferenceTuple("GO", "1234567"), converter.parse_curie("GO:1234567", strict=True)
+        )
+        self.assertEqual(
+            ReferenceTuple("GO", "1234567"), converter.parse_curie("GO:1234567", strict=False)
+        )
+        self.assertEqual(
+            ReferenceTuple("GO", "1234567"), converter.parse_curie("go:1234567", strict=True)
+        )
+        self.assertEqual(
+            ReferenceTuple("GO", "1234567"), converter.parse_curie("go:1234567", strict=False)
+        )
+
+        self.assertIsNone(converter.parse_curie("NOPE:NOPE", strict=False))
+        with self.assertRaises(PrefixStandardizationError):
+            converter.parse_curie("NOPE:NOPE", strict=True)
+
+    def test_expand(self) -> None:
+        """Tests for expand."""
+        converter = Converter(
+            records=[
+                Record(
+                    prefix="GO",
+                    uri_prefix="http://purl.obolibrary.org/obo/GO_",
+                    prefix_synonyms=["go"],
+                )
+            ]
+        )
+        uri = "http://purl.obolibrary.org/obo/GO_1234567"
+        self.assertEqual(uri, converter.expand("GO:1234567", strict=True, passthrough=True))
+        self.assertEqual(uri, converter.expand("GO:1234567", strict=False, passthrough=True))
+        self.assertEqual(uri, converter.expand("GO:1234567", strict=True, passthrough=False))
+        self.assertEqual(uri, converter.expand("GO:1234567", strict=False, passthrough=False))
+
+        self.assertEqual(uri, converter.expand("go:1234567", strict=True, passthrough=True))
+        self.assertEqual(uri, converter.expand("go:1234567", strict=False, passthrough=True))
+        self.assertEqual(uri, converter.expand("go:1234567", strict=True, passthrough=False))
+        self.assertEqual(uri, converter.expand("go:1234567", strict=False, passthrough=False))
+
+        self.assertEqual("NOPE:NOPE", converter.expand("NOPE:NOPE", strict=False, passthrough=True))
+        self.assertIsNone(converter.expand("NOPE:NOPE", strict=False, passthrough=False))
+
+        with self.assertRaises(ExpansionError):
+            converter.expand("NOPE:NOPE", strict=True, passthrough=True)
+        with self.assertRaises(ExpansionError):
+            converter.expand("NOPE:NOPE", strict=True, passthrough=False)
+
+    def test_expand_pair_all(self) -> None:
+        """Tests for expand."""
+        converter = Converter(
+            records=[
+                Record(
+                    prefix="GO",
+                    uri_prefix="http://purl.obolibrary.org/obo/GO_",
+                    prefix_synonyms=["go"],
+                    uri_prefix_synonyms=["https://identifiers.org/GO:"],
+                )
+            ]
+        )
+        uris = ["http://purl.obolibrary.org/obo/GO_1234567", "https://identifiers.org/GO:1234567"]
+        self.assertEqual(uris, converter.expand_pair_all("GO", "1234567", strict=True))
+        self.assertEqual(uris, converter.expand_pair_all("GO", "1234567", strict=False))
+
+        # with synonym as input
+        self.assertEqual(uris, converter.expand_pair_all("go", "1234567", strict=True))
+        self.assertEqual(uris, converter.expand_pair_all("go", "1234567", strict=False))
+
+        self.assertIsNone(converter.expand_pair_all("NOPE", "NOPE", strict=False))
+        with self.assertRaises(ExpansionError):
+            converter.expand("NOPE:NOPE", strict=True)
+
+    def test_expand_reference(self) -> None:
+        """Tests for expand."""
+        converter = Converter(
+            records=[
+                Record(
+                    prefix="GO",
+                    uri_prefix="http://purl.obolibrary.org/obo/GO_",
+                    prefix_synonyms=["go"],
+                )
+            ]
+        )
+        uri = "http://purl.obolibrary.org/obo/GO_1234567"
+        ref = ReferenceTuple("GO", "1234567")
+        ref2 = ReferenceTuple("go", "1234567")
+        nope = ReferenceTuple("NOPE", "NOPE")
+        self.assertEqual(uri, converter.expand_reference(ref, strict=True, passthrough=True))
+        self.assertEqual(uri, converter.expand_reference(ref, strict=False, passthrough=True))
+        self.assertEqual(uri, converter.expand_reference(ref, strict=True, passthrough=False))
+        self.assertEqual(uri, converter.expand_reference(ref, strict=False, passthrough=False))
+
+        self.assertEqual(uri, converter.expand_reference(ref2, strict=True, passthrough=True))
+        self.assertEqual(uri, converter.expand_reference(ref2, strict=False, passthrough=True))
+        self.assertEqual(uri, converter.expand_reference(ref2, strict=True, passthrough=False))
+        self.assertEqual(uri, converter.expand_reference(ref2, strict=False, passthrough=False))
+
+        self.assertEqual(
+            "NOPE:NOPE", converter.expand_reference(nope, strict=False, passthrough=True)
+        )
+        self.assertIsNone(converter.expand_reference(nope, strict=False, passthrough=False))
+
+        with self.assertRaises(ExpansionError):
+            converter.expand_reference(nope, strict=True, passthrough=True)
+        with self.assertRaises(ExpansionError):
+            converter.expand_reference(nope, strict=True, passthrough=False)
+
     def test_expand_all(self) -> None:
         """Test expand all."""
         priority_prefix_map = {
@@ -880,6 +997,8 @@ class TestConverter(unittest.TestCase):
             converter.expand_all("CHEBI:138488"),
         )
         self.assertIsNone(converter.expand_all("NOPE:NOPE"))
+        with self.assertRaises(PrefixStandardizationError):
+            converter.expand_all("NOPE:NOPE", strict=True)
 
     def test_expand_ambiguous(self) -> None:
         """Test expansion of URI or CURIEs."""

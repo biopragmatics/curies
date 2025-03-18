@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools as itt
 from collections.abc import Collection, Iterable
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from rdflib import OWL, Graph, URIRef
 from rdflib.term import _is_valid_uri
@@ -96,7 +96,7 @@ class MappingServiceGraph(Graph):
         prefix, identifier = self.converter.parse_uri(uri_in)
         if prefix is None or identifier is None:
             return []
-        uris = cast(Collection[str], self.converter.expand_pair_all(prefix, identifier))
+        uris = self.converter.expand_pair_all(prefix, identifier, strict=True)
         # do _is_valid_uri check because some configurations e.g. from Bioregistry might
         # produce invalid URIs e.g., containing spaces
         return [URIRef(uri) for uri in uris if _is_valid_uri(uri)]
