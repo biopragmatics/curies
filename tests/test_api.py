@@ -891,6 +891,31 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(PrefixStandardizationError):
             converter.parse_curie("NOPE:NOPE", strict=True)
 
+    def test_parse_uri(self) -> None:
+        """Tests for parsing URIs."""
+        converter = Converter(
+            records=[
+                Record(
+                    prefix="GO",
+                    uri_prefix="http://purl.obolibrary.org/obo/GO_",
+                    prefix_synonyms=["go"],
+                    uri_prefix_synonyms=["https://identifiers.org/GO:"],
+                )
+            ]
+        )
+        uri = "http://purl.obolibrary.org/obo/GO_1234567"
+        uri2 = "https://identifiers.org/GO:1234567"
+
+        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri, strict=True))
+        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri, strict=False))
+
+        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=True))
+        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=False))
+
+        self.assertEqual((None, None), converter.parse_uri("123345", strict=False))
+        with self.assertRaises(ValueError):
+            converter.parse_uri("123345", strict=True)
+
     def test_expand(self) -> None:
         """Tests for expand."""
         converter = Converter(

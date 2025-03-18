@@ -1510,6 +1510,16 @@ class Converter:
             return uri
         return None
 
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self, uri: str, *, strict: Literal[False] = False
+    ) -> ReferenceTuple | tuple[None, None]: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(self, uri: str, *, strict: Literal[True] = True) -> ReferenceTuple: ...
+
     def parse_uri(self, uri: str, *, strict: bool = False) -> ReferenceTuple | tuple[None, None]:
         """Compress a URI to a CURIE pair.
 
@@ -1538,7 +1548,7 @@ class Converter:
             value, prefix = self.trie.longest_prefix_item(uri)
         except KeyError:
             if strict:
-                raise CompressionError(uri)
+                raise CompressionError(uri) from None
             return None, None
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
