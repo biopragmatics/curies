@@ -73,7 +73,7 @@ LocationOr = Union[str, Path, X]
 
 
 def _get_field_validator_values(values, key: str):  # type:ignore
-    """Get the value for the key from a field validator object, cross-compatible with Pydantic 1 and 2."""
+    """Get the value for the key from a field validator object."""
     return values.data[key]
 
 
