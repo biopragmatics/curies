@@ -66,8 +66,9 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> flask.Blueprint:
     .. code-block:: python
 
         import requests
+
         url = requests.get("http://localhost:8764/GO:0032571").url
-        assert url == 'http://amigo.geneontology.org/amigo/term/GO:0032571'
+        assert url == "http://amigo.geneontology.org/amigo/term/GO:0032571"
     """
     from flask import Blueprint, abort, redirect
 
@@ -147,8 +148,9 @@ def get_flask_app(
     .. code-block:: python
 
         import requests
+
         url = requests.get("http://localhost:8764/GO:0032571").url
-        assert url == 'http://amigo.geneontology.org/amigo/term/GO:0032571'
+        assert url == "http://amigo.geneontology.org/amigo/term/GO:0032571"
     """
     from flask import Flask
 
@@ -199,8 +201,9 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> fastapi.APIRouter
     .. code-block:: python
 
         import requests
+
         url = requests.get("http://localhost:8764/GO:0032571").url
-        assert url == 'http://amigo.geneontology.org/amigo/term/GO:0032571'
+        assert url == "http://amigo.geneontology.org/amigo/term/GO:0032571"
     """
     from fastapi import APIRouter, HTTPException, Path
     from fastapi.responses import RedirectResponse
@@ -292,8 +295,9 @@ def get_fastapi_app(
     .. code-block:: python
 
         import requests
+
         url = requests.get("http://localhost:8764/GO:0032571").url
-        assert url == 'http://amigo.geneontology.org/amigo/term/GO:0032571'
+        assert url == "http://amigo.geneontology.org/amigo/term/GO:0032571"
     """
     from fastapi import FastAPI
 

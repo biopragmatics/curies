@@ -86,6 +86,7 @@ Test a request in the Python REPL.
 .. code-block:: python
 
     import requests
+
     sparql = '''
         SELECT ?s ?o WHERE {
             VALUES ?s { <http://purl.obolibrary.org/obo/CHEBI_2> }
