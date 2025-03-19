@@ -676,6 +676,10 @@ class PrefixStandardizationError(StandardizationError):
     """An error raise when a prefix can't be standardized."""
 
 
+class IdentifierStandardizationError(StandardizationError):
+    """An error raise when an identifier can't be standardized."""
+
+
 class CURIEStandardizationError(StandardizationError):
     """An error raise when a CURIE can't be standardized."""
 
@@ -1820,11 +1824,31 @@ class Converter:
         """Parse and standardize a CURIE."""
         prefix, identifier = _split(curie, sep=self.delimiter)
         norm_prefix = self.standardize_prefix(prefix, strict=False)
-        if norm_prefix is not None:
-            return ReferenceTuple(norm_prefix, identifier=identifier)
-        if strict:
-            raise PrefixStandardizationError(prefix)
-        return None
+        if norm_prefix is None:
+            if strict:
+                raise PrefixStandardizationError(prefix)
+            return None
+        norm_identifier = self.standardize_identifier(norm_prefix, identifier)
+        if norm_identifier is None:
+            if strict:
+                raise IdentifierStandardizationError(curie)
+            return None
+        return ReferenceTuple(norm_prefix, norm_identifier)
+
+    def standardize_identifier(self, standard_prefix: str, identifier: str) -> str | None:
+        """Standardize an identifier.
+
+        :param standard_prefix: This is a prefix that has already been standardized using
+            :meth:`standardize_prefix` in this converter
+        :param identifier: An unstandardized identifier
+        :returns: A standardized identifier.
+
+        By default, this function is a no-op, meaning that it just returns the identifier
+        as is. You can override the :class:`Converter` class to implement this method to
+        do standardization (e.g., removing redundant prefixes) and to do validation
+        (e.g., checking against a regular expression).
+        """
+        return identifier
 
     def expand_reference(
         self, reference: ReferenceTuple, *, strict: bool = False, passthrough: bool = False
