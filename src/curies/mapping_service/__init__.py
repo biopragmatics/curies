@@ -58,7 +58,7 @@ to UniProt Proteins:
 The following is an end-to-end example of using this function to create a small URI
 mapping application.
 
-.. code-block::
+.. code-block:: python
 
     # flask_example.py
     from flask import Flask
@@ -76,23 +76,24 @@ mapping application.
 
 In the command line, either run your Python file directly, or via with :mod:`gunicorn`:
 
-.. code-block:: shell
+.. code-block:: console
 
-    pip install gunicorn
-    gunicorn --bind 0.0.0.0:8764 flask_example:app
+    $ pip install gunicorn
+    $ gunicorn --bind 0.0.0.0:8764 flask_example:app
 
 Test a request in the Python REPL.
 
-.. code-block::
+.. code-block:: python
 
     import requests
+
     sparql = '''
         SELECT ?s ?o WHERE {
             VALUES ?s { <http://purl.obolibrary.org/obo/CHEBI_2> }
             ?s owl:sameAs ?o
         }
     '''
-    >>> res = requests.get("http://localhost:8764/sparql", params={"query": sparql})
+    res = requests.get("http://localhost:8764/sparql", params={"query": sparql})
 
 Test a request using a service, e.g. with :meth:`rdflib.Graph.query`
 
