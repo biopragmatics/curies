@@ -1207,6 +1207,7 @@ class TestConverter(unittest.TestCase):
             """A converter that removes bananas from LUIDs."""
 
             def standardize_identifier(self, prefix: str, identifier: str) -> str | None:
+                """Standardize the identifier by removing a banana and checking it is numeric."""
                 norm_identifier = identifier.removeprefix(f"{prefix}:")
 
                 # now, do some validation
