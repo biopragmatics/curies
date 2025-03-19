@@ -1,5 +1,7 @@
 """Trivial version test."""
 
+from __future__ import annotations
+
 import json
 import tempfile
 import unittest
@@ -1197,6 +1199,45 @@ class TestConverter(unittest.TestCase):
                 "https://example.com/missing:0000000", passthrough=True
             ),
         )
+
+    def test_standardize_identifier(self) -> None:
+        """Test standardizing identifiers."""
+
+        class BananaStripperConverter(Converter):
+            """A converter that removes bananas from LUIDs."""
+
+            def standardize_identifier(self, prefix: str, identifier: str) -> str | None:
+                """Standardize the identifier by removing a banana and checking it is numeric."""
+                norm_identifier = identifier.removeprefix(f"{prefix}:")
+
+                # now, do some validation
+                if not norm_identifier.isnumeric():
+                    return None
+
+                return norm_identifier
+
+        converter = BananaStripperConverter(
+            records=[
+                Record(
+                    prefix="CHEBI",
+                    prefix_synonyms=["chebi"],
+                    uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                    uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+                ),
+            ]
+        )
+        self.assertEqual(ReferenceTuple("CHEBI", "1234"), converter.parse_curie("CHEBI:1234"))
+        self.assertEqual(ReferenceTuple("CHEBI", "1234"), converter.parse_curie("chebi:1234"))
+        self.assertEqual(ReferenceTuple("CHEBI", "1234"), converter.parse_curie("CHEBI:CHEBI:1234"))
+        self.assertEqual(ReferenceTuple("CHEBI", "1234"), converter.parse_curie("chebi:CHEBI:1234"))
+        self.assertIsNone(converter.parse_curie("NOPE:NOPE:1234", strict=False))
+
+        self.assertIsNone(converter.parse_curie("CHEBI:nope", strict=False))
+        # does not solve the problem of synonyms in the banana, this is specific
+        # to the current implementation in this test
+        self.assertIsNone(converter.parse_curie("chebi:chebi:1234", strict=False))
+        with self.assertRaises(ValueError):
+            converter.parse_curie("CHEBI:nope", strict=True)
 
 
 class TestVersion(unittest.TestCase):
