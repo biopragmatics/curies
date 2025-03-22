@@ -461,6 +461,16 @@ class Reference(BaseModel):
         prefix, identifier = _split(curie, sep=sep)
         return cls.model_validate({"prefix": prefix, "identifier": identifier}, context=converter)
 
+    @classmethod
+    def from_reference(cls, reference: Reference, *, converter: Converter | None = None) -> Self:
+        """Parse a CURIE string and populate a reference.
+
+        :param reference: A pre-parsed reference
+        :param converter: The converter to use as context when parsing
+        :return: A reference object
+        """
+        return cls.model_validate({"prefix": reference.prefix, "identifier": reference.identifier}, context=converter)
+
 
 class NamableReference(Reference):
     """A reference, maybe with a name."""
@@ -500,6 +510,18 @@ class NamableReference(Reference):
             {"prefix": prefix, "identifier": identifier, "name": name}, context=converter
         )
 
+    @classmethod
+    def from_reference(cls, reference: Reference, *, converter: Converter | None = None) -> Self:
+        """Parse a CURIE string and populate a reference.
+
+        :param reference: A pre-parsed reference
+        :param converter: The converter to use as context when parsing
+        :return: A reference object
+        """
+        name = reference.name if isinstance(reference, NamableReference) else None
+        return cls.model_validate({"prefix": reference.prefix, "identifier": reference.identifier, "name": name}, context=converter)
+
+
 
 class NamedReference(NamableReference):
     """A reference with a name."""
@@ -529,6 +551,17 @@ class NamedReference(NamableReference):
         return cls.model_validate(
             {"prefix": prefix, "identifier": identifier, "name": name}, context=converter
         )
+
+    @classmethod
+    def from_reference(cls, reference: NamedReference, *, converter: Converter | None = None) -> Self:
+        """Parse a CURIE string and populate a reference.
+
+        :param reference: A pre-parsed reference
+        :param converter: The converter to use as context when parsing
+        :return: A reference object
+        """
+        return cls.model_validate({"prefix": reference.prefix, "identifier": reference.identifier, "name": reference.name}, context=converter)
+
 
 
 RecordKey = tuple[str, str, str, str]
