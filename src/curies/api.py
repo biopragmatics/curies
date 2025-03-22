@@ -469,7 +469,9 @@ class Reference(BaseModel):
         :param converter: The converter to use as context when parsing
         :return: A reference object
         """
-        return cls.model_validate({"prefix": reference.prefix, "identifier": reference.identifier}, context=converter)
+        return cls.model_validate(
+            {"prefix": reference.prefix, "identifier": reference.identifier}, context=converter
+        )
 
 
 class NamableReference(Reference):
@@ -519,8 +521,10 @@ class NamableReference(Reference):
         :return: A reference object
         """
         name = reference.name if isinstance(reference, NamableReference) else None
-        return cls.model_validate({"prefix": reference.prefix, "identifier": reference.identifier, "name": name}, context=converter)
-
+        return cls.model_validate(
+            {"prefix": reference.prefix, "identifier": reference.identifier, "name": name},
+            context=converter,
+        )
 
 
 class NamedReference(NamableReference):
@@ -553,15 +557,23 @@ class NamedReference(NamableReference):
         )
 
     @classmethod
-    def from_reference(cls, reference: NamedReference, *, converter: Converter | None = None) -> Self:
+    def from_reference(
+        cls, reference: NamedReference, *, converter: Converter | None = None
+    ) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param reference: A pre-parsed reference
         :param converter: The converter to use as context when parsing
         :return: A reference object
         """
-        return cls.model_validate({"prefix": reference.prefix, "identifier": reference.identifier, "name": reference.name}, context=converter)
-
+        return cls.model_validate(
+            {
+                "prefix": reference.prefix,
+                "identifier": reference.identifier,
+                "name": reference.name,
+            },
+            context=converter,
+        )
 
 
 RecordKey = tuple[str, str, str, str]
