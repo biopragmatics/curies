@@ -148,7 +148,7 @@ class ReferenceTuple(NamedTuple):
         return f"{self.prefix}:{self.identifier}"
 
     @classmethod
-    def from_curie(cls, curie: str, *, sep: str = ":") -> ReferenceTuple:
+    def from_curie(cls, curie: str, *, sep: str = ":") -> Self:
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -447,9 +447,7 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(
-        cls, curie: str, *, sep: str = ":", converter: Converter | None = None
-    ) -> Reference:
+    def from_curie(cls, curie: str, *, sep: str = ":", converter: Converter | None = None) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -482,7 +480,7 @@ class NamableReference(Reference):
         *,
         sep: str = ":",
         converter: Converter | None = None,
-    ) -> NamableReference:
+    ) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -515,7 +513,7 @@ class NamedReference(NamableReference):
     @classmethod
     def from_curie(  # type:ignore
         cls, curie: str, name: str, *, sep: str = ":", converter: Converter | None = None
-    ) -> NamedReference:
+    ) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
