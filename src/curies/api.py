@@ -563,6 +563,9 @@ class NamedReference(NamableReference):
         :param reference: A pre-parsed reference
         :param converter: The converter to use as context when parsing
         :return: A reference object
+
+        :raises TypeError:
+            if a reference that has no name field is passed (e.g., a vanilla :class:`curies.Reference`)
         """
         if not isinstance(reference, NamableReference):
             raise TypeError(
