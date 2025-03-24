@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 
 import pandas as pd
 import rdflib
+from pydantic import ValidationError
 
 import curies
 from curies.api import (
@@ -129,6 +130,48 @@ class TestStruct(unittest.TestCase):
         """Test reference tuples."""
         t = ReferenceTuple.from_curie("a:1")
         self.assertEqual(Reference(prefix="a", identifier="1"), t.to_pydantic())
+
+    def test_reference_constructor(self) -> None:
+        """Test constructing a reference."""
+        r1 = Reference(prefix="a", identifier="1")
+        r2 = NamableReference(prefix="a", identifier="2")
+        r3 = NamableReference(prefix="a", identifier="3", name="item 3")
+        r4 = NamedReference(prefix="a", identifier="4", name="item 4")
+
+        self.assertEqual(Reference(prefix="a", identifier="1"), Reference.from_reference(r1))
+        self.assertEqual(Reference(prefix="a", identifier="2"), Reference.from_reference(r2))
+        self.assertEqual(Reference(prefix="a", identifier="3"), Reference.from_reference(r3))
+        self.assertEqual(Reference(prefix="a", identifier="4"), Reference.from_reference(r4))
+
+        self.assertEqual(
+            NamableReference(prefix="a", identifier="1", name=None),
+            NamableReference.from_reference(r1),
+        )
+        self.assertEqual(
+            NamableReference(prefix="a", identifier="2", name=None),
+            NamableReference.from_reference(r2),
+        )
+        self.assertEqual(
+            NamableReference(prefix="a", identifier="3", name="item 3"),
+            NamableReference.from_reference(r3),
+        )
+        self.assertEqual(
+            NamableReference(prefix="a", identifier="4", name="item 4"),
+            NamableReference.from_reference(r4),
+        )
+
+        with self.assertRaises(TypeError):
+            NamedReference.from_reference(r1)
+        with self.assertRaises(ValidationError):
+            NamedReference.from_reference(r2)
+        self.assertEqual(
+            NamedReference(prefix="a", identifier="3", name="item 3"),
+            NamedReference.from_reference(r3),
+        )
+        self.assertEqual(
+            NamedReference(prefix="a", identifier="4", name="item 4"),
+            NamedReference.from_reference(r4),
+        )
 
 
 class TestAddRecord(unittest.TestCase):

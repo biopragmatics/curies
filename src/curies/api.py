@@ -566,9 +566,6 @@ class NamedReference(NamableReference):
         """
         if not isinstance(reference, NamableReference):
             raise TypeError
-        if reference.name is None:
-            raise ValueError
-
         return cls.model_validate(
             {
                 "prefix": reference.prefix,
