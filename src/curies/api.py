@@ -565,7 +565,9 @@ class NamedReference(NamableReference):
         :return: A reference object
         """
         if not isinstance(reference, NamableReference):
-            raise TypeError
+            raise TypeError(
+                f"tried to construct a named reference from a non-named reference: {reference}"
+            )
         return cls.model_validate(
             {
                 "prefix": reference.prefix,
