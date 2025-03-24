@@ -557,15 +557,18 @@ class NamedReference(NamableReference):
         )
 
     @classmethod
-    def from_reference(
-        cls, reference: NamedReference, *, converter: Converter | None = None
-    ) -> Self:
+    def from_reference(cls, reference: Reference, *, converter: Converter | None = None) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param reference: A pre-parsed reference
         :param converter: The converter to use as context when parsing
         :return: A reference object
         """
+        if not isinstance(reference, NamableReference):
+            raise TypeError
+        if reference.name is None:
+            raise ValueError
+
         return cls.model_validate(
             {
                 "prefix": reference.prefix,
