@@ -33,6 +33,8 @@ xsd_integer = _r("xsd", "integer", "integer")
 xsd_boolean = _r("xsd", "boolean", "boolean")
 xsd_year = _r("xsd", "gYear", "year")
 xsd_uri = _r("xsd", "anyURI", "URI")
+xsd_date = _r("xsd", "date", "date")
+xsd_datetime = _r("xsd", "dateTime", "datetime")
 
 # DC Terms
 
