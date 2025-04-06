@@ -10,8 +10,8 @@ from pydantic import BaseModel
 from curies import NamableReference
 
 __all__ = [
-    "from_records",
     "from_tsv",
+    "iter_records",
 ]
 
 Model = TypeVar("Model", bound=BaseModel)
@@ -28,7 +28,6 @@ def from_tsv(
         A mapping from column names corresponding to reference fields to column names representing the labels
     :yields: Validated models
 
-
     Let's use a similar table, now with the prefix and identifier combine into CURIEs.
 
     =========== ======== ======
@@ -39,22 +38,14 @@ def from_tsv(
     CHEBI:44884 pentanol CCCCCO
     =========== ======== ======
 
-    Note that there's a typo in the prefix on the fourth row in the prefix because it uses
-    ``CHOBI`` instead of ``CHEBI``. In the following code, we simulate reading that file and
-    show where the error shows up:
+    In the following code, we simulate reading that file and show where the error shows up:
 
     .. code-block:: python
 
-        import csv
-        from pydantic import BaseModel, ValidationError
-        from curies import Converter, NamedReference
-        from curies.metamodel import from_records
+        from pydantic import BaseModel
 
-        converter = Converter.from_prefix_map(
-            {
-                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-            }
-        )
+        from curies import NamedReference
+        from curies.metamodel import iter_records
 
 
         class Row(BaseModel):
@@ -68,16 +59,17 @@ def from_tsv(
             {"curie": "CHEBI:44884", "name": "pentanol", "smiles": "CCCCCO"},
         ]
 
-        models = list(from_records(records, Row, names={"curie": "name"}))
+        models = list(iter_records(records, Row, names={"curie": "name"}))
         print(models)
 
     """
-    with open(path) as file:
+    path = Path(path).expanduser().resolve()
+    with path.open() as file:
         reader = csv.DictReader(file, delimiter="\t")
-        yield from from_records(reader, cls, names=names)
+        yield from iter_records(reader, cls, names=names)
 
 
-def from_records(
+def iter_records(
     records: Iterable[dict[str, Any]], cls: type[Model], names: dict[str, str] | None = None
 ) -> Iterable[Model]:
     """Get records."""

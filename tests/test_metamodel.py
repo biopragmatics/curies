@@ -5,7 +5,7 @@ import unittest
 from pydantic import BaseModel
 
 from curies import NamableReference
-from curies.metamodel import from_records
+from curies.metamodel import iter_records
 
 
 class TestModel(unittest.TestCase):
@@ -25,7 +25,7 @@ class TestModel(unittest.TestCase):
             {"curie": "GO:0000002", "curie_label": "Test 2"},
         ]
 
-        models = list(from_records(records, MM, names=names))
+        models = list(iter_records(records, MM, names=names))
         self.assertEqual(
             [
                 MM(curie=NamableReference(prefix="GO", identifier="0000001", name="Test 1")),
