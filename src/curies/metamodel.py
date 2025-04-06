@@ -14,7 +14,6 @@ __all__ = [
     "from_tsv",
 ]
 
-
 Model = TypeVar("Model", bound=BaseModel)
 
 
@@ -66,7 +65,7 @@ def from_tsv(
         records = [
             {"curie": "CHEBI:16236", "name": "ethanol", "smiles": "CCO"},
             {"curie": "CHEBI:28831", "name": "propanol", "smiles": "CCCO"},
-            {"curie": "CHOBI:44884", "name": "pentanol", "smiles": "CCCCCO"},
+            {"curie": "CHEBI:44884", "name": "pentanol", "smiles": "CCCCCO"},
         ]
 
         models = list(from_records(records, Row, names={"curie": "name"}))
@@ -82,9 +81,22 @@ def from_records(
     records: Iterable[dict[str, Any]], cls: type[Model], names: dict[str, str] | None = None
 ) -> Iterable[Model]:
     """Get records."""
+    if names is None:
+        names = {}
+
+    # Look into the model to get the type for each field
+    # that appears in the names dictionary
+    types: dict[str, type[NamableReference]] = {
+        curie_key: field_info.annotation
+        for curie_key, field_info in cls.model_fields.items()
+        if field_info and field_info.annotation and curie_key in names
+    }
+
     for record in records:
         if names:
-            for k, v in names.items():
-                record[k] = NamableReference.from_curie(record[k], name=record.pop(v, None))
+            for curie_key, name_key in names.items():
+                record[curie_key] = types[curie_key].from_curie(
+                    record[curie_key], name=record.pop(name_key, None)
+                )
         model = cls.model_validate(record)
         yield model
