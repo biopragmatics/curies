@@ -1,16 +1,14 @@
 """Quick metadata model."""
 
 import csv
-import unittest
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
-from curies import NamableReference
-
 __all__ = [
+    "from_records",
     "from_tsv",
 ]
 
@@ -27,40 +25,60 @@ def from_tsv(
     :param names:
         A mapping from column names corresponding to reference fields to column names representing the labels
     :yields: Validated models
+
+
+    Let's use a similar table, now with the prefix and identifier combine into CURIEs.
+
+    =========== ======== ======
+    curie       name     smiles
+    =========== ======== ======
+    CHEBI:16236 ethanol  CCO
+    CHEBI:28831 propanol CCCO
+    CHEBI:44884 pentanol CCCCCO
+    =========== ======== ======
+
+    Note that there's a typo in the prefix on the fourth row in the prefix because it uses
+    ``CHOBI`` instead of ``CHEBI``. In the following code, we simulate reading that file and
+    show where the error shows up:
+
+    .. code-block:: python
+
+        import csv
+        from pydantic import BaseModel, ValidationError
+        from curies import Converter, NamedReference
+        from curies.metamodel import from_records
+
+        converter = Converter.from_prefix_map(
+            {
+                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+            }
+        )
+
+
+        class Row(BaseModel):
+            curie: NamedReference
+            smiles: str
+
+
+        records = [
+            {"curie": "CHEBI:16236", "name": "ethanol", "smiles": "CCO"},
+            {"curie": "CHEBI:28831", "name": "propanol", "smiles": "CCCO"},
+            {"curie": "CHOBI:44884", "name": "pentanol", "smiles": "CCCCCO"},
+        ]
+
+        models = list(from_records(records, Row, names={"curie": "name"}))
+        print(models)
+
     """
     with open(path) as file:
         reader = csv.DictReader(file, delimiter="\t")
-        yield from _from_records(reader, cls, names=names)
+        yield from from_records(reader, cls, names=names)
 
 
-def _from_records(
+def from_records(
     records: Iterable[dict[str, Any]], cls: type[Model], names: dict[str, str] | None = None
 ) -> Iterable[Model]:
+    """Get records."""
     for record in records:
         model = cls.model_validate(record)
         yield model
-
-
-class TestModel(unittest.TestCase):
-    """Test parsing models."""
-
-    def test_model(self) -> None:
-        """Test parsing into a namable reference."""
-
-        class MM(BaseModel):
-            curie: NamableReference
-
-        names = {"curie": "curie_label"}
-        records = [
-            {"curie": "GO:0000001", "curie_label": "Test 1"},
-            {"curie": "GO:0000002", "curie_label": "Test 2"},
-        ]
-
-        models = _from_records(records, MM, names=names)
-        self.assertEqual(
-            [
-                MM(curie=NamableReference(prefix="GO", identifier="0000001", name="Test 1")),
-                MM(curie=NamableReference(prefix="GO", identifier="0000002", name="Test 2")),
-            ],
-            models,
-        )
