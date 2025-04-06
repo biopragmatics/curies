@@ -25,7 +25,7 @@ class TestModel(unittest.TestCase):
             {"curie": "GO:0000002", "curie_label": "Test 2"},
         ]
 
-        models = from_records(records, MM, names=names)
+        models = list(from_records(records, MM, names=names))
         self.assertEqual(
             [
                 MM(curie=NamableReference(prefix="GO", identifier="0000001", name="Test 1")),

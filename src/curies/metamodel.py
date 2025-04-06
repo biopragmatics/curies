@@ -7,10 +7,13 @@ from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
+from curies import NamableReference
+
 __all__ = [
     "from_records",
     "from_tsv",
 ]
+
 
 Model = TypeVar("Model", bound=BaseModel)
 
@@ -80,5 +83,8 @@ def from_records(
 ) -> Iterable[Model]:
     """Get records."""
     for record in records:
+        if names:
+            for k, v in names.items():
+                record[k] = NamableReference.from_curie(record[k], name=record.pop(v, None))
         model = cls.model_validate(record)
         yield model
