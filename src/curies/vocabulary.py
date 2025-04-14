@@ -241,3 +241,29 @@ human = _r("NCBITaxon", "9606", "Homo sapiens")
 #: the author of this package. It's useful to have this reference pre-defined
 #: for testing purposes
 charlie = _r("orcid", "0000-0003-4423-4370", "Charles Tapley Hoyt")
+
+part_of = _r("BFO", "0000050", "part of")
+has_part = _r("BFO", "0000051", "has part")
+located_in = _r("RO", "0001025", "located in")
+enables = _r("RO", "0002327", "enables")
+involved_in = _r("RO", "0002331", "involved in")
+colocalizes_with = _r("RO", "0002325", "colocalizes with")
+acts_upstream_of = _r("RO", "0002263", "acts upstream of")
+is_active_in = _r("RO", "0002432", "is active in")
+contributes_to = _r("RO", "0002326", "contributes to")
+acts_upstream_of_or_within = _r("RO", "0002264", "acts upstream of or within")
+acts_upstream_of_or_within_positive_effect = _r(
+    "RO", "0004032", "acts upstream of or within, positive effect"
+)
+acts_upstream_of_or_within_negative_effect = _r(
+    "RO", "0004033", "acts upstream of or within, negative effect"
+)
+acts_upstream_of_positive_effect = _r("RO", "0004034", "acts upstream of, positive effect")
+acts_upstream_of_negative_effect = _r("RO", "0004035", "acts upstream of, negative effect")
+
+molecularly_interacts_with = _r("ro", "0002436", "molecularly interacts with")
+regulator_of = _r("RO", "0012004", "is small molecule regulator of")
+inhibitor_of = _r("RO", "0012006", "is small molecule inhibitor of")
+
+is_model_of = _r("RO", "0003301", "is model of")
+is_marker_for = _r("RO", "0002607", "is marker for")
