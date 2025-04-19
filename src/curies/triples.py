@@ -59,7 +59,7 @@ def _get_file(path: str | Path, read: bool) -> Generator[TextIO, None, None]:
 
 
 def write_triples(
-    triples: Iterable[Triple], path: str | Path, header: Sequence[str] | None = None
+    triples: Iterable[Triple], path: str | Path, *, header: Sequence[str] | None = None
 ) -> None:
     """Write triples to a file."""
     if header is None:
