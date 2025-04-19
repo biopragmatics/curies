@@ -44,6 +44,7 @@ class Triple(BaseModel):
         )
 
 
+#: the default header for a three-column file representing triples
 HEADER = list(Triple.model_fields)
 
 
