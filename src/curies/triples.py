@@ -34,6 +34,7 @@ class Triple(BaseModel):
         subject_curie: str,
         predicate_curie: str,
         object_curie: str,
+        *,
         reference_cls: type[Reference] = Reference,
     ) -> Self:
         """Construct a triple from three CURIE strings."""
