@@ -12,7 +12,7 @@ from typing import TextIO
 from pydantic import BaseModel
 from typing_extensions import Self
 
-from curies import Reference
+from .api import Reference
 
 __all__ = [
     "Triple",
