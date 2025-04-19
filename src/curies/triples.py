@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import csv
 import gzip
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import NamedTuple, TextIO
+from typing import TextIO
 
+from pydantic import BaseModel
 from typing_extensions import Self
 
 from curies import Reference
@@ -20,7 +21,7 @@ __all__ = [
 ]
 
 
-class Triple(NamedTuple):
+class Triple(BaseModel):
     """A three-tuple of reference, useful for semantic web applications."""
 
     subject: Reference
@@ -28,16 +29,22 @@ class Triple(NamedTuple):
     object: Reference
 
     @classmethod
-    def from_curies(cls, subject_curie: str, predicate_curie: str, object_curie: str) -> Self:
+    def from_curies(
+        cls,
+        subject_curie: str,
+        predicate_curie: str,
+        object_curie: str,
+        reference_cls: type[Reference] = Reference,
+    ) -> Self:
         """Construct a triple from three CURIE strings."""
         return cls(
-            Reference.from_curie(subject_curie),
-            Reference.from_curie(predicate_curie),
-            Reference.from_curie(object_curie),
+            subject=reference_cls.from_curie(subject_curie),
+            predicate=reference_cls.from_curie(predicate_curie),
+            object=reference_cls.from_curie(object_curie),
         )
 
 
-HEADER = Triple._fields
+HEADER = list(Triple.model_fields)
 
 
 @contextmanager
@@ -49,11 +56,15 @@ def _get_file(path: str | Path, read: bool) -> Generator[TextIO, None, None]:
         yield open(path, mode="r" if read else "w")
 
 
-def write_triples(triples: Iterable[Triple], path: str | Path) -> None:
+def write_triples(
+    triples: Iterable[Triple], path: str | Path, header: Sequence[str] | None = None
+) -> None:
     """Write triples to a file."""
+    if header is None:
+        header = HEADER
     with _get_file(path, read=False) as file:
         writer = csv.writer(file, delimiter="\t")
-        writer.writerow(HEADER)
+        writer.writerow(header)
         writer.writerows(
             (triple.subject.curie, triple.predicate.curie, triple.object.curie)
             for triple in triples
@@ -69,9 +80,9 @@ def read_triples(path: str | Path, *, reference_cls: type[Reference] | None = No
         _header = next(reader)
         return [
             Triple(
-                reference_cls.from_curie(subject_curie),
-                reference_cls.from_curie(predicate_curie),
-                reference_cls.from_curie(object_curie),
+                subject=reference_cls.from_curie(subject_curie),
+                predicate=reference_cls.from_curie(predicate_curie),
+                object=reference_cls.from_curie(object_curie),
             )
             for subject_curie, predicate_curie, object_curie in reader
         ]
