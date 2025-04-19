@@ -22,7 +22,7 @@ __all__ = [
 
 
 class Triple(BaseModel):
-    """A three-tuple of reference, useful for semantic web applications."""
+    """A model for a triple of subject-predicate-object triple."""
 
     subject: Reference
     predicate: Reference
