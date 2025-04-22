@@ -127,7 +127,13 @@ class Rules(BaseModel):
         path = Path(path).expanduser().resolve()
         rules = cls.model_validate_json(path.read_text())
         rules.blacklists._sort()
-        path.write_text(json.dumps(rules.model_dump(), sort_keys=True, indent=2))
+        path.write_text(
+            json.dumps(
+                rules.model_dump(exclude_unset=True, exclude_defaults=True),
+                sort_keys=True,
+                indent=2,
+            )
+        )
 
     def str_is_blacklisted(
         self, str_or_curie_or_uri: str, *, ontology_prefix: str | None = None

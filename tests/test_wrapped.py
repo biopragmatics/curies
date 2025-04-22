@@ -24,6 +24,9 @@ class TestWrapped(unittest.TestCase):
     rules: ClassVar[Rules]
     inner_converter: ClassVar[Converter]
     converter: ClassVar[PreprocessingConverter]
+    temporary_directory: ClassVar[tempfile.TemporaryDirectory[str]]
+    directory: ClassVar[Path]
+    rules_path: ClassVar[Path]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -48,6 +51,9 @@ class TestWrapped(unittest.TestCase):
                         "pubmed:"
                     ]  # this means that only throw away pubmed references in ChEBI
                 },
+                resource_full={
+                    "chebi": ["omim:1356"],  # in case we just hate this CURIE/URI/string
+                },
             ),
         )
         cls.inner_converter = Converter.from_prefix_map(
@@ -62,14 +68,25 @@ class TestWrapped(unittest.TestCase):
             }
         )
 
-        # write the rules just so we can test loading from a file
-        with tempfile.TemporaryDirectory() as directory_:
-            path = Path(directory_).joinpath("rules.json")
-            path.write_text(cls.rules.model_dump_json(indent=2, exclude_unset=True))
+        cls.temporary_directory = tempfile.TemporaryDirectory()
+        cls.directory = Path(cls.temporary_directory.name)
 
-            cls.converter = PreprocessingConverter.from_converter(
-                converter=cls.inner_converter, rules=path
-            )
+        # write the rules just so we can test loading from a file
+        cls.rules_path = cls.directory.joinpath("rules.json")
+        cls.rules_path.write_text(cls.rules.model_dump_json(indent=2, exclude_unset=True))
+
+        cls.converter = PreprocessingConverter.from_converter(
+            converter=cls.inner_converter, rules=cls.rules_path
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        """Clean up the class."""
+        cls.temporary_directory.cleanup()
+
+    def test_lint(self) -> None:
+        """Run the linting code, just to make sure it works."""
+        self.rules.lint_file(self.rules_path)
 
     def test_unprocessed(self) -> None:
         """Tests that should be the same for both converters."""
@@ -125,6 +142,11 @@ class TestWrapped(unittest.TestCase):
         )
         with self.assertRaises(BlacklistError):
             self.converter.parse_curie("pubmed:1234", ontology_prefix="chebi")
+
+        self.converter.parse_curie("omim:1234", ontology_prefix="chebi")
+        # normally, OMIM works, but we configured a specific one for the blacklist
+        with self.assertRaises(BlacklistError):
+            self.converter.parse_curie("omim:1356", ontology_prefix="chebi")
 
     def test_global_blacklist(self) -> None:
         """Test global blacklist."""
