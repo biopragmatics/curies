@@ -12,17 +12,17 @@ from typing_extensions import Self
 from .api import Converter, Reference, ReferenceTuple
 
 __all__ = [
-    "Blacklist",
+    "PreprocessingBlacklist",
     "BlacklistError",
     "PreprocessingConverter",
     "PreprocessingRules",
-    "Rewrites",
+    "PreprocessingRewrites",
 ]
 
 X = TypeVar("X", bound=Reference)
 
 
-class Blacklist(BaseModel):
+class PreprocessingBlacklist(BaseModel):
     """A model for prefix and full blacklists."""
 
     full: list[str] = Field(default_factory=list)
@@ -75,7 +75,7 @@ class Blacklist(BaseModel):
         )
 
 
-class Rewrites(BaseModel):
+class PreprocessingRewrites(BaseModel):
     """A model for prefix and full rewrites."""
 
     full: dict[str, str] = Field(
@@ -124,8 +124,8 @@ class Rewrites(BaseModel):
 class PreprocessingRules(BaseModel):
     """A model for blacklists and rewrites."""
 
-    blacklists: Blacklist
-    rewrites: Rewrites
+    blacklists: PreprocessingBlacklist
+    rewrites: PreprocessingRewrites
 
     @classmethod
     def lint_file(cls, path: str | Path) -> None:
@@ -191,7 +191,8 @@ class PreprocessingConverter(Converter):
 
         :param args: Positional arguments passed to :func:`Converter.__init__`
         :param rules: A set of rules
-        :param reference_cls: The reference class to use. Defaults to :class:`curies.Reference`.
+        :param reference_cls: The reference class to use. Defaults to
+            :class:`curies.Reference`.
         :param kwargs: Keyword arguments passed to :func:`Converter.__init__`
         """
         super().__init__(*args, **kwargs)

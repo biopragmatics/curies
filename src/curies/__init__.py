@@ -35,7 +35,12 @@ from .sources import (
 )
 from .triples import Triple
 from .version import get_version
-from .wrapped import PreprocessingConverter, PreprocessingRules
+from .preprocessing import (
+    PreprocessingConverter,
+    PreprocessingRules,
+    PreprocessingRewrites,
+    PreprocessingBlacklist,
+)
 
 __all__ = [
     "Converter",
@@ -48,6 +53,8 @@ __all__ = [
     "PrefixMap",
     "PreprocessingConverter",
     "PreprocessingRules",
+    "PreprocessingRewrites",
+    "PreprocessingBlacklist",
     "Record",
     "Records",
     "Reference",
