@@ -214,6 +214,7 @@ class PreprocessingConverter(Converter):
         *,
         strict: Literal[True] = True,
         context: str | None = ...,
+        block_action: BlockAction = ...,
     ) -> ReferenceTuple: ...
 
     # docstr-coverage:excused `overload`
@@ -224,6 +225,7 @@ class PreprocessingConverter(Converter):
         *,
         strict: Literal[False] = False,
         context: str | None = ...,
+        block_action: BlockAction = ...,
     ) -> ReferenceTuple | None: ...
 
     def parse(
@@ -256,13 +258,23 @@ class PreprocessingConverter(Converter):
     # docstr-coverage:excused `overload`
     @overload
     def parse_curie(
-        self, curie: str, *, strict: Literal[False] = False, context: str | None = ...
+        self,
+        curie: str,
+        *,
+        strict: Literal[False] = False,
+        context: str | None = ...,
+        block_action: BlockAction = ...,
     ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def parse_curie(
-        self, curie: str, *, strict: Literal[True] = True, context: str | None = ...
+        self,
+        curie: str,
+        *,
+        strict: Literal[True] = True,
+        context: str | None = ...,
+        block_action: BlockAction = ...,
     ) -> ReferenceTuple: ...
 
     def parse_curie(

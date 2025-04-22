@@ -167,15 +167,28 @@ class TestWrapped(unittest.TestCase):
         )
         with self.assertRaises(BlocklistError):
             self.converter.parse_curie("pubmed:1234", context="chebi")
+        self.assertIsNone(
+            self.converter.parse_curie("pubmed:1234", context="chebi", block_action="pass")
+        )
 
         self.converter.parse_curie("omim:1234", context="chebi")
         # normally, OMIM works, but we configured a specific one for the blocklist
         with self.assertRaises(BlocklistError):
             self.converter.parse_curie("omim:1356", context="chebi")
+        self.assertIsNone(
+            self.converter.parse_curie("omim:1356", context="chebi", block_action="pass")
+        )
 
     def test_global_blocklist(self) -> None:
         """Test global blocklist."""
         with self.assertRaises(BlocklistError):
             self.converter.parse("rdf:NOPE")
+        self.assertIsNone(self.converter.parse("rdf:NOPE", block_action="pass"))
+
         with self.assertRaises(BlocklistError):
             self.converter.parse_curie("rdf:NOPE")
+        self.assertIsNone(self.converter.parse_curie("rdf:NOPE", block_action="pass"))
+
+        with self.assertRaises(BlocklistError):
+            self.converter.parse_uri("rdf:NOPE")
+        self.assertIsNone(self.converter.parse_uri("rdf:NOPE", block_action="pass"))
