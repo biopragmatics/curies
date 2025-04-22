@@ -26,7 +26,7 @@ from .api import (
 )
 from .discovery import discover, discover_from_rdf
 from .preprocessing import (
-    PreprocessingBlacklist,
+    PreprocessingBlocklists,
     PreprocessingConverter,
     PreprocessingRewrites,
     PreprocessingRules,
@@ -51,7 +51,7 @@ __all__ = [
     "NamedReference",
     "Prefix",
     "PrefixMap",
-    "PreprocessingBlacklist",
+    "PreprocessingBlocklists",
     "PreprocessingConverter",
     "PreprocessingRewrites",
     "PreprocessingRules",

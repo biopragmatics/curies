@@ -12,8 +12,8 @@ from typing_extensions import Self
 from .api import Converter, Reference, ReferenceTuple
 
 __all__ = [
-    "BlacklistError",
-    "PreprocessingBlacklist",
+    "BlocklistError",
+    "PreprocessingBlocklists",
     "PreprocessingConverter",
     "PreprocessingRewrites",
     "PreprocessingRules",
@@ -22,8 +22,8 @@ __all__ = [
 X = TypeVar("X", bound=Reference)
 
 
-class PreprocessingBlacklist(BaseModel):
-    """A model for prefix and full blacklists."""
+class PreprocessingBlocklists(BaseModel):
+    """A model for prefix and full blocklists."""
 
     full: list[str] = Field(default_factory=list)
     resource_full: dict[str, list[str]] = Field(default_factory=dict)
@@ -40,34 +40,32 @@ class PreprocessingBlacklist(BaseModel):
         for v in self.resource_prefix.values():
             v.sort()
 
-    def str_has_blacklisted_prefix(
+    def str_has_blocked_prefix(
         self, str_or_curie_or_uri: str, *, context: str | None = None
     ) -> bool:
-        """Check if the CURIE string has a blacklisted prefix."""
+        """Check if the CURIE string has a blocklisted prefix."""
         if context:
             prefixes: list[str] = self.resource_prefix.get(context, [])
             if prefixes and any(str_or_curie_or_uri.startswith(prefix) for prefix in prefixes):
                 return True
         return any(str_or_curie_or_uri.startswith(prefix) for prefix in self.prefix)
 
-    def str_has_blacklisted_suffix(self, str_or_curie_or_uri: str) -> bool:
-        """Check if the CURIE string has a blacklisted suffix."""
+    def str_has_blocked_suffix(self, str_or_curie_or_uri: str) -> bool:
+        """Check if the CURIE string has a blocklisted suffix."""
         return any(str_or_curie_or_uri.endswith(suffix) for suffix in self.suffix)
 
-    def str_is_blacklisted_full(
-        self, str_or_curie_or_uri: str, *, context: str | None = None
-    ) -> bool:
-        """Check if the full CURIE string is blacklisted."""
+    def str_is_blocked_full(self, str_or_curie_or_uri: str, *, context: str | None = None) -> bool:
+        """Check if the full CURIE string is blocklisted."""
         if context and str_or_curie_or_uri in self.resource_full.get(context, set()):
             return True
         return str_or_curie_or_uri in self.full
 
-    def str_is_blacklisted(self, str_or_curie_or_uri: str, *, context: str | None = None) -> bool:
-        """Check if the full CURIE string is blacklisted."""
+    def str_is_blocked(self, str_or_curie_or_uri: str, *, context: str | None = None) -> bool:
+        """Check if the full CURIE string is blocklisted."""
         return (
-            self.str_has_blacklisted_prefix(str_or_curie_or_uri, context=context)
-            or self.str_has_blacklisted_suffix(str_or_curie_or_uri)
-            or self.str_is_blacklisted_full(str_or_curie_or_uri, context=context)
+            self.str_has_blocked_prefix(str_or_curie_or_uri, context=context)
+            or self.str_has_blocked_suffix(str_or_curie_or_uri)
+            or self.str_is_blocked_full(str_or_curie_or_uri, context=context)
         )
 
 
@@ -118,9 +116,9 @@ class PreprocessingRewrites(BaseModel):
 
 
 class PreprocessingRules(BaseModel):
-    """A model for blacklists and rewrites."""
+    """A model for blocklists and rewrites."""
 
-    blacklists: PreprocessingBlacklist
+    blocklists: PreprocessingBlocklists
     rewrites: PreprocessingRewrites
 
     @classmethod
@@ -128,7 +126,7 @@ class PreprocessingRules(BaseModel):
         """Lint a file, in place, given a file path."""
         path = Path(path).expanduser().resolve()
         rules = cls.model_validate_json(path.read_text())
-        rules.blacklists._sort()
+        rules.blocklists._sort()
         path.write_text(
             json.dumps(
                 rules.model_dump(exclude_unset=True, exclude_defaults=True),
@@ -137,9 +135,9 @@ class PreprocessingRules(BaseModel):
             )
         )
 
-    def str_is_blacklisted(self, str_or_curie_or_uri: str, *, context: str | None = None) -> bool:
-        """Check if the CURIE string is blacklisted."""
-        return self.blacklists.str_is_blacklisted(str_or_curie_or_uri, context=context)
+    def str_is_blocked(self, str_or_curie_or_uri: str, *, context: str | None = None) -> bool:
+        """Check if the CURIE string is blocked."""
+        return self.blocklists.str_is_blocked(str_or_curie_or_uri, context=context)
 
     def remap_full(
         self,
@@ -165,8 +163,8 @@ def _load_rules(rules: str | Path | PreprocessingRules) -> PreprocessingRules:
     return rules
 
 
-class BlacklistError(ValueError):
-    """An error for blacklist."""
+class BlocklistError(ValueError):
+    """An error for block list."""
 
 
 class PreprocessingConverter(Converter):
@@ -228,8 +226,8 @@ class PreprocessingConverter(Converter):
         # Remap node's prefix (if necessary)
         str_or_uri_or_curie = self.rules.remap_prefix(str_or_uri_or_curie, context=context)
 
-        if self.rules.str_is_blacklisted(str_or_uri_or_curie, context=context):
-            raise BlacklistError
+        if self.rules.str_is_blocked(str_or_uri_or_curie, context=context):
+            raise BlocklistError
 
         if strict:
             return super().parse(str_or_uri_or_curie, strict=strict)
@@ -256,11 +254,11 @@ class PreprocessingConverter(Converter):
         :param strict: If the CURIE can't be parsed, should an error be thrown? Defaults
             to false.
         :param context: Is there a context, e.g., an ontology prefix that should be
-            applied to the remapping and blacklist rules?
+            applied to the remapping and blocklist rules?
 
         :returns: A tuple representing a parsed and standardized CURIE
 
-        :raises BlacklistError: If the CURIE is blacklisted
+        :raises BlocklistError: If the CURIE is blocked
         """
         if r1 := self.rules.remap_full(curie, reference_cls=self._reference_cls, context=context):
             return r1.pair
@@ -268,8 +266,8 @@ class PreprocessingConverter(Converter):
         # Remap node's prefix (if necessary)
         curie = self.rules.remap_prefix(curie, context=context)
 
-        if self.rules.str_is_blacklisted(curie, context=context):
-            raise BlacklistError
+        if self.rules.str_is_blocked(curie, context=context):
+            raise BlocklistError
 
         if strict:
             return super().parse_curie(curie, strict=strict)

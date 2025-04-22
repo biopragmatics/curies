@@ -9,8 +9,8 @@ from typing import ClassVar
 
 from curies import Converter, ReferenceTuple
 from curies.preprocessing import (
-    BlacklistError,
-    PreprocessingBlacklist,
+    BlocklistError,
+    PreprocessingBlocklists,
     PreprocessingConverter,
     PreprocessingRewrites,
     PreprocessingRules,
@@ -55,7 +55,7 @@ class TestWrapped(unittest.TestCase):
                     },
                 },
             ),
-            blacklists=PreprocessingBlacklist(
+            blocklists=PreprocessingBlocklists(
                 full=["rdf:NOPE"],
                 resource_prefix={
                     "chebi": [
@@ -155,8 +155,8 @@ class TestWrapped(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.assertIsNone(self.converter.parse_curie("j1234", context="chebi"))
 
-    def test_resource_specific_blacklist(self) -> None:
-        """Test resource-specific blacklist."""
+    def test_resource_specific_blocklist(self) -> None:
+        """Test resource-specific blocklist."""
         self.assertEqual(
             ReferenceTuple("pubmed", "1234"),
             self.converter.parse_curie("pubmed:1234"),
@@ -165,17 +165,17 @@ class TestWrapped(unittest.TestCase):
             ReferenceTuple("pubmed", "1234"),
             self.converter.parse_curie("pubmed:1234", context="doid"),
         )
-        with self.assertRaises(BlacklistError):
+        with self.assertRaises(BlocklistError):
             self.converter.parse_curie("pubmed:1234", context="chebi")
 
         self.converter.parse_curie("omim:1234", context="chebi")
-        # normally, OMIM works, but we configured a specific one for the blacklist
-        with self.assertRaises(BlacklistError):
+        # normally, OMIM works, but we configured a specific one for the blocklist
+        with self.assertRaises(BlocklistError):
             self.converter.parse_curie("omim:1356", context="chebi")
 
-    def test_global_blacklist(self) -> None:
-        """Test global blacklist."""
-        with self.assertRaises(BlacklistError):
+    def test_global_blocklist(self) -> None:
+        """Test global blocklist."""
+        with self.assertRaises(BlocklistError):
             self.converter.parse("rdf:NOPE")
-        with self.assertRaises(BlacklistError):
+        with self.assertRaises(BlocklistError):
             self.converter.parse_curie("rdf:NOPE")
