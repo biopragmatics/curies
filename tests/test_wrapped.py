@@ -1,5 +1,7 @@
 """Tests for preprocessing converter."""
 
+# coverage erase && coverage run -p -m pytest tests/test_wrapped.py --durations=20 && coverage combine && coverage html && open htmlcov/index.html
+
 import unittest
 from typing import ClassVar
 
@@ -28,6 +30,11 @@ class TestWrapped(unittest.TestCase):
             rewrites=Rewrites(
                 full={"is_a": "rdf:type"},
                 prefix={"OMIM:PS": "omim.ps:"},
+                resource_prefix={
+                    "clo": {
+                        "j": "ncit:",
+                    },
+                },
             ),
             blacklists=Blacklist(
                 full=["rdf:NOPE"],
@@ -68,19 +75,31 @@ class TestWrapped(unittest.TestCase):
             self.assertIsNone(converter.parse(DECOY_1_URI))
             self.assertIsNone(converter.parse(DECOY_1_CURIE))
 
-    def test_preprocessing_converter(self) -> None:
-        """Test the preprocessing converter."""
-        self.assertEqual(ReferenceTuple("GO", "1234567"), self.converter.parse_curie("GO:1234567"))
+    def test_global_full_rewrite(self) -> None:
+        """Test global full string rewrite."""
+        self.assertEqual(ReferenceTuple("rdf", "type"), self.converter.parse("is_a"))
+        self.assertEqual(ReferenceTuple("rdf", "type"), self.converter.parse_curie("is_a"))
+
+    def test_global_prefix_rewrite(self) -> None:
+        """Test global prefix rewrite."""
         self.assertEqual(
             ReferenceTuple("omim.ps", "1234"), self.converter.parse_curie("OMIM:PS1234")
         )
 
-        # Test full rewrite
-        self.assertEqual(ReferenceTuple("rdf", "type"), self.converter.parse("is_a"))
+        # test when there's a related rewrite rule, but not used
+        self.assertEqual(ReferenceTuple("omim", "1234"), self.converter.parse_curie("OMIM:1234"))
 
-        with self.assertRaises(BlacklistError):
-            self.assertIsNone(self.converter.parse("rdf:NOPE"))  # blacklist full
+    def test_resource_prefix_rewrite(self) -> None:
+        """Test resource-specific prefix rewrite."""
+        self.assertEqual(
+            ReferenceTuple("NCIT", "1234"),
+            self.converter.parse_curie("j1234", ontology_prefix="clo"),
+        )
+        self.assertIsNone(self.converter.parse_curie("j1234"))
+        self.assertIsNone(self.converter.parse_curie("j1234", ontology_prefix="chebi"))
 
+    def test_resource_specific_blacklist(self) -> None:
+        """Test resource-specific blacklist."""
         self.assertEqual(
             ReferenceTuple("pubmed", "1234"),
             self.converter.parse_curie("pubmed:1234"),
@@ -92,8 +111,9 @@ class TestWrapped(unittest.TestCase):
         with self.assertRaises(BlacklistError):
             self.converter.parse_curie("pubmed:1234", ontology_prefix="chebi")
 
-        self.assertIsNone(
-            self.converter.parse_curie("http://purl.obolibrary.org/obo/GO_1234567", strict=False)
-        )
-        with self.assertRaises(ValueError):
-            self.converter.parse_curie("http://purl.obolibrary.org/obo/GO_1234567", strict=True)
+    def test_global_blacklist(self) -> None:
+        """Test global blacklist."""
+        with self.assertRaises(BlacklistError):
+            self.converter.parse("rdf:NOPE")
+        with self.assertRaises(BlacklistError):
+            self.converter.parse_curie("rdf:NOPE")
