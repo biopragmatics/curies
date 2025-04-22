@@ -7,11 +7,12 @@ from pathlib import Path
 from typing import Any, Literal, TypeVar, overload
 
 from pydantic import BaseModel, Field
-from typing_extensions import Self
+from typing_extensions import Self, TypeAlias
 
 from .api import Converter, Reference, ReferenceTuple
 
 __all__ = [
+    "BlockAction",
     "BlocklistError",
     "PreprocessingBlocklists",
     "PreprocessingConverter",
@@ -19,6 +20,8 @@ __all__ = [
     "PreprocessingRules",
 ]
 
+#: The action taken when the blocklist is invoked
+BlockAction: TypeAlias = Literal["raise", "pass"]
 X = TypeVar("X", bound=Reference)
 
 
@@ -215,7 +218,12 @@ class PreprocessingConverter(Converter):
     ) -> ReferenceTuple | None: ...
 
     def parse(
-        self, str_or_uri_or_curie: str, *, strict: bool = False, context: str | None = None
+        self,
+        str_or_uri_or_curie: str,
+        *,
+        strict: bool = False,
+        context: str | None = None,
+        block_action: BlockAction = "raise",
     ) -> ReferenceTuple | None:
         """Parse a string, CURIE, or URI."""
         if r1 := self.rules.remap_full(
@@ -227,7 +235,10 @@ class PreprocessingConverter(Converter):
         str_or_uri_or_curie = self.rules.remap_prefix(str_or_uri_or_curie, context=context)
 
         if self.rules.str_is_blocked(str_or_uri_or_curie, context=context):
-            raise BlocklistError
+            if block_action == "raise":
+                raise BlocklistError
+            else:
+                return None
 
         if strict:
             return super().parse(str_or_uri_or_curie, strict=strict)
@@ -246,7 +257,12 @@ class PreprocessingConverter(Converter):
     ) -> ReferenceTuple: ...
 
     def parse_curie(
-        self, curie: str, *, strict: bool = False, context: str | None = None
+        self,
+        curie: str,
+        *,
+        strict: bool = False,
+        context: str | None = None,
+        block_action: BlockAction = "raise",
     ) -> ReferenceTuple | None:
         """Parse and standardize a CURIE.
 
@@ -255,6 +271,10 @@ class PreprocessingConverter(Converter):
             to false.
         :param context: Is there a context, e.g., an ontology prefix that should be
             applied to the remapping and blocklist rules?
+        :param block_action: What action should be taken when the blocklist is invoked?
+
+            - **raise** - raise an exception
+            - **pass** - return ``None``
 
         :returns: A tuple representing a parsed and standardized CURIE
 
@@ -267,7 +287,10 @@ class PreprocessingConverter(Converter):
         curie = self.rules.remap_prefix(curie, context=context)
 
         if self.rules.str_is_blocked(curie, context=context):
-            raise BlocklistError
+            if block_action == "raise":
+                raise BlocklistError
+            else:
+                return None
 
         if strict:
             return super().parse_curie(curie, strict=strict)
