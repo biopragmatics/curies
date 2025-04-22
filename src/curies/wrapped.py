@@ -15,8 +15,8 @@ __all__ = [
     "Blacklist",
     "BlacklistError",
     "PreprocessingConverter",
+    "PreprocessingRules",
     "Rewrites",
-    "Rules",
 ]
 
 X = TypeVar("X", bound=Reference)
@@ -121,7 +121,7 @@ class Rewrites(BaseModel):
         return str_or_curie_or_uri
 
 
-class Rules(BaseModel):
+class PreprocessingRules(BaseModel):
     """A model for blacklists and rewrites."""
 
     blacklists: Blacklist
@@ -166,10 +166,10 @@ class Rules(BaseModel):
         return self.rewrites.remap_prefix(str_or_curie_or_uri, ontology_prefix=ontology_prefix)
 
 
-def _load_rules(rules: str | Path | Rules) -> Rules:
+def _load_rules(rules: str | Path | PreprocessingRules) -> PreprocessingRules:
     if isinstance(rules, (str, Path)):
         rules = Path(rules).expanduser().resolve()
-        rules = Rules.model_validate_json(rules.read_text())
+        rules = PreprocessingRules.model_validate_json(rules.read_text())
     return rules
 
 
@@ -183,7 +183,7 @@ class PreprocessingConverter(Converter):
     def __init__(
         self,
         *args: Any,
-        rules: Rules | str | Path,
+        rules: PreprocessingRules | str | Path,
         reference_cls: type[X] | None = None,
         **kwargs: Any,
     ) -> None:
@@ -199,7 +199,7 @@ class PreprocessingConverter(Converter):
         self._reference_cls = Reference if reference_cls is None else reference_cls
 
     @classmethod
-    def from_converter(cls, converter: Converter, rules: Rules | str | Path) -> Self:
+    def from_converter(cls, converter: Converter, rules: PreprocessingRules | str | Path) -> Self:
         """Wrap a converter with a ruleset."""
         return cls(records=converter.records, rules=rules)
 

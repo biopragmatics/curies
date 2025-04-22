@@ -8,7 +8,13 @@ from pathlib import Path
 from typing import ClassVar
 
 from curies import Converter, ReferenceTuple
-from curies.wrapped import Blacklist, BlacklistError, PreprocessingConverter, Rewrites, Rules
+from curies.wrapped import (
+    Blacklist,
+    BlacklistError,
+    PreprocessingConverter,
+    PreprocessingRules,
+    Rewrites,
+)
 
 EX1_RT = ReferenceTuple("GO", "1234567")
 EX1_URI = "http://purl.obolibrary.org/obo/GO_1234567"
@@ -21,7 +27,7 @@ DECOY_1_URI = "https://example.org/NOPE/NOPE"
 class TestWrapped(unittest.TestCase):
     """Tests for preprocessing converter."""
 
-    rules: ClassVar[Rules]
+    rules: ClassVar[PreprocessingRules]
     inner_converter: ClassVar[Converter]
     converter: ClassVar[PreprocessingConverter]
     temporary_directory: ClassVar[tempfile.TemporaryDirectory[str]]
@@ -31,7 +37,7 @@ class TestWrapped(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         """Set up the test case."""
-        cls.rules = Rules(
+        cls.rules = PreprocessingRules(
             rewrites=Rewrites(
                 full={"is_a": "rdf:type"},
                 prefix={
