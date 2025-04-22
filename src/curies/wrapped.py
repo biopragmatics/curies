@@ -167,7 +167,7 @@ class Rules(BaseModel):
 
 
 def _load_rules(rules: str | Path | Rules) -> Rules:
-    if isinstance(rules, str | Path):
+    if isinstance(rules, (str, Path)):
         rules = Path(rules).expanduser().resolve()
         rules = Rules.model_validate_json(rules.read_text())
     return rules
