@@ -105,7 +105,7 @@ class PreprocessingRewrites(BaseModel):
 
         return None
 
-    def remap_prefix(self, str_or_curie_or_uri: str, context: str | None = None) -> str:
+    def remap_prefix(self, str_or_curie_or_uri: str, *, context: str | None = None) -> str:
         """Remap a prefix."""
         if context is not None:
             for old_prefix, new_prefix in self.resource_prefix.get(context, {}).items():
@@ -153,7 +153,7 @@ class PreprocessingRules(BaseModel):
             str_or_curie_or_uri, reference_cls=reference_cls, context=context
         )
 
-    def remap_prefix(self, str_or_curie_or_uri: str, context: str | None = None) -> str:
+    def remap_prefix(self, str_or_curie_or_uri: str, *, context: str | None = None) -> str:
         """Remap a prefix."""
         return self.rewrites.remap_prefix(str_or_curie_or_uri, context=context)
 
