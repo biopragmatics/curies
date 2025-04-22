@@ -112,4 +112,5 @@ flags.
 
 Blocklists cause throwing an exception that can be handled by downstream code, such as
 returning a None. This is done because in some places, it's nice to have the distinction
-between ``None`` being returned by parsing failing, versus actively being blocked.
+between ``None`` being returned by parsing failing, versus actively being blocked. This
+can be toggled with the ``block_action`` argument.

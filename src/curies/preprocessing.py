@@ -160,6 +160,7 @@ class PreprocessingRules(BaseModel):
 
 
 def _load_rules(rules: str | Path | PreprocessingRules) -> PreprocessingRules:
+    # TODO load remote?
     if isinstance(rules, (str, Path)):
         rules = Path(rules).expanduser().resolve()
         rules = PreprocessingRules.model_validate_json(rules.read_text())
@@ -182,11 +183,11 @@ class PreprocessingConverter(Converter):
     ) -> None:
         """Instantiate a converter with a ruleset for pre-processing.
 
-        :param args: Positional arguments passed to :func:`Converter.__init__`
+        :param args: Positional arguments passed to :meth:`curies.Converter.__init__`
         :param rules: A set of rules
         :param reference_cls: The reference class to use. Defaults to
             :class:`curies.Reference`.
-        :param kwargs: Keyword arguments passed to :func:`Converter.__init__`
+        :param kwargs: Keyword arguments passed to :meth:`curies.Converter.__init__`
         """
         super().__init__(*args, **kwargs)
         self.rules = _load_rules(rules)
@@ -194,7 +195,15 @@ class PreprocessingConverter(Converter):
 
     @classmethod
     def from_converter(cls, converter: Converter, rules: PreprocessingRules | str | Path) -> Self:
-        """Wrap a converter with a ruleset."""
+        """Wrap a converter with a ruleset.
+
+        :param converter: A pre-instantiated converter
+        :param rules: A pre-processing rules object, or path to a JSON file containing a
+            pre-processing configuration
+
+        :returns: A converter that uses the ruls for pre-processing when parsing URIs
+            and CURIEs.
+        """
         return cls(records=converter.records, rules=rules)
 
     # docstr-coverage:excused `overload`
