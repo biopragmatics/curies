@@ -25,6 +25,12 @@ from .api import (
     write_tsv,
 )
 from .discovery import discover, discover_from_rdf
+from .preprocessing import (
+    PreprocessingBlacklist,
+    PreprocessingConverter,
+    PreprocessingRewrites,
+    PreprocessingRules,
+)
 from .reconciliation import remap_curie_prefixes, remap_uri_prefixes, rewire
 from .sources import (
     get_bioregistry_converter,
@@ -35,12 +41,6 @@ from .sources import (
 )
 from .triples import Triple
 from .version import get_version
-from .preprocessing import (
-    PreprocessingConverter,
-    PreprocessingRules,
-    PreprocessingRewrites,
-    PreprocessingBlacklist,
-)
 
 __all__ = [
     "Converter",
@@ -51,10 +51,10 @@ __all__ = [
     "NamedReference",
     "Prefix",
     "PrefixMap",
-    "PreprocessingConverter",
-    "PreprocessingRules",
-    "PreprocessingRewrites",
     "PreprocessingBlacklist",
+    "PreprocessingConverter",
+    "PreprocessingRewrites",
+    "PreprocessingRules",
     "Record",
     "Records",
     "Reference",

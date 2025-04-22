@@ -8,12 +8,12 @@ from pathlib import Path
 from typing import ClassVar
 
 from curies import Converter, ReferenceTuple
-from curies.wrapped import (
-    Blacklist,
+from curies.preprocessing import (
     BlacklistError,
+    PreprocessingBlacklist,
     PreprocessingConverter,
+    PreprocessingRewrites,
     PreprocessingRules,
-    Rewrites,
 )
 
 EX1_RT = ReferenceTuple("GO", "1234567")
@@ -38,7 +38,7 @@ class TestWrapped(unittest.TestCase):
     def setUpClass(cls) -> None:
         """Set up the test case."""
         cls.rules = PreprocessingRules(
-            rewrites=Rewrites(
+            rewrites=PreprocessingRewrites(
                 full={"is_a": "rdf:type"},
                 prefix={
                     "OMIM:PS": "omim.ps:",
@@ -55,7 +55,7 @@ class TestWrapped(unittest.TestCase):
                     },
                 },
             ),
-            blacklists=Blacklist(
+            blacklists=PreprocessingBlacklist(
                 full=["rdf:NOPE"],
                 resource_prefix={
                     "chebi": [

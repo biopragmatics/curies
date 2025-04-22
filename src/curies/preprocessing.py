@@ -12,11 +12,11 @@ from typing_extensions import Self
 from .api import Converter, Reference, ReferenceTuple
 
 __all__ = [
-    "PreprocessingBlacklist",
     "BlacklistError",
+    "PreprocessingBlacklist",
     "PreprocessingConverter",
-    "PreprocessingRules",
     "PreprocessingRewrites",
+    "PreprocessingRules",
 ]
 
 X = TypeVar("X", bound=Reference)
@@ -129,7 +129,7 @@ class PreprocessingRules(BaseModel):
 
     @classmethod
     def lint_file(cls, path: str | Path) -> None:
-        """Lint a file."""
+        """Lint a file, in place, given a file path."""
         path = Path(path).expanduser().resolve()
         rules = cls.model_validate_json(path.read_text())
         rules.blacklists._sort()
