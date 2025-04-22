@@ -23,11 +23,11 @@ X = TypeVar("X", bound=Reference)
 class Blacklist(BaseModel):
     """A model for prefix and full blacklists."""
 
-    full: list[str]
-    resource_full: dict[str, list[str]]
-    prefix: list[str]
-    resource_prefix: dict[str, list[str]]
-    suffix: list[str]
+    full: list[str] = Field(default_factory=list)
+    resource_full: dict[str, list[str]] = Field(default_factory=dict)
+    prefix: list[str] = Field(default_factory=list)
+    resource_prefix: dict[str, list[str]] = Field(default_factory=dict)
+    suffix: list[str] = Field(default_factory=list)
 
     def _sort(self) -> None:
         self.full.sort()
@@ -76,13 +76,17 @@ class Blacklist(BaseModel):
 class Rewrites(BaseModel):
     """A model for prefix and full rewrites."""
 
-    full: dict[str, str] = Field(..., description="Global remappings for an entire string")
-    resource_full: dict[str, dict[str, str]] = Field(
-        ..., description="Resource-keyed remappings for an entire string"
+    full: dict[str, str] = Field(
+        default_factory=dict, description="Global remappings for an entire string"
     )
-    prefix: dict[str, str] = Field(..., description="Global remappings of just the prefix")
+    resource_full: dict[str, dict[str, str]] = Field(
+        default_factory=dict, description="Resource-keyed remappings for an entire string"
+    )
+    prefix: dict[str, str] = Field(
+        default_factory=dict, description="Global remappings of just the prefix"
+    )
     resource_prefix: dict[str, dict[str, str]] = Field(
-        ..., description="Resource-keyed remappings for just a prefix"
+        default_factory=dict, description="Resource-keyed remappings for just a prefix"
     )
 
     def remap_full(
@@ -209,3 +213,29 @@ class PreprocessingConverter(Converter):
         if strict:
             return super().parse(uri_or_curie, strict=strict)
         return super().parse(uri_or_curie, strict=strict)
+
+    @overload
+    def parse_curie(
+        self, curie: str, *, strict: Literal[False] = False, ontology_prefix: str | None = ...
+    ) -> ReferenceTuple | None: ...
+
+    @overload
+    def parse_curie(
+        self, curie: str, *, strict: Literal[True] = True, ontology_prefix: str | None = ...
+    ) -> ReferenceTuple: ...
+
+    def parse_curie(  # noqa:D102
+        self, curie: str, *, strict: bool = False, ontology_prefix: str | None = None
+    ) -> ReferenceTuple | None:
+        if r1 := self.rules.remap_full(curie, cls=self._cls, ontology_prefix=ontology_prefix):
+            return r1.pair
+
+        # Remap node's prefix (if necessary)
+        curie = self.rules.remap_prefix(curie, ontology_prefix=ontology_prefix)
+
+        if self.rules.str_is_blacklisted(curie, ontology_prefix=ontology_prefix):
+            raise BlacklistError
+
+        if strict:
+            return super().parse_curie(curie, strict=strict)
+        return super().parse_curie(curie, strict=strict)

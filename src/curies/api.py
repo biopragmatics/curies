@@ -1500,13 +1500,15 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def parse(self, uri_or_curie: str, *, strict: Literal[True]) -> ReferenceTuple: ...
+    def parse(self, uri_or_curie: str, *, strict: Literal[True] = True) -> ReferenceTuple: ...
 
     # docstr-coverage:excused `overload`
     @overload
-    def parse(self, uri_or_curie: str, *, strict: Literal[False]) -> ReferenceTuple | None: ...
+    def parse(
+        self, uri_or_curie: str, *, strict: Literal[False] = False
+    ) -> ReferenceTuple | None: ...
 
-    def parse(self, uri_or_curie: str, *, strict: bool) -> ReferenceTuple | None:
+    def parse(self, uri_or_curie: str, *, strict: bool = False) -> ReferenceTuple | None:
         """Parse a URI or CURIE."""
         if self.is_uri(uri_or_curie):
             if strict:
