@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Literal, TypeVar, overload
+from typing import Any, Literal, Never, TypeVar, overload
 
 from pydantic import BaseModel, Field
 from typing_extensions import Self, TypeAlias
@@ -304,3 +304,86 @@ class PreprocessingConverter(Converter):
         if strict:
             return super().parse_curie(curie, strict=strict)
         return super().parse_curie(curie, strict=strict)
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self,
+        uri: str,
+        *,
+        strict: Literal[False] = False,
+        return_none: Literal[False] = False,
+        context: str | None = ...,
+        block_action: BlockAction = ...,
+    ) -> Never: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self,
+        uri: str,
+        *,
+        strict: Literal[False] = False,
+        return_none: Literal[True] = True,
+        context: str | None = ...,
+        block_action: BlockAction = ...,
+    ) -> ReferenceTuple | None: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self,
+        uri: str,
+        *,
+        strict: Literal[True] = True,
+        return_none: bool = False,
+        context: str | None = ...,
+        block_action: BlockAction = ...,
+    ) -> ReferenceTuple: ...
+
+    def parse_uri(
+        self,
+        uri: str,
+        *,
+        strict: bool = False,
+        return_none: bool = True,
+        context: str | None = None,
+        block_action: BlockAction = "raise",
+    ) -> ReferenceTuple | tuple[None, None] | None:
+        """Parse and standardize a URI.
+
+        :param uri: The URI to parse and standardize
+        :param strict: If the URI can't be parsed, should an error be thrown? Defaults
+            to false.
+        :param return_none: A dummy value, do not use. If given as False,
+            will raise a not implemented error
+        :param context: Is there a context, e.g., an ontology prefix that should be
+            applied to the remapping and blocklist rules?
+        :param block_action: What action should be taken when the blocklist is invoked?
+
+            - **raise** - raise an exception
+            - **pass** - return ``None``
+
+        :returns: A tuple representing a parsed and standardized URI
+
+        :raises BlocklistError: If the URI is blocked
+        :raises NotImplementedError: If return_none is given as False
+        """
+        if not return_none:
+            raise NotImplementedError
+
+        if r1 := self.rules.remap_full(uri, reference_cls=self._reference_cls, context=context):
+            return r1.pair
+
+        # Remap node's prefix (if necessary)
+        uri = self.rules.remap_prefix(uri, context=context)
+
+        if self.rules.str_is_blocked(uri, context=context):
+            if block_action == "raise":
+                raise BlocklistError
+            elif return_none:
+                return None
+
+        if strict:
+            return super().parse_uri(uri, strict=strict, return_none=True)
+        return super().parse_uri(uri, strict=strict, return_none=True)
