@@ -92,16 +92,20 @@ class Rewrites(BaseModel):
     )
 
     def remap_full(
-        self, str_or_curie_or_uri: str, cls: type[X], *, ontology_prefix: str | None = None
+        self,
+        str_or_curie_or_uri: str,
+        reference_cls: type[X],
+        *,
+        ontology_prefix: str | None = None,
     ) -> X | None:
         """Remap the string if possible otherwise return it."""
         if ontology_prefix:
             resource_rewrites: dict[str, str] = self.resource_full.get(ontology_prefix, {})
             if resource_rewrites and str_or_curie_or_uri in resource_rewrites:
-                return cls.from_curie(resource_rewrites[str_or_curie_or_uri])
+                return reference_cls.from_curie(resource_rewrites[str_or_curie_or_uri])
 
         if str_or_curie_or_uri in self.full:
-            return cls.from_curie(self.full[str_or_curie_or_uri])
+            return reference_cls.from_curie(self.full[str_or_curie_or_uri])
 
         return None
 
@@ -146,11 +150,15 @@ class Rules(BaseModel):
         )
 
     def remap_full(
-        self, str_or_curie_or_uri: str, cls: type[X], *, ontology_prefix: str | None = None
+        self,
+        str_or_curie_or_uri: str,
+        reference_cls: type[X],
+        *,
+        ontology_prefix: str | None = None,
     ) -> X | None:
         """Remap the string if possible otherwise return it."""
         return self.rewrites.remap_full(
-            str_or_curie_or_uri, cls=cls, ontology_prefix=ontology_prefix
+            str_or_curie_or_uri, reference_cls=reference_cls, ontology_prefix=ontology_prefix
         )
 
     def remap_prefix(self, str_or_curie_or_uri: str, ontology_prefix: str | None = None) -> str:
@@ -172,16 +180,23 @@ class BlacklistError(ValueError):
 class PreprocessingConverter(Converter):
     """A converter with pre-processing rules."""
 
-    def __init__(self, *args: Any, rules: Rules | str | Path, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        rules: Rules | str | Path,
+        reference_cls: type[X] | None = None,
+        **kwargs: Any,
+    ) -> None:
         """Instantiate a converter with a ruleset for pre-processing.
 
         :param args: Positional arguments passed to :func:`Converter.__init__`
         :param rules: A set of rules
+        :param reference_cls: The reference class to use. Defaults to :class:`curies.Reference`.
         :param kwargs: Keyword arguments passed to :func:`Converter.__init__`
         """
         super().__init__(*args, **kwargs)
         self.rules = _load_rules(rules)
-        self._cls = Reference
+        self._reference_cls = Reference if reference_cls is None else reference_cls
 
     @classmethod
     def from_converter(cls, converter: Converter, rules: Rules | str | Path) -> Self:
@@ -211,7 +226,7 @@ class PreprocessingConverter(Converter):
     ) -> ReferenceTuple | None:
         """Parse a string, CURIE, or URI."""
         if r1 := self.rules.remap_full(
-            str_or_uri_or_curie, cls=self._cls, ontology_prefix=ontology_prefix
+            str_or_uri_or_curie, reference_cls=self._reference_cls, ontology_prefix=ontology_prefix
         ):
             return r1.pair
 
@@ -240,7 +255,9 @@ class PreprocessingConverter(Converter):
     def parse_curie(  # noqa:D102
         self, curie: str, *, strict: bool = False, ontology_prefix: str | None = None
     ) -> ReferenceTuple | None:
-        if r1 := self.rules.remap_full(curie, cls=self._cls, ontology_prefix=ontology_prefix):
+        if r1 := self.rules.remap_full(
+            curie, reference_cls=self._reference_cls, ontology_prefix=ontology_prefix
+        ):
             return r1.pair
 
         # Remap node's prefix (if necessary)
