@@ -2,7 +2,9 @@
 
 # coverage erase && coverage run -p -m pytest tests/test_wrapped.py --durations=20 && coverage combine && coverage html && open htmlcov/index.html
 
+import tempfile
 import unittest
+from pathlib import Path
 from typing import ClassVar
 
 from curies import Converter, ReferenceTuple
@@ -29,10 +31,13 @@ class TestWrapped(unittest.TestCase):
         cls.rules = Rules(
             rewrites=Rewrites(
                 full={"is_a": "rdf:type"},
-                prefix={"OMIM:PS": "omim.ps:"},
+                prefix={
+                    "OMIM:PS": "omim.ps:",
+                    "omim:PS": "omim.ps:",
+                },
                 resource_prefix={
                     "clo": {
-                        "j": "ncit:",
+                        "j": "NCIT:",
                     },
                 },
             ),
@@ -48,15 +53,23 @@ class TestWrapped(unittest.TestCase):
         cls.inner_converter = Converter.from_prefix_map(
             {
                 "GO": "http://purl.obolibrary.org/obo/GO_",
+                "NCIT": "http://purl.obolibrary.org/obo/NCIT_",
                 "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
                 "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+                "omim": "https://omim.org/MIM:",
                 "omim.ps": "https://omim.org/phenotypicSeries/PS",
                 "pubmed": "http://rdf.ncbi.nlm.nih.gov/pubchem/reference/",
             }
         )
-        cls.converter = PreprocessingConverter.from_converter(
-            converter=cls.inner_converter, rules=cls.rules
-        )
+
+        # write the rules just so we can test loading from a file
+        with tempfile.TemporaryDirectory() as directory_:
+            path = Path(directory_).joinpath("rules.json")
+            path.write_text(cls.rules.model_dump_json(indent=2, exclude_unset=True))
+
+            cls.converter = PreprocessingConverter.from_converter(
+                converter=cls.inner_converter, rules=path
+            )
 
     def test_unprocessed(self) -> None:
         """Tests that should be the same for both converters."""
@@ -87,16 +100,18 @@ class TestWrapped(unittest.TestCase):
         )
 
         # test when there's a related rewrite rule, but not used
-        self.assertEqual(ReferenceTuple("omim", "1234"), self.converter.parse_curie("OMIM:1234"))
+        self.assertEqual(ReferenceTuple("omim", "1234"), self.converter.parse_curie("omim:1234"))
 
     def test_resource_prefix_rewrite(self) -> None:
         """Test resource-specific prefix rewrite."""
         self.assertEqual(
             ReferenceTuple("NCIT", "1234"),
-            self.converter.parse_curie("j1234", ontology_prefix="clo"),
+            self.converter.parse("j1234", ontology_prefix="clo"),
         )
-        self.assertIsNone(self.converter.parse_curie("j1234"))
-        self.assertIsNone(self.converter.parse_curie("j1234", ontology_prefix="chebi"))
+        with self.assertRaises(ValueError):
+            self.assertIsNone(self.converter.parse_curie("j1234"))
+        with self.assertRaises(ValueError):
+            self.assertIsNone(self.converter.parse_curie("j1234", ontology_prefix="chebi"))
 
     def test_resource_specific_blacklist(self) -> None:
         """Test resource-specific blacklist."""

@@ -178,7 +178,6 @@ class PreprocessingConverter(Converter):
     @classmethod
     def from_converter(cls, converter: Converter, rules: Rules | str | Path) -> Self:
         """Wrap a converter with a ruleset."""
-        rules = _load_rules(rules)
         return cls(records=converter.records, rules=rules)
 
     @overload
@@ -196,23 +195,25 @@ class PreprocessingConverter(Converter):
     ) -> ReferenceTuple | None: ...
 
     def parse(
-        self, uri_or_curie: str, *, strict: bool = False, ontology_prefix: str | None = None
+        self, str_or_uri_or_curie: str, *, strict: bool = False, ontology_prefix: str | None = None
     ) -> ReferenceTuple | None:
         """Parse a string, CURIE, or URI."""
         if r1 := self.rules.remap_full(
-            uri_or_curie, cls=self._cls, ontology_prefix=ontology_prefix
+            str_or_uri_or_curie, cls=self._cls, ontology_prefix=ontology_prefix
         ):
             return r1.pair
 
         # Remap node's prefix (if necessary)
-        uri_or_curie = self.rules.remap_prefix(uri_or_curie, ontology_prefix=ontology_prefix)
+        str_or_uri_or_curie = self.rules.remap_prefix(
+            str_or_uri_or_curie, ontology_prefix=ontology_prefix
+        )
 
-        if self.rules.str_is_blacklisted(uri_or_curie, ontology_prefix=ontology_prefix):
+        if self.rules.str_is_blacklisted(str_or_uri_or_curie, ontology_prefix=ontology_prefix):
             raise BlacklistError
 
         if strict:
-            return super().parse(uri_or_curie, strict=strict)
-        return super().parse(uri_or_curie, strict=strict)
+            return super().parse(str_or_uri_or_curie, strict=strict)
+        return super().parse(str_or_uri_or_curie, strict=strict)
 
     @overload
     def parse_curie(
