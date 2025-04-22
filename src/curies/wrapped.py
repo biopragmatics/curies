@@ -188,13 +188,17 @@ class PreprocessingConverter(Converter):
 
     @overload
     def parse(
-        self, uri_or_curie: str, *, strict: Literal[True] = True, ontology_prefix: str | None = ...
+        self,
+        str_or_uri_or_curie: str,
+        *,
+        strict: Literal[True] = True,
+        ontology_prefix: str | None = ...,
     ) -> ReferenceTuple: ...
 
     @overload
     def parse(
         self,
-        uri_or_curie: str,
+        str_or_uri_or_curie: str,
         *,
         strict: Literal[False] = False,
         ontology_prefix: str | None = ...,

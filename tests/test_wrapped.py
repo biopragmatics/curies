@@ -43,6 +43,11 @@ class TestWrapped(unittest.TestCase):
                         "j": "NCIT:",
                     },
                 },
+                resource_full={
+                    "clo": {
+                        "nopeforever": "NCIT:5678",
+                    },
+                },
             ),
             blacklists=Blacklist(
                 full=["rdf:NOPE"],
@@ -119,12 +124,26 @@ class TestWrapped(unittest.TestCase):
         # test when there's a related rewrite rule, but not used
         self.assertEqual(ReferenceTuple("omim", "1234"), self.converter.parse_curie("omim:1234"))
 
+    def test_resource_full_rewrite(self) -> None:
+        """Test global full string rewrite."""
+        self.assertIsNone(self.converter.parse("nopeforever"))
+        with self.assertRaises(ValueError):
+            self.converter.parse_curie("nopeforever")
+        self.assertEqual(
+            ReferenceTuple("NCIT", "5678"),
+            self.converter.parse_curie("nopeforever", ontology_prefix="clo"),
+        )
+
     def test_resource_prefix_rewrite(self) -> None:
         """Test resource-specific prefix rewrite."""
         self.assertEqual(
             ReferenceTuple("NCIT", "1234"),
             self.converter.parse("j1234", ontology_prefix="clo"),
         )
+
+        # when we have rewrite rules for that ontology, but none apply
+        self.assertIsNone(self.converter.parse("xyz", ontology_prefix="clo"))
+
         with self.assertRaises(ValueError):
             self.assertIsNone(self.converter.parse_curie("j1234"))
         with self.assertRaises(ValueError):

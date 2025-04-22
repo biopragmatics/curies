@@ -1507,7 +1507,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse(
-        self, uri_or_curie: str, *, strict: Literal[False] = False
+        self, str_or_uri_or_curie: str, *, strict: Literal[False] = False
     ) -> ReferenceTuple | None: ...
 
     def parse(self, str_or_uri_or_curie: str, *, strict: bool = False) -> ReferenceTuple | None:
