@@ -196,6 +196,7 @@ class PreprocessingConverter(Converter):
         """Wrap a converter with a ruleset."""
         return cls(records=converter.records, rules=rules)
 
+    # docstr-coverage:excused `overload`
     @overload
     def parse(
         self,
@@ -205,6 +206,7 @@ class PreprocessingConverter(Converter):
         context: str | None = ...,
     ) -> ReferenceTuple: ...
 
+    # docstr-coverage:excused `overload`
     @overload
     def parse(
         self,
@@ -233,19 +235,33 @@ class PreprocessingConverter(Converter):
             return super().parse(str_or_uri_or_curie, strict=strict)
         return super().parse(str_or_uri_or_curie, strict=strict)
 
+    # docstr-coverage:excused `overload`
     @overload
     def parse_curie(
         self, curie: str, *, strict: Literal[False] = False, context: str | None = ...
     ) -> ReferenceTuple | None: ...
 
+    # docstr-coverage:excused `overload`
     @overload
     def parse_curie(
         self, curie: str, *, strict: Literal[True] = True, context: str | None = ...
     ) -> ReferenceTuple: ...
 
-    def parse_curie(  # noqa:D102
+    def parse_curie(
         self, curie: str, *, strict: bool = False, context: str | None = None
     ) -> ReferenceTuple | None:
+        """Parse and standardize a CURIE.
+
+        :param curie: The CURIE to parse and standardize
+        :param strict: If the CURIE can't be parsed, should an error be thrown? Defaults
+            to false.
+        :param context: Is there a context, e.g., an ontology prefix that should be
+            applied to the remapping and blacklist rules?
+
+        :returns: A tuple representing a parsed and standardized CURIE
+
+        :raises BlacklistError: If the CURIE is blacklisted
+        """
         if r1 := self.rules.remap_full(curie, reference_cls=self._reference_cls, context=context):
             return r1.pair
 
