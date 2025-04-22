@@ -137,23 +137,23 @@ class TestWrapped(unittest.TestCase):
             self.converter.parse_curie("nopeforever")
         self.assertEqual(
             ReferenceTuple("NCIT", "5678"),
-            self.converter.parse_curie("nopeforever", ontology_prefix="clo"),
+            self.converter.parse_curie("nopeforever", context="clo"),
         )
 
     def test_resource_prefix_rewrite(self) -> None:
         """Test resource-specific prefix rewrite."""
         self.assertEqual(
             ReferenceTuple("NCIT", "1234"),
-            self.converter.parse("j1234", ontology_prefix="clo"),
+            self.converter.parse("j1234", context="clo"),
         )
 
         # when we have rewrite rules for that ontology, but none apply
-        self.assertIsNone(self.converter.parse("xyz", ontology_prefix="clo"))
+        self.assertIsNone(self.converter.parse("xyz", context="clo"))
 
         with self.assertRaises(ValueError):
             self.assertIsNone(self.converter.parse_curie("j1234"))
         with self.assertRaises(ValueError):
-            self.assertIsNone(self.converter.parse_curie("j1234", ontology_prefix="chebi"))
+            self.assertIsNone(self.converter.parse_curie("j1234", context="chebi"))
 
     def test_resource_specific_blacklist(self) -> None:
         """Test resource-specific blacklist."""
@@ -163,15 +163,15 @@ class TestWrapped(unittest.TestCase):
         )
         self.assertEqual(
             ReferenceTuple("pubmed", "1234"),
-            self.converter.parse_curie("pubmed:1234", ontology_prefix="doid"),
+            self.converter.parse_curie("pubmed:1234", context="doid"),
         )
         with self.assertRaises(BlacklistError):
-            self.converter.parse_curie("pubmed:1234", ontology_prefix="chebi")
+            self.converter.parse_curie("pubmed:1234", context="chebi")
 
-        self.converter.parse_curie("omim:1234", ontology_prefix="chebi")
+        self.converter.parse_curie("omim:1234", context="chebi")
         # normally, OMIM works, but we configured a specific one for the blacklist
         with self.assertRaises(BlacklistError):
-            self.converter.parse_curie("omim:1356", ontology_prefix="chebi")
+            self.converter.parse_curie("omim:1356", context="chebi")
 
     def test_global_blacklist(self) -> None:
         """Test global blacklist."""

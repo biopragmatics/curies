@@ -41,11 +41,11 @@ class PreprocessingBlacklist(BaseModel):
             v.sort()
 
     def str_has_blacklisted_prefix(
-        self, str_or_curie_or_uri: str, *, ontology_prefix: str | None = None
+        self, str_or_curie_or_uri: str, *, context: str | None = None
     ) -> bool:
         """Check if the CURIE string has a blacklisted prefix."""
-        if ontology_prefix:
-            prefixes: list[str] = self.resource_prefix.get(ontology_prefix, [])
+        if context:
+            prefixes: list[str] = self.resource_prefix.get(context, [])
             if prefixes and any(str_or_curie_or_uri.startswith(prefix) for prefix in prefixes):
                 return True
         return any(str_or_curie_or_uri.startswith(prefix) for prefix in self.prefix)
@@ -55,23 +55,19 @@ class PreprocessingBlacklist(BaseModel):
         return any(str_or_curie_or_uri.endswith(suffix) for suffix in self.suffix)
 
     def str_is_blacklisted_full(
-        self, str_or_curie_or_uri: str, *, ontology_prefix: str | None = None
+        self, str_or_curie_or_uri: str, *, context: str | None = None
     ) -> bool:
         """Check if the full CURIE string is blacklisted."""
-        if ontology_prefix and str_or_curie_or_uri in self.resource_full.get(
-            ontology_prefix, set()
-        ):
+        if context and str_or_curie_or_uri in self.resource_full.get(context, set()):
             return True
         return str_or_curie_or_uri in self.full
 
-    def str_is_blacklisted(
-        self, str_or_curie_or_uri: str, *, ontology_prefix: str | None = None
-    ) -> bool:
+    def str_is_blacklisted(self, str_or_curie_or_uri: str, *, context: str | None = None) -> bool:
         """Check if the full CURIE string is blacklisted."""
         return (
-            self.str_has_blacklisted_prefix(str_or_curie_or_uri, ontology_prefix=ontology_prefix)
+            self.str_has_blacklisted_prefix(str_or_curie_or_uri, context=context)
             or self.str_has_blacklisted_suffix(str_or_curie_or_uri)
-            or self.str_is_blacklisted_full(str_or_curie_or_uri, ontology_prefix=ontology_prefix)
+            or self.str_is_blacklisted_full(str_or_curie_or_uri, context=context)
         )
 
 
@@ -96,11 +92,11 @@ class PreprocessingRewrites(BaseModel):
         str_or_curie_or_uri: str,
         reference_cls: type[X],
         *,
-        ontology_prefix: str | None = None,
+        context: str | None = None,
     ) -> X | None:
         """Remap the string if possible otherwise return it."""
-        if ontology_prefix:
-            resource_rewrites: dict[str, str] = self.resource_full.get(ontology_prefix, {})
+        if context:
+            resource_rewrites: dict[str, str] = self.resource_full.get(context, {})
             if resource_rewrites and str_or_curie_or_uri in resource_rewrites:
                 return reference_cls.from_curie(resource_rewrites[str_or_curie_or_uri])
 
@@ -109,10 +105,10 @@ class PreprocessingRewrites(BaseModel):
 
         return None
 
-    def remap_prefix(self, str_or_curie_or_uri: str, ontology_prefix: str | None = None) -> str:
+    def remap_prefix(self, str_or_curie_or_uri: str, context: str | None = None) -> str:
         """Remap a prefix."""
-        if ontology_prefix is not None:
-            for old_prefix, new_prefix in self.resource_prefix.get(ontology_prefix, {}).items():
+        if context is not None:
+            for old_prefix, new_prefix in self.resource_prefix.get(context, {}).items():
                 if str_or_curie_or_uri.startswith(old_prefix):
                     return new_prefix + str_or_curie_or_uri[len(old_prefix) :]
         for old_prefix, new_prefix in self.prefix.items():
@@ -141,29 +137,25 @@ class PreprocessingRules(BaseModel):
             )
         )
 
-    def str_is_blacklisted(
-        self, str_or_curie_or_uri: str, *, ontology_prefix: str | None = None
-    ) -> bool:
+    def str_is_blacklisted(self, str_or_curie_or_uri: str, *, context: str | None = None) -> bool:
         """Check if the CURIE string is blacklisted."""
-        return self.blacklists.str_is_blacklisted(
-            str_or_curie_or_uri, ontology_prefix=ontology_prefix
-        )
+        return self.blacklists.str_is_blacklisted(str_or_curie_or_uri, context=context)
 
     def remap_full(
         self,
         str_or_curie_or_uri: str,
         reference_cls: type[X],
         *,
-        ontology_prefix: str | None = None,
+        context: str | None = None,
     ) -> X | None:
         """Remap the string if possible otherwise return it."""
         return self.rewrites.remap_full(
-            str_or_curie_or_uri, reference_cls=reference_cls, ontology_prefix=ontology_prefix
+            str_or_curie_or_uri, reference_cls=reference_cls, context=context
         )
 
-    def remap_prefix(self, str_or_curie_or_uri: str, ontology_prefix: str | None = None) -> str:
+    def remap_prefix(self, str_or_curie_or_uri: str, context: str | None = None) -> str:
         """Remap a prefix."""
-        return self.rewrites.remap_prefix(str_or_curie_or_uri, ontology_prefix=ontology_prefix)
+        return self.rewrites.remap_prefix(str_or_curie_or_uri, context=context)
 
 
 def _load_rules(rules: str | Path | PreprocessingRules) -> PreprocessingRules:
@@ -210,7 +202,7 @@ class PreprocessingConverter(Converter):
         str_or_uri_or_curie: str,
         *,
         strict: Literal[True] = True,
-        ontology_prefix: str | None = ...,
+        context: str | None = ...,
     ) -> ReferenceTuple: ...
 
     @overload
@@ -219,24 +211,22 @@ class PreprocessingConverter(Converter):
         str_or_uri_or_curie: str,
         *,
         strict: Literal[False] = False,
-        ontology_prefix: str | None = ...,
+        context: str | None = ...,
     ) -> ReferenceTuple | None: ...
 
     def parse(
-        self, str_or_uri_or_curie: str, *, strict: bool = False, ontology_prefix: str | None = None
+        self, str_or_uri_or_curie: str, *, strict: bool = False, context: str | None = None
     ) -> ReferenceTuple | None:
         """Parse a string, CURIE, or URI."""
         if r1 := self.rules.remap_full(
-            str_or_uri_or_curie, reference_cls=self._reference_cls, ontology_prefix=ontology_prefix
+            str_or_uri_or_curie, reference_cls=self._reference_cls, context=context
         ):
             return r1.pair
 
         # Remap node's prefix (if necessary)
-        str_or_uri_or_curie = self.rules.remap_prefix(
-            str_or_uri_or_curie, ontology_prefix=ontology_prefix
-        )
+        str_or_uri_or_curie = self.rules.remap_prefix(str_or_uri_or_curie, context=context)
 
-        if self.rules.str_is_blacklisted(str_or_uri_or_curie, ontology_prefix=ontology_prefix):
+        if self.rules.str_is_blacklisted(str_or_uri_or_curie, context=context):
             raise BlacklistError
 
         if strict:
@@ -245,26 +235,24 @@ class PreprocessingConverter(Converter):
 
     @overload
     def parse_curie(
-        self, curie: str, *, strict: Literal[False] = False, ontology_prefix: str | None = ...
+        self, curie: str, *, strict: Literal[False] = False, context: str | None = ...
     ) -> ReferenceTuple | None: ...
 
     @overload
     def parse_curie(
-        self, curie: str, *, strict: Literal[True] = True, ontology_prefix: str | None = ...
+        self, curie: str, *, strict: Literal[True] = True, context: str | None = ...
     ) -> ReferenceTuple: ...
 
     def parse_curie(  # noqa:D102
-        self, curie: str, *, strict: bool = False, ontology_prefix: str | None = None
+        self, curie: str, *, strict: bool = False, context: str | None = None
     ) -> ReferenceTuple | None:
-        if r1 := self.rules.remap_full(
-            curie, reference_cls=self._reference_cls, ontology_prefix=ontology_prefix
-        ):
+        if r1 := self.rules.remap_full(curie, reference_cls=self._reference_cls, context=context):
             return r1.pair
 
         # Remap node's prefix (if necessary)
-        curie = self.rules.remap_prefix(curie, ontology_prefix=ontology_prefix)
+        curie = self.rules.remap_prefix(curie, context=context)
 
-        if self.rules.str_is_blacklisted(curie, ontology_prefix=ontology_prefix):
+        if self.rules.str_is_blacklisted(curie, context=context):
             raise BlacklistError
 
         if strict:
