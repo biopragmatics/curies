@@ -68,3 +68,4 @@ The most recent code and data can be installed directly from GitHub with:
     services/index
     typing
     w3c
+    preprocessing

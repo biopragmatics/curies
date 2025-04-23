@@ -1500,26 +1500,30 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def parse(self, uri_or_curie: str, *, strict: Literal[True]) -> ReferenceTuple: ...
+    def parse(
+        self, str_or_uri_or_curie: str, *, strict: Literal[True] = True
+    ) -> ReferenceTuple: ...
 
     # docstr-coverage:excused `overload`
     @overload
-    def parse(self, uri_or_curie: str, *, strict: Literal[False]) -> ReferenceTuple | None: ...
+    def parse(
+        self, str_or_uri_or_curie: str, *, strict: Literal[False] = False
+    ) -> ReferenceTuple | None: ...
 
-    def parse(self, uri_or_curie: str, *, strict: bool) -> ReferenceTuple | None:
-        """Parse a URI or CURIE."""
-        if self.is_uri(uri_or_curie):
+    def parse(self, str_or_uri_or_curie: str, *, strict: bool = False) -> ReferenceTuple | None:
+        """Parse a string, URI, or CURIE."""
+        if self.is_uri(str_or_uri_or_curie):
             if strict:
-                return self.parse_uri(uri_or_curie, strict=True, return_none=True)
+                return self.parse_uri(str_or_uri_or_curie, strict=True, return_none=True)
             else:
-                return self.parse_uri(uri_or_curie, strict=False, return_none=True)
-        if self.is_curie(uri_or_curie):
+                return self.parse_uri(str_or_uri_or_curie, strict=False, return_none=True)
+        if self.is_curie(str_or_uri_or_curie):
             if strict:
-                return self.parse_curie(uri_or_curie, strict=True)
+                return self.parse_curie(str_or_uri_or_curie, strict=True)
             else:
-                return self.parse_curie(uri_or_curie, strict=False)
+                return self.parse_curie(str_or_uri_or_curie, strict=False)
         if strict:
-            raise CompressionError(uri_or_curie)
+            raise CompressionError(str_or_uri_or_curie)
         return None
 
     def compress_strict(self, uri: str) -> str:

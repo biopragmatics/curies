@@ -25,6 +25,12 @@ from .api import (
     write_tsv,
 )
 from .discovery import discover, discover_from_rdf
+from .preprocessing import (
+    PreprocessingBlocklists,
+    PreprocessingConverter,
+    PreprocessingRewrites,
+    PreprocessingRules,
+)
 from .reconciliation import remap_curie_prefixes, remap_uri_prefixes, rewire
 from .sources import (
     get_bioregistry_converter,
@@ -45,6 +51,10 @@ __all__ = [
     "NamedReference",
     "Prefix",
     "PrefixMap",
+    "PreprocessingBlocklists",
+    "PreprocessingConverter",
+    "PreprocessingRewrites",
+    "PreprocessingRules",
     "Record",
     "Records",
     "Reference",
