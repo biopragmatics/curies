@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Literal, TypeVar, overload
+from typing import Any, Callable, Literal, TypeVar, overload
 
 from pydantic import BaseModel, Field
 from typing_extensions import Never, Self, TypeAlias
@@ -171,6 +171,10 @@ class BlocklistError(ValueError):
     """An error for block list."""
 
 
+def _identity(x: str) -> str:
+    return x
+
+
 class PreprocessingConverter(Converter):
     """A converter with pre-processing rules."""
 
@@ -179,6 +183,7 @@ class PreprocessingConverter(Converter):
         *args: Any,
         rules: PreprocessingRules | str | Path,
         reference_cls: type[X] | None = None,
+        preclean: Callable[[str], str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate a converter with a ruleset for pre-processing.
@@ -187,11 +192,14 @@ class PreprocessingConverter(Converter):
         :param rules: A set of rules
         :param reference_cls: The reference class to use. Defaults to
             :class:`curies.Reference`.
+        :param preclean: An optional function used to preprocess strings, CURIEs, and
+            URIs before parsing
         :param kwargs: Keyword arguments passed to :meth:`curies.Converter.__init__`
         """
         super().__init__(*args, **kwargs)
         self.rules = _load_rules(rules)
         self._reference_cls = Reference if reference_cls is None else reference_cls
+        self._preclean = preclean if preclean is not None else _identity
 
     @classmethod
     def from_converter(cls, converter: Converter, rules: PreprocessingRules | str | Path) -> Self:
@@ -237,6 +245,8 @@ class PreprocessingConverter(Converter):
         block_action: BlockAction = "raise",
     ) -> ReferenceTuple | None:
         """Parse a string, CURIE, or URI."""
+        str_or_uri_or_curie = self._preclean(str_or_uri_or_curie)
+
         if r1 := self.rules.remap_full(
             str_or_uri_or_curie, reference_cls=self._reference_cls, context=context
         ):
@@ -301,6 +311,8 @@ class PreprocessingConverter(Converter):
 
         :raises BlocklistError: If the CURIE is blocked
         """
+        curie = self._preclean(curie)
+
         if r1 := self.rules.remap_full(curie, reference_cls=self._reference_cls, context=context):
             return r1.pair
 
@@ -383,6 +395,8 @@ class PreprocessingConverter(Converter):
         """
         if not return_none:
             raise NotImplementedError
+
+        uri = self._preclean(uri)
 
         if r1 := self.rules.remap_full(uri, reference_cls=self._reference_cls, context=context):
             return r1.pair
