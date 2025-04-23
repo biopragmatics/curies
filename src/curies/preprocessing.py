@@ -367,8 +367,8 @@ class PreprocessingConverter(Converter):
         :param uri: The URI to parse and standardize
         :param strict: If the URI can't be parsed, should an error be thrown? Defaults
             to false.
-        :param return_none: A dummy value, do not use. If given as False,
-            will raise a not implemented error
+        :param return_none: A dummy value, do not use. If given as False, will raise a
+            not implemented error
         :param context: Is there a context, e.g., an ontology prefix that should be
             applied to the remapping and blocklist rules?
         :param block_action: What action should be taken when the blocklist is invoked?

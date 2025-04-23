@@ -39,7 +39,10 @@ class TestWrapped(unittest.TestCase):
         """Set up the test case."""
         cls.rules = PreprocessingRules(
             rewrites=PreprocessingRewrites(
-                full={"is_a": "rdf:type"},
+                full={
+                    "is_a": "rdf:type",
+                    "http://creativecommons.org/licenses/by/3.0/": "spdx:CC-BY-3.0",
+                },
                 prefix={
                     "OMIM:PS": "omim.ps:",
                     "omim:PS": "omim.ps:",
@@ -76,6 +79,7 @@ class TestWrapped(unittest.TestCase):
                 "omim": "https://omim.org/MIM:",
                 "omim.ps": "https://omim.org/phenotypicSeries/PS",
                 "pubmed": "http://rdf.ncbi.nlm.nih.gov/pubchem/reference/",
+                "spdx": "https://spdx.org/licenses/",
             }
         )
 
@@ -120,6 +124,10 @@ class TestWrapped(unittest.TestCase):
         """Test global full string rewrite."""
         self.assertEqual(ReferenceTuple("rdf", "type"), self.converter.parse("is_a"))
         self.assertEqual(ReferenceTuple("rdf", "type"), self.converter.parse_curie("is_a"))
+        self.assertEqual(
+            ReferenceTuple("spdx", "CC-BY-3.0"),
+            self.converter.parse_uri("http://creativecommons.org/licenses/by/3.0/"),
+        )
 
     def test_global_prefix_rewrite(self) -> None:
         """Test global prefix rewrite."""

@@ -53,6 +53,30 @@ OBO Foundry's PURL rules
     >>> converter.parse_curie("APOLLO:SV_1234567")
     ReferenceTuple('APOLLO_SV', '1234567')
 
+The CURIE and URI rewrites are unified. Therefore, you can also use a URI as a rewrite,
+such as handling Creative Commons license URLs, which unfortunately aren't themselves
+part of a semantic space for licenses. Luckily, SPDX is, and we can remap to that.
+
+.. code-block:: python
+
+    import curies
+    from curies import PreprocessingRules, PreprocessingConverter, PreprocessingRewrites
+
+    rules = PreprocessingRules(
+        rewrites=PreprocessingRewrites(
+            full={"http://creativecommons.org/licenses/by/3.0/": "spdx:CC-BY-3.0",},
+        )
+    )
+
+    converter = curies.get_obo_converter()
+    converter.add_prefix("spdx", "https://spdx.org/licenses/")
+    converter = PreprocessingConverter.from_converter(
+        converter, rules=rules,
+    )
+
+    >>> converter.parse_uri("http://creativecommons.org/licenses/by/3.0/")
+    ReferenceTuple('spdx', 'CC-BY-3.0')
+
 Some rewrite rules only apply to a specific resource, because of its own quirks in
 curation or encoding. For example, CHMO encodes OrangeBook entries with ``orange`` as a
 prefix, which is not typically specific enough to warrant curating ``orange`` as a
