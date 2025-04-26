@@ -5,19 +5,33 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from curies import Triple
+import pydantic
+
+from curies import Reference, Triple
 from curies.triples import read_triples, write_triples
+
+T1 = Triple.from_curies("a:1", "a:2", "a:3")
+T2 = Triple.from_curies("a:1", "a:2", "a:4")
 
 
 class TestTriples(unittest.TestCase):
     """Test triples."""
 
+    def test_immutable(self) -> None:
+        """Test immutable."""
+        with self.assertRaises(pydantic.ValidationError):
+            T1.subject = Reference.from_curie("b:1")
+
+    def test_as_curies(self) -> None:
+        """Test stringifying."""
+        self.assertEqual(
+            ("a:1", "a:2", "a:3"),
+            T1.as_curies(),
+        )
+
     def test_roundtrip(self) -> None:
         """Test roundtrip."""
-        triples = [
-            Triple.from_curies("a:1", "a:2", "a:3"),
-            Triple.from_curies("a:1", "a:2", "a:4"),
-        ]
+        triples = [T1, T2]
         with tempfile.TemporaryDirectory() as directory:
             paths = [
                 Path(directory).joinpath("test.tsv.gz"),
