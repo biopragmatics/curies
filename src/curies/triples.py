@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import TextIO
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing_extensions import Self
 
 from .api import Reference
@@ -24,9 +24,15 @@ __all__ = [
 class Triple(BaseModel):
     """A model for a triple of subject-predicate-object triple."""
 
+    model_config = ConfigDict(frozen=True)
+
     subject: Reference
     predicate: Reference
     object: Reference
+
+    def as_curies(self) -> tuple[str, str, str]:
+        """Get a three-tuple of strings representing this triple."""
+        return self.subject.curie, self.predicate.curie, self.object.curie
 
     @classmethod
     def from_curies(
