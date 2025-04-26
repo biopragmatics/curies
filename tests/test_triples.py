@@ -20,7 +20,7 @@ class TestTriples(unittest.TestCase):
     def test_immutable(self) -> None:
         """Test immutable."""
         with self.assertRaises(pydantic.ValidationError):
-            T1.subject = Reference.from_curie("b:1")
+            T1.subject = Reference.from_curie("b:1")  # type:ignore
 
     def test_as_curies(self) -> None:
         """Test stringifying."""
