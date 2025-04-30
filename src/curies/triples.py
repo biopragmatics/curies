@@ -7,7 +7,7 @@ import gzip
 from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TextIO, NamedTuple
+from typing import NamedTuple, TextIO
 
 from pydantic import BaseModel, ConfigDict
 from typing_extensions import Self
@@ -15,9 +15,9 @@ from typing_extensions import Self
 from .api import Reference
 
 __all__ = [
+    "StrTriple",
     "Triple",
     "read_triples",
-    "StrTriple",
     "write_triples",
 ]
 
