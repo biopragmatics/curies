@@ -26,7 +26,7 @@ class TestTriples(unittest.TestCase):
         """Test stringifying."""
         self.assertEqual(
             ("a:1", "a:2", "a:3"),
-            T1.as_curies(),
+            T1.as_str_triple(),
         )
 
     def test_roundtrip(self) -> None:

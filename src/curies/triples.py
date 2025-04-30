@@ -39,12 +39,12 @@ class Triple(BaseModel):
     predicate: Reference
     object: Reference
 
-    def as_curies(self) -> StrTriple:
+    def as_str_triple(self) -> StrTriple:
         """Get a three-tuple of strings representing this triple."""
         return StrTriple(self.subject.curie, self.predicate.curie, self.object.curie)
 
     def __lt__(self, other: Triple) -> bool:
-        return self.as_curies() < other.as_curies()
+        return self.as_str_triple() < other.as_str_triple()
 
     @classmethod
     def from_curies(
