@@ -43,3 +43,8 @@ class TestTriples(unittest.TestCase):
                     write_triples(triples, path, header=header)
                     reconstituted = read_triples(path)
                     self.assertEqual(triples, reconstituted)
+
+    def test_sort(self) -> None:
+        """Test sorting."""
+        self.assertEqual([T1, T2], sorted([T1, T2]))
+        self.assertEqual([T1, T2], sorted([T2, T1]))
