@@ -77,12 +77,33 @@ has_related_synonym = _r("oboInOwl", "hasRelatedSynonym", "has related synonym")
 #: A list of strings used to refer to synonym types in ``oboInOwl``
 SynonymScope: TypeAlias = Literal["EXACT", "NARROW", "BROAD", "RELATED"]
 
+#: This is what happens if no specificity is given
+DEFAULT_SYNONYM_SCOPE: SynonymScope = "RELATED"
+
+# OBO Graph JSON uses the LUIDs from OBO in OWL, so we
+# keep track of these as well
+SynonymScopeOIO: TypeAlias = Literal[
+    "hasExactSynonym",
+    "hasNarrowSynonym",
+    "hasBroadSynonym",
+    "hasRelatedSynonym",
+]
+
+DEFAULT_SYNONYM_SCOPE_OIO: SynonymScopeOIO = "hasRelatedSynonym"
+
 #: A mapping from synonym scopes to references
 synonym_scopes: dict[SynonymScope, NamedReference] = {
     "EXACT": has_exact_synonym,
     "NARROW": has_narrow_synonym,
     "BROAD": has_broad_synonym,
     "RELATED": has_related_synonym,
+}
+
+synonym_scope_to_oio: dict[SynonymScope, SynonymScopeOIO] = {
+    "EXACT": "hasExactSynonym",
+    "NARROW": "hasNarrowSynonym",
+    "BROAD": "hasBroadSynonym",
+    "RELATED": "hasRelatedSynonym",
 }
 
 ## OMO Synonym Types
