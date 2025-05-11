@@ -1513,15 +1513,9 @@ class Converter:
     def parse(self, str_or_uri_or_curie: str, *, strict: bool = False) -> ReferenceTuple | None:
         """Parse a string, URI, or CURIE."""
         if self.is_uri(str_or_uri_or_curie):
-            if strict:
-                return self.parse_uri(str_or_uri_or_curie, strict=True, return_none=True)
-            else:
-                return self.parse_uri(str_or_uri_or_curie, strict=False, return_none=True)
+            return self.parse_uri(str_or_uri_or_curie, strict=strict, return_none=True)  # type:ignore[no-any-return,call-overload]
         if self.is_curie(str_or_uri_or_curie):
-            if strict:
-                return self.parse_curie(str_or_uri_or_curie, strict=True)
-            else:
-                return self.parse_curie(str_or_uri_or_curie, strict=False)
+            return self.parse_curie(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
         if strict:
             raise CompressionError(str_or_uri_or_curie)
         return None
@@ -1755,7 +1749,7 @@ class Converter:
         """
         reference = self.parse(curie_or_uri, strict=False)
         if reference is not None:
-            return self.expand_reference(reference, strict=strict, passthrough=passthrough)
+            return self.expand_reference(reference, strict=strict, passthrough=passthrough)  # type:ignore[no-any-return,call-overload]
         if strict:
             raise ExpansionError(curie_or_uri)
         if passthrough:
@@ -1812,7 +1806,7 @@ class Converter:
         """
         reference = self.parse_curie(curie, strict=False)
         if reference is not None:
-            return self.expand_reference(reference, strict=strict, passthrough=passthrough)
+            return self.expand_reference(reference, strict=strict, passthrough=passthrough)  # type:ignore[no-any-return,call-overload]
         if strict:
             raise ExpansionError(curie)
         if passthrough:
@@ -1902,8 +1896,32 @@ class Converter:
         """
         return identifier
 
+    # docstr-coverage:excused `overload`
+    @overload
     def expand_reference(
-        self, reference: ReferenceTuple, *, strict: bool = False, passthrough: bool = False
+        self,
+        reference: ReferenceTuple | Reference,
+        *,
+        strict: Literal[True] = True,
+        passthrough: bool = ...,
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_reference(
+        self,
+        reference: ReferenceTuple | Reference,
+        *,
+        strict: Literal[False] = False,
+        passthrough: bool = ...,
+    ) -> str | None: ...
+
+    def expand_reference(
+        self,
+        reference: ReferenceTuple | Reference,
+        *,
+        strict: bool = False,
+        passthrough: bool = False,
     ) -> str | None:
         """Expand a reference."""
         uri_prefix = self.prefix_map.get(reference.prefix)
@@ -1914,6 +1932,23 @@ class Converter:
         if passthrough:
             return self.format_curie(reference.prefix, reference.identifier)
         return None
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_pair(
+        self, prefix: str, identifier: str, *, strict: Literal[True] = True, passthrough: bool = ...
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_pair(
+        self,
+        prefix: str,
+        identifier: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: bool = ...,
+    ) -> str | None: ...
 
     def expand_pair(
         self, prefix: str, identifier: str, *, strict: bool = False, passthrough: bool = False
@@ -1942,7 +1977,7 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand_pair("missing", "0000000")
         """
-        return self.expand_reference(
+        return self.expand_reference(  # type:ignore[no-any-return,call-overload]
             ReferenceTuple(prefix, identifier), strict=strict, passthrough=passthrough
         )
 
