@@ -221,6 +221,19 @@ class PreprocessingConverter(Converter):
         """
         return cls(records=converter.records, rules=rules)
 
+    def _post_process(self, rt: ReferenceTuple | None) -> ReferenceTuple | None:
+        if rt is None:
+            return None
+
+        if rt.prefix in self.rules.postprocessing.suffix:
+            for s in self.rules.postprocessing.suffix[rt.prefix]:
+                if rt.identifier.endswith(s):
+                    return ReferenceTuple(
+                        prefix=rt.prefix, identifier=rt.identifier.removesuffix(s)
+                    )
+
+        return rt
+
     # docstr-coverage:excused `overload`
     @overload
     def parse(
@@ -270,19 +283,6 @@ class PreprocessingConverter(Converter):
 
         rv = super().parse(str_or_uri_or_curie, strict=strict)  # type:ignore[call-overload]
         return self._post_process(rv)
-
-    def _post_process(self, rt: ReferenceTuple | None) -> ReferenceTuple | None:
-        if rt is None:
-            return None
-
-        if rt.prefix in self.rules.postprocessing.suffix:
-            for s in self.rules.postprocessing.suffix[rt.prefix]:
-                if rt.identifier.endswith(s):
-                    return ReferenceTuple(
-                        prefix=rt.prefix, identifier=rt.identifier.removesuffix(s)
-                    )
-
-        return rt
 
     # docstr-coverage:excused `overload`
     @overload
