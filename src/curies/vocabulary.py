@@ -20,9 +20,9 @@ has_label = _r("rdfs", "label", "has label")
 see_also = _r("rdfs", "seeAlso", "see also")
 has_comment = _r("rdfs", "comment", "comment")
 
-is_a = _r("rdfs", "subClassOf", "subclass of")
+is_a = subclass_of = _r("rdfs", "subClassOf", "subclass of")
 subproperty_of = _r("rdfs", "subPropertyOf", "subproperty of")
-rdf_type = _r("rdf", "type", "subclass of")
+rdf_type = _r("rdf", "type", "instance of")
 
 # XML Schema
 
@@ -55,6 +55,7 @@ obo_creation_date = _r("oboInOwl", "creation_date", "creation date")
 # OWL
 
 owl_version_info = _r("owl", "versionInfo", "has version")
+owl_inverse_of = _r("owl", "inverseOf", "inverse of")
 
 # IAO
 
