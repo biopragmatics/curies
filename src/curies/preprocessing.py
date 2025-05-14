@@ -14,6 +14,7 @@ from .api import Converter, Reference, ReferenceTuple
 __all__ = [
     "BlockAction",
     "BlocklistError",
+    "PostprocessingRewrites",
     "PreprocessingBlocklists",
     "PreprocessingConverter",
     "PreprocessingRewrites",
@@ -72,7 +73,7 @@ class PreprocessingBlocklists(BaseModel):
         )
 
 
-class Postprocessing(BaseModel):
+class PostprocessingRewrites(BaseModel):
     """A model for post-processing based on the prefix parsed."""
 
     suffix: dict[str, list[str]] = Field(default_factory=dict)
@@ -127,9 +128,9 @@ class PreprocessingRewrites(BaseModel):
 class PreprocessingRules(BaseModel):
     """A model for blocklists and rewrites."""
 
-    blocklists: PreprocessingBlocklists
-    rewrites: PreprocessingRewrites
-    postprocessing: Postprocessing = Field(default_factory=Postprocessing)
+    blocklists: PreprocessingBlocklists = Field(default_factory=PreprocessingBlocklists)
+    rewrites: PreprocessingRewrites = Field(default_factory=PreprocessingRewrites)
+    postprocessing: PostprocessingRewrites = Field(default_factory=PostprocessingRewrites)
 
     @classmethod
     def lint_file(cls, path: str | Path) -> None:

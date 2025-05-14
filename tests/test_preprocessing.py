@@ -10,7 +10,7 @@ from typing import ClassVar
 from curies import Converter, ReferenceTuple
 from curies.preprocessing import (
     BlocklistError,
-    Postprocessing,
+    PostprocessingRewrites,
     PreprocessingBlocklists,
     PreprocessingConverter,
     PreprocessingRewrites,
@@ -70,7 +70,7 @@ class TestWrapped(unittest.TestCase):
                     "chebi": ["omim:1356"],  # in case we just hate this CURIE/URI/string
                 },
             ),
-            postprocessing=Postprocessing(
+            postprocessing=PostprocessingRewrites(
                 suffix={
                     "emedicine": ["-overview"],
                 }

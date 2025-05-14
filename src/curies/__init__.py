@@ -26,6 +26,7 @@ from .api import (
 )
 from .discovery import discover, discover_from_rdf
 from .preprocessing import (
+    PostprocessingRewrites,
     PreprocessingBlocklists,
     PreprocessingConverter,
     PreprocessingRewrites,
@@ -49,6 +50,7 @@ __all__ = [
     "DuplicateValueError",
     "NamableReference",
     "NamedReference",
+    "PostprocessingRewrites",
     "Prefix",
     "PrefixMap",
     "PreprocessingBlocklists",
