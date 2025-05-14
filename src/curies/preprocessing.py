@@ -75,7 +75,7 @@ class PreprocessingBlocklists(BaseModel):
 class Postprocessing(BaseModel):
     """A model for post-processing based on the prefix parsed."""
 
-    suffix: dict[str, str] = Field(default_factory=dict)
+    suffix: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class PreprocessingRewrites(BaseModel):
@@ -268,7 +268,7 @@ class PreprocessingConverter(Converter):
             else:
                 return None
 
-        rv = super().parse(str_or_uri_or_curie, strict=strict)
+        rv = super().parse(str_or_uri_or_curie, strict=strict)  # type:ignore[call-overload]
         return self._post_process(rv)
 
     def _post_process(self, rt: ReferenceTuple | None) -> ReferenceTuple | None:
@@ -344,7 +344,7 @@ class PreprocessingConverter(Converter):
             else:
                 return None
 
-        rv = super().parse_curie(curie, strict=strict)
+        rv = super().parse_curie(curie, strict=strict)  # type:ignore[call-overload]
         return self._post_process(rv)
 
     # docstr-coverage:excused `overload`
@@ -428,5 +428,5 @@ class PreprocessingConverter(Converter):
             elif return_none:
                 return None
 
-        rv = super().parse_uri(uri, strict=strict, return_none=True)
+        rv = super().parse_uri(uri, strict=strict, return_none=True)  # type:ignore[call-overload]
         return self._post_process(rv)

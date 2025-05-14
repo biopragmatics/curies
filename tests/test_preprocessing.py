@@ -10,6 +10,7 @@ from typing import ClassVar
 from curies import Converter, ReferenceTuple
 from curies.preprocessing import (
     BlocklistError,
+    Postprocessing,
     PreprocessingBlocklists,
     PreprocessingConverter,
     PreprocessingRewrites,
@@ -69,6 +70,11 @@ class TestWrapped(unittest.TestCase):
                     "chebi": ["omim:1356"],  # in case we just hate this CURIE/URI/string
                 },
             ),
+            postprocessing=Postprocessing(
+                suffix={
+                    "emedicine": ["-overview"],
+                }
+            ),
         )
         cls.inner_converter = Converter.from_prefix_map(
             {
@@ -80,6 +86,7 @@ class TestWrapped(unittest.TestCase):
                 "omim.ps": "https://omim.org/phenotypicSeries/PS",
                 "pubmed": "http://rdf.ncbi.nlm.nih.gov/pubchem/reference/",
                 "spdx": "https://spdx.org/licenses/",
+                "emedicine": "http://emedicine.medscape.com/article/",
             }
         )
 
@@ -200,3 +207,8 @@ class TestWrapped(unittest.TestCase):
         with self.assertRaises(BlocklistError):
             self.converter.parse_uri("rdf:NOPE")
         self.assertIsNone(self.converter.parse_uri("rdf:NOPE", block_action="pass"))
+
+    def test_resource_specific_suffix_rewrite(self) -> None:
+        """Test resource-specific suffix rewrites."""
+        r = self.converter.parse("http://emedicine.medscape.com/article/276512-overview")
+        self.assertEqual(ReferenceTuple("emedicine", "276512"), r)
