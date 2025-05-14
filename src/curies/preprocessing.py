@@ -14,6 +14,7 @@ from .api import Converter, Reference, ReferenceTuple
 __all__ = [
     "BlockAction",
     "BlocklistError",
+    "PostprocessingRewrites",
     "PreprocessingBlocklists",
     "PreprocessingConverter",
     "PreprocessingRewrites",
@@ -72,6 +73,12 @@ class PreprocessingBlocklists(BaseModel):
         )
 
 
+class PostprocessingRewrites(BaseModel):
+    """A model for post-processing based on the prefix parsed."""
+
+    suffix: dict[str, list[str]] = Field(default_factory=dict)
+
+
 class PreprocessingRewrites(BaseModel):
     """A model for prefix and full rewrites."""
 
@@ -121,8 +128,9 @@ class PreprocessingRewrites(BaseModel):
 class PreprocessingRules(BaseModel):
     """A model for blocklists and rewrites."""
 
-    blocklists: PreprocessingBlocklists
-    rewrites: PreprocessingRewrites
+    blocklists: PreprocessingBlocklists = Field(default_factory=PreprocessingBlocklists)
+    rewrites: PreprocessingRewrites = Field(default_factory=PreprocessingRewrites)
+    postprocessing: PostprocessingRewrites = Field(default_factory=PostprocessingRewrites)
 
     @classmethod
     def lint_file(cls, path: str | Path) -> None:
@@ -214,6 +222,19 @@ class PreprocessingConverter(Converter):
         """
         return cls(records=converter.records, rules=rules)
 
+    def _post_process(self, rt: ReferenceTuple | None) -> ReferenceTuple | None:
+        if rt is None:
+            return None
+
+        if rt.prefix in self.rules.postprocessing.suffix:
+            for s in self.rules.postprocessing.suffix[rt.prefix]:
+                if rt.identifier.endswith(s):
+                    return ReferenceTuple(
+                        prefix=rt.prefix, identifier=rt.identifier.removesuffix(s)
+                    )
+
+        return rt
+
     # docstr-coverage:excused `overload`
     @overload
     def parse(
@@ -261,9 +282,8 @@ class PreprocessingConverter(Converter):
             else:
                 return None
 
-        if strict:
-            return super().parse(str_or_uri_or_curie, strict=strict)
-        return super().parse(str_or_uri_or_curie, strict=strict)
+        rv = super().parse(str_or_uri_or_curie, strict=strict)  # type:ignore[call-overload]
+        return self._post_process(rv)
 
     # docstr-coverage:excused `overload`
     @overload
@@ -325,9 +345,8 @@ class PreprocessingConverter(Converter):
             else:
                 return None
 
-        if strict:
-            return super().parse_curie(curie, strict=strict)
-        return super().parse_curie(curie, strict=strict)
+        rv = super().parse_curie(curie, strict=strict)  # type:ignore[call-overload]
+        return self._post_process(rv)
 
     # docstr-coverage:excused `overload`
     @overload
@@ -410,6 +429,5 @@ class PreprocessingConverter(Converter):
             elif return_none:
                 return None
 
-        if strict:
-            return super().parse_uri(uri, strict=strict, return_none=True)
-        return super().parse_uri(uri, strict=strict, return_none=True)
+        rv = super().parse_uri(uri, strict=strict, return_none=True)  # type:ignore[call-overload]
+        return self._post_process(rv)

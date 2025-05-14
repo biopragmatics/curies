@@ -138,3 +138,32 @@ Blocklists cause throwing an exception that can be handled by downstream code, s
 returning a None. This is done because in some places, it's nice to have the distinction
 between ``None`` being returned by parsing failing, versus actively being blocked. This
 can be toggled with the ``block_action`` argument.
+
+Suffix Post-processing
+----------------------
+
+URIs from some prefixes that are known to sometimes have unneeded suffixes can be
+configured to be stripped in the following way
+
+.. code-block:: python
+
+    import curies
+    from curies import PreprocessingRules, PreprocessingConverter, PostprocessingRewrites
+
+    converter = Converter.from_prefixes({
+        "emedicine": "http://emedicine.medscape.com/article/"
+    })
+    rules = PreprocessingRules(
+        postprocessing=PostprocessingRewrites(
+            suffix={
+                "emedicine": "-overview",
+            },
+        ),
+    )
+
+    converter = PreprocessingConverter.from_converter(
+        converter, rules=rules,
+    )
+
+    >>> converter.parse_curie("http://emedicine.medscape.com/article/276512-overview")
+    ReferenceTuple('emedicine', '276512')
