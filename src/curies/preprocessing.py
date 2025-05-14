@@ -87,6 +87,12 @@ class PreprocessingRewrites(BaseModel):
     resource_prefix: dict[str, dict[str, str]] = Field(
         default_factory=dict, description="Resource-keyed remappings for just a prefix"
     )
+    suffix: dict[str, str] = Field(
+        default_factory=dict, description="Global remappings for just the suffix"
+    )
+    resource_suffix: dict[str, dict[str, str]] = Field(
+        default_factory=dict, description="Resource-keyed remappings for just a suffix"
+    )
 
     def remap_full(
         self,
@@ -108,6 +114,7 @@ class PreprocessingRewrites(BaseModel):
 
     def remap_prefix(self, str_or_curie_or_uri: str, *, context: str | None = None) -> str:
         """Remap a prefix."""
+        # TODO use Trie for checking overlapping startswiths
         if context is not None:
             for old_prefix, new_prefix in self.resource_prefix.get(context, {}).items():
                 if str_or_curie_or_uri.startswith(old_prefix):
@@ -115,6 +122,17 @@ class PreprocessingRewrites(BaseModel):
         for old_prefix, new_prefix in self.prefix.items():
             if str_or_curie_or_uri.startswith(old_prefix):
                 return new_prefix + str_or_curie_or_uri[len(old_prefix) :]
+        return str_or_curie_or_uri
+
+    def remap_suffix(self, str_or_curie_or_uri: str, *, context: str | None = None) -> str:
+        """Remap a suffix."""
+        if context is not None:
+            for old_suffix, new_suffix in self.resource_suffix.get(context, {}).items():
+                if str_or_curie_or_uri.endswith(old_suffix):
+                    return str_or_curie_or_uri[: len(old_suffix)] + new_suffix
+        for old_suffix, new_suffix in self.suffix.items():
+            if str_or_curie_or_uri.endswith(old_suffix):
+                return str_or_curie_or_uri[: len(old_suffix)] + new_suffix
         return str_or_curie_or_uri
 
 
@@ -157,6 +175,10 @@ class PreprocessingRules(BaseModel):
     def remap_prefix(self, str_or_curie_or_uri: str, *, context: str | None = None) -> str:
         """Remap a prefix."""
         return self.rewrites.remap_prefix(str_or_curie_or_uri, context=context)
+
+    def remap_suffix(self, str_or_curie_or_uri: str, *, context: str | None = None) -> str:
+        """Remap a suffix."""
+        return self.rewrites.remap_suffix(str_or_curie_or_uri, context=context)
 
 
 def _load_rules(rules: str | Path | PreprocessingRules) -> PreprocessingRules:
@@ -254,6 +276,7 @@ class PreprocessingConverter(Converter):
 
         # Remap node's prefix (if necessary)
         str_or_uri_or_curie = self.rules.remap_prefix(str_or_uri_or_curie, context=context)
+        str_or_uri_or_curie = self.rules.remap_suffix(str_or_uri_or_curie, context=context)
 
         if self.rules.str_is_blocked(str_or_uri_or_curie, context=context):
             if block_action == "raise":
@@ -318,6 +341,7 @@ class PreprocessingConverter(Converter):
 
         # Remap node's prefix (if necessary)
         curie = self.rules.remap_prefix(curie, context=context)
+        curie = self.rules.remap_suffix(curie, context=context)
 
         if self.rules.str_is_blocked(curie, context=context):
             if block_action == "raise":
@@ -403,6 +427,7 @@ class PreprocessingConverter(Converter):
 
         # Remap node's prefix (if necessary)
         uri = self.rules.remap_prefix(uri, context=context)
+        uri = self.rules.remap_suffix(uri, context=context)
 
         if self.rules.str_is_blocked(uri, context=context):
             if block_action == "raise":
