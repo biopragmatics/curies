@@ -210,5 +210,10 @@ class TestWrapped(unittest.TestCase):
 
     def test_resource_specific_suffix_rewrite(self) -> None:
         """Test resource-specific suffix rewrites."""
-        r = self.converter.parse("http://emedicine.medscape.com/article/276512-overview")
-        self.assertEqual(ReferenceTuple("emedicine", "276512"), r)
+        target = ReferenceTuple("emedicine", "276512")
+        for uri in [
+            "http://emedicine.medscape.com/article/276512",  # clean
+            "http://emedicine.medscape.com/article/276512-overview",  # dirty
+        ]:
+            with self.subTest(uri=uri):
+                self.assertEqual(target, self.converter.parse(uri))
