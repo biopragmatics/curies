@@ -57,6 +57,10 @@ class TestWrapped(unittest.TestCase):
                         "nopeforever": "NCIT:5678",
                     },
                 },
+                suffix={".html": ""},
+                resource_suffix={
+                    "emedicine": {"-overview": ""},
+                },
             ),
             blocklists=PreprocessingBlocklists(
                 full=["rdf:NOPE"],
