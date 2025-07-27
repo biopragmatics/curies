@@ -110,6 +110,11 @@ appreciated. See
 [CONTRIBUTING.md](https://github.com/biopragmatics/curies/blob/master/.github/CONTRIBUTING.md)
 for more information on getting involved.
 
+## Users
+
+See
+[who's using `curies`](https://github.com/search?q=%22import%20curies%22%20OR%20%22from%20curies%20import%22%20-user%3Acthoyt%20-user%3Abiopragmatics%20-is%3Afork%20language%3APython&type=code&l=Python).
+
 ## 👋 Attribution
 
 ### 🙏 Acknowledgements
