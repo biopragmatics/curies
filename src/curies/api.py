@@ -429,6 +429,10 @@ class Reference(BaseModel):
             and self.identifier == other.identifier
         )
 
+    def __composite_values__(self) -> tuple[str, str]:
+        """Return values appropriate for :func:`sqlalchemy.orm.composite`."""
+        return self.prefix, self.identifier
+
     @property
     def curie(self) -> str:
         """Get the reference as a CURIE string.
@@ -485,7 +489,7 @@ class NamableReference(Reference):
     model_config = ConfigDict(frozen=True)
 
     @classmethod
-    def from_curie(  # type:ignore
+    def from_curie(
         cls,
         curie: str,
         name: str | None = None,
@@ -2244,7 +2248,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.compress_or_standardize if ambiguous else self.compress
-        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_expand(
@@ -2267,7 +2271,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.expand_or_standardize if ambiguous else self.expand
-        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_prefix(
@@ -2370,7 +2374,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.compress_or_standardize if ambiguous else self.compress
-        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     def file_expand(
@@ -2396,7 +2400,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.expand_or_standardize if ambiguous else self.expand
-        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     @staticmethod

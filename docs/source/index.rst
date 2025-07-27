@@ -69,3 +69,4 @@ The most recent code and data can be installed directly from GitHub with:
     typing
     w3c
     preprocessing
+    database
