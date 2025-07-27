@@ -1,9 +1,15 @@
 """Database adapters for :mod:`curies`.
 
 Using :mod:`sqlmodel`
----------------------
-SQLModel is a joint abstraction over :mod:`pydantic` and
-:mod:`sqlalchemy`
+=====================
+
+SQLModel is a joint abstraction over :mod:`pydantic` and :mod:`sqlalchemy`. If you want
+to use :class:`curies.Reference` within a SQLModel class, you can do so by setting the
+SQLAlchemy column type through the ``sa_column`` keyword argument to the results
+returned by :func:`get_reference_sa_column`,
+
+For example, this can be used to model a semantic triple, which has a subject reference,
+predicate reference, and object reference like in the following:
 
 .. code-block:: python
 
@@ -23,7 +29,6 @@ SQLModel is a joint abstraction over :mod:`pydantic` and
     e2 = Edge(subject="CHEBI:135125", predicate="skos:exactMatch", object="mesh:C073260")
 
     engine = create_engine("sqlite://")
-
     SQLModel.metadata.create_all(engine)
 
     # Add edges to the database
@@ -44,11 +49,56 @@ SQLModel is a joint abstraction over :mod:`pydantic` and
         edges = session.exec(statement).all()
 
 Using :mod:`sqlalchemy`
------------------------
-SQLAlchemy is a combine high- and mid-level database abstraction
-layer and object-relational mapping. It has more opportunities
-for configuration over SQLModel.
+=======================
 
+SQLAlchemy is a combine high- and mid-level database abstraction layer and
+object-relational mapping. It has more opportunities for configuration over SQLModel.
+
+.. code-block:: python
+
+    from curies import Reference
+    from sqlalchemy import Column, Integer, String, create_engine
+    from sqlalchemy.orm import DeclarativeBase, Session
+
+
+    class Base(DeclarativeBase):
+        pass
+
+
+    class Edge(Base):
+        __tablename__ = "edge"
+
+        id = Column(Integer, primary_key=True)
+
+        reference_prefix = Column(String, nullable=False)
+        reference_identifier = Column(String, nullable=False)
+        name = Column(String, nullable=False)
+
+        reference = get_reference_sa_composite(reference_prefix, reference_identifier)
+
+
+    e1 = Edge(subject="CHEBI:135122", predicate="skos:exactMatch", object="mesh:C073738")
+    e2 = Edge(subject="CHEBI:135125", predicate="skos:exactMatch", object="mesh:C073260")
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+
+    # Add edges to the database
+    with Session(engine) as session:
+        session.add_all([e1, e2])
+        session.commit()
+
+    # Query for edges with a given subject, by string
+    with Session(engine) as session:
+        statement = select(Edge).where(Edge.subject == "CHEBI:135122")
+        edges = session.exec(statement).all()
+
+    # Query for edges with a given subject, by string
+    with Session(engine) as session:
+        statement = select(Edge).where(
+            Edge.subject == Reference(prefix="CHEBI", identifier="135125")
+        )
+        edges = session.exec(statement).all()
 """
 
 from typing import Any, ClassVar, Optional
@@ -96,7 +146,8 @@ def get_reference_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column[Refe
 
     :param args: positional arguments, passed to :class:`sqlalchemy.Column`
     :param kwargs: keyword arguments, passed to :class:`sqlalchemy.Column`
-    :return: A column object, parametrized with :class:`curies.Reference`
+
+    :returns: A column object, parametrized with :class:`curies.Reference`
 
     For example, this can be used to model a semantic triple, which has a subject
     reference, predicate reference, and object reference like in the following:
@@ -126,42 +177,42 @@ class _ReferenceAdapter(Reference):
 
 
 def get_reference_sa_composite(
-    prefix_column: Column[str], identifier_column: Column[str], *args: Any, **kwargs: Any
+    prefix_column: Column[str], identifier_column: Column[str], **kwargs: Any
 ) -> Composite[Reference]:
     """Get a composite for a reference.
 
-    :param prefix_column:
-    :param identifier_column:
+    :param prefix_column: The column for the reference's prefix
+    :param identifier_column: The column for the reference's identifier
     :param kwargs: keyword arguments passed to :func:`sqlalchemy.orm.composite`
+
     :returns: A Composite object for a reference
 
     .. code-block:: python
 
-            from curies import Reference
-            from curies.database import get_reference_sa_composite
-            from sqlalchemy import Column
-            from sqlalchemy.orm import DeclarativeBase
+        from curies import Reference
+        from curies.database import get_reference_sa_composite
+        from sqlalchemy import Column
+        from sqlalchemy.orm import DeclarativeBase
 
 
-            class Base(DeclarativeBase):
-                pass
+        class Base(DeclarativeBase):
+            pass
 
 
-            class Edge(Base):
-                __tablename__ = "edge"
+        class Edge(Base):
+            __tablename__ = "edge"
 
-                id = Column(Integer, primary_key=True)
+            id = Column(Integer, primary_key=True)
 
-                subject_prefix = Column(String, nullable=False)
-                subject_identifier = Column(String, nullable=False)
-                predicate_prefix = Column(String, nullable=False)
-                predicate_identifier = Column(String, nullable=False)
-                object_prefix = Column(String, nullable=False)
-                object_identifier = Column(String, nullable=False)
+            subject_prefix = Column(String, nullable=False)
+            subject_identifier = Column(String, nullable=False)
+            predicate_prefix = Column(String, nullable=False)
+            predicate_identifier = Column(String, nullable=False)
+            object_prefix = Column(String, nullable=False)
+            object_identifier = Column(String, nullable=False)
 
-                subject = get_reference_sa_composite(subject_prefix, subject_identifier)
-                predicate = get_reference_sa_composite(predicate_prefix, identifier)
-                object = get_reference_sa_composite(object_prefix, object_identifier)
-
+            subject = get_reference_sa_composite(subject_prefix, subject_identifier)
+            predicate = get_reference_sa_composite(predicate_prefix, predicate_identifier)
+            object = get_reference_sa_composite(object_prefix, object_identifier)
     """
     return composite(_ReferenceAdapter, prefix_column, identifier_column, **kwargs)
