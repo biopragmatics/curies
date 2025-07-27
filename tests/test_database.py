@@ -118,11 +118,16 @@ class TestDatabase(unittest.TestCase):
 
             id: int | None = Field(default=None, primary_key=True)
             reference: Reference = Field(sa_column=get_reference_sa_column())
+            optional_reference: Reference | None = Field(sa_column=get_reference_sa_column())
             name: str
 
         model_1 = Model(reference=Reference(prefix=prefix, identifier=id_1), name=name_1)
         model_2 = Model(reference=Reference(prefix=prefix, identifier=id_2), name=name_2)
-        model_3 = Model(reference=Reference(prefix=prefix, identifier=id_3), name=name_3)
+        model_3 = Model(
+            reference=Reference(prefix=prefix, identifier=id_3),
+            optional_reference=Reference(prefix=prefix, identifier=id_3),
+            name=name_3,
+        )
 
         engine = create_engine("sqlite://")
 
@@ -157,6 +162,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(prefix, result_4.reference.prefix)
         self.assertEqual(id_3, result_4.reference.identifier)
         self.assertEqual(name_3, result_4.name)
+        self.assertIsNotNone(result_4.optional_reference)
 
         # Tests looking up a reference that's missing
         with Session(engine) as session:

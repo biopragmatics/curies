@@ -48,6 +48,18 @@ predicate reference, and object reference like in the following:
         )
         edges = session.exec(statement).all()
 
+If you want to have a field that has an optional reference, you can do it as expected
+using the same column type, such as for the ``author`` field below:
+
+.. code-block:: python
+
+    class Edge(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        subject: Reference = Field(sa_column=get_reference_sa_column())
+        predicate: Reference = Field(sa_column=get_reference_sa_column())
+        object: Reference = Field(sa_column=get_reference_sa_column())
+        author: Reference | None = Field(sa_column=get_reference_sa_column())
+
 Using :mod:`sqlalchemy`
 =======================
 
