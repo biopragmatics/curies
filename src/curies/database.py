@@ -14,21 +14,18 @@ __all__ = [
 ]
 
 
-def get_reference_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column:
-    """Get a SQLAlchemy column with the type decorator for a :mod:`curies.Reference`."""
-    return sqlalchemy.Column(ReferenceType(), *args, **kwargs)
-
-
-class ReferenceType(TypeDecorator):
+class ReferenceType(TypeDecorator[Reference]):
     """A SQLAlchemy type decorator for a :mod:`curies.Reference`."""
 
     impl = TEXT
     cache_ok: bool = True  # for SQLAlchemy's caching system
 
-    def process_bind_param(self, value: Optional[Reference], dialect: Dialect) -> Optional[str]:
+    def process_bind_param(self, value: str | Reference | None, dialect: Dialect) -> Optional[str]:
         """Convert the Python object into a database value."""
         if value is None:
             return None
+        if isinstance(value, str):
+            return value
         return value.curie
 
     def process_result_value(self, value: Optional[str], dialect: Dialect) -> Optional[Reference]:
@@ -36,3 +33,10 @@ class ReferenceType(TypeDecorator):
         if value is None:
             return None
         return Reference.from_curie(value)
+
+    # TODO what about process literal param?
+
+
+def get_reference_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column[Reference]:
+    """Get a SQLAlchemy column with the type decorator for a :mod:`curies.Reference`."""
+    return sqlalchemy.Column(ReferenceType(), *args, **kwargs)
