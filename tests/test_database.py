@@ -5,12 +5,59 @@ import unittest
 from curies import Prefix, Reference
 from curies.database import get_reference_sa_column
 
+prefix = Prefix("hero")
+id_1 = "1"
+id_2 = "2"
+id_3 = "3"
+name_1 = "Name 1"
+name_2 = "Name 2"
+name_3 = "Name 3"
+
 
 class TestDatabase(unittest.TestCase):
     """Tests for database adapters."""
 
     def test_sqlalchemy(self) -> None:
         """Test SQLalchemy."""
+        from sqlalchemy import Column, Integer, String, create_engine
+        from sqlalchemy.orm import Session, declarative_base
+
+        base = declarative_base()
+
+        class MyModel(base):
+            """A SQLAlchemy model that uses a reference."""
+
+            __tablename__ = "my_model"
+
+            id = Column(Integer, primary_key=True)
+            reference = get_reference_sa_column()
+            name = Column(String)
+
+        engine = create_engine("sqlite://")
+        base.metadata.create_all(engine)
+
+        model_1 = MyModel(reference=Reference(prefix=prefix, identifier=id_1), name=name_1)
+        model_2 = MyModel(reference=Reference(prefix=prefix, identifier=id_2), name=name_2)
+        model_3 = MyModel(reference=Reference(prefix=prefix, identifier=id_3), name=name_3)
+
+        with Session(engine) as session:
+            session.add(model_1)
+            session.add(model_2)
+            session.add(model_3)
+            session.commit()
+
+        # Test querying with reconstitution
+        with Session(engine) as session:
+            result = (
+                session.query(MyModel)
+                .filter(MyModel.reference == Reference(prefix=prefix, identifier=id_1))
+                .one()
+            )
+
+        self.assertIsInstance(result.reference, Reference)
+        self.assertEqual(prefix, result.reference.prefix)
+        self.assertEqual(id_1, result.reference.identifier)
+        self.assertEqual(name_1, result.name)
 
     def test_sqlmodel(self) -> None:
         """Test SQLModel."""
@@ -22,14 +69,6 @@ class TestDatabase(unittest.TestCase):
             id: int | None = Field(default=None, primary_key=True)
             reference: Reference = Field(sa_column=get_reference_sa_column())
             name: str
-
-        prefix = Prefix("hero")
-        id_1 = "1"
-        id_2 = "2"
-        id_3 = "3"
-        name_1 = "Deadpond"
-        name_2 = "Spider-Boy"
-        name_3 = "Rusty-Man"
 
         model_1 = Model(reference=Reference(prefix=prefix, identifier=id_1), name=name_1)
         model_2 = Model(reference=Reference(prefix=prefix, identifier=id_2), name=name_2)
