@@ -54,6 +54,9 @@ Using :mod:`sqlalchemy`
 SQLAlchemy is a combine high- and mid-level database abstraction layer and
 object-relational mapping. It has more opportunities for configuration over SQLModel.
 
+The following example re-formulates the above example for SQLModel using the slightly
+more direct SQLAlchemy formulation:
+
 .. code-block:: python
 
     from curies import Reference
@@ -70,11 +73,65 @@ object-relational mapping. It has more opportunities for configuration over SQLM
 
         id = Column(Integer, primary_key=True)
 
-        reference_prefix = Column(String, nullable=False)
-        reference_identifier = Column(String, nullable=False)
-        name = Column(String, nullable=False)
+        subject = get_reference_sa_column()
+        predicate = get_reference_sa_column()
+        object = get_reference_sa_column()
 
-        reference = get_reference_sa_composite(reference_prefix, reference_identifier)
+
+    e1 = Edge(subject="CHEBI:135122", predicate="skos:exactMatch", object="mesh:C073738")
+    e2 = Edge(subject="CHEBI:135125", predicate="skos:exactMatch", object="mesh:C073260")
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+
+    # Add edges to the database
+    with Session(engine) as session:
+        session.add_all([e1, e2])
+        session.commit()
+
+    # Query for edges with a given subject, by string
+    with Session(engine) as session:
+        statement = select(Edge).where(Edge.subject == "CHEBI:135122")
+        edges = session.exec(statement).all()
+
+    # Query for edges with a given subject, by string
+    with Session(engine) as session:
+        statement = select(Edge).where(
+            Edge.subject == Reference(prefix="CHEBI", identifier="135125")
+        )
+        edges = session.exec(statement).all()
+
+In the following example, SQLAlchemy is used with a composite column, where the prefix
+and identifier are given their own column, then a :class:`sqlalchemy.Composite` object
+is used to tell the ORM to map both the prefix and identifier together into a single
+column, that exposes an appropriate :class:`curies.Reference` class.
+
+.. code-block:: python
+
+    from curies import Reference
+    from sqlalchemy import Column, Integer, String, create_engine
+    from sqlalchemy.orm import DeclarativeBase, Session
+
+
+    class Base(DeclarativeBase):
+        pass
+
+
+    class Edge(Base):
+        __tablename__ = "edge"
+
+        id = Column(Integer, primary_key=True)
+
+        subject_prefix = Column(String, nullable=False)
+        subject_identifier = Column(String, nullable=False)
+        predicate_prefix = Column(String, nullable=False)
+        predicate_identifier = Column(String, nullable=False)
+        object_prefix = Column(String, nullable=False)
+        object_identifier = Column(String, nullable=False)
+
+        subject = get_reference_sa_composite(subject_prefix, subject_identifier)
+        predicate = get_reference_sa_composite(predicate_prefix, predicate_identifier)
+        object = get_reference_sa_composite(object_prefix, object_identifier)
 
 
     e1 = Edge(subject="CHEBI:135122", predicate="skos:exactMatch", object="mesh:C073738")
