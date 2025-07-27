@@ -3,13 +3,16 @@
 from typing import Any, Optional
 
 import sqlalchemy
+from sqlalchemy import Column
 from sqlalchemy.engine.interfaces import Dialect
+from sqlalchemy.orm import Composite, composite
 from sqlalchemy.types import TEXT, TypeDecorator
 
 from curies import Reference
 
 __all__ = [
     "ReferenceType",
+    "composite_reference",
     "get_reference_sa_column",
 ]
 
@@ -40,3 +43,18 @@ class ReferenceType(TypeDecorator[Reference]):
 def get_reference_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column[Reference]:
     """Get a SQLAlchemy column with the type decorator for a :mod:`curies.Reference`."""
     return sqlalchemy.Column(ReferenceType(), *args, **kwargs)
+
+
+class _ReferenceAdapter(Reference):
+    """A wrapper for SQLAlchemy for usage in composite()."""
+
+    def __init__(self, prefix: str, identifier: str) -> None:
+        """Initialize the SQLAlchemy model."""
+        super().__init__(prefix=prefix, identifier=identifier)
+
+
+def composite_reference(
+    prefix_column: Column[str], identifier_column: Column[str]
+) -> Composite[Reference]:
+    """Get a composite for a reference."""
+    return composite(_ReferenceAdapter, prefix_column, identifier_column)

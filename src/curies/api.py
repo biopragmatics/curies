@@ -429,6 +429,10 @@ class Reference(BaseModel):
             and self.identifier == other.identifier
         )
 
+    def __composite_values__(self) -> tuple[str, str]:
+        """Return values appropriate for :func:`sqlalchemy.orm.composite`."""
+        return self.prefix, self.identifier
+
     @property
     def curie(self) -> str:
         """Get the reference as a CURIE string.

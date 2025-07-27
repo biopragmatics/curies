@@ -3,7 +3,7 @@
 import unittest
 
 from curies import Prefix, Reference
-from curies.database import get_reference_sa_column
+from curies.database import composite_reference, get_reference_sa_column
 
 prefix = Prefix("hero")
 id_1 = "1"
@@ -20,11 +20,12 @@ class TestDatabase(unittest.TestCase):
     def test_sqlalchemy(self) -> None:
         """Test SQLalchemy."""
         from sqlalchemy import Column, Integer, String, create_engine
-        from sqlalchemy.orm import Session, declarative_base
+        from sqlalchemy.orm import DeclarativeBase, Session
 
-        base = declarative_base()
+        class Base(DeclarativeBase):
+            """A base."""
 
-        class MyModel(base):
+        class MyModel(Base):
             """A SQLAlchemy model that uses a reference."""
 
             __tablename__ = "my_model"
@@ -34,7 +35,54 @@ class TestDatabase(unittest.TestCase):
             name = Column(String)
 
         engine = create_engine("sqlite://")
-        base.metadata.create_all(engine)
+        Base.metadata.create_all(engine)
+
+        model_1 = MyModel(reference=Reference(prefix=prefix, identifier=id_1), name=name_1)
+        model_2 = MyModel(reference=Reference(prefix=prefix, identifier=id_2), name=name_2)
+        model_3 = MyModel(reference=Reference(prefix=prefix, identifier=id_3), name=name_3)
+
+        with Session(engine) as session:
+            session.add(model_1)
+            session.add(model_2)
+            session.add(model_3)
+            session.commit()
+
+        # Test querying with reconstitution
+        with Session(engine) as session:
+            result = (
+                session.query(MyModel)
+                .filter(MyModel.reference == Reference(prefix=prefix, identifier=id_1))
+                .one()
+            )
+
+        self.assertIsInstance(result.reference, Reference)
+        self.assertEqual(prefix, result.reference.prefix)
+        self.assertEqual(id_1, result.reference.identifier)
+        self.assertEqual(name_1, result.name)
+
+    def test_sqlalchemy_composite(self) -> None:
+        """Test SQLAlchemy composite models."""
+        from sqlalchemy import Column, Integer, String, create_engine
+        from sqlalchemy.orm import DeclarativeBase, Session
+
+        class Base(DeclarativeBase):
+            """A base."""
+
+        class MyModel(Base):
+            """A model for testing composite references."""
+
+            __tablename__ = "my_model"
+
+            id = Column(Integer, primary_key=True)
+
+            reference_prefix = Column(String, nullable=False)
+            reference_identifier = Column(String, nullable=False)
+            name = Column(String, nullable=False)
+
+            reference = composite_reference(reference_prefix, reference_identifier)
+
+        engine = create_engine("sqlite://")
+        Base.metadata.create_all(engine)
 
         model_1 = MyModel(reference=Reference(prefix=prefix, identifier=id_1), name=name_1)
         model_2 = MyModel(reference=Reference(prefix=prefix, identifier=id_2), name=name_2)
