@@ -158,7 +158,9 @@ column, that exposes an appropriate :class:`curies.Reference` class.
         edges = session.exec(statement).all()
 """
 
-from typing import Any, ClassVar, Optional
+from __future__ import annotations
+
+from typing import Any, ClassVar
 
 import sqlalchemy
 from sqlalchemy import Column
@@ -181,7 +183,7 @@ class SAReferenceTypeDecorator(TypeDecorator[Reference]):
     impl = TEXT
     cache_ok: ClassVar[bool] = True  # type:ignore
 
-    def process_bind_param(self, value: str | Reference | None, dialect: Dialect) -> Optional[str]:
+    def process_bind_param(self, value: str | Reference | None, dialect: Dialect) -> str | None:
         """Convert the Python object into a database value."""
         if value is None:
             return None
@@ -189,7 +191,7 @@ class SAReferenceTypeDecorator(TypeDecorator[Reference]):
             return value
         return value.curie
 
-    def process_result_value(self, value: Optional[str], dialect: Dialect) -> Optional[Reference]:
+    def process_result_value(self, value: str | None, dialect: Dialect) -> Reference | None:
         """Convert the database value into a Python object."""
         if value is None:
             return None
