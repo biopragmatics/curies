@@ -249,7 +249,7 @@ intersphinx_mapping = {
     "prefixmaps": ("https://linkml.io/prefixmaps", None),
     "rdflib": ("https://rdflib.readthedocs.io/en/stable", None),
     "sssom": ("https://mapping-commons.github.io/sssom-py", None),
-    "sqlalchemy": ("https://docs.sqlalchemy.org/en/stable", None),
+    # "sqlalchemy": ("https://docs.sqlalchemy.org/en/20", None),
     # "sqlmodel": ("https://sqlmodel.tiangolo.com", None),
 }
 

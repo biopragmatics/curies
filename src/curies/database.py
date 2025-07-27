@@ -181,6 +181,7 @@ class SAReferenceTypeDecorator(TypeDecorator[Reference]):
     """A SQLAlchemy type decorator for a :mod:`curies.Reference`."""
 
     impl = TEXT
+    #: Set SQLAlchemy caching to true
     cache_ok: ClassVar[bool] = True  # type:ignore
 
     def process_bind_param(self, value: str | Reference | None, dialect: Dialect) -> str | None:
