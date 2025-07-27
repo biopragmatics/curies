@@ -1,9 +1,11 @@
 """Tests for database adapters."""
 
+from __future__ import annotations
+
 import unittest
 
 from curies import Prefix, Reference
-from curies.database import composite_reference, get_reference_sa_column
+from curies.database import get_reference_sa_column, get_reference_sa_composite
 
 prefix = Prefix("hero")
 id_1 = "1"
@@ -79,7 +81,7 @@ class TestDatabase(unittest.TestCase):
             reference_identifier = Column(String, nullable=False)
             name = Column(String, nullable=False)
 
-            reference = composite_reference(reference_prefix, reference_identifier)
+            reference = get_reference_sa_composite(reference_prefix, reference_identifier)
 
         engine = create_engine("sqlite://")
         Base.metadata.create_all(engine)

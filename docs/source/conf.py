@@ -239,15 +239,18 @@ texinfo_documents = [
 # Note: don't add trailing slashes, since sphinx adds "/objects.inv" to the end
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "bioregistry": ("https://bioregistry.readthedocs.io/en/stable/", None),
-    "pandas": ("https://pandas.pydata.org/docs/", None),
-    "flask": ("https://flask.palletsprojects.com/", None),
-    "pydantic": ("https://docs.pydantic.dev/latest/", None),
+    "bioregistry": ("https://bioregistry.readthedocs.io/en/stable", None),
+    "pandas": ("https://pandas.pydata.org/docs", None),
+    "flask": ("https://flask.palletsprojects.com/en/stable", None),
+    "pydantic": ("https://docs.pydantic.dev/latest", None),
     # "fastapi": ("https://fastapi.tiangolo.com/", None),
     # "gunicorn": ("https://docs.gunicorn.org/", None),
     # "uvicorn": ("https://www.uvicorn.org/", None),
-    "prefixmaps": ("https://linkml.io/prefixmaps/", None),
-    "rdflib": ("https://rdflib.readthedocs.io/en/stable/", None),
+    "prefixmaps": ("https://linkml.io/prefixmaps", None),
+    "rdflib": ("https://rdflib.readthedocs.io/en/stable", None),
+    "sssom": ("https://mapping-commons.github.io/sssom-py", None),
+    "sqlalchemy": ("https://docs.sqlalchemy.org", None),
+    # "sqlmodel": ("https://sqlmodel.tiangolo.com", None),
 }
 
 autoclass_content = "both"
