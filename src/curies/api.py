@@ -933,13 +933,11 @@ class Converter:
             if duplicate_prefixes:
                 raise DuplicatePrefixes(duplicate_prefixes)
 
-        if w3c_mode == "strict":
+        if w3c_mode in {"strict", "autocodec"}:
             broken = [record for record in records if not record.is_w3c_valid()]
             if broken:
                 msg = "\n".join(f"  - {record!r}" for record in records)
                 raise W3CValidationError(f"Records not conforming to W3C:\n\n{msg}")
-        elif w3c_mode == "autocodec":
-            raise NotImplementedError
 
         self.delimiter = delimiter
         self.records = records
