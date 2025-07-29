@@ -6,6 +6,7 @@ import csv
 import itertools as itt
 import json
 import logging
+import urllib.parse
 import warnings
 from collections import defaultdict
 from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
@@ -35,7 +36,7 @@ from pydantic import (
 )
 from pydantic_core import core_schema
 from pytrie import StringTrie
-from typing_extensions import Self
+from typing_extensions import Self, TypeAlias
 
 from .w3c import is_w3c_curie, is_w3c_prefix
 
@@ -149,6 +150,14 @@ class ReferenceTuple(NamedTuple):
         'chebi:1234'
         """
         return f"{self.prefix}:{self.identifier}"
+
+    def quote(self) -> Self:
+        """Get a new tuple with the identifier URL-quoted."""
+        return self.__class__(prefix=self.prefix, identifier=urllib.parse.quote(self.identifier))
+
+    def unquote(self) -> Self:
+        """Get a new tuple with the identifier URL-unquoted."""
+        return self.__class__(prefix=self.prefix, identifier=urllib.parse.unquote(self.identifier))
 
     @classmethod
     def from_curie(cls, curie: str, *, sep: str = ":") -> Self:
@@ -448,6 +457,14 @@ class Reference(BaseModel):
         """
         return f"{self.prefix}:{self.identifier}"
 
+    def quote(self) -> Self:
+        """Get a new model with the identifier URL-quoted."""
+        return self.model_copy(update={"identifier": urllib.parse.quote(self.identifier)})
+
+    def unquote(self) -> Self:
+        """Get a new model with the identifier URL-unquoted."""
+        return self.model_copy(update={"identifier": urllib.parse.unquote(self.identifier)})
+
     @property
     def pair(self) -> ReferenceTuple:
         """Get the reference as a 2-tuple of prefix and identifier."""
@@ -653,8 +670,8 @@ class Record(BaseModel):
             ",".join(sorted(self.uri_prefix_synonyms)),
         )
 
-    def _w3c_validate(self) -> bool:
-        """Check if all prefixes in this record are w3c compliant."""
+    def is_w3c_valid(self) -> bool:
+        """Check if all prefixes in this record are W3C compliant, based on :func:`is_w3c_prefix`."""
         all_curie_prefixes_valid = all(is_w3c_prefix(prefix) for prefix in self._all_prefixes)
         # TODO extend to check URI prefixes?
         return all_curie_prefixes_valid
@@ -823,6 +840,9 @@ def _get_remote_json(url: str, timeout: int = 15) -> Any:
     return json.loads(json_str_data)
 
 
+W3CMode: TypeAlias = Literal["loose", "strict", "autocodec"]
+
+
 class Converter:
     """A cached prefix map data structure.
 
@@ -849,6 +869,20 @@ class Converter:
 
         # Example with missing prefix:
         >>> converter.expand("missing:0000000")
+
+
+    If you want to ensure that all prefixes conform to the W3C specifications,
+    use ``w3c_mode`` like in:
+
+    >>> converter = Converter.from_prefix_map(
+        ...     {
+        ...         "4dn": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...     },
+        ...     w3c_mode="strict",
+        ... )
+
+    This will raise a :class:`W3CValidationError`. See more information at
+    :mod:`curies.w3c`.
     """
 
     #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
@@ -868,7 +902,7 @@ class Converter:
         *,
         delimiter: str = ":",
         strict: bool = True,
-        w3c_validation: bool = False,
+        w3c_mode: W3CMode = "loose",
     ) -> None:
         """Instantiate a converter.
 
@@ -878,8 +912,8 @@ class Converter:
             If true, raises issues on duplicate URI prefixes
         :param delimiter:
             The delimiter used for CURIEs. Defaults to a colon.
-        :param w3c_validation:
-            If true, validate all records against the
+        :param w3c_mode:
+            If "strict", validate all records against the
             `W3C CURIE Syntax 1.0 <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
             This includes the following:
 
@@ -899,11 +933,13 @@ class Converter:
             if duplicate_prefixes:
                 raise DuplicatePrefixes(duplicate_prefixes)
 
-        if w3c_validation:
-            broken = [record for record in records if not record._w3c_validate()]
+        if w3c_mode == "strict":
+            broken = [record for record in records if not record.is_w3c_valid()]
             if broken:
                 msg = "\n".join(f"  - {record!r}" for record in records)
                 raise W3CValidationError(f"Records not conforming to W3C:\n\n{msg}")
+        elif w3c_mode == "autocodec":
+            raise NotImplementedError
 
         self.delimiter = delimiter
         self.records = records
@@ -1689,11 +1725,11 @@ class Converter:
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
 
-    def is_curie(self, s: str, *, w3c_validation: bool = False) -> bool:
+    def is_curie(self, s: str, *, w3c_mode: W3CMode = "loose") -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
 
         :param s: A string that might be a CURIE
-        :param w3c_validation: If true, requires CURIEs to be valid against the
+        :param w3c_mode: If "strict", requires CURIEs to be valid against the
             `W3C CURIE specification <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
         :returns: If the string can be parsed as a CURIE by this converter.
             Note that some valid CURIEs, when passed to this function, will
@@ -1715,7 +1751,7 @@ class Converter:
         False
         """
         try:
-            return self.expand(s, w3c_validation=w3c_validation) is not None
+            return self.expand(s, w3c_mode=w3c_mode) is not None
         except ValueError:
             return False
 
@@ -1807,7 +1843,7 @@ class Converter:
         *,
         strict: Literal[True] = True,
         passthrough: bool = ...,
-        w3c_validation: bool = ...,
+        w3c_mode: W3CMode = ...,
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
@@ -1818,7 +1854,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[True] = True,
-        w3c_validation: bool = ...,
+        w3c_mode: W3CMode = ...,
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
@@ -1829,7 +1865,7 @@ class Converter:
         *,
         strict: Literal[False] = False,
         passthrough: Literal[False] = False,
-        w3c_validation: bool = ...,
+        w3c_mode: W3CMode = ...,
     ) -> str | None: ...
 
     def expand(
@@ -1838,7 +1874,7 @@ class Converter:
         *,
         strict: bool = False,
         passthrough: bool = False,
-        w3c_validation: bool = False,
+        w3c_mode: W3CMode = "loose",
     ) -> str | None:
         """Expand a CURIE to a URI, if possible.
 
@@ -1848,7 +1884,7 @@ class Converter:
         :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
             Defaults to false. If your strings can either be a CURIE or a URI, consider using
             :meth:`Converter.expand_or_standardize` instead.
-        :param w3c_validation: If true, requires CURIEs to be valid against the
+        :param w3c_mode: If true, requires CURIEs to be valid against the
             `W3C CURIE specification <https://www.w3.org/TR/2010/NOTE-curie-20101216/>`_.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
@@ -1869,10 +1905,12 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand("missing:0000000")
         """
-        if w3c_validation and not is_w3c_curie(curie):
+        if w3c_mode == "strict" and not is_w3c_curie(curie):
             raise W3CValidationError(f"CURIE is not valid under W3C spec: {curie}")
         reference = self.parse_curie(curie, strict=False)
         if reference is not None:
+            if w3c_mode == "autocodec":
+                reference = reference.quote()
             return self.expand_reference(reference, strict=strict, passthrough=passthrough)  # type:ignore[no-any-return,call-overload]
         if strict:
             raise ExpansionError(curie)

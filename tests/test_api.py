@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+import urllib.parse
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -46,11 +47,14 @@ from tests.constants import SLOW
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
 GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
 
+SMILES_EX = "CC(=O)NC([H])(C)C(=O)O"
+SMILES_ENCODED_EX = urllib.parse.quote(SMILES_EX)
+
 
 class TestRecord(unittest.TestCase):
     """Tests for the record data structure."""
 
-    def test_w3c_prefix(self):
+    def test_w3c_prefix(self) -> None:
         """Test CURIE prefix correctness."""
         valid_prefixes = [
             "go",
@@ -73,8 +77,8 @@ class TestRecord(unittest.TestCase):
             r1 = Record(prefix=prefix, uri_prefix=uri_prefix)
             r2 = Record(prefix="prefix", prefix_synonyms=[prefix], uri_prefix=uri_prefix)
             with self.subTest(prefix=prefix):
-                self.assertEqual(value, r1._w3c_validate())
-                self.assertEqual(value, r2._w3c_validate())
+                self.assertEqual(value, r1.is_w3c_valid())
+                self.assertEqual(value, r2.is_w3c_valid())
 
 
 class TestStruct(unittest.TestCase):
@@ -203,6 +207,15 @@ class TestStruct(unittest.TestCase):
             NamedReference(prefix="a", identifier="4", name="item 4"),
             NamedReference.from_reference(r4),
         )
+
+    def test_quoting(self) -> None:
+        """Test quoting and unquoting."""
+        reference = Reference(prefix="smiles", identifier=SMILES_EX)
+        self.assertEqual(SMILES_ENCODED_EX, reference.quote().identifier)
+        self.assertEqual(SMILES_EX, reference.quote().unquote().identifier)
+
+        self.assertEqual(SMILES_ENCODED_EX, reference.pair.quote().identifier)
+        self.assertEqual(SMILES_EX, reference.pair.quote().unquote().identifier)
 
 
 class TestAddRecord(unittest.TestCase):
@@ -944,17 +957,43 @@ class TestConverter(unittest.TestCase):
         converter_2 = Converter.from_rdflib(graph.namespace_manager)
         self._assert_convert(converter_2)
 
-    def test_expand_w3c_invalid(self):
+    def test_expand_w3c_invalid(self) -> None:
         """Test that expanding a non-w3c-conformant CURIE can lead to errors."""
+        value = "CC(=O)NC([H])(C)C(=O)O"
+        encoded_value = urllib.parse.quote(value)
         converter = Converter.from_prefix_map(
             {
                 "smiles": "https://bioregistry.io/smiles:",
             }
         )
-        curie = "smiles:CC(=O)NC([H])(C)C(=O)O"
-        self.assertIsNotNone(converter.expand(curie))
-        with self.assertRaises(W3CValidationError):
-            converter.expand(curie, w3c_validation=True)
+        valids = [
+            ("smiles:CCO", "https://bioregistry.io/smiles:CCO"),
+            (f"smiles:{encoded_value}", f"https://bioregistry.io/smiles:{encoded_value}"),
+        ]
+        invalids = [
+            (f"smiles:{value}", f"https://bioregistry.io/smiles:{encoded_value}"),
+        ]
+
+        for valid_curie, valid_expected_uri in valids:
+            with self.subTest(curie=valid_curie):
+                self.assertEqual(
+                    valid_expected_uri, converter.expand(valid_curie, w3c_mode="loose")
+                )
+                self.assertEqual(
+                    valid_expected_uri, converter.expand(valid_curie, w3c_mode="strict")
+                )
+                self.assertEqual(
+                    valid_expected_uri, converter.expand(valid_curie, w3c_mode="autocodec")
+                )
+
+        for invalid, expected in invalids:
+            with self.subTest(curie=invalid):
+                self.assertIsNotNone(converter.expand(invalid, w3c_mode="loose"))
+                with self.assertRaises(W3CValidationError):
+                    converter.expand(invalid, w3c_mode="strict")
+                self.assertEqual(expected, converter.expand(invalid, w3c_mode="autocodec"))
+
+        # TODO add autocodec for compression too
 
     def test_parse_curie(self) -> None:
         """Tests for parse CURIE."""
