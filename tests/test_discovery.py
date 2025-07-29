@@ -25,7 +25,7 @@ class TestDiscovery(unittest.TestCase):
             ]
         )
 
-    def test_simple(self):
+    def test_simple(self) -> None:
         """Test a simple case of discovering URI prefixes."""
         uris = [f"http://ran.dom/{i:03}" for i in range(30)]
         uris.append("http://purl.obolibrary.org/obo/GO_0001234")
@@ -45,7 +45,7 @@ class TestDiscovery(unittest.TestCase):
             msg="cutoff was high, so discovered converter should not detect `http://ran.dom/`",
         )
 
-    def test_rdflib(self):
+    def test_rdflib(self) -> None:
         """Test discovery in RDFlib."""
         graph = rdflib.Graph()
         for i in range(30):
@@ -73,7 +73,7 @@ class TestDiscovery(unittest.TestCase):
         )
 
     @SLOW
-    def test_remote(self):
+    def test_remote(self) -> None:
         """Test parsing AEON."""
         converter = discover_from_rdf(
             graph="https://raw.githubusercontent.com/tibonto/aeon/main/aeon.owl",

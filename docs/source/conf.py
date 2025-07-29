@@ -1,15 +1,13 @@
-"""
-Configuration file for the Sphinx documentation builder.
+"""Configuration file for the Sphinx documentation builder.
 
-This file does only contain a selection of the most common options. For a
-full list see the documentation:
-http://www.sphinx-doc.org/en/master/config
+This file does only contain a selection of the most common options. For a full list see
+the documentation: http://www.sphinx-doc.org/en/master/config
 
 -- Path setup --------------------------------------------------------------
 
-If extensions (or modules to document with autodoc) are in another directory,
-add these directories to ``sys.path`` here. If the directory is relative to the
-documentation root, use ``os.path.abspath`` to make it absolute, like shown here.
+If extensions (or modules to document with autodoc) are in another directory, add these
+directories to ``sys.path`` here. If the directory is relative to the documentation
+root, use ``os.path.abspath`` to make it absolute, like shown here.
 """
 
 import os
@@ -26,7 +24,7 @@ copyright = f"{date.today().year}, Charles Tapley Hoyt"
 author = "Charles Tapley Hoyt"
 
 # The full version, including alpha/beta/rc tags.
-release = "0.9.3-dev"
+release = "0.10.20-dev"
 
 # The short X.Y version.
 parsed_version = re.match(
@@ -241,15 +239,18 @@ texinfo_documents = [
 # Note: don't add trailing slashes, since sphinx adds "/objects.inv" to the end
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "bioregistry": ("https://bioregistry.readthedocs.io/en/stable/", None),
-    "pandas": ("https://pandas.pydata.org/docs/", None),
-    "flask": ("https://flask.palletsprojects.com/", None),
-    "pydantic": ("https://docs.pydantic.dev/latest/", None),
+    "bioregistry": ("https://bioregistry.readthedocs.io/en/stable", None),
+    "pandas": ("https://pandas.pydata.org/docs", None),
+    "flask": ("https://flask.palletsprojects.com/en/stable", None),
+    "pydantic": ("https://docs.pydantic.dev/latest", None),
     # "fastapi": ("https://fastapi.tiangolo.com/", None),
     # "gunicorn": ("https://docs.gunicorn.org/", None),
     # "uvicorn": ("https://www.uvicorn.org/", None),
-    "prefixmaps": ("https://linkml.io/prefixmaps/", None),
-    "rdflib": ("https://rdflib.readthedocs.io/en/stable/", None),
+    "prefixmaps": ("https://linkml.io/prefixmaps", None),
+    "rdflib": ("https://rdflib.readthedocs.io/en/stable", None),
+    "sssom": ("https://mapping-commons.github.io/sssom-py", None),
+    # "sqlalchemy": ("https://docs.sqlalchemy.org/en/20", None),
+    # "sqlmodel": ("https://sqlmodel.tiangolo.com", None),
 }
 
 autoclass_content = "both"

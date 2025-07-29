@@ -42,7 +42,7 @@ converter = Converter.from_extended_prefix_map(
 class TestTypes(unittest.TestCase):
     """Test types."""
 
-    def test_prefix(self):
+    def test_prefix(self) -> None:
         """Test instantiating prefixes."""
         model_1 = WrappedPrefix.model_validate({"prefix": "hello"})
         self.assertEqual("hello", model_1.prefix)
@@ -78,7 +78,7 @@ class TestTypes(unittest.TestCase):
         with self.assertRaises(ValidationError):
             WrappedPrefix.model_validate({"prefix": "nope"}, context={"converter": converter})
 
-    def test_prefix_root_model(self):
+    def test_prefix_root_model(self) -> None:
         """Test the root model."""
         dd = {
             "": "http://example.org",
@@ -108,7 +108,7 @@ class TestTypes(unittest.TestCase):
                 context=converter,
             )
 
-    def test_prefix_map_wrapped(self):
+    def test_prefix_map_wrapped(self) -> None:
         """Test a wrapped prefix map."""
         dd = {
             "prefix_map": {

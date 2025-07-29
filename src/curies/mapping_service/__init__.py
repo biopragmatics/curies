@@ -1,8 +1,8 @@
 """Identifier mappings service.
 
 This contains an implementation of the service described in `SPARQL-enabled identifier
-conversion with Identifiers.org <https://pubmed.ncbi.nlm.nih.gov/25638809/>`_.
-The idea here is that you can write a SPARQL query like the following:
+conversion with Identifiers.org <https://pubmed.ncbi.nlm.nih.gov/25638809/>`_. The idea
+here is that you can write a SPARQL query like the following:
 
 .. code-block:: sparql
 
@@ -35,25 +35,30 @@ The idea here is that you can write a SPARQL query like the following:
         }
     }
 
-The SPARQL endpoint running at the web address XXX takes in the bound values for `?biomodels_protein`
-one at a time and dynamically generates triples with `owl:sameAs` as the predicate mapping and other
-equivalent IRIs (based on the definition of the converter) as the objects. This allows for gluing
-together multiple services that use different URIs for the same entities - in this example, there
-are two ways of referring to UniProt Proteins:
+The SPARQL endpoint running at the web address XXX takes in the bound values for
+`?biomodels_protein` one at a time and dynamically generates triples with `owl:sameAs`
+as the predicate mapping and other equivalent IRIs (based on the definition of the
+converter) as the objects. This allows for gluing together multiple services that use
+different URIs for the same entities - in this example, there are two ways of referring
+to UniProt Proteins:
 
-1. The BioModels database example represents a SBML model on insulin-glucose feedback and uses legacy
-   Identifiers.org URIs for proteins such as http://identifiers.org/uniprot/P01308.
-2. The first-part UniProt database uses its own PURLs such as https://purl.uniprot.org/uniprot/P01308.
+1. The BioModels database example represents a SBML model on insulin-glucose feedback
+   and uses legacy Identifiers.org URIs for proteins such as
+   http://identifiers.org/uniprot/P01308.
+2. The first-part UniProt database uses its own PURLs such as
+   https://purl.uniprot.org/uniprot/P01308.
 
 .. seealso::
 
-    - Jerven Bolleman's implementation of this service in Java: https://github.com/JervenBolleman/sparql-identifiers
-    - Vincent Emonet's `SPARQL endpoint for RDFLib generator <https://github.com/vemonet/rdflib-endpoint>`_
+    - Jerven Bolleman's implementation of this service in Java:
+      https://github.com/JervenBolleman/sparql-identifiers
+    - Vincent Emonet's `SPARQL endpoint for RDFLib generator
+      <https://github.com/vemonet/rdflib-endpoint>`_
 
-The following is an end-to-end example of using this function to create
-a small URI mapping application.
+The following is an end-to-end example of using this function to create a small URI
+mapping application.
 
-.. code-block::
+.. code-block:: python
 
     # flask_example.py
     from flask import Flask
@@ -71,23 +76,24 @@ a small URI mapping application.
 
 In the command line, either run your Python file directly, or via with :mod:`gunicorn`:
 
-.. code-block:: shell
+.. code-block:: console
 
-    pip install gunicorn
-    gunicorn --bind 0.0.0.0:8764 flask_example:app
+    $ pip install gunicorn
+    $ gunicorn --bind 0.0.0.0:8764 flask_example:app
 
 Test a request in the Python REPL.
 
-.. code-block::
+.. code-block:: python
 
     import requests
+
     sparql = '''
         SELECT ?s ?o WHERE {
             VALUES ?s { <http://purl.obolibrary.org/obo/CHEBI_2> }
             ?s owl:sameAs ?o
         }
     '''
-    >>> res = requests.get("http://localhost:8764/sparql", params={"query": sparql})
+    res = requests.get("http://localhost:8764/sparql", params={"query": sparql})
 
 Test a request using a service, e.g. with :meth:`rdflib.Graph.query`
 

@@ -28,12 +28,13 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> flask.Blueprint:
 
     :param converter: A converter
     :param kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
-    :return: A blueprint
 
-    The following is an end-to-end example of using this function to create
-    a small web resolver application.
+    :returns: A blueprint
 
-    .. code-block::
+    The following is an end-to-end example of using this function to create a small web
+    resolver application.
+
+    .. code-block:: python
 
         # flask_example.py
         from flask import Flask
@@ -52,20 +53,22 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> flask.Blueprint:
         if __name__ == "__main__":
             app.run()
 
-    In the command line, either run your Python file directly, or via with :mod:`gunicorn`:
+    In the command line, either run your Python file directly, or via with
+    :mod:`gunicorn`:
 
-    .. code-block:: shell
+    .. code-block:: console
 
-        pip install gunicorn
-        gunicorn --bind 0.0.0.0:8764 flask_example:app
+        $ pip install gunicorn
+        $ gunicorn --bind 0.0.0.0:8764 flask_example:app
 
     Test a request in the Python REPL.
 
-    .. code-block::
+    .. code-block:: python
 
-        >>> import requests
-        >>> requests.get("http://localhost:8764/GO:0032571").url
-        'http://amigo.geneontology.org/amigo/term/GO:0032571'
+        import requests
+
+        url = requests.get("http://localhost:8764/GO:0032571").url
+        assert url == "http://amigo.geneontology.org/amigo/term/GO:0032571"
     """
     from flask import Blueprint, abort, redirect
 
@@ -92,21 +95,24 @@ def get_flask_app(
     """Get a Flask app.
 
     :param converter: A converter
-    :param blueprint_kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
+    :param blueprint_kwargs: Keyword arguments passed through to
+        :class:`flask.Blueprint`
     :param flask_kwargs: Keyword arguments passed through to :class:`flask.Flask`
-    :param register_kwargs: Keyword arguments passed through to :meth:`flask.Flask.register_blueprint`
-    :return: A Flask app
+    :param register_kwargs: Keyword arguments passed through to
+        :meth:`flask.Flask.register_blueprint`
+
+    :returns: A Flask app
 
     .. seealso::
 
-        This function wraps :func:`get_flask_blueprint`. If you already have your own Flask
-        app, :func:`get_flask_blueprint` can be used to create a blueprint that you can mount
-        using :meth:`flask.Flask.register_blueprint`.
+        This function wraps :func:`get_flask_blueprint`. If you already have your own
+        Flask app, :func:`get_flask_blueprint` can be used to create a blueprint that
+        you can mount using :meth:`flask.Flask.register_blueprint`.
 
-    The following is an end-to-end example of using this function to create
-    a small web resolver application.
+    The following is an end-to-end example of using this function to create a small web
+    resolver application.
 
-    .. code-block::
+    .. code-block:: python
 
         # flask_example.py
         from flask import Flask
@@ -124,27 +130,27 @@ def get_flask_app(
     In the command line, either run your Python file directly to use Flask/Werkzeug's
     built-in development server, or run it with :mod:`gunicorn`:
 
-    .. code-block:: shell
+    .. code-block:: console
 
-        pip install gunicorn
-        gunicorn --bind 0.0.0.0:8764 flask_example:app
+        $ pip install gunicorn
+        $ gunicorn --bind 0.0.0.0:8764 flask_example:app
 
-    Alternatively, this package contains a CLI in :mod:`curies.cli` that can be used
-    to quickly deploy a resolver based on one of the preset prefix maps, a local
-    prefix map, or a remote one via URL. The one-line equivalent of the example file
-    is:
+    Alternatively, this package contains a CLI in :mod:`curies.cli` that can be used to
+    quickly deploy a resolver based on one of the preset prefix maps, a local prefix
+    map, or a remote one via URL. The one-line equivalent of the example file is:
 
-    .. code-block:: shell
+    .. code-block:: console
 
-        python -m curies --port 8764 --framework flask --server gunicorn obo
+        $ python -m curies --port 8764 --framework flask --server gunicorn obo
 
     Finally, test a request in the Python REPL.
 
-    .. code-block::
+    .. code-block:: python
 
-        >>> import requests
-        >>> requests.get("http://localhost:8764/GO:0032571").url
-        'http://amigo.geneontology.org/amigo/term/GO:0032571'
+        import requests
+
+        url = requests.get("http://localhost:8764/GO:0032571").url
+        assert url == "http://amigo.geneontology.org/amigo/term/GO:0032571"
     """
     from flask import Flask
 
@@ -159,14 +165,15 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> fastapi.APIRouter
 
     :param converter: A converter
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
-    :return: A router
 
-    The following is an end-to-end example of using this function to create
-    a small web resolver application.
+    :returns: A router
+
+    The following is an end-to-end example of using this function to create a small web
+    resolver application.
 
     Create a python file with your :class:`fastapi.FastAPI` instance:
 
-    .. code-block::
+    .. code-block:: python
 
         # fastapi_example.py
         from fastapi import FastAPI
@@ -184,18 +191,19 @@ def get_fastapi_router(converter: Converter, **kwargs: Any) -> fastapi.APIRouter
 
     In the command line,, run your Python file with :mod:`uvicorn`:
 
-    .. code-block:: shell
+    .. code-block:: console
 
-        pip install uvicorn
-        uvicorn fastapi_example:app --port 8764 --host 0.0.0.0
+        $ pip install uvicorn
+        $ uvicorn fastapi_example:app --port 8764 --host 0.0.0.0
 
     Test a request in the Python REPL.
 
-    .. code-block::
+    .. code-block:: python
 
-        >>> import requests
-        >>> requests.get("http://localhost:8764/GO:0032571").url
-        'http://amigo.geneontology.org/amigo/term/GO:0032571'
+        import requests
+
+        url = requests.get("http://localhost:8764/GO:0032571").url
+        assert url == "http://amigo.geneontology.org/amigo/term/GO:0032571"
     """
     from fastapi import APIRouter, HTTPException, Path
     from fastapi.responses import RedirectResponse
@@ -238,21 +246,24 @@ def get_fastapi_app(
     :param converter: A converter
     :param router_kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
     :param fastapi_kwargs: Keyword arguments passed through to :class:`fastapi.FastAPI`
-    :param include_kwargs: Keyword arguments passed through to :meth:`fastapi.FastAPI.include_router`
-    :return: A FastAPI app
+    :param include_kwargs: Keyword arguments passed through to
+        :meth:`fastapi.FastAPI.include_router`
+
+    :returns: A FastAPI app
 
     .. seealso::
 
-        This function wraps :func:`get_fastapi_router`. If you already have your own FastAPI
-        app, :func:`get_fastapi_router` can be used to create a :class:`fastapi.APIRouter`
-        that you can mount using :meth:`fastapi.FastAPI.include_router`.
+        This function wraps :func:`get_fastapi_router`. If you already have your own
+        FastAPI app, :func:`get_fastapi_router` can be used to create a
+        :class:`fastapi.APIRouter` that you can mount using
+        :meth:`fastapi.FastAPI.include_router`.
 
-    The following is an end-to-end example of using this function to create
-    a small web resolver application.
+    The following is an end-to-end example of using this function to create a small web
+    resolver application.
 
     Create a python file with your :class:`fastapi.FastAPI` instance:
 
-    .. code-block::
+    .. code-block:: python
 
         # fastapi_example.py
         from fastapi import FastAPI
@@ -266,27 +277,27 @@ def get_fastapi_app(
 
     In the command line,, run your Python file with :mod:`uvicorn`:
 
-    .. code-block:: shell
+    .. code-block:: console
 
-        pip install uvicorn
-        uvicorn fastapi_example:app --port 8764 --host 0.0.0.0
+        $ pip install uvicorn
+        $ uvicorn fastapi_example:app --port 8764 --host 0.0.0.0
 
-    Alternatively, this package contains a CLI in :mod:`curies.cli` that can be used
-    to quickly deploy a resolver based on one of the preset prefix maps, a local
-    prefix map, or a remote one via URL. The one-line equivalent of the example file
-    is:
+    Alternatively, this package contains a CLI in :mod:`curies.cli` that can be used to
+    quickly deploy a resolver based on one of the preset prefix maps, a local prefix
+    map, or a remote one via URL. The one-line equivalent of the example file is:
 
-    .. code-block:: shell
+    .. code-block:: console
 
-        python -m curies --framework fastapi --server uvicorn obo
+        $ python -m curies --framework fastapi --server uvicorn obo
 
     Finally, test a request in the Python REPL.
 
-    .. code-block::
+    .. code-block:: python
 
-        >>> import requests
-        >>> requests.get("http://localhost:8764/GO:0032571").url
-        'http://amigo.geneontology.org/amigo/term/GO:0032571'
+        import requests
+
+        url = requests.get("http://localhost:8764/GO:0032571").url
+        assert url == "http://amigo.geneontology.org/amigo/term/GO:0032571"
     """
     from fastapi import FastAPI
 

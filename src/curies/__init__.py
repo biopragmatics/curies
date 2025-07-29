@@ -5,6 +5,7 @@ from .api import (
     DuplicatePrefixes,
     DuplicateURIPrefixes,
     DuplicateValueError,
+    NamableReference,
     NamedReference,
     Prefix,
     PrefixMap,
@@ -25,6 +26,13 @@ from .api import (
     write_tsv,
 )
 from .discovery import discover, discover_from_rdf
+from .preprocessing import (
+    PostprocessingRewrites,
+    PreprocessingBlocklists,
+    PreprocessingConverter,
+    PreprocessingRewrites,
+    PreprocessingRules,
+)
 from .reconciliation import remap_curie_prefixes, remap_uri_prefixes, rewire
 from .sources import (
     get_bioregistry_converter,
@@ -33,6 +41,7 @@ from .sources import (
     get_obo_converter,
     get_prefixcommons_converter,
 )
+from .triples import Triple
 from .version import get_version
 
 __all__ = [
@@ -40,14 +49,21 @@ __all__ = [
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "DuplicateValueError",
+    "NamableReference",
     "NamedReference",
+    "PostprocessingRewrites",
     "Prefix",
     "PrefixMap",
+    "PreprocessingBlocklists",
+    "PreprocessingConverter",
+    "PreprocessingRewrites",
+    "PreprocessingRules",
     "Record",
     "Records",
     "Reference",
     "ReferenceTuple",
     "W3CValidationError",
+    "Triple",
     "chain",
     "discover",
     "discover_from_rdf",

@@ -2,8 +2,10 @@
 
 import json
 import unittest
+from collections.abc import Iterable
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import cast
 
 import rdflib
 
@@ -35,7 +37,7 @@ class TestIO(unittest.TestCase):
             ]
         )
 
-    def test_write_epm(self):
+    def test_write_epm(self) -> None:
         """Test writing and reading an extended prefix map."""
         with TemporaryDirectory() as d:
             path = Path(d).joinpath("test.json")
@@ -44,7 +46,7 @@ class TestIO(unittest.TestCase):
         self.assertEqual(self.converter.records, nc.records)
         self.assertEqual({self.prefix: self.pattern}, nc.pattern_map)
 
-    def test_write_jsonld_with_bimap(self):
+    def test_write_jsonld_with_bimap(self) -> None:
         """Test writing and reading a prefix map via JSON-LD."""
         with TemporaryDirectory() as d:
             path = Path(d).joinpath("test.json")
@@ -58,7 +60,7 @@ class TestIO(unittest.TestCase):
         )
         self.assertEqual({self.prefix: self.uri_prefix}, nc.bimap)
 
-    def test_write_jsonld_with_synonyms(self):
+    def test_write_jsonld_with_synonyms(self) -> None:
         """Test writing a JSON-LD with synonyms."""
         # note: we don't test loading since loading a JSON-LD with synonyms is undefined
         for expand in [True, False]:
@@ -69,7 +71,7 @@ class TestIO(unittest.TestCase):
                     data = json.loads(path.read_text())["@context"]
                 self.assertEqual({self.prefix, self.prefix_synonym}, set(data))
 
-    def test_shacl(self):
+    def test_shacl(self) -> None:
         """Test round-tripping SHACL."""
         with TemporaryDirectory() as d:
             path = Path(d).joinpath("test.ttl")
@@ -78,7 +80,7 @@ class TestIO(unittest.TestCase):
         self.assertEqual(self.converter.bimap, nc.bimap)
         self.assertEqual({self.prefix: self.pattern}, nc.pattern_map)
 
-    def test_shacl_with_synonyms(self):
+    def test_shacl_with_synonyms(self) -> None:
         """Test writing SHACL with synonyms."""
         # note: we don't test loading since loading SHACL with synonyms is undefined
         with TemporaryDirectory() as d:
@@ -94,5 +96,5 @@ class TestIO(unittest.TestCase):
                 ?declaration sh:prefix ?prefix .
             }
         """
-        results = graph.query(query)
+        results = cast(Iterable[tuple[str]], graph.query(query))
         self.assertEqual({self.prefix, self.prefix_synonym}, {str(prefix) for (prefix,) in results})

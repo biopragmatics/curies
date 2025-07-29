@@ -1,11 +1,10 @@
-# See https://setuptools.readthedocs.io/en/latest/build_meta.html
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "curies"
-version = "0.9.3-dev"
+version = "0.10.20-dev"
 description = "Idiomatic conversion between URIs and compact URIs (CURIEs)"
 readme = "README.md"
 authors = [
@@ -47,10 +46,11 @@ keywords = [
     "URIs",
 ]
 
-# License Information. This can be any valid SPDX identifiers that can be resolved
-# with URLs like https://spdx.org/licenses/MIT
-# See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
-license = { file = "LICENSE" }
+# License Information.
+# See PEP-639 at https://peps.python.org/pep-0639/#add-license-files-key
+license-files = [
+    "LICENSE",
+]
 
 requires-python = ">=3.9"
 dependencies = [
@@ -63,11 +63,17 @@ dependencies = [
 [project.optional-dependencies]
 tests = [
     "pytest",
-    "coverage",
+    "coverage[toml]",
     "requests",
 ]
 pandas = [
     "pandas",
+]
+sqlalchemy = [
+    "sqlalchemy",
+]
+sqlmodel = [
+    "sqlmodel",
 ]
 flask = [
     "flask",
@@ -90,28 +96,16 @@ docs = [
 ]
 
 # See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls
+# and also https://packaging.python.org/en/latest/specifications/well-known-project-urls/
 [project.urls]
 "Bug Tracker" = "https://github.com/biopragmatics/curies/issues"
 Homepage = "https://github.com/biopragmatics/curies"
 Repository = "https://github.com/biopragmatics/curies.git"
 Documentation = "https://curies.readthedocs.io"
-
-[tool.setuptools]
-package-dir = { "" = "src" }
-license-files = []
-
-[tool.setuptools.packages.find]
-# this implicitly sets `packages = ":find"`
-where = ["src"]  # list of folders that contain the packages (["."] by default)
-
-# See https://setuptools.pypa.io/en/latest/userguide/datafiles.html
-[tool.setuptools.package-data]
-"*" = ["*.*"]
-
+Funding = "https://github.com/sponsors/cthoyt"
 
 [project.scripts]
 curies = "curies.cli:main"
-
 
 [tool.cruft]
 skip = [
@@ -223,7 +217,7 @@ known-first-party = [
 docstring-code-format = true
 
 [tool.bumpversion]
-current_version = "0.9.3-dev"
+current_version = "0.10.20-dev"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?:-(?P<release>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+(?P<build>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?"
 serialize = [
     "{major}.{minor}.{patch}-{release}+{build}",

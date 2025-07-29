@@ -6,6 +6,7 @@ import csv
 import itertools as itt
 import json
 import logging
+import warnings
 from collections import defaultdict
 from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
@@ -50,6 +51,7 @@ __all__ = [
     "DuplicateURIPrefixes",
     "DuplicateValueError",
     "DuplicateValueError",
+    "NamableReference",
     "NamedReference",
     "Prefix",
     "PrefixMap",
@@ -80,7 +82,7 @@ LocationOr = Union[str, Path, X]
 
 
 def _get_field_validator_values(values, key: str):  # type:ignore
-    """Get the value for the key from a field validator object, cross-compatible with Pydantic 1 and 2."""
+    """Get the value for the key from a field validator object."""
     return values.data[key]
 
 
@@ -155,7 +157,7 @@ class ReferenceTuple(NamedTuple):
         return f"{self.prefix}:{self.identifier}"
 
     @classmethod
-    def from_curie(cls, curie: str, *, sep: str = ":") -> ReferenceTuple:
+    def from_curie(cls, curie: str, *, sep: str = ":") -> Self:
         """Parse a CURIE string and populate a reference tuple.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -167,6 +169,10 @@ class ReferenceTuple(NamedTuple):
         """
         prefix, identifier = _split(curie, sep=sep)
         return cls(prefix, identifier)
+
+    def to_pydantic(self) -> Reference:
+        """Get a Pydantic model."""
+        return Reference(prefix=self.prefix, identifier=self.identifier)
 
 
 class Prefix(str):
@@ -432,6 +438,10 @@ class Reference(BaseModel):
             and self.identifier == other.identifier
         )
 
+    def __composite_values__(self) -> tuple[str, str]:
+        """Return values appropriate for :func:`sqlalchemy.orm.composite`."""
+        return self.prefix, self.identifier
+
     @property
     def curie(self) -> str:
         """Get the reference as a CURIE string.
@@ -450,9 +460,7 @@ class Reference(BaseModel):
         return ReferenceTuple(self.prefix, self.identifier)
 
     @classmethod
-    def from_curie(
-        cls, curie: str, *, sep: str = ":", converter: Converter | None = None
-    ) -> Reference:
+    def from_curie(cls, curie: str, *, sep: str = ":", converter: Converter | None = None) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -466,8 +474,73 @@ class Reference(BaseModel):
         prefix, identifier = _split(curie, sep=sep)
         return cls.model_validate({"prefix": prefix, "identifier": identifier}, context=converter)
 
+    @classmethod
+    def from_reference(cls, reference: Reference, *, converter: Converter | None = None) -> Self:
+        """Parse a CURIE string and populate a reference.
 
-class NamedReference(Reference):
+        :param reference: A pre-parsed reference
+        :param converter: The converter to use as context when parsing
+        :return: A reference object
+        """
+        return cls.model_validate(
+            {"prefix": reference.prefix, "identifier": reference.identifier}, context=converter
+        )
+
+
+class NamableReference(Reference):
+    """A reference, maybe with a name."""
+
+    name: str | None = Field(
+        None,
+        description="The name of the entity referenced by this object's prefix and identifier, if exists.",
+    )
+
+    model_config = ConfigDict(frozen=True)
+
+    @classmethod
+    def from_curie(
+        cls,
+        curie: str,
+        name: str | None = None,
+        *,
+        sep: str = ":",
+        converter: Converter | None = None,
+    ) -> Self:
+        """Parse a CURIE string and populate a reference.
+
+        :param curie: A string representation of a compact URI (CURIE)
+        :param name: The optional name of the reference
+        :param sep: The separator
+        :param converter: The converter to use as context when parsing
+        :return: A reference object
+
+        >>> NamableReference.from_curie("chebi:1234")
+        NamableReference(prefix='chebi', identifier='1234', name=None)
+
+        >>> NamableReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
+        NamableReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
+        """
+        prefix, identifier = _split(curie, sep=sep)
+        return cls.model_validate(
+            {"prefix": prefix, "identifier": identifier, "name": name}, context=converter
+        )
+
+    @classmethod
+    def from_reference(cls, reference: Reference, *, converter: Converter | None = None) -> Self:
+        """Parse a CURIE string and populate a reference.
+
+        :param reference: A pre-parsed reference
+        :param converter: The converter to use as context when parsing
+        :return: A reference object
+        """
+        name = reference.name if isinstance(reference, NamableReference) else None
+        return cls.model_validate(
+            {"prefix": reference.prefix, "identifier": reference.identifier, "name": name},
+            context=converter,
+        )
+
+
+class NamedReference(NamableReference):
     """A reference with a name."""
 
     name: str = Field(
@@ -479,7 +552,7 @@ class NamedReference(Reference):
     @classmethod
     def from_curie(  # type:ignore
         cls, curie: str, name: str, *, sep: str = ":", converter: Converter | None = None
-    ) -> NamedReference:
+    ) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param curie: A string representation of a compact URI (CURIE)
@@ -494,6 +567,30 @@ class NamedReference(Reference):
         prefix, identifier = _split(curie, sep=sep)
         return cls.model_validate(
             {"prefix": prefix, "identifier": identifier, "name": name}, context=converter
+        )
+
+    @classmethod
+    def from_reference(cls, reference: Reference, *, converter: Converter | None = None) -> Self:
+        """Parse a CURIE string and populate a reference.
+
+        :param reference: A pre-parsed reference
+        :param converter: The converter to use as context when parsing
+        :return: A reference object
+
+        :raises TypeError:
+            if a reference that has no name field is passed (e.g., a vanilla :class:`curies.Reference`)
+        """
+        if not isinstance(reference, NamableReference):
+            raise TypeError(
+                f"tried to construct a named reference from a non-named reference: {reference}"
+            )
+        return cls.model_validate(
+            {
+                "prefix": reference.prefix,
+                "identifier": reference.identifier,
+                "name": reference.name,
+            },
+            context=converter,
         )
 
 
@@ -646,6 +743,10 @@ class PrefixStandardizationError(StandardizationError):
     """An error raise when a prefix can't be standardized."""
 
 
+class IdentifierStandardizationError(StandardizationError):
+    """An error raise when an identifier can't be standardized."""
+
+
 class CURIEStandardizationError(StandardizationError):
     """An error raise when a CURIE can't be standardized."""
 
@@ -769,7 +870,7 @@ class Converter:
 
     def __init__(
         self,
-        records: list[Record],
+        records: Iterable[Record],
         *,
         delimiter: str = ":",
         strict: bool = True,
@@ -795,6 +896,7 @@ class Converter:
         :raises DuplicateURIPrefixes: if any records share any URI prefixes
         :raises W3CValidationError: If w3c validation is on and there are non-conformant records
         """
+        records = sorted(records, key=lambda r: r.prefix)
         if strict:
             duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
             if duplicate_uri_prefixes:
@@ -810,7 +912,7 @@ class Converter:
                 raise W3CValidationError(f"Records not conforming to W3C:\n\n{msg}")
 
         self.delimiter = delimiter
-        self.records = sorted(records, key=lambda r: r.prefix)
+        self.records = records
         self.prefix_map = _get_prefix_map(records)
         self.synonym_to_prefix = _get_prefix_synmap(records)
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
@@ -1430,14 +1532,35 @@ class Converter:
         >>> converter.compress_or_standardize("missing:0000000")
         >>> converter.compress_or_standardize("https://example.com/missing:0000000")
         """
-        if self.is_uri(uri_or_curie):
-            return self.compress(uri_or_curie, strict=True)
-        if self.is_curie(uri_or_curie):
-            return self.standardize_curie(uri_or_curie, strict=True)
+        reference = self.parse(uri_or_curie, strict=False)
+        if reference is not None:
+            return self.format_curie(reference.prefix, reference.identifier)
         if strict:
             raise CompressionError(uri_or_curie)
         if passthrough:
             return uri_or_curie
+        return None
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse(
+        self, str_or_uri_or_curie: str, *, strict: Literal[True] = True
+    ) -> ReferenceTuple: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse(
+        self, str_or_uri_or_curie: str, *, strict: Literal[False] = False
+    ) -> ReferenceTuple | None: ...
+
+    def parse(self, str_or_uri_or_curie: str, *, strict: bool = False) -> ReferenceTuple | None:
+        """Parse a string, URI, or CURIE."""
+        if self.is_uri(str_or_uri_or_curie):
+            return self.parse_uri(str_or_uri_or_curie, strict=strict, return_none=True)  # type:ignore[no-any-return,call-overload]
+        if self.is_curie(str_or_uri_or_curie):
+            return self.parse_curie(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
+        if strict:
+            raise CompressionError(str_or_uri_or_curie)
         return None
 
     def compress_strict(self, uri: str) -> str:
@@ -1499,22 +1622,50 @@ class Converter:
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
             instead of ``OBO:GO_0032571``.
         """
-        prefix, identifier = self.parse_uri(uri)
-        if prefix and identifier:
-            return self.format_curie(prefix, identifier)
+        reference = self.parse_uri(uri, return_none=True)
+        if reference:
+            return self.format_curie(reference.prefix, reference.identifier)
         if strict:
             raise CompressionError(uri)
         if passthrough:
             return uri
         return None
 
-    def parse_uri(self, uri: str) -> ReferenceTuple | tuple[None, None]:
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[False] = False
+    ) -> ReferenceTuple | tuple[None, None]: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[True] = True
+    ) -> ReferenceTuple | None: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self,
+        uri: str,
+        *,
+        strict: Literal[True] = True,
+        return_none: bool = ...,
+    ) -> ReferenceTuple: ...
+
+    def parse_uri(
+        self, uri: str, *, strict: bool = False, return_none: bool = False
+    ) -> ReferenceTuple | tuple[None, None] | None:
         """Compress a URI to a CURIE pair.
 
         :param uri:
             A string representing a valid uniform resource identifier (URI)
+        :param strict: If true and the URI can't be parsed, returns an error. Defaults to false.
+        :param return_none: Opt into future type returning of a single None instead of a pair of Nones
         :returns:
             A CURIE pair if the URI could be parsed, otherwise a pair of None's
+
+        :raises CompressionError: if strict is set to true and the URI can't be parsed
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map(
@@ -1532,6 +1683,14 @@ class Converter:
         try:
             value, prefix = self.trie.longest_prefix_item(uri)
         except KeyError:
+            if strict:
+                raise CompressionError(uri) from None
+            if return_none:
+                return None
+            warnings.warn(
+                "Converter.parse_uri will switch to returning None instead of (None, None) in curies v0.11.0.",
+                stacklevel=2,
+            )
             return None, None
         else:
             return ReferenceTuple(prefix, uri[len(value) :])
@@ -1633,10 +1792,9 @@ class Converter:
         >>> converter.expand_or_standardize("missing:0000000")
         >>> converter.expand_or_standardize("https://example.com/missing:0000000")
         """
-        if self.is_curie(curie_or_uri):
-            return self.expand(curie_or_uri, strict=True)
-        if self.is_uri(curie_or_uri):
-            return self.standardize_uri(curie_or_uri, strict=True)
+        reference = self.parse(curie_or_uri, strict=False)
+        if reference is not None:
+            return self.expand_reference(reference, strict=strict, passthrough=passthrough)  # type:ignore[no-any-return,call-overload]
         if strict:
             raise ExpansionError(curie_or_uri)
         if passthrough:
@@ -1719,26 +1877,38 @@ class Converter:
         """
         if w3c_validation and not is_w3c_curie(curie):
             raise W3CValidationError(f"CURIE is not valid under W3C spec: {curie}")
-        prefix, identifier = self.parse_curie(curie)
-        rv = self.expand_pair(prefix, identifier)
-        if rv:
-            return rv
+        reference = self.parse_curie(curie, strict=False)
+        if reference is not None:
+            return self.expand_reference(reference, strict=strict, passthrough=passthrough)  # type:ignore[no-any-return,call-overload]
         if strict:
             raise ExpansionError(curie)
         if passthrough:
             return curie
         return None
 
-    def expand_all(self, curie: str) -> Collection[str] | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_all(
+        self, curie: str, *, strict: Literal[False] = False
+    ) -> Collection[str] | None: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_all(self, curie: str, *, strict: Literal[True] = True) -> Collection[str]: ...
+
+    def expand_all(self, curie: str, *, strict: bool = False) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param curie:
             A string representing a compact URI
+        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
         :returns:
             A list of URIs that this converter can create for the given CURIE. The
             first entry is the "standard" URI then others are based on URI prefix
             synonyms. If the prefix is not registered to this converter, none is
             returned.
+
+        :raises PrefixStandardizationError: if the prefix in the CURIE can not be looked up
 
         >>> priority_prefix_map = {
         ...     "CHEBI": [
@@ -1752,20 +1922,119 @@ class Converter:
         >>> converter.expand_all("NOPE:NOPE") is None
         True
         """
-        prefix, identifier = self.parse_curie(curie)
-        return self.expand_pair_all(prefix, identifier)
+        reference = self.parse_curie(curie, strict=False)
+        if reference is not None:
+            return self.expand_pair_all(reference.prefix, reference.identifier)
+        if strict:
+            raise PrefixStandardizationError(curie)
+        return None
 
-    def parse_curie(self, curie: str) -> ReferenceTuple:
-        """Parse a CURIE."""
-        return ReferenceTuple.from_curie(curie, sep=self.delimiter)
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_curie(
+        self, curie: str, *, strict: Literal[False] = False
+    ) -> ReferenceTuple | None: ...
 
-    def expand_pair(self, prefix: str, identifier: str) -> str | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_curie(self, curie: str, *, strict: Literal[True] = True) -> ReferenceTuple: ...
+
+    def parse_curie(self, curie: str, *, strict: bool = False) -> ReferenceTuple | None:
+        """Parse and standardize a CURIE."""
+        prefix, identifier = _split(curie, sep=self.delimiter)
+        norm_prefix = self.standardize_prefix(prefix, strict=False)
+        if norm_prefix is None:
+            if strict:
+                raise PrefixStandardizationError(prefix)
+            return None
+        norm_identifier = self.standardize_identifier(norm_prefix, identifier)
+        if norm_identifier is None:
+            if strict:
+                raise IdentifierStandardizationError(curie)
+            return None
+        return ReferenceTuple(norm_prefix, norm_identifier)
+
+    def standardize_identifier(self, standard_prefix: str, identifier: str) -> str | None:
+        """Standardize an identifier.
+
+        :param standard_prefix: This is a prefix that has already been standardized using
+            :meth:`standardize_prefix` in this converter
+        :param identifier: An unstandardized identifier
+        :returns: A standardized identifier.
+
+        By default, this function is a no-op, meaning that it just returns the identifier
+        as is. You can override the :class:`Converter` class to implement this method to
+        do standardization (e.g., removing redundant prefixes) and to do validation
+        (e.g., checking against a regular expression).
+        """
+        return identifier
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_reference(
+        self,
+        reference: ReferenceTuple | Reference,
+        *,
+        strict: Literal[True] = True,
+        passthrough: bool = ...,
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_reference(
+        self,
+        reference: ReferenceTuple | Reference,
+        *,
+        strict: Literal[False] = False,
+        passthrough: bool = ...,
+    ) -> str | None: ...
+
+    def expand_reference(
+        self,
+        reference: ReferenceTuple | Reference,
+        *,
+        strict: bool = False,
+        passthrough: bool = False,
+    ) -> str | None:
+        """Expand a reference."""
+        uri_prefix = self.prefix_map.get(reference.prefix)
+        if uri_prefix is not None:
+            return uri_prefix + reference.identifier
+        if strict:
+            raise ExpansionError(reference.prefix)
+        if passthrough:
+            return self.format_curie(reference.prefix, reference.identifier)
+        return None
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_pair(
+        self, prefix: str, identifier: str, *, strict: Literal[True] = True, passthrough: bool = ...
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_pair(
+        self,
+        prefix: str,
+        identifier: str,
+        *,
+        strict: Literal[False] = False,
+        passthrough: bool = ...,
+    ) -> str | None: ...
+
+    def expand_pair(
+        self, prefix: str, identifier: str, *, strict: bool = False, passthrough: bool = False
+    ) -> str | None:
         """Expand a CURIE pair to the standard URI.
 
         :param prefix:
             The prefix of the CURIE
         :param identifier:
             The local unique identifier of the CURIE
+        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the prefix can't be expanded, return the input.
+            Defaults to false.
         :returns:
             A URI if this converter contains a URI prefix for the prefix in this CURIE
 
@@ -1781,23 +2050,39 @@ class Converter:
         'http://purl.obolibrary.org/obo/CHEBI_138488'
         >>> converter.expand_pair("missing", "0000000")
         """
-        uri_prefix = self.prefix_map.get(prefix)
-        if uri_prefix is None:
-            return None
-        return uri_prefix + identifier
+        return self.expand_reference(  # type:ignore[no-any-return,call-overload]
+            ReferenceTuple(prefix, identifier), strict=strict, passthrough=passthrough
+        )
 
-    def expand_pair_all(self, prefix: str, identifier: str) -> Collection[str] | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_pair_all(
+        self, prefix: str, identifier: str, *, strict: Literal[True] = True
+    ) -> Collection[str]: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def expand_pair_all(
+        self, prefix: str, identifier: str, *, strict: Literal[False] = False
+    ) -> Collection[str] | None: ...
+
+    def expand_pair_all(
+        self, prefix: str, identifier: str, *, strict: bool = False
+    ) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
         :param prefix:
             The prefix of the CURIE
         :param identifier:
             The local unique identifier of the CURIE
+        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
         :returns:
             A list of URIs that this converter can create for the given CURIE. The
             first entry is the "standard" URI then others are based on URI prefix
             synonyms. If the prefix is not registered to this converter, none is
             returned.
+
+        :raises ExpansionError: if the prefix in the CURIE can not be looked up
 
         >>> priority_prefix_map = {
         ...     "CHEBI": [
@@ -1812,12 +2097,14 @@ class Converter:
         True
         """
         record = self.get_record(prefix)
-        if record is None:
-            return None
-        rv = [record.uri_prefix + identifier]
-        for uri_prefix_synonyms in record.uri_prefix_synonyms:
-            rv.append(uri_prefix_synonyms + identifier)
-        return rv
+        if record is not None:
+            rv = [record.uri_prefix + identifier]
+            for uri_prefix_synonyms in record.uri_prefix_synonyms:
+                rv.append(uri_prefix_synonyms + identifier)
+            return rv
+        if strict:
+            raise ExpansionError(prefix)
+        return None
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1932,10 +2219,9 @@ class Converter:
         >>> converter.standardize_curie("NOPE:NOPE", passthrough=True)
         'NOPE:NOPE'
         """
-        prefix, identifier = self.parse_curie(curie)
-        norm_prefix = self.standardize_prefix(prefix)
-        if norm_prefix is not None:
-            return self.format_curie(norm_prefix, identifier)
+        rt = self.parse_curie(curie)
+        if rt is not None:
+            return self.format_curie(*rt)
         if strict:
             raise CURIEStandardizationError(curie)
         if passthrough:
@@ -2001,10 +2287,10 @@ class Converter:
         >>> converter.standardize_uri("http://example.org/NOPE", passthrough=True)
         'http://example.org/NOPE'
         """
-        prefix, identifier = self.parse_uri(uri)
-        if prefix and identifier:
+        reference = self.parse_uri(uri, strict=False, return_none=True)
+        if reference is not None:
             # prefix is ensured to be in self.prefix_map because of successful parse
-            return self.prefix_map[prefix] + identifier
+            return self.prefix_map[reference.prefix] + reference.identifier
         if strict:
             raise URIStandardizationError(uri)
         if passthrough:
@@ -2031,7 +2317,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.compress_or_standardize if ambiguous else self.compress
-        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_expand(
@@ -2054,7 +2340,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.expand_or_standardize if ambiguous else self.expand
-        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_prefix(
@@ -2157,7 +2443,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.compress_or_standardize if ambiguous else self.compress
-        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     def file_expand(
@@ -2183,7 +2469,7 @@ class Converter:
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
         pre_func = self.expand_or_standardize if ambiguous else self.expand
-        func = partial(pre_func, strict=strict, passthrough=passthrough)  # type:ignore
+        func = partial(pre_func, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     @staticmethod
@@ -2209,12 +2495,22 @@ class Converter:
                 writer.writerow(_header)
             writer.writerows(rows)
 
-    def get_record(self, prefix: str) -> Record | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def get_record(self, prefix: str, *, strict: Literal[True] = True) -> Record: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def get_record(self, prefix: str, *, strict: Literal[False] = False) -> Record | None: ...
+
+    def get_record(self, prefix: str, *, strict: bool = False) -> Record | None:
         """Get the record for the prefix."""
         # TODO better data structure for this
         for record in self.records:
             if record.prefix == prefix or prefix in record.prefix_synonyms:
                 return record
+        if strict:
+            raise KeyError(f"could not find prefix: {prefix}")
         return None
 
     def get_subconverter(self, prefixes: Iterable[str]) -> Converter:

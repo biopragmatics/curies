@@ -119,6 +119,6 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
         except ImportError:  # pragma: no cover
             pass
         else:
-            return bioregistry.manager.get_converter()  # type:ignore
+            return bioregistry.manager.get_converter()
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
     return Converter.from_extended_prefix_map(url, **kwargs)

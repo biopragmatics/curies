@@ -37,13 +37,13 @@ class TestFastAPI(ConverterMixin):
         self.app = get_fastapi_app(self.converter)
         self.client = TestClient(self.app)
 
-    def test_resolve_success(self):
+    def test_resolve_success(self) -> None:
         """Test resolution for a valid CURIE redirects properly."""
         curie = self.converter.format_curie("GO", "1234567")
         res = self.client.get(f"/{curie}", follow_redirects=False)
         self.assertEqual(302, res.status_code, msg=res.text)
 
-    def test_resolve_failure(self):
+    def test_resolve_failure(self) -> None:
         """Test resolution for an invalid CURIE aborts with 404."""
         curie = self.converter.format_curie("NOPREFIX", "NOIDENTIFIER")
         res = self.client.get(f"/{curie}", follow_redirects=False)
@@ -55,7 +55,7 @@ class TestFastAPISlashed(TestFastAPI):
 
     delimiter = "/"
 
-    def test_delimiter(self):
+    def test_delimiter(self) -> None:
         """Test the delimiter."""
         self.assertEqual("/", self.converter.delimiter)
 
@@ -68,14 +68,14 @@ class TestFlaskBlueprint(ConverterMixin):
         super().setUp()
         self.app = get_flask_app(self.converter)
 
-    def test_resolve_success(self):
+    def test_resolve_success(self) -> None:
         """Test resolution for a valid CURIE redirects properly."""
         curie = self.converter.format_curie("GO", "1234567")
         with self.app.test_client() as client:
             res = client.get(f"/{curie}", follow_redirects=False)
             self.assertEqual(302, res.status_code, msg=res.text)
 
-    def test_resolve_failure(self):
+    def test_resolve_failure(self) -> None:
         """Test resolution for an invalid CURIE aborts with 404."""
         curie = self.converter.format_curie("NOPREFIX", "NOIDENTIFIER")
         with self.app.test_client() as client:
@@ -88,6 +88,6 @@ class TestFlaskBlueprintSlashed(TestFlaskBlueprint):
 
     delimiter = "/"
 
-    def test_delimiter(self):
+    def test_delimiter(self) -> None:
         """Test the delimiter."""
         self.assertEqual("/", self.converter.delimiter)
