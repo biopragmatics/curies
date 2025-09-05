@@ -80,5 +80,5 @@ class TestDataframe(unittest.TestCase):
         self.assertEqual([10, 15], dense_curie_mapping["c:0"])
 
 
-def _rr(series: pd.Series) -> list[int]:
+def _rr(series: "pd.Series[bool]") -> list[int]:
     return [index for index, value in enumerate(series) if value]
