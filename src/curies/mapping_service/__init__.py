@@ -87,12 +87,7 @@ Test a request in the Python REPL.
 
     import requests
 
-    sparql = '''
-        SELECT ?s ?o WHERE {
-            VALUES ?s { <http://purl.obolibrary.org/obo/CHEBI_2> }
-            ?s owl:sameAs ?o
-        }
-    '''
+    sparql = "SELECT ?s ?o WHERE { VALUES ?s { <http://purl.obolibrary.org/obo/CHEBI_2> } ?s owl:sameAs ?o }"
     res = requests.get("http://localhost:8764/sparql", params={"query": sparql})
 
 Test a request using a service, e.g. with :meth:`rdflib.Graph.query`
