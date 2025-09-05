@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     import pandas as pd
 
 __all__ = [
+    "PrefixIndexMethod",
     "get_df_curies_index",
     "get_df_prefixes_index",
     "get_keep_df_curies_index",
@@ -70,7 +71,8 @@ def _get_curie_parser(
     return _func
 
 
-Method: TypeAlias = Literal["a", "b"]
+#: The method for filtering on prefixe
+PrefixIndexMethod: TypeAlias = Literal["iterative", "precalculated"]
 
 
 def get_keep_df_prefixes_index(
@@ -78,14 +80,14 @@ def get_keep_df_prefixes_index(
     column: str | int,
     prefix: str | Collection[str],
     *,
-    method: Method | None = None,
+    method: PrefixIndexMethod | None = None,
     converter: Converter | None = None,
     validate: bool = False,
 ) -> pd.Series:
     """Get an index of CURIEs in the given column that start with the prefix(es)."""
-    if method == "a" or method is None:
+    if method == "iterative" or method is None:
         return df[column].map(_get_prefix_checker(prefix))
-    elif method == "b":
+    elif method == "precalculated":
         if converter is None:  # pragma: no cover
             raise ValueError("a converter is required for method B")
         prefix_series = _get_prefixes_from_curie_column(df, column, converter, validate=validate)
@@ -102,7 +104,7 @@ def keep_df_prefixes(
     column: str | int,
     prefix: str | Collection[str],
     *,
-    method: Method | None = None,
+    method: PrefixIndexMethod | None = None,
     converter: Converter | None = None,
 ) -> pd.DataFrame:
     """Filter a dataframe based on CURIEs in a given column having a given prefix or set of prefixes.

@@ -6,9 +6,8 @@ import unittest
 import pandas as pd
 
 from curies import Converter
-from curies._sssom_exploration import SplitMethod, split_dataframe_by_prefix
 from curies.dataframe import (
-    Method,
+    PrefixIndexMethod,
     get_df_curies_index,
     get_df_prefixes_index,
     get_keep_df_prefixes_index,
@@ -38,7 +37,7 @@ class TestDataframe(unittest.TestCase):
         rows = [(curie,) for curie in curies]
         df = pd.DataFrame(rows, columns=[column])
 
-        for method in typing.get_args(Method):
+        for method in typing.get_args(PrefixIndexMethod):
             with self.subTest(method=method):
                 idx = get_keep_df_prefixes_index(
                     df, column, "a", method=method, converter=CONVERTER
@@ -79,45 +78,6 @@ class TestDataframe(unittest.TestCase):
         self.assertIn("a:0", dense_curie_mapping)
         self.assertEqual([0], dense_curie_mapping["a:0"])
         self.assertEqual([10, 15], dense_curie_mapping["c:0"])
-
-    def test_split_df(self) -> None:
-        """Test the precursor to SSSOM function."""
-        rows = [
-            ("p1:1", "skos:exactMatch", "p2:1"),
-            ("p1:2", "skos:exactMatch", "p2:2"),
-            ("p1:2", "skos:exactMatch", "p3:2"),
-            ("p4:1", "skos:exactMatch", "p1:1"),
-            ("p5:1", "skos:broaderMatch", "p6:1"),
-        ]
-        df = pd.DataFrame(rows, columns=["subject_id", "predicate_id", "object_id"])
-        for method in typing.get_args(SplitMethod):
-            with self.subTest(method=method):
-                # test that if there's ever an empty list, then it returns an empty dict
-                self.assertFalse(
-                    dict(
-                        split_dataframe_by_prefix(
-                            df, [], ["skos:exactMatch"], ["p2"], method=method
-                        )
-                    )
-                )
-                self.assertFalse(
-                    dict(split_dataframe_by_prefix(df, ["p1"], [], ["p2"], method=method))
-                )
-                self.assertFalse(
-                    dict(
-                        split_dataframe_by_prefix(
-                            df, ["p1"], ["skos:exactMatch"], [], method=method
-                        )
-                    )
-                )
-
-                rv = dict(
-                    split_dataframe_by_prefix(
-                        df, ["p1"], ["skos:exactMatch"], ["p2"], method=method
-                    )
-                )
-                self.assertIn(("p1", "skos:exactMatch", "p2"), rv)
-                self.assertEqual(1, len(rv))
 
 
 def _rr(series: pd.Series) -> list[int]:
