@@ -37,7 +37,7 @@ from pydantic_core import core_schema
 from pytrie import StringTrie
 from typing_extensions import Self
 
-from .utils import _split
+from .utils import NoCURIEDelimiterError, _split
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -50,6 +50,7 @@ __all__ = [
     "DuplicateValueError",
     "NamableReference",
     "NamedReference",
+    "NoCURIEDelimiterError",
     "Prefix",
     "PrefixMap",
     "Record",
