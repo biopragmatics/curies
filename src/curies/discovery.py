@@ -205,7 +205,6 @@ def discover(
     >>> # Now, you can compress the URIs to dummy CURIEs
     >>> discovered_converter.compress("http://ran.dom/002")
     'ns1:002'
-
     """
     uri_prefix_to_luids = _get_uri_prefix_to_luids(
         converter=converter, uris=uris, delimiters=delimiters
