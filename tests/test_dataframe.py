@@ -10,11 +10,11 @@ from curies.dataframe import (
     Method,
     _split_dataframe_by_prefix,
     _SplitMethod,
-    filter_df_curie,
-    filter_df_prefix,
-    get_dense_curie,
+    get_curies_index,
     get_dense_prefix,
-    get_prefix_index,
+    get_keep_prefixes_index,
+    keep_curies,
+    keep_prefixes,
 )
 
 CONVERTER = Converter.from_prefix_map(
@@ -41,22 +41,24 @@ class TestDataframe(unittest.TestCase):
 
         for method in typing.get_args(Method):
             with self.subTest(method=method):
-                idx = get_prefix_index(df, column, "a", method=method, converter=CONVERTER)
+                idx = get_keep_prefixes_index(df, column, "a", method=method, converter=CONVERTER)
                 self.assertEqual([0, 1, 2, 3, 4], _rr(idx))
 
-                idx = get_prefix_index(df, column, ["a", "b"], method=method, converter=CONVERTER)
+                idx = get_keep_prefixes_index(
+                    df, column, ["a", "b"], method=method, converter=CONVERTER
+                )
                 self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], _rr(idx))
 
-                df_a = filter_df_prefix(df, column, "a")
+                df_a = keep_prefixes(df, column, "a")
                 self.assertEqual(set(a_curies), set(df_a[column]))
 
-                df_ab = filter_df_prefix(df, column, ["a", "b"])
+                df_ab = keep_prefixes(df, column, ["a", "b"])
                 self.assertEqual({*a_curies, *b_curies}, set(df_ab[column]))
 
-        df_a1 = filter_df_curie(df, column, "a:1")
+        df_a1 = keep_curies(df, column, "a:1")
         self.assertEqual({"a:1"}, set(df_a1[column]))
 
-        df_a123 = filter_df_curie(df, column, ["a:1", "a:2", "b:1"])
+        df_a123 = keep_curies(df, column, ["a:1", "a:2", "b:1"])
         self.assertEqual({"a:1", "a:2", "b:1"}, set(df_a123[column]))
 
         dense_prefix_mapping = get_dense_prefix(df, column)
@@ -69,7 +71,7 @@ class TestDataframe(unittest.TestCase):
             dense_prefix_mapping,
         )
 
-        dense_curie_mapping = get_dense_curie(df, column)
+        dense_curie_mapping = get_curies_index(df, column)
         self.assertNotIn("a", dense_curie_mapping)
         self.assertNotIn("b", dense_curie_mapping)
         self.assertNotIn("c", dense_curie_mapping)

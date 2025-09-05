@@ -16,12 +16,12 @@ if TYPE_CHECKING:
     import sssom
 
 __all__ = [
-    "filter_df_curie",
-    "filter_df_prefix",
-    "get_curie_index",
-    "get_dense_curie",
+    "get_curies_index",
     "get_dense_prefix",
-    "get_prefix_index",
+    "get_keep_curies_index",
+    "get_keep_prefixes_index",
+    "keep_curies",
+    "keep_prefixes",
 ]
 
 
@@ -75,7 +75,7 @@ def _get_curie_parser(
 Method: TypeAlias = Literal["a", "b"]
 
 
-def get_prefix_index(
+def get_keep_prefixes_index(
     df: pd.DataFrame,
     column: str | int,
     prefix: str | Collection[str],
@@ -99,7 +99,7 @@ def get_prefix_index(
         raise ValueError(f"invalid method given: {method}")
 
 
-def filter_df_prefix(
+def keep_prefixes(
     df: pd.DataFrame,
     column: str | int,
     prefix: str | Collection[str],
@@ -118,11 +118,13 @@ def filter_df_prefix(
     :param converter: A converter
     :returns: If not in place, return a new dataframe.
     """
-    idx = get_prefix_index(df=df, column=column, prefix=prefix, method=method, converter=converter)
+    idx = get_keep_prefixes_index(
+        df=df, column=column, prefix=prefix, method=method, converter=converter
+    )
     return df[idx]
 
 
-def get_curie_index(
+def get_keep_curies_index(
     df: pd.DataFrame,
     column: str | int,
     curie: str | Collection[str],
@@ -134,7 +136,15 @@ def get_curie_index(
         return df[column].isin(set(curie))
 
 
-def filter_df_curie(
+def get_curies_index(df: pd.DataFrame, column: str | int) -> dict[str, list[int]]:
+    """Get a dictionary from CURIEs that appear in the column to the row indexes where they appear."""
+    dd: defaultdict[str, list[int]] = defaultdict(list)
+    for i, curie in enumerate(df[column]):
+        dd[curie].append(i)
+    return dict(dd)
+
+
+def keep_curies(
     df: pd.DataFrame,
     column: str | int,
     curie: str | Collection[str],
@@ -148,7 +158,7 @@ def filter_df_curie(
         The CURIE (given as a string) or collection of CURIEs (given as a list, set, etc.) to keep
     :returns: If not in place, return a new dataframe.
     """
-    idx = get_curie_index(df=df, column=column, curie=curie)
+    idx = get_keep_curies_index(df=df, column=column, curie=curie)
     return df[idx]
 
 
@@ -164,14 +174,6 @@ def get_dense_prefix(
     f = _get_curie_parser(converter=converter, validate=validate)
     for i, prefix in enumerate(df[column].map(f)):
         dd[prefix].append(i)
-    return dict(dd)
-
-
-def get_dense_curie(df: pd.DataFrame, column: str | int) -> dict[str, list[int]]:
-    """Get a dictionary from CURIEs that appear in the column to the row indexes where they appear."""
-    dd: defaultdict[str, list[int]] = defaultdict(list)
-    for i, curie in enumerate(df[column]):
-        dd[curie].append(i)
     return dict(dd)
 
 
@@ -217,15 +219,15 @@ def _split_dataframe_by_prefix(
 
     if method == 1 or method is None:
         s_indexes = {
-            subject_prefix: get_prefix_index(df, column="subject_id", prefix=subject_prefix)
+            subject_prefix: get_keep_prefixes_index(df, column="subject_id", prefix=subject_prefix)
             for subject_prefix in subject_prefixes
         }
         p_indexes = {
-            predicate: get_curie_index(df, column="predicate_id", curie=predicate)
+            predicate: get_keep_curies_index(df, column="predicate_id", curie=predicate)
             for predicate in predicates
         }
         o_indexes = {
-            object_prefix: get_prefix_index(df, column="object_id", prefix=object_prefix)
+            object_prefix: get_keep_prefixes_index(df, column="object_id", prefix=object_prefix)
             for object_prefix in object_prefixes
         }
         for subject_prefix, predicate, object_prefix in itt.product(
@@ -238,7 +240,7 @@ def _split_dataframe_by_prefix(
 
     elif method == 2:
         s_index = get_dense_prefix(df, "subject_id")
-        p_index = get_dense_curie(df, "predicate_id")
+        p_index = get_curies_index(df, "predicate_id")
         o_index = get_dense_prefix(df, "object_id")
         for subject_prefix, predicate, object_prefix in itt.product(
             subject_prefixes, predicates, object_prefixes
