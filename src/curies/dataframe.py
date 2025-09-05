@@ -110,12 +110,12 @@ def filter_df_by_prefixes(
     """Filter a dataframe based on CURIEs in a given column having a given prefix or set of prefixes.
 
     :param df: A dataframe
-    :param column:
-        The integer index or column name of a column containing CURIEs
-    :param prefix:
-        The prefix (given as a string) or collection of prefixes (given as a list, set, etc.) to keep
+    :param column: The integer index or column name of a column containing CURIEs
+    :param prefix: The prefix (given as a string) or collection of prefixes (given as a
+        list, set, etc.) to keep
     :param method: The implementation for getting the prefix index
     :param converter: A converter
+
     :returns: If not in place, return a new dataframe.
     """
     idx = get_filter_df_by_prefixes_index(
@@ -152,10 +152,10 @@ def filter_df_by_curies(
     """Filter a dataframe based on CURIEs in a given column having a given prefix or set of prefixes.
 
     :param df: A dataframe
-    :param column:
-        The integer index or column name of a column containing CURIEs
-    :param curie:
-        The CURIE (given as a string) or collection of CURIEs (given as a list, set, etc.) to keep
+    :param column: The integer index or column name of a column containing CURIEs
+    :param curie: The CURIE (given as a string) or collection of CURIEs (given as a
+        list, set, etc.) to keep
+
     :returns: If not in place, return a new dataframe.
     """
     idx = get_filter_df_by_curies_index(df=df, column=column, curie=curie)
