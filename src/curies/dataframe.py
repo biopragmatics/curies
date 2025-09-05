@@ -5,7 +5,9 @@ from __future__ import annotations
 import itertools as itt
 from collections import defaultdict
 from collections.abc import Collection, Iterable
-from typing import TYPE_CHECKING, Callable, Literal, TypeAlias
+from typing import TYPE_CHECKING, Callable, Literal
+
+from typing_extensions import TypeAlias
 
 from curies.api import Converter, _split
 
