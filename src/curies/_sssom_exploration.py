@@ -6,9 +6,10 @@ import itertools as itt
 import typing
 import unittest
 from collections.abc import Collection, Iterable
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal
 
 import pandas as pd
+from typing_extensions import TypeAlias
 
 from curies.dataframe import (
     get_df_curies_index,

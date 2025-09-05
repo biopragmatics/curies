@@ -47,7 +47,7 @@ def _get_prefix_checker(prefix: str | Collection[str]) -> Callable[[str], bool]:
 
 def _get_prefixes_from_curie_column(
     df: pd.DataFrame, column: int | str, converter: Converter, validate: bool
-) -> pd.Series:
+) -> pd.Series[str]:
     return df[column].map(_get_curie_parser(converter=converter, validate=validate))
 
 
@@ -83,7 +83,7 @@ def get_filter_df_by_prefixes_index(
     method: PrefixIndexMethod | None = None,
     converter: Converter | None = None,
     validate: bool = False,
-) -> pd.Series:
+) -> pd.Series[bool]:
     """Get an index of CURIEs in the given column that start with the prefix(es)."""
     if method == "iterative" or method is None:
         return df[column].map(_get_prefix_checker(prefix))
@@ -128,7 +128,7 @@ def get_filter_df_by_curies_index(
     df: pd.DataFrame,
     column: str | int,
     curie: str | Collection[str],
-) -> pd.Series:
+) -> pd.Series[bool]:
     """Get an index of CURIEs in the given column that are the given CURIE(s)."""
     if isinstance(curie, str):
         return df[column] == curie
