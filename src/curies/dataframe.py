@@ -43,12 +43,12 @@ def _get_prefix_checker(prefix: str | Collection[str]) -> Callable[[str], bool]:
 
 
 def _get_prefixes_from_curie_column(
-    df: pd.DataFrame, column: int | str, converter: Converter, validate: bool = True
+    df: pd.DataFrame, column: int | str, converter: Converter, validate: bool
 ) -> pd.Series:
-    return df[column].map(_get_parse_curie(converter=converter, validate=validate))
+    return df[column].map(_get_curie_parser(converter=converter, validate=validate))
 
 
-def _get_parse_curie(
+def _get_curie_parser(
     *, converter: Converter | None = None, validate: bool = False
 ) -> Callable[[str], str]:
     # TODO what if it can't parse?
@@ -80,6 +80,7 @@ def get_prefix_index(
     *,
     method: Method | None = None,
     converter: Converter | None = None,
+    validate: bool = False,
 ) -> pd.Series:
     """Get an index of CURIEs in the given column that start with the prefix(es)."""
     if method == "a" or method is None:
@@ -87,7 +88,7 @@ def get_prefix_index(
     elif method == "b":
         if converter is None:  # pragma: no cover
             raise ValueError("a converter is required for method B")
-        prefix_series = _get_prefixes_from_curie_column(df, column, converter)
+        prefix_series = _get_prefixes_from_curie_column(df, column, converter, validate=validate)
         if isinstance(prefix, str):
             return prefix_series == prefix
         else:
@@ -111,6 +112,8 @@ def filter_df_prefix(
         The integer index or column name of a column containing CURIEs
     :param prefix:
         The prefix (given as a string) or collection of prefixes (given as a list, set, etc.) to keep
+    :param method: The implementation for getting the prefix index
+    :param converter: A converter
     :returns: If not in place, return a new dataframe.
     """
     idx = get_prefix_index(df=df, column=column, prefix=prefix, method=method, converter=converter)
@@ -156,7 +159,7 @@ def get_dense_prefix(
 ) -> dict[str, list[int]]:
     """Get a dictionary from prefixes that appear in the column to the row indexes where they appear."""
     dd: defaultdict[str, list[int]] = defaultdict(list)
-    f = _get_parse_curie(converter=converter, validate=validate)
+    f = _get_curie_parser(converter=converter, validate=validate)
     for i, prefix in enumerate(df[column].map(f)):
         dd[prefix].append(i)
     return dict(dd)
