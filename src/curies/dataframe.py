@@ -8,10 +8,12 @@ from typing import TYPE_CHECKING, Callable, Literal
 
 from typing_extensions import TypeAlias
 
-from curies.api import Converter, _split
+from .utils import _split
 
 if TYPE_CHECKING:
     import pandas as pd
+
+    from .api import Converter
 
 __all__ = [
     "PrefixIndexMethod",
