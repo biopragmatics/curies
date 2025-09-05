@@ -1,15 +1,20 @@
 """Test dataframe utilities."""
 
+import typing
 import unittest
 
-from curies import Converter
-from curies.dataframe import get_prefix_index
 import pandas as pd
 
-CONVERTER = Converter.from_prefix_map({
-    "a": "https://example.org/a/",
-    "b": "https://example.org/b/",
-})
+from curies import Converter
+from curies.dataframe import Method, get_prefix_index
+
+CONVERTER = Converter.from_prefix_map(
+    {
+        "a": "https://example.org/a/",
+        "b": "https://example.org/b/",
+        "c": "https://example.org/c/",
+    }
+)
 
 
 class TestDataframe(unittest.TestCase):
@@ -25,7 +30,7 @@ class TestDataframe(unittest.TestCase):
         rows = [(curie,) for curie in curies]
         df = pd.DataFrame(rows, columns=["curie"])
 
-        for method in ["a", "b"]:
+        for method in typing.get_args(Method):
             with self.subTest(method=method):
                 idx = get_prefix_index(df, "curie", "a", method=method, converter=CONVERTER)
                 self.assertEqual([0, 1, 2, 3, 4], _rr(idx))
