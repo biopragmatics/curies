@@ -21,6 +21,7 @@ __all__ = [
     "filter_df_by_prefixes",
     "get_df_curies_index",
     "get_df_prefixes_index",
+    "get_df_unique_prefixes",
     "get_filter_df_by_curies_index",
     "get_filter_df_by_prefixes_index",
 ]
@@ -175,3 +176,15 @@ def get_df_prefixes_index(
     for i, prefix in enumerate(df[column].map(f)):
         dd[prefix].append(i)
     return dict(dd)
+
+
+def get_df_unique_prefixes(
+    df: pd.DataFrame,
+    column: str | int,
+    *,
+    converter: Converter | None = None,
+    validate: bool = False,
+) -> set[str]:
+    """Get unique prefixes."""
+    f = _get_curie_parser(converter=converter, validate=validate)
+    return set(df[column].map(f).unique())
