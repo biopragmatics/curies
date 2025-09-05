@@ -18,9 +18,9 @@ if TYPE_CHECKING:
 __all__ = [
     "PrefixIndexMethod",
     "get_df_curies_index",
+    "get_df_keep_curies_index",
+    "get_df_keep_prefixes_index",
     "get_df_prefixes_index",
-    "get_keep_df_curies_index",
-    "get_keep_df_prefixes_index",
     "keep_df_curies",
     "keep_df_prefixes",
 ]
@@ -75,7 +75,7 @@ def _get_curie_parser(
 PrefixIndexMethod: TypeAlias = Literal["iterative", "precalculated"]
 
 
-def get_keep_df_prefixes_index(
+def get_df_keep_prefixes_index(
     df: pd.DataFrame,
     column: str | int,
     prefix: str | Collection[str],
@@ -118,13 +118,13 @@ def keep_df_prefixes(
     :param converter: A converter
     :returns: If not in place, return a new dataframe.
     """
-    idx = get_keep_df_prefixes_index(
+    idx = get_df_keep_prefixes_index(
         df=df, column=column, prefix=prefix, method=method, converter=converter
     )
     return df[idx]
 
 
-def get_keep_df_curies_index(
+def get_df_keep_curies_index(
     df: pd.DataFrame,
     column: str | int,
     curie: str | Collection[str],
@@ -158,7 +158,7 @@ def keep_df_curies(
         The CURIE (given as a string) or collection of CURIEs (given as a list, set, etc.) to keep
     :returns: If not in place, return a new dataframe.
     """
-    idx = get_keep_df_curies_index(df=df, column=column, curie=curie)
+    idx = get_df_keep_curies_index(df=df, column=column, curie=curie)
     return df[idx]
 
 

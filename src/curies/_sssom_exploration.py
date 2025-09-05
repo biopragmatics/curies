@@ -12,9 +12,9 @@ import pandas as pd
 
 from curies.dataframe import (
     get_df_curies_index,
+    get_df_keep_curies_index,
+    get_df_keep_prefixes_index,
     get_df_prefixes_index,
-    get_keep_df_curies_index,
-    get_keep_df_prefixes_index,
 )
 
 if TYPE_CHECKING:
@@ -68,17 +68,17 @@ def split_dataframe_by_prefix(
 
     if method == "disjoint-indexes" or method is None:
         s_indexes = {
-            subject_prefix: get_keep_df_prefixes_index(
+            subject_prefix: get_df_keep_prefixes_index(
                 df, column="subject_id", prefix=subject_prefix
             )
             for subject_prefix in subject_prefixes
         }
         p_indexes = {
-            predicate: get_keep_df_curies_index(df, column="predicate_id", curie=predicate)
+            predicate: get_df_keep_curies_index(df, column="predicate_id", curie=predicate)
             for predicate in predicates
         }
         o_indexes = {
-            object_prefix: get_keep_df_prefixes_index(df, column="object_id", prefix=object_prefix)
+            object_prefix: get_df_keep_prefixes_index(df, column="object_id", prefix=object_prefix)
             for object_prefix in object_prefixes
         }
         for subject_prefix, predicate, object_prefix in itt.product(
