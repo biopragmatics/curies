@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import itertools as itt
 from collections import defaultdict
-from collections.abc import Collection, Iterable
+from collections.abc import Collection
 from typing import TYPE_CHECKING, Callable, Literal
 
 from typing_extensions import TypeAlias
@@ -13,15 +12,14 @@ from curies.api import Converter, _split
 
 if TYPE_CHECKING:
     import pandas as pd
-    import sssom
 
 __all__ = [
-    "get_curies_index",
-    "get_dense_prefix",
-    "get_keep_curies_index",
-    "get_keep_prefixes_index",
-    "keep_curies",
-    "keep_prefixes",
+    "get_df_curies_index",
+    "get_df_prefixes_index",
+    "get_keep_df_curies_index",
+    "get_keep_df_prefixes_index",
+    "keep_df_curies",
+    "keep_df_prefixes",
 ]
 
 
@@ -75,7 +73,7 @@ def _get_curie_parser(
 Method: TypeAlias = Literal["a", "b"]
 
 
-def get_keep_prefixes_index(
+def get_keep_df_prefixes_index(
     df: pd.DataFrame,
     column: str | int,
     prefix: str | Collection[str],
@@ -99,7 +97,7 @@ def get_keep_prefixes_index(
         raise ValueError(f"invalid method given: {method}")
 
 
-def keep_prefixes(
+def keep_df_prefixes(
     df: pd.DataFrame,
     column: str | int,
     prefix: str | Collection[str],
@@ -118,13 +116,13 @@ def keep_prefixes(
     :param converter: A converter
     :returns: If not in place, return a new dataframe.
     """
-    idx = get_keep_prefixes_index(
+    idx = get_keep_df_prefixes_index(
         df=df, column=column, prefix=prefix, method=method, converter=converter
     )
     return df[idx]
 
 
-def get_keep_curies_index(
+def get_keep_df_curies_index(
     df: pd.DataFrame,
     column: str | int,
     curie: str | Collection[str],
@@ -136,7 +134,7 @@ def get_keep_curies_index(
         return df[column].isin(set(curie))
 
 
-def get_curies_index(df: pd.DataFrame, column: str | int) -> dict[str, list[int]]:
+def get_df_curies_index(df: pd.DataFrame, column: str | int) -> dict[str, list[int]]:
     """Get a dictionary from CURIEs that appear in the column to the row indexes where they appear."""
     dd: defaultdict[str, list[int]] = defaultdict(list)
     for i, curie in enumerate(df[column]):
@@ -144,7 +142,7 @@ def get_curies_index(df: pd.DataFrame, column: str | int) -> dict[str, list[int]
     return dict(dd)
 
 
-def keep_curies(
+def keep_df_curies(
     df: pd.DataFrame,
     column: str | int,
     curie: str | Collection[str],
@@ -158,11 +156,11 @@ def keep_curies(
         The CURIE (given as a string) or collection of CURIEs (given as a list, set, etc.) to keep
     :returns: If not in place, return a new dataframe.
     """
-    idx = get_keep_curies_index(df=df, column=column, curie=curie)
+    idx = get_keep_df_curies_index(df=df, column=column, curie=curie)
     return df[idx]
 
 
-def get_dense_prefix(
+def get_df_prefixes_index(
     df: pd.DataFrame,
     column: str | int,
     *,
@@ -175,84 +173,3 @@ def get_dense_prefix(
     for i, prefix in enumerate(df[column].map(f)):
         dd[prefix].append(i)
     return dict(dd)
-
-
-def _split_msdf_by_prefix(
-    msdf: sssom.MappingSetDataFrame,
-    subject_prefixes: Collection[str],
-    predicates: Collection[str],
-    object_prefixes: Collection[str],
-) -> dict[str, sssom.MappingSetDataFrame]:
-    """Split a MSDF, a drop-in replacement for :func:`sssom.parsers.split_dataframe_by_prefix`."""
-    from sssom.io import from_sssom_dataframe
-
-    rr = _split_dataframe_by_prefix(msdf.df, subject_prefixes, predicates, object_prefixes)
-    rv = {}
-    for (subject_prefix, predicate, object_prefix), df in rr:
-        predicate_reference = msdf.converter.parse_curie(predicate, strict=True)
-        subconverter = msdf.converter.get_subconverter(
-            [subject_prefix, predicate_reference.prefix, object_prefix]
-        )
-        split = f"{subject_prefix.lower()}_{predicate.lower()}_{object_prefix.lower()}"
-        rv[split] = from_sssom_dataframe(df, prefix_map=dict(subconverter.bimap), meta=msdf.meta)
-    return rv
-
-
-_SplitMethod: TypeAlias = Literal[1, 2]
-
-
-# this is split out from SSSOM
-def _split_dataframe_by_prefix(
-    df: pd.DataFrame,
-    subject_prefixes: str | Collection[str],
-    predicates: str | Collection[str],
-    object_prefixes: str | Collection[str],
-    *,
-    method: _SplitMethod | None = None,
-) -> Iterable[tuple[tuple[str, str, str], pd.DataFrame]]:
-    if isinstance(subject_prefixes, str):
-        subject_prefixes = [subject_prefixes]
-    if isinstance(predicates, str):
-        predicates = [predicates]
-    if isinstance(object_prefixes, str):
-        object_prefixes = [object_prefixes]
-
-    if method == 1 or method is None:
-        s_indexes = {
-            subject_prefix: get_keep_prefixes_index(df, column="subject_id", prefix=subject_prefix)
-            for subject_prefix in subject_prefixes
-        }
-        p_indexes = {
-            predicate: get_keep_curies_index(df, column="predicate_id", curie=predicate)
-            for predicate in predicates
-        }
-        o_indexes = {
-            object_prefix: get_keep_prefixes_index(df, column="object_id", prefix=object_prefix)
-            for object_prefix in object_prefixes
-        }
-        for subject_prefix, predicate, object_prefix in itt.product(
-            subject_prefixes, predicates, object_prefixes
-        ):
-            idx = s_indexes[subject_prefix] & p_indexes[predicate] & o_indexes[object_prefix]
-            if not idx.any():
-                continue
-            yield (subject_prefix, predicate, object_prefix), df[idx]
-
-    elif method == 2:
-        s_index = get_dense_prefix(df, "subject_id")
-        p_index = get_curies_index(df, "predicate_id")
-        o_index = get_dense_prefix(df, "object_id")
-        for subject_prefix, predicate, object_prefix in itt.product(
-            subject_prefixes, predicates, object_prefixes
-        ):
-            method_2_idx: list[int] = sorted(
-                set(s_index.get(subject_prefix, []))
-                .intersection(p_index.get(predicate, []))
-                .intersection(o_index.get(object_prefix, []))
-            )
-            if not method_2_idx:
-                continue
-            yield (subject_prefix, predicate, object_prefix), df.iloc[method_2_idx]
-
-    else:
-        raise ValueError

@@ -6,15 +6,14 @@ import unittest
 import pandas as pd
 
 from curies import Converter
+from curies._sssom_exploration import SplitMethod, split_dataframe_by_prefix
 from curies.dataframe import (
     Method,
-    _split_dataframe_by_prefix,
-    _SplitMethod,
-    get_curies_index,
-    get_dense_prefix,
-    get_keep_prefixes_index,
-    keep_curies,
-    keep_prefixes,
+    get_df_curies_index,
+    get_df_prefixes_index,
+    get_keep_df_prefixes_index,
+    keep_df_curies,
+    keep_df_prefixes,
 )
 
 CONVERTER = Converter.from_prefix_map(
@@ -41,27 +40,29 @@ class TestDataframe(unittest.TestCase):
 
         for method in typing.get_args(Method):
             with self.subTest(method=method):
-                idx = get_keep_prefixes_index(df, column, "a", method=method, converter=CONVERTER)
+                idx = get_keep_df_prefixes_index(
+                    df, column, "a", method=method, converter=CONVERTER
+                )
                 self.assertEqual([0, 1, 2, 3, 4], _rr(idx))
 
-                idx = get_keep_prefixes_index(
+                idx = get_keep_df_prefixes_index(
                     df, column, ["a", "b"], method=method, converter=CONVERTER
                 )
                 self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], _rr(idx))
 
-                df_a = keep_prefixes(df, column, "a")
+                df_a = keep_df_prefixes(df, column, "a")
                 self.assertEqual(set(a_curies), set(df_a[column]))
 
-                df_ab = keep_prefixes(df, column, ["a", "b"])
+                df_ab = keep_df_prefixes(df, column, ["a", "b"])
                 self.assertEqual({*a_curies, *b_curies}, set(df_ab[column]))
 
-        df_a1 = keep_curies(df, column, "a:1")
+        df_a1 = keep_df_curies(df, column, "a:1")
         self.assertEqual({"a:1"}, set(df_a1[column]))
 
-        df_a123 = keep_curies(df, column, ["a:1", "a:2", "b:1"])
+        df_a123 = keep_df_curies(df, column, ["a:1", "a:2", "b:1"])
         self.assertEqual({"a:1", "a:2", "b:1"}, set(df_a123[column]))
 
-        dense_prefix_mapping = get_dense_prefix(df, column)
+        dense_prefix_mapping = get_df_prefixes_index(df, column)
         self.assertEqual(
             {
                 "a": [0, 1, 2, 3, 4],
@@ -71,7 +72,7 @@ class TestDataframe(unittest.TestCase):
             dense_prefix_mapping,
         )
 
-        dense_curie_mapping = get_curies_index(df, column)
+        dense_curie_mapping = get_df_curies_index(df, column)
         self.assertNotIn("a", dense_curie_mapping)
         self.assertNotIn("b", dense_curie_mapping)
         self.assertNotIn("c", dense_curie_mapping)
@@ -89,29 +90,29 @@ class TestDataframe(unittest.TestCase):
             ("p5:1", "skos:broaderMatch", "p6:1"),
         ]
         df = pd.DataFrame(rows, columns=["subject_id", "predicate_id", "object_id"])
-        for method in typing.get_args(_SplitMethod):
+        for method in typing.get_args(SplitMethod):
             with self.subTest(method=method):
                 # test that if there's ever an empty list, then it returns an empty dict
                 self.assertFalse(
                     dict(
-                        _split_dataframe_by_prefix(
+                        split_dataframe_by_prefix(
                             df, [], ["skos:exactMatch"], ["p2"], method=method
                         )
                     )
                 )
                 self.assertFalse(
-                    dict(_split_dataframe_by_prefix(df, ["p1"], [], ["p2"], method=method))
+                    dict(split_dataframe_by_prefix(df, ["p1"], [], ["p2"], method=method))
                 )
                 self.assertFalse(
                     dict(
-                        _split_dataframe_by_prefix(
+                        split_dataframe_by_prefix(
                             df, ["p1"], ["skos:exactMatch"], [], method=method
                         )
                     )
                 )
 
                 rv = dict(
-                    _split_dataframe_by_prefix(
+                    split_dataframe_by_prefix(
                         df, ["p1"], ["skos:exactMatch"], ["p2"], method=method
                     )
                 )
