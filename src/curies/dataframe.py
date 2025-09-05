@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Collection
-from typing import TYPE_CHECKING, Callable, Literal
+from typing import TYPE_CHECKING, Callable, Literal, Union
 
 from typing_extensions import TypeAlias
 
@@ -26,7 +26,7 @@ __all__ = [
     "get_filter_df_by_prefixes_index",
 ]
 
-DataframeOrSeries: TypeAlias = pd.DataFrame | "pd.Series[str]"
+DataframeOrSeries: TypeAlias = Union["pd.DataFrame", "pd.Series[str]"]
 
 
 def _get_prefix_checker(prefix: str | Collection[str]) -> Callable[[str], bool]:
@@ -194,7 +194,7 @@ def get_df_prefixes_index(
 def get_df_unique_prefixes(
     df: DataframeOrSeries,
     *,
-    column: str | int | None,
+    column: str | int | None = None,
     converter: Converter | None = None,
     validate: bool = False,
 ) -> set[str]:
