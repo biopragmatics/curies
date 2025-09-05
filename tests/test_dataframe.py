@@ -12,6 +12,7 @@ from curies.dataframe import (
     filter_df_by_prefixes,
     get_df_curies_index,
     get_df_prefixes_index,
+    get_df_unique_prefixes,
     get_filter_df_by_prefixes_index,
 )
 
@@ -78,6 +79,8 @@ class TestDataframe(unittest.TestCase):
         self.assertIn("a:0", dense_curie_mapping)
         self.assertEqual([0], dense_curie_mapping["a:0"])
         self.assertEqual([10, 15], dense_curie_mapping["c:0"])
+
+        self.assertEqual(set("abc"), get_df_unique_prefixes(df, column))
 
 
 def _rr(series: "pd.Series[bool]") -> list[int]:
