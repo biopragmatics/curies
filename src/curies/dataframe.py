@@ -17,12 +17,12 @@ if TYPE_CHECKING:
 
 __all__ = [
     "PrefixIndexMethod",
+    "filter_df_by_curies",
+    "filter_df_by_prefixes",
     "get_df_curies_index",
-    "get_df_keep_curies_index",
-    "get_df_keep_prefixes_index",
     "get_df_prefixes_index",
-    "keep_df_curies",
-    "keep_df_prefixes",
+    "get_filter_df_by_curies_index",
+    "get_filter_df_by_prefixes_index",
 ]
 
 
@@ -75,7 +75,7 @@ def _get_curie_parser(
 PrefixIndexMethod: TypeAlias = Literal["iterative", "precalculated"]
 
 
-def get_df_keep_prefixes_index(
+def get_filter_df_by_prefixes_index(
     df: pd.DataFrame,
     column: str | int,
     prefix: str | Collection[str],
@@ -99,7 +99,7 @@ def get_df_keep_prefixes_index(
         raise ValueError(f"invalid method given: {method}")
 
 
-def keep_df_prefixes(
+def filter_df_by_prefixes(
     df: pd.DataFrame,
     column: str | int,
     prefix: str | Collection[str],
@@ -118,13 +118,13 @@ def keep_df_prefixes(
     :param converter: A converter
     :returns: If not in place, return a new dataframe.
     """
-    idx = get_df_keep_prefixes_index(
+    idx = get_filter_df_by_prefixes_index(
         df=df, column=column, prefix=prefix, method=method, converter=converter
     )
     return df[idx]
 
 
-def get_df_keep_curies_index(
+def get_filter_df_by_curies_index(
     df: pd.DataFrame,
     column: str | int,
     curie: str | Collection[str],
@@ -144,7 +144,7 @@ def get_df_curies_index(df: pd.DataFrame, column: str | int) -> dict[str, list[i
     return dict(dd)
 
 
-def keep_df_curies(
+def filter_df_by_curies(
     df: pd.DataFrame,
     column: str | int,
     curie: str | Collection[str],
@@ -158,7 +158,7 @@ def keep_df_curies(
         The CURIE (given as a string) or collection of CURIEs (given as a list, set, etc.) to keep
     :returns: If not in place, return a new dataframe.
     """
-    idx = get_df_keep_curies_index(df=df, column=column, curie=curie)
+    idx = get_filter_df_by_curies_index(df=df, column=column, curie=curie)
     return df[idx]
 
 
