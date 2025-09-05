@@ -25,3 +25,8 @@ def _split(curie: str, *, sep: str = ":") -> tuple[str, str]:
     if not delimiter:
         raise NoCURIEDelimiterError(curie)
     return prefix, identifier
+
+
+def _prefix_from_curie(curie: str, *, sep: str = ":") -> str:
+    """Split a CURIE string using string operations and return the prefix."""
+    return _split(curie, sep=sep)[0]

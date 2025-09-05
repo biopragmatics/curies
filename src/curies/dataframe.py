@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Callable, Literal
 
 from typing_extensions import TypeAlias
 
-from .utils import _split
+from .utils import _prefix_from_curie
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -59,9 +59,7 @@ def _get_curie_parser(
     # TODO handle invalid CURIEs?
 
     if not validate:
-
-        def _func(curie: str) -> str:
-            return _split(curie)[0]
+        return _prefix_from_curie
     elif converter is None:
         raise ValueError("converter is required for validation")
     else:
