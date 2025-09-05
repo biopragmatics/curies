@@ -9,6 +9,7 @@ from curies import Converter
 from curies.dataframe import (
     Method,
     _split_dataframe_by_prefix,
+    _SplitMethod,
     filter_df_curie,
     filter_df_prefix,
     get_dense_curie,
@@ -86,14 +87,32 @@ class TestDataframe(unittest.TestCase):
             ("p5:1", "skos:broaderMatch", "p6:1"),
         ]
         df = pd.DataFrame(rows, columns=["subject_id", "predicate_id", "object_id"])
-        for method in [1, 2]:
+        for method in typing.get_args(_SplitMethod):
             with self.subTest(method=method):
                 # test that if there's ever an empty list, then it returns an empty dict
-                self.assertFalse(dict(_split_dataframe_by_prefix(df, [], ["skos:exactMatch"], ["p2"], method=method)))
-                self.assertFalse(dict(_split_dataframe_by_prefix(df, ["p1"], [], ["p2"], method=method)))
-                self.assertFalse(dict(_split_dataframe_by_prefix(df, ["p1"], ["skos:exactMatch"], [], method=method)))
+                self.assertFalse(
+                    dict(
+                        _split_dataframe_by_prefix(
+                            df, [], ["skos:exactMatch"], ["p2"], method=method
+                        )
+                    )
+                )
+                self.assertFalse(
+                    dict(_split_dataframe_by_prefix(df, ["p1"], [], ["p2"], method=method))
+                )
+                self.assertFalse(
+                    dict(
+                        _split_dataframe_by_prefix(
+                            df, ["p1"], ["skos:exactMatch"], [], method=method
+                        )
+                    )
+                )
 
-                rv = dict(_split_dataframe_by_prefix(df, ["p1"], ["skos:exactMatch"], ["p2"], method=method))
+                rv = dict(
+                    _split_dataframe_by_prefix(
+                        df, ["p1"], ["skos:exactMatch"], ["p2"], method=method
+                    )
+                )
                 self.assertIn(("p1", "skos:exactMatch", "p2"), rv)
                 self.assertEqual(1, len(rv))
 

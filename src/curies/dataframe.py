@@ -191,6 +191,9 @@ def _split_msdf_by_prefix(
     return rv
 
 
+_SplitMethod: TypeAlias = Literal[1, 2]
+
+
 # this is split out from SSSOM
 def _split_dataframe_by_prefix(
     df: pd.DataFrame,
@@ -198,7 +201,7 @@ def _split_dataframe_by_prefix(
     predicates: str | Collection[str],
     object_prefixes: str | Collection[str],
     *,
-    method: Literal[1, 2] = 1,
+    method: _SplitMethod | None = None,
 ) -> Iterable[tuple[tuple[str, str, str], pd.DataFrame]]:
     if isinstance(subject_prefixes, str):
         subject_prefixes = [subject_prefixes]
@@ -207,7 +210,7 @@ def _split_dataframe_by_prefix(
     if isinstance(object_prefixes, str):
         object_prefixes = [object_prefixes]
 
-    if method == 1:
+    if method == 1 or method is None:
         s_indexes = {
             subject_prefix: get_prefix_index(df, column="subject_id", prefix=subject_prefix)
             for subject_prefix in subject_prefixes
