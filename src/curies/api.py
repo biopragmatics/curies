@@ -37,6 +37,8 @@ from pydantic_core import core_schema
 from pytrie import StringTrie
 from typing_extensions import Self
 
+from .utils import _split
+
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import rdflib
@@ -75,13 +77,6 @@ LocationOr = Union[str, Path, X]
 def _get_field_validator_values(values, key: str):  # type:ignore
     """Get the value for the key from a field validator object."""
     return values.data[key]
-
-
-def _split(curie: str, *, sep: str = ":") -> tuple[str, str]:
-    prefix, delimiter, identifier = curie.partition(sep)
-    if not delimiter:
-        raise NoCURIEDelimiterError(curie)
-    return prefix, identifier
 
 
 class ReferenceTuple(NamedTuple):
@@ -667,17 +662,6 @@ class DuplicateSummary(NamedTuple):
     record_1: Record
     record_2: Record
     prefix: str
-
-
-class NoCURIEDelimiterError(ValueError):
-    """An error thrown on a string with no delimiter."""
-
-    def __init__(self, curie: str):
-        """Initialize the error."""
-        self.curie = curie
-
-    def __str__(self) -> str:
-        return f"{self.curie} does not appear to be a CURIE - missing a delimiter"
 
 
 class DuplicateValueError(ValueError):

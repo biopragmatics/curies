@@ -22,7 +22,6 @@ from curies.api import (
     ExpansionError,
     NamableReference,
     NamedReference,
-    NoCURIEDelimiterError,
     PrefixStandardizationError,
     Record,
     Records,
@@ -39,6 +38,7 @@ from curies.sources import (
     get_monarch_converter,
     get_obo_converter,
 )
+from curies.utils import NoCURIEDelimiterError
 from curies.version import get_version
 from tests.constants import SLOW
 

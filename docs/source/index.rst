@@ -70,3 +70,4 @@ The most recent code and data can be installed directly from GitHub with:
     w3c
     preprocessing
     database
+    dataframe

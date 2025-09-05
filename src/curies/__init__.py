@@ -24,6 +24,7 @@ from .api import (
     write_shacl,
     write_tsv,
 )
+from .dataframe import filter_df_by_curies, filter_df_by_prefixes
 from .discovery import discover, discover_from_rdf
 from .preprocessing import (
     PostprocessingRewrites,
@@ -65,6 +66,8 @@ __all__ = [
     "chain",
     "discover",
     "discover_from_rdf",
+    "filter_df_by_curies",
+    "filter_df_by_prefixes",
     "get_bioregistry_converter",
     "get_go_converter",
     "get_monarch_converter",
