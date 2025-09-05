@@ -16,7 +16,7 @@ DOID:0080799 skos:exactMatch EFO:1000527     semapv:ManualMappingCuration
 DOID:0080808 skos:exactMatch mesh:D000069295 semapv:ManualMappingCuration
 ============ =============== =============== ============================
 
-To get the list of prefixes appearing in a column, use
+To get the set of unique prefixes appearing in a column, use
 :func:`curies.dataframe.get_df_unique_prefixes`:
 
 .. code-block:: python
