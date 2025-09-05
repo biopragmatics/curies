@@ -170,7 +170,7 @@ def get_dense_curie(df: pd.DataFrame, column: str | int) -> dict[str, list[int]]
     return dict(dd)
 
 
-def split_msdf_by_prefix(
+def _split_msdf_by_prefix(
     msdf: sssom.MappingSetDataFrame,
     subject_prefixes: Collection[str],
     predicates: Collection[str],
@@ -194,12 +194,19 @@ def split_msdf_by_prefix(
 # this is split out from SSSOM
 def _split_dataframe_by_prefix(
     df: pd.DataFrame,
-    subject_prefixes: Collection[str],
-    predicates: Collection[str],
-    object_prefixes: Collection[str],
+    subject_prefixes: str | Collection[str],
+    predicates: str | Collection[str],
+    object_prefixes: str | Collection[str],
     *,
     method: Literal[1, 2] = 1,
 ) -> Iterable[tuple[tuple[str, str, str], pd.DataFrame]]:
+    if isinstance(subject_prefixes, str):
+        subject_prefixes = [subject_prefixes]
+    if isinstance(predicates, str):
+        predicates = [predicates]
+    if isinstance(object_prefixes, str):
+        object_prefixes = [object_prefixes]
+
     if method == 1:
         s_indexes = {
             subject_prefix: get_prefix_index(df, column="subject_id", prefix=subject_prefix)

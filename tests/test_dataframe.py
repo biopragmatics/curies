@@ -8,6 +8,7 @@ import pandas as pd
 from curies import Converter
 from curies.dataframe import (
     Method,
+    _split_dataframe_by_prefix,
     filter_df_curie,
     filter_df_prefix,
     get_dense_curie,
@@ -74,6 +75,17 @@ class TestDataframe(unittest.TestCase):
         self.assertIn("a:0", dense_curie_mapping)
         self.assertEqual([0], dense_curie_mapping["a:0"])
         self.assertEqual([10, 15], dense_curie_mapping["c:0"])
+
+    def test_split_df(self) -> None:
+        """Test the precursor to SSSOM function."""
+        rows = [
+            ("p1:1", "skos:exactMatch", "p2:1"),
+            ("p1:2", "skos:exactMatch", "p2:2"),
+            ("p1:2", "skos:exactMatch", "p3:2"),
+        ]
+        df = pd.DataFrame(rows, columns=["subject_id", "predicate_id", "object_id"])
+        rv = dict(_split_dataframe_by_prefix(df, ["p1"], ["skos"], ["p2"]))
+        self.assertIn(("p1", "skos", "p2"), rv)
 
 
 def _rr(series: pd.Series) -> list[int]:
