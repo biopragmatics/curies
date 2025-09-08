@@ -38,49 +38,59 @@ class TestDataframe(unittest.TestCase):
         rows = [(curie,) for curie in curies]
         df = pd.DataFrame(rows, columns=[column])
 
+        with self.assertRaises(ValueError):
+            get_filter_df_by_prefixes_index(df, prefixes="a", converter=CONVERTER)
+
         for method in typing.get_args(PrefixIndexMethod):
             with self.subTest(method=method):
                 idx = get_filter_df_by_prefixes_index(
-                    df, column, "a", method=method, converter=CONVERTER
+                    df, column=column, prefixes="a", method=method, converter=CONVERTER
                 )
                 self.assertEqual([0, 1, 2, 3, 4], _rr(idx))
 
                 idx = get_filter_df_by_prefixes_index(
-                    df, column, ["a", "b"], method=method, converter=CONVERTER
+                    df[column], prefixes="a", method=method, converter=CONVERTER
+                )
+                self.assertEqual([0, 1, 2, 3, 4], _rr(idx))
+
+                idx = get_filter_df_by_prefixes_index(
+                    df, column=column, prefixes=["a", "b"], method=method, converter=CONVERTER
                 )
                 self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], _rr(idx))
 
-                df_a = filter_df_by_prefixes(df, column, "a")
+                df_a = filter_df_by_prefixes(df, column=column, prefixes="a")
                 self.assertEqual(set(a_curies), set(df_a[column]))
 
-                df_ab = filter_df_by_prefixes(df, column, ["a", "b"])
+                df_ab = filter_df_by_prefixes(df, column=column, prefixes=["a", "b"])
                 self.assertEqual({*a_curies, *b_curies}, set(df_ab[column]))
 
-        df_a1 = filter_df_by_curies(df, column, "a:1")
+        df_a1 = filter_df_by_curies(df, column=column, curies="a:1")
         self.assertEqual({"a:1"}, set(df_a1[column]))
 
-        df_a123 = filter_df_by_curies(df, column, ["a:1", "a:2", "b:1"])
+        df_a123 = filter_df_by_curies(df, column=column, curies=["a:1", "a:2", "b:1"])
         self.assertEqual({"a:1", "a:2", "b:1"}, set(df_a123[column]))
 
-        dense_prefix_mapping = get_df_prefixes_index(df, column)
-        self.assertEqual(
-            {
-                "a": [0, 1, 2, 3, 4],
-                "b": [5, 6, 7, 8, 9],
-                "c": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
-            },
-            dense_prefix_mapping,
-        )
+        prefixes_index = {
+            "a": [0, 1, 2, 3, 4],
+            "b": [5, 6, 7, 8, 9],
+            "c": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+        }
+        self.assertEqual(prefixes_index, get_df_prefixes_index(df, column=column))
+        self.assertEqual(prefixes_index, get_df_prefixes_index(df[column]))
 
-        dense_curie_mapping = get_df_curies_index(df, column)
-        self.assertNotIn("a", dense_curie_mapping)
-        self.assertNotIn("b", dense_curie_mapping)
-        self.assertNotIn("c", dense_curie_mapping)
-        self.assertIn("a:0", dense_curie_mapping)
-        self.assertEqual([0], dense_curie_mapping["a:0"])
-        self.assertEqual([10, 15], dense_curie_mapping["c:0"])
+        for curies_index in [
+            get_df_curies_index(df, column=column),
+            get_df_curies_index(df[column]),
+        ]:
+            self.assertNotIn("a", curies_index)
+            self.assertNotIn("b", curies_index)
+            self.assertNotIn("c", curies_index)
+            self.assertIn("a:0", curies_index)
+            self.assertEqual([0], curies_index["a:0"])
+            self.assertEqual([10, 15], curies_index["c:0"])
 
-        self.assertEqual(set("abc"), get_df_unique_prefixes(df, column))
+        self.assertEqual(set("abc"), get_df_unique_prefixes(df, column=column))
+        self.assertEqual(set("abc"), get_df_unique_prefixes(df[column]))
 
 
 def _rr(series: "pd.Series[bool]") -> list[int]:
