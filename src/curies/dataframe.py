@@ -102,6 +102,8 @@ def get_filter_df_by_prefixes_index(
 
     :returns: A pandas boolean series that corresponds to the rows of the dataframe or series provided
 
+    :raises ValueError: If validation is set to true but no converter is passed
+
     Example usage:
 
     .. code-block:: python
