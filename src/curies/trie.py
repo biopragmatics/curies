@@ -58,7 +58,7 @@ class StringTrie(UserDict[str, str]):
                 longest_prefix_value = node.value
                 max_non_null_index = i
         if longest_prefix_value is None:
-            raise KeyError # TODO this shouldn't be possible
+            raise KeyError  # TODO this shouldn't be possible
         del prefix_characters[max_non_null_index + 1 :]
         return "".join(prefix_characters), longest_prefix_value
 
