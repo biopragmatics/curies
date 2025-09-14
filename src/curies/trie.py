@@ -69,7 +69,7 @@ class StringTrie(UserDict[str, str]):
                 max_non_null_index = i
         if prefix is None:
             raise KeyError
-        identifier = uri[max_non_null_index + 1:]
+        identifier = uri[max_non_null_index + 1 :]
         return prefix, identifier
 
     def __contains__(self, key: Any) -> bool:
