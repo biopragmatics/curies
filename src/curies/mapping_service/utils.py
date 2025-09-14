@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import json.decoder
 import unittest
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Callable
+from xml.etree.ElementTree import Element
 
 from defusedxml import ElementTree
 
@@ -64,13 +65,17 @@ def handle_xml(text: str) -> Records:
     """Parse bindings encoded in an XML string."""
     root = ElementTree.fromstring(text)
     results = root.find("{http://www.w3.org/2005/sparql-results#}results")
-    return [
-        {
-            binding.attrib["name"]: binding.find("{http://www.w3.org/2005/sparql-results#}uri").text
-            for binding in result
-        }
-        for result in results
-    ]
+    if results is None:
+        raise ValueError
+    return [_handle_result(result) for result in results]
+
+
+def _handle_result(result: Iterable[Element]) -> Record:
+    return {
+        binding.attrib["name"]: value
+        for binding in result
+        if (value := binding.findtext("{http://www.w3.org/2005/sparql-results#}uri"))
+    }
 
 
 def handle_csv(text: str) -> Records:

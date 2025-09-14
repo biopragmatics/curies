@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Collection
-from typing import TYPE_CHECKING, Callable, Literal, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Literal, Union, cast
 
 from typing_extensions import TypeAlias
 
@@ -322,19 +322,28 @@ def get_df_unique_prefixes(
     return set(series.map(f).unique())
 
 
+def _disallowed_dtype(series: pd.Series[Any]) -> bool:
+    import numpy as np
+
+    return series.dtype != np.str_ and series.dtype != np.dtype("O")
+
+
 def _get_series(df_or_series: DataframeOrSeries, column: str | int | None = None) -> pd.Series[str]:
     import pandas as pd
 
     if isinstance(df_or_series, pd.Series):
-        if df_or_series.dtype != str:
-            raise TypeError(f"passed series that does not have strings: {df_or_series.dtype=}\n\n{df_or_series}")
+        if _disallowed_dtype(df_or_series):
+            raise TypeError(
+                f"passed series that does not have strings: {df_or_series.dtype=} {type(df_or_series.dtype)=}\n\n{df_or_series}"
+            )
         return df_or_series
 
     if column is None:
         raise ValueError
 
     series = df_or_series[column]
-    if series.dtype != str:
-        raise TypeError(f"passed series that does not have strings: {series.dtype=}\n\n{series}")
-
-    return cast(pd.Series[str], series)
+    if _disallowed_dtype(series):
+        raise TypeError(
+            f"passed series that does not have strings: {series.dtype=} {type(series.dtype)=}\n\n{series}"
+        )
+    return cast("pd.Series[str]", series)
