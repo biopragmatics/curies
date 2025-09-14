@@ -322,8 +322,11 @@ def get_df_unique_prefixes(
     return set(series.map(f).unique())
 
 
-def _disallowed_dtype(series: pd.Series[Any]) -> TypeGuard[pd.Series[str]]:
+def _disallowed_dtype(series: pd.Series[Any] | str) -> TypeGuard[pd.Series[str]]:
     import numpy as np
+
+    if isinstance(series, str):
+        return False
 
     return series.dtype != np.str_ and series.dtype != np.dtype("O")
 
@@ -341,7 +344,7 @@ def _get_series(df_or_series: DataframeOrSeries, column: str | int | None = None
     if column is None:
         raise ValueError("must pass non-none column when using a dataframe directly")
 
-    series = cast("pd.Series[Any]", df_or_series[column])
+    series = df_or_series[column]
     if _disallowed_dtype(series):
         raise TypeError(
             f"passed series that does not have strings: {series.dtype=} {type(series.dtype)=}\n\n{series}"
