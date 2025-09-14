@@ -80,7 +80,7 @@ def _handle_result(result: Iterable[Element]) -> Record:
 
 def handle_csv(text: str) -> Records:
     """Parse bindings encoded in a CSV string."""
-    header, *lines = (line.strip().split(",") for line in text.splitlines())
+    header, *lines = [line.strip().split(",") for line in text.splitlines()]
     return [dict(zip(header, line)) for line in lines]
 
 
