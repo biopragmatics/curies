@@ -1627,7 +1627,7 @@ class Converter:
         (None, None)
         """
         try:
-            value, prefix = self.trie.longest_prefix_item(uri)
+            prefix, identifier = self.trie.longest_prefix_item(uri)
         except KeyError:
             if strict:
                 raise CompressionError(uri) from None
@@ -1639,7 +1639,7 @@ class Converter:
             )
             return None, None
         else:
-            return ReferenceTuple(prefix, uri[len(value) :])
+            return ReferenceTuple(prefix, identifier)
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.

@@ -55,24 +55,22 @@ class StringTrie(UserDict[str, str]):
     def __setitem__(self, key: str, value: str) -> None:
         self.root._ensure_node(key).value = value
 
-    def longest_prefix_item(self, key: str) -> tuple[str, str]:
+    def longest_prefix_item(self, uri: str) -> tuple[str, str]:
         """Return the item (``(key,value)`` tuple) associated with the longest key in this trie that is a prefix of ``key``."""
-        prefix_characters: list[str] = []
         node: Node | None = self.root
-        longest_prefix_value: str | None = self.root.value
+        prefix: str | None = self.root.value
         max_non_null_index = -1
-        for i, character in enumerate(key):
+        for i, character in enumerate(uri):
             node = cast(Node, node).children.get(character)
             if node is None:
                 break
-            prefix_characters.append(character)
             if node.value is not None:
-                longest_prefix_value = node.value
+                prefix = node.value
                 max_non_null_index = i
-        if longest_prefix_value is None:
+        if prefix is None:
             raise KeyError
-        del prefix_characters[max_non_null_index + 1 :]
-        return "".join(prefix_characters), longest_prefix_value
+        identifier = uri[max_non_null_index + 1:]
+        return prefix, identifier
 
     def __contains__(self, key: Any) -> bool:
         node = self.root._find_node(key)
