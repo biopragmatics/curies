@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Collection
-from typing import TYPE_CHECKING, Any, Callable, Literal, TypeGuard, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Literal, Union, cast
 
-from typing_extensions import TypeAlias
+from typing_extensions import TypeAlias, TypeGuard
 
 from .utils import _prefix_from_curie
 
