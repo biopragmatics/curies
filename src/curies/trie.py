@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import UserDict
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 __all__ = ["Node", "StringTrie"]
 
@@ -19,7 +19,7 @@ class Node:
 
     def __init__(self, value: str | None = None) -> None:
         """Initialize the node."""
-        self.value = value
+        self.value = value  # this needs to be mutable, which is why this isn't a named tuple
         self.children = {}
 
 
@@ -45,33 +45,27 @@ class StringTrie(UserDict[str, str]):
 
     def longest_prefix_item(self, key: str) -> tuple[str, str]:
         """Return the item (``(key,value)`` tuple) associated with the longest key in this trie that is a prefix of ``key``."""
-        prefix: list[str] = []
-        append = prefix.append
+        prefix_characters: list[str] = []
         node: Node | None = self.root
-        longest_prefix_value = self.root.value
+        longest_prefix_value: str | None = self.root.value
         max_non_null_index = -1
-        for i, part in enumerate(key):
-            if node is None:
-                raise ValueError
-            node = node.children.get(part)
+        for i, character in enumerate(key):
+            node = cast(Node, node).children.get(character)
             if node is None:
                 break
-            append(part)
-            value = node.value
-            if value is not None:
-                longest_prefix_value = value
+            prefix_characters.append(character)
+            if node.value is not None:
+                longest_prefix_value = node.value
                 max_non_null_index = i
         if longest_prefix_value is None:
-            raise KeyError
-        del prefix[max_non_null_index + 1 :]
-        return "".join(prefix), longest_prefix_value
+            raise KeyError # TODO this shouldn't be possible
+        del prefix_characters[max_non_null_index + 1 :]
+        return "".join(prefix_characters), longest_prefix_value
 
     def _find(self, key: Sequence[str]) -> Node | None:
         node: Node | None = self.root
         for part in key:
-            if node is None:
-                raise ValueError
-            node = node.children.get(part)
+            node = cast(Node, node).children.get(part)
             if node is None:
                 break
         return node
