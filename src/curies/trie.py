@@ -1,4 +1,4 @@
-"""A trie."""
+"""A trie, inspired from https://github.com/gsakkis/pytrie/."""
 
 from __future__ import annotations
 
