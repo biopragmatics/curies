@@ -7,7 +7,7 @@ import itertools as itt
 import json
 import logging
 import warnings
-from collections import defaultdict
+from collections import UserDict, defaultdict
 from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
 from pathlib import Path
@@ -34,7 +34,6 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from pytrie import StringTrie
 from typing_extensions import Self
 
 from .utils import NoCURIEDelimiterError, _split
@@ -57,6 +56,8 @@ __all__ = [
     "Records",
     "Reference",
     "ReferenceTuple",
+    "Trie",
+    "TrieNode",
     "chain",
     "load_extended_prefix_map",
     "load_jsonld_context",
@@ -828,7 +829,7 @@ class Converter:
     #: The mapping from URI prefixes to prefixes
     reverse_prefix_map: dict[str, str]
     #: A prefix trie for efficient parsing of URIs
-    trie: StringTrie
+    trie: Trie
     #: A mapping from prefix to regular expression pattern. Not necessarily complete wrt the prefix map.
     #:
     #: .. warning:: patterns are an experimental feature
@@ -862,7 +863,7 @@ class Converter:
         self.prefix_map = _get_prefix_map(records)
         self.synonym_to_prefix = _get_prefix_synmap(records)
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
-        self.trie = StringTrie(self.reverse_prefix_map)
+        self.trie = Trie(self.reverse_prefix_map)
         self.pattern_map = _get_pattern_map(records)
 
     @property
@@ -1626,20 +1627,18 @@ class Converter:
         >>> converter.parse_uri("http://example.org/missing:0000000")
         (None, None)
         """
-        try:
-            value, prefix = self.trie.longest_prefix_item(uri)
-        except KeyError:
-            if strict:
-                raise CompressionError(uri) from None
-            if return_none:
-                return None
-            warnings.warn(
-                "Converter.parse_uri will switch to returning None instead of (None, None) in curies v0.11.0.",
-                stacklevel=2,
-            )
-            return None, None
-        else:
-            return ReferenceTuple(prefix, uri[len(value) :])
+        rv = self.trie.parse_uri(uri)
+        if rv is not None:
+            return rv
+        if strict:
+            raise CompressionError(uri) from None
+        if return_none:
+            return None
+        warnings.warn(
+            "Converter.parse_uri will switch to returning None instead of (None, None) in curies v0.11.0.",
+            stacklevel=2,
+        )
+        return None, None
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
@@ -3028,3 +3027,71 @@ def _converter_from_validation_info(info: core_schema.ValidationInfo) -> Convert
         return context.get("converter")
     else:
         raise TypeError
+
+
+class Trie(UserDict[str, str]):
+    """A partial implementation of a string trie."""
+
+    def __init__(self, d: dict[str, str]) -> None:
+        """Create a new string trie."""
+        super().__init__()
+        self.root = TrieNode()
+        for key, value in d.items():
+            self[key] = value
+
+    def __setitem__(self, key: str, value: str) -> None:
+        self.root._ensure_node(key).value = value
+
+    def parse_uri(self, uri: str) -> ReferenceTuple | None:
+        """Parse a URI into a prefix/identifier pair based prefixes in the trie."""
+        node: TrieNode | None = self.root
+        prefix: str | None = self.root.value
+        max_non_null_index = -1
+        for i, character in enumerate(uri):
+            node = cast(TrieNode, node).children.get(character)
+            if node is None:
+                break
+            if node.value is not None:
+                prefix = node.value
+                max_non_null_index = i
+        if prefix is None:
+            return None
+        identifier = uri[max_non_null_index + 1 :]
+        return ReferenceTuple(prefix, identifier)
+
+    def __contains__(self, key: Any) -> bool:
+        node = self.root._find_node(key)
+        return node is not None and node.value is not None
+
+
+class TrieNode:
+    """Trie node class."""
+
+    __slots__ = ("children", "value")
+
+    value: str | None
+    children: dict[str, TrieNode]
+
+    def __init__(self, value: str | None = None) -> None:
+        """Initialize the node."""
+        self.value = value  # this needs to be mutable, which is why this isn't a named tuple
+        self.children = {}
+
+    def _ensure_node(self, key: str) -> TrieNode:
+        node = self
+        for character in key:
+            next_node: TrieNode | None = node.children.get(character)
+            if next_node is None:
+                node = node.children.setdefault(character, TrieNode())
+            else:
+                node = next_node
+        return node
+
+    def _find_node(self, key: Sequence[str]) -> TrieNode | None:
+        node = self
+        for character in key:
+            next_node = node.children.get(character)
+            if next_node is None:
+                return None
+            node = next_node
+        return node
