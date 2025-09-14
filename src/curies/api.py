@@ -2231,8 +2231,10 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.compress_or_standardize if ambiguous else self.compress
-        func = partial(pre_func, strict=strict, passthrough=passthrough)
+        if ambiguous:
+            func = partial(self.compress_or_standardize, strict=strict, passthrough=passthrough)
+        else:
+            func = partial(self.compress, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_expand(
@@ -2254,8 +2256,10 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.expand_or_standardize if ambiguous else self.expand
-        func = partial(pre_func, strict=strict, passthrough=passthrough)
+        if ambiguous:
+            func = partial(self.expand_or_standardize, strict=strict, passthrough=passthrough)
+        else:
+            func = partial(self.expand, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
 
     def pd_standardize_prefix(
@@ -2357,8 +2361,10 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.compress_or_standardize if ambiguous else self.compress
-        func = partial(pre_func, strict=strict, passthrough=passthrough)
+        if ambiguous:
+            func = partial(self.compress_or_standardize, strict=strict, passthrough=passthrough)
+        else:
+            func = partial(self.compress, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     def file_expand(
@@ -2383,8 +2389,10 @@ class Converter:
             Defaults to false.
         :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
         """
-        pre_func = self.expand_or_standardize if ambiguous else self.expand
-        func = partial(pre_func, strict=strict, passthrough=passthrough)
+        if ambiguous:
+            func = partial(self.expand_or_standardize, strict=strict, passthrough=passthrough)
+        else:
+            func = partial(self.expand, strict=strict, passthrough=passthrough)
         self._file_helper(func, path=path, column=column, sep=sep, header=header)
 
     @staticmethod

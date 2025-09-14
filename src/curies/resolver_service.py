@@ -79,7 +79,7 @@ def get_flask_blueprint(converter: Converter, **kwargs: Any) -> flask.Blueprint:
         """Resolve a CURIE."""
         location = converter.expand_pair(prefix, identifier)
         if location is None:
-            prefixes = "".join(f"\n- {p}" for p in sorted(converter.get_prefixes()))
+            prefixes = "".join([f"\n- {p}" for p in sorted(converter.get_prefixes())])
             return abort(FAILURE_CODE, f"Invalid prefix: {prefix}. Use one of:{prefixes}")
         return redirect(location)
 

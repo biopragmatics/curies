@@ -178,6 +178,7 @@ import sqlalchemy
 from sqlalchemy import Column
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.orm import Composite, composite
+from sqlalchemy.sql.type_api import TypeEngine
 from sqlalchemy.types import TEXT, TypeDecorator
 
 from curies import Reference
@@ -192,9 +193,9 @@ __all__ = [
 class SAReferenceTypeDecorator(TypeDecorator[Reference]):
     """A SQLAlchemy type decorator for a :mod:`curies.Reference`."""
 
-    impl = TEXT
+    impl: ClassVar[type[TypeEngine[str]]] = TEXT  # type:ignore[misc]
     #: Set SQLAlchemy caching to true
-    cache_ok: ClassVar[bool] = True  # type:ignore
+    cache_ok: ClassVar[bool] = True  # type:ignore[misc]
 
     def process_bind_param(self, value: str | Reference | None, dialect: Dialect) -> str | None:
         """Convert the Python object into a database value."""
