@@ -193,9 +193,9 @@ __all__ = [
 class SAReferenceTypeDecorator(TypeDecorator[Reference]):
     """A SQLAlchemy type decorator for a :mod:`curies.Reference`."""
 
-    impl: type[TypeEngine[str]] = TEXT
+    impl: ClassVar[type[TypeEngine[str]]] = TEXT  # type:ignore[misc]
     #: Set SQLAlchemy caching to true
-    cache_ok: ClassVar[bool] = True  # type:ignore
+    cache_ok: ClassVar[bool] = True  # type:ignore[misc]
 
     def process_bind_param(self, value: str | Reference | None, dialect: Dialect) -> str | None:
         """Convert the Python object into a database value."""
