@@ -454,6 +454,7 @@ class TestConverter(unittest.TestCase):
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_prefix_map)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_bimap)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.trie)
+        self.assertNotIn("http://purl.obolibrary.org/obo/XXX_", converter.trie)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.bimap.values())
         for curie, uri in [
             ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),

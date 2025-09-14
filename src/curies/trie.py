@@ -22,6 +22,25 @@ class Node:
         self.value = value  # this needs to be mutable, which is why this isn't a named tuple
         self.children = {}
 
+    def _ensure_node(self, key: str) -> Node:
+        node = self
+        for character in key:
+            next_node: Node | None = node.children.get(character)
+            if next_node is None:
+                node = node.children.setdefault(character, Node())
+            else:
+                node = next_node
+        return node
+
+    def _find_node(self, key: Sequence[str]) -> Node | None:
+        node = self
+        for character in key:
+            next_node = node.children.get(character)
+            if next_node is None:
+                return None
+            node = next_node
+        return node
+
 
 class StringTrie(UserDict[str, str]):
     """Base trie class."""
@@ -30,18 +49,11 @@ class StringTrie(UserDict[str, str]):
         """Create a new trie."""
         super().__init__()
         self.root = Node()
-        for k, v in d.items():
-            self[k] = v
+        for key, value in d.items():
+            self[key] = value
 
     def __setitem__(self, key: str, value: str) -> None:
-        node = self.root
-        for part in key:
-            next_node = node.children.get(part)
-            if next_node is None:
-                node = node.children.setdefault(part, Node())
-            else:
-                node = next_node
-        node.value = value
+        self.root._ensure_node(key).value = value
 
     def longest_prefix_item(self, key: str) -> tuple[str, str]:
         """Return the item (``(key,value)`` tuple) associated with the longest key in this trie that is a prefix of ``key``."""
@@ -58,18 +70,10 @@ class StringTrie(UserDict[str, str]):
                 longest_prefix_value = node.value
                 max_non_null_index = i
         if longest_prefix_value is None:
-            raise KeyError  # TODO this shouldn't be possible
+            raise KeyError
         del prefix_characters[max_non_null_index + 1 :]
         return "".join(prefix_characters), longest_prefix_value
 
-    def _find(self, key: Sequence[str]) -> Node | None:
-        node: Node | None = self.root
-        for part in key:
-            node = cast(Node, node).children.get(part)
-            if node is None:
-                break
-        return node
-
     def __contains__(self, key: Any) -> bool:
-        node = self._find(key)
+        node = self.root._find_node(key)
         return node is not None and node.value is not None
