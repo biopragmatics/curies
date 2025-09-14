@@ -34,9 +34,9 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from pytrie import StringTrie
 from typing_extensions import Self
 
+from .trie import StringTrie
 from .utils import NoCURIEDelimiterError, _split
 
 if TYPE_CHECKING:  # pragma: no cover
