@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Collection
-from typing import TYPE_CHECKING, Any, Callable, Literal, Union, cast
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypeGuard, Union, cast
 
 from typing_extensions import TypeAlias
 
@@ -322,7 +322,7 @@ def get_df_unique_prefixes(
     return set(series.map(f).unique())
 
 
-def _disallowed_dtype(series: pd.Series[Any]) -> bool:
+def _disallowed_dtype(series: pd.Series[Any]) -> TypeGuard[pd.Series[str]]:
     import numpy as np
 
     return series.dtype != np.str_ and series.dtype != np.dtype("O")
@@ -339,9 +339,9 @@ def _get_series(df_or_series: DataframeOrSeries, column: str | int | None = None
         return df_or_series
 
     if column is None:
-        raise ValueError
+        raise ValueError("must pass non-none column when using a dataframe directly")
 
-    series = df_or_series[column]
+    series = cast("pd.Series[Any]", df_or_series[column])
     if _disallowed_dtype(series):
         raise TypeError(
             f"passed series that does not have strings: {series.dtype=} {type(series.dtype)=}\n\n{series}"
