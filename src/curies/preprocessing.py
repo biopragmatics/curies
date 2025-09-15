@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Literal, TypeAlias, TypeVar, overload
 
 from pydantic import BaseModel, Field
-from typing_extensions import Never, Self
+from typing_extensions import Self
 
 from .api import Converter, Reference, ReferenceTuple
 
@@ -356,19 +356,7 @@ class PreprocessingConverter(Converter):
         uri: str,
         *,
         strict: Literal[False] = False,
-        return_none: Literal[False] = False,
-        context: str | None = ...,
-        block_action: BlockAction = ...,
-    ) -> Never: ...
-
-    # docstr-coverage:excused `overload`
-    @overload
-    def parse_uri(
-        self,
-        uri: str,
-        *,
-        strict: Literal[False] = False,
-        return_none: Literal[True] = True,
+        return_none: bool = ...,
         context: str | None = ...,
         block_action: BlockAction = ...,
     ) -> ReferenceTuple | None: ...
@@ -393,7 +381,7 @@ class PreprocessingConverter(Converter):
         return_none: bool = True,
         context: str | None = None,
         block_action: BlockAction = "raise",
-    ) -> ReferenceTuple | tuple[None, None] | None:
+    ) -> ReferenceTuple | None:
         """Parse and standardize a URI.
 
         :param uri: The URI to parse and standardize

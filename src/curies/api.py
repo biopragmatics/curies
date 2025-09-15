@@ -6,7 +6,6 @@ import csv
 import itertools as itt
 import json
 import logging
-import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
@@ -1580,13 +1579,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[False] = False
-    ) -> ReferenceTuple | tuple[None, None]: ...
-
-    # docstr-coverage:excused `overload`
-    @overload
-    def parse_uri(
-        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[True] = True
+        self, uri: str, *, strict: Literal[False] = False, return_none: bool = ...
     ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
@@ -1600,8 +1593,8 @@ class Converter:
     ) -> ReferenceTuple: ...
 
     def parse_uri(
-        self, uri: str, *, strict: bool = False, return_none: bool = False
-    ) -> ReferenceTuple | tuple[None, None] | None:
+        self, uri: str, *, strict: bool = False, return_none: bool = True
+    ) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
         :param uri:
@@ -1624,7 +1617,6 @@ class Converter:
         >>> converter.parse_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
         ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
-        (None, None)
         """
         rv = self.trie.parse_uri(uri)
         if rv is not None:
@@ -1633,11 +1625,9 @@ class Converter:
             raise CompressionError(uri) from None
         if return_none:
             return None
-        warnings.warn(
-            "Converter.parse_uri will switch to returning None instead of (None, None) in curies v0.11.0.",
-            stacklevel=2,
+        raise NotImplementedError(
+            "Converter.parse_uri stopped returning (None, None) in curies v0.11.0."
         )
-        return None, None
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
