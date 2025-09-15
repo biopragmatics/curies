@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Literal
-
-from typing_extensions import TypeAlias
+from typing import Literal, TypeAlias
 
 from .api import NamedReference
 

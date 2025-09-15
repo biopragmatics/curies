@@ -8,18 +8,16 @@ import json
 import logging
 import warnings
 from collections import UserDict, defaultdict
-from collections.abc import Collection, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Literal,
     NamedTuple,
     TypeVar,
-    Union,
     cast,
     overload,
 )
@@ -73,7 +71,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
-LocationOr = Union[str, Path, X]
+LocationOr = str | Path | X
 
 
 def _get_field_validator_values(values, key: str):  # type:ignore

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Literal, TypeVar, overload
+from typing import Any, Literal, TypeAlias, TypeVar, overload
 
 from pydantic import BaseModel, Field
-from typing_extensions import Never, Self, TypeAlias
+from typing_extensions import Never, Self
 
 from .api import Converter, Reference, ReferenceTuple
 

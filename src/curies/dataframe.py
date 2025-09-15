@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Collection
-from typing import TYPE_CHECKING, Any, Callable, Literal, Union, cast
-
-from typing_extensions import TypeAlias, TypeGuard
+from collections.abc import Callable, Collection
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypeGuard, Union, cast
 
 from .utils import _prefix_from_curie
 

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import json.decoder
 import unittest
-from collections.abc import Iterable, Mapping
-from typing import Callable
+from collections.abc import Callable, Iterable, Mapping
 from xml.etree.ElementTree import Element
 
 from defusedxml import ElementTree
@@ -80,8 +80,7 @@ def _handle_result(result: Iterable[Element]) -> Record:
 
 def handle_csv(text: str) -> Records:
     """Parse bindings encoded in a CSV string."""
-    header, *lines = [line.strip().split(",") for line in text.splitlines()]
-    return [dict(zip(header, line)) for line in lines]
+    return list(csv.DictReader(text.splitlines()))
 
 
 #: A mapping from canonical content types to functions for parsing them
