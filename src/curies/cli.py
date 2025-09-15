@@ -28,11 +28,10 @@ The same flags and arguments are applicable.
 from __future__ import annotations
 
 import sys
-from collections.abc import Mapping
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable, Mapping
+from typing import TYPE_CHECKING, TypeAlias
 
 import click
-from typing_extensions import TypeAlias
 
 from curies import Converter, sources
 

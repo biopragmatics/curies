@@ -54,9 +54,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import PurePath
-from typing import IO, TYPE_CHECKING, Any, TextIO, Union
-
-from typing_extensions import Literal
+from typing import IO, TYPE_CHECKING, Any, Literal, TextIO, Union
 
 from curies import Converter, Record
 
