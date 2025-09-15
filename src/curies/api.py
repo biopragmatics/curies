@@ -6,7 +6,6 @@ import csv
 import itertools as itt
 import json
 import logging
-import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
@@ -1594,13 +1593,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[False] = False
-    ) -> ReferenceTuple | tuple[None, None]: ...
-
-    # docstr-coverage:excused `overload`
-    @overload
-    def parse_uri(
-        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[True] = True
+        self, uri: str, *, strict: Literal[False] = False, return_none: bool = ...
     ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
