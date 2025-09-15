@@ -17,6 +17,7 @@ from typing import (
     Any,
     Literal,
     NamedTuple,
+    TypeAlias,
     TypeVar,
     cast,
     overload,
@@ -71,7 +72,7 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
-LocationOr = str | Path | X
+LocationOr: TypeAlias = str | Path | X
 
 
 def _get_field_validator_values(values, key: str):  # type:ignore
