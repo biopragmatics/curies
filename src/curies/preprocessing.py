@@ -393,7 +393,7 @@ class PreprocessingConverter(Converter):
         return_none: bool = True,
         context: str | None = None,
         block_action: BlockAction = "raise",
-    ) -> ReferenceTuple | tuple[None, None] | None:
+    ) -> ReferenceTuple | None:
         """Parse and standardize a URI.
 
         :param uri: The URI to parse and standardize
