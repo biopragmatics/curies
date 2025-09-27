@@ -10,7 +10,12 @@ from typing import Any, Literal, TypeAlias, TypeVar, overload
 from pydantic import BaseModel, Field
 from typing_extensions import Never, Self
 
-from .api import Converter, Reference, ReferenceTuple
+from .api import (
+    RETURN_NONE_ERROR_TEXT,
+    Converter,
+    Reference,
+    ReferenceTuple,
+)
 
 __all__ = [
     "BlockAction",
@@ -413,8 +418,8 @@ class PreprocessingConverter(Converter):
         :raises BlocklistError: If the URI is blocked
         :raises NotImplementedError: If return_none is given as False
         """
-        if not return_none:
-            raise NotImplementedError
+        if return_none is False:
+            raise NotImplementedError(RETURN_NONE_ERROR_TEXT)
 
         uri = self._preclean(uri)
 
@@ -427,8 +432,8 @@ class PreprocessingConverter(Converter):
         if self.rules.str_is_blocked(uri, context=context):
             if block_action == "raise":
                 raise BlocklistError
-            elif return_none:
+            else:
                 return None
 
-        rv = super().parse_uri(uri, strict=strict, return_none=True)  # type:ignore[call-overload]
+        rv: ReferenceTuple | None = super().parse_uri(uri, strict=strict)  # type:ignore[call-overload]
         return self._post_process(rv)

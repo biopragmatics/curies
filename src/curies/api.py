@@ -74,6 +74,16 @@ logger = logging.getLogger(__name__)
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
 
+RETURN_NONE_WARNING_TEXT = (
+    "return_none=True is a no-op argument now. Please remove it. ``return_none`` "
+    "will be removed as an argument in curies v0.12.0"
+)
+RETURN_NONE_ERROR_TEXT = (
+    "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
+    "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
+    "anymore) and the function returns ``None`` when parsing fails in non-strict mode"
+)
+
 
 def _get_field_validator_values(values, key: str):  # type:ignore
     """Get the value for the key from a field validator object."""
@@ -1649,17 +1659,13 @@ class Converter:
             return None
         elif return_none is True:
             warnings.warn(
-                "return_none=True is a no-op argument now. Please remove it. ``return_none`` will be removed as an argument in curies v0.12.0",
+                RETURN_NONE_WARNING_TEXT,
                 DeprecationWarning,
                 stacklevel=2,
             )
             return None
         else:  # i.e., return_none=False, which isn't supported anymore.
-            raise NotImplementedError(
-                "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
-                "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
-                "anymore) and the function returns ``None`` when parsing fails in non-strict mode"
-            )
+            raise NotImplementedError(RETURN_NONE_ERROR_TEXT)
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
