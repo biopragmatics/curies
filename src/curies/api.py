@@ -1583,7 +1583,7 @@ class Converter:
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
             instead of ``OBO:GO_0032571``.
         """
-        reference = self.parse_uri(uri)
+        reference: ReferenceTuple | None = self.parse_uri(uri)
         if reference:
             return self.format_curie(reference.prefix, reference.identifier)
         if strict:
@@ -2224,7 +2224,7 @@ class Converter:
         >>> converter.standardize_uri("http://example.org/NOPE", passthrough=True)
         'http://example.org/NOPE'
         """
-        reference = self.parse_uri(uri, strict=False)
+        reference: ReferenceTuple | None = self.parse_uri(uri, strict=False)
         if reference is not None:
             # prefix is ensured to be in self.prefix_map because of successful parse
             return self.prefix_map[reference.prefix] + reference.identifier
