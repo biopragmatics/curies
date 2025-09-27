@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Literal, TypeAlias, TypeVar, overload
+from typing import Any, Literal, Never, TypeAlias, TypeVar, overload
 
 from pydantic import BaseModel, Field
 from typing_extensions import Self
@@ -349,6 +349,19 @@ class PreprocessingConverter(Converter):
         rv = super().parse_curie(curie, strict=strict)  # type:ignore[call-overload]
         return self._post_process(rv)
 
+        # docstr-coverage:excused `overload`
+
+    @overload
+    def parse_uri(
+        self,
+        uri: str,
+        *,
+        strict: Literal[False] = False,
+        return_none: Literal[True] | None = ...,
+        context: str | None = ...,
+        block_action: BlockAction = ...,
+    ) -> ReferenceTuple | None: ...
+
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
@@ -356,10 +369,10 @@ class PreprocessingConverter(Converter):
         uri: str,
         *,
         strict: Literal[False] = False,
-        return_none: bool | None = ...,
+        return_none: Literal[False] = ...,
         context: str | None = ...,
         block_action: BlockAction = ...,
-    ) -> ReferenceTuple | None: ...
+    ) -> Never: ...
 
     # docstr-coverage:excused `overload`
     @overload

@@ -17,6 +17,7 @@ from typing import (
     Any,
     Literal,
     NamedTuple,
+    Never,
     TypeAlias,
     TypeVar,
     cast,
@@ -1594,8 +1595,14 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = False, return_none: bool | None = ...
+        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[True] | None = ...
     ) -> ReferenceTuple | None: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def parse_uri(
+        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[False] = ...
+    ) -> Never: ...
 
     # docstr-coverage:excused `overload`
     @overload
