@@ -130,6 +130,11 @@ class TestStruct(unittest.TestCase):
         """Test reference tuples."""
         t = ReferenceTuple.from_curie("a:1")
         self.assertEqual(Reference(prefix="a", identifier="1"), t.to_pydantic())
+        self.assertEqual(
+            NamedReference(prefix="a", identifier="1", name="name"), t.to_pydantic(name="name")
+        )
+        with self.assertRaises(ValueError):
+            t.to_pydantic(name="")
 
     def test_reference_constructor(self) -> None:
         """Test constructing a reference."""

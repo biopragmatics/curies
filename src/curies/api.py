@@ -157,9 +157,23 @@ class ReferenceTuple(NamedTuple):
         prefix, identifier = _split(curie, sep=sep)
         return cls(prefix, identifier)
 
-    def to_pydantic(self) -> Reference:
+    # docstr-coverage:excused `overload`
+    @overload
+    def to_pydantic(self, *, name: str = ...) -> NamedReference: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def to_pydantic(self, *, name: None = ...) -> Reference: ...
+
+    def to_pydantic(self, *, name: str | None = None) -> Reference | NamedReference:
         """Get a Pydantic model."""
-        return Reference(prefix=self.prefix, identifier=self.identifier)
+        if name is None:
+            return Reference(prefix=self.prefix, identifier=self.identifier)
+        if not name:
+            raise ValueError(
+                f"tried to construct a pydantic named reference with a missing name from {self.curie}"
+            )
+        return NamedReference(prefix=self.prefix, identifier=self.identifier, name=name)
 
 
 class Prefix(str):
