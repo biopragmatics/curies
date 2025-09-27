@@ -349,18 +349,17 @@ class PreprocessingConverter(Converter):
         rv = super().parse_curie(curie, strict=strict)  # type:ignore[call-overload]
         return self._post_process(rv)
 
-        # docstr-coverage:excused `overload`
-
+    # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
         self,
         uri: str,
         *,
-        strict: Literal[False] = False,
-        return_none: Literal[True] | None = ...,
+        strict: Literal[False] = ...,
+        return_none: Literal[False] = ...,
         context: str | None = ...,
         block_action: BlockAction = ...,
-    ) -> ReferenceTuple | None: ...
+    ) -> Never: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -368,11 +367,11 @@ class PreprocessingConverter(Converter):
         self,
         uri: str,
         *,
-        strict: Literal[False] = False,
-        return_none: Literal[False] = ...,
+        strict: Literal[False] = ...,
+        return_none: Literal[True] | None = ...,
         context: str | None = ...,
         block_action: BlockAction = ...,
-    ) -> Never: ...
+    ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -391,7 +390,7 @@ class PreprocessingConverter(Converter):
         uri: str,
         *,
         strict: bool = False,
-        return_none: bool | None = True,
+        return_none: bool | None = None,
         context: str | None = None,
         block_action: BlockAction = "raise",
     ) -> ReferenceTuple | None:
