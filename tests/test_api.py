@@ -1052,6 +1052,7 @@ class TestConverter(unittest.TestCase):
                 (None, None), converter.parse_uri("123345", strict=False, return_none=False)
             )
         self.assertIsNone(converter.parse_uri("123345", strict=False, return_none=True))
+        self.assertIsNone(converter.parse_uri("123345", strict=False))
         with self.assertRaises(ValueError):
             converter.parse_uri("123345", strict=True)
 

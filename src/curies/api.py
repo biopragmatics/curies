@@ -6,6 +6,7 @@ import csv
 import itertools as itt
 import json
 import logging
+import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
@@ -1593,7 +1594,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = False, return_none: bool = ...
+        self, uri: str, *, strict: Literal[False] = False, return_none: bool | None = ...
     ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
@@ -1603,11 +1604,11 @@ class Converter:
         uri: str,
         *,
         strict: Literal[True] = True,
-        return_none: bool = ...,
+        return_none: bool | None = ...,
     ) -> ReferenceTuple: ...
 
     def parse_uri(
-        self, uri: str, *, strict: bool = False, return_none: bool = True
+        self, uri: str, *, strict: bool = False, return_none: bool | None = None
     ) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
@@ -1638,13 +1639,21 @@ class Converter:
             return rv
         if strict:
             raise CompressionError(uri) from None
-        if return_none:
+        if return_none is None:
             return None
-        raise NotImplementedError(
-            "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
-            "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
-            "anymore) and the function returns ``None`` when parsing fails in non-strict mode"
-        )
+        elif return_none is True:
+            warnings.warn(
+                "return_none=True is a no-op argument now. Please remove it. ``return_none`` will be removed as an argument in curies v0.12.0",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return None
+        else:  # i.e., return_none=False, which isn't supported anymore.
+            raise NotImplementedError(
+                "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
+                "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
+                "anymore) and the function returns ``None`` when parsing fails in non-strict mode"
+            )
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
@@ -1896,7 +1905,7 @@ class Converter:
         self,
         reference: ReferenceTuple | Reference,
         *,
-        strict: Literal[True] = True,
+        strict: Literal[True] = ...,
         passthrough: bool = ...,
     ) -> str: ...
 
@@ -1906,7 +1915,7 @@ class Converter:
         self,
         reference: ReferenceTuple | Reference,
         *,
-        strict: Literal[False] = False,
+        strict: Literal[False] = ...,
         passthrough: bool = ...,
     ) -> str | None: ...
 

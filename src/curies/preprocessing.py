@@ -356,7 +356,7 @@ class PreprocessingConverter(Converter):
         uri: str,
         *,
         strict: Literal[False] = False,
-        return_none: bool = ...,
+        return_none: bool | None = ...,
         context: str | None = ...,
         block_action: BlockAction = ...,
     ) -> ReferenceTuple | None: ...
@@ -368,7 +368,7 @@ class PreprocessingConverter(Converter):
         uri: str,
         *,
         strict: Literal[True] = True,
-        return_none: bool = False,
+        return_none: bool | None = ...,
         context: str | None = ...,
         block_action: BlockAction = ...,
     ) -> ReferenceTuple: ...
@@ -378,7 +378,7 @@ class PreprocessingConverter(Converter):
         uri: str,
         *,
         strict: bool = False,
-        return_none: bool = True,
+        return_none: bool | None = True,
         context: str | None = None,
         block_action: BlockAction = "raise",
     ) -> ReferenceTuple | None:
