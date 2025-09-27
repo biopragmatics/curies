@@ -33,7 +33,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import Self
+from typing_extensions import Never, Self
 
 from .utils import NoCURIEDelimiterError, _split
 
@@ -73,6 +73,16 @@ logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
+
+RETURN_NONE_WARNING_TEXT = (
+    "return_none=True is a no-op argument now. Please remove it. ``return_none`` "
+    "will be removed as an argument in curies v0.12.0"
+)
+RETURN_NONE_ERROR_TEXT = (
+    "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
+    "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
+    "anymore) and the function returns ``None`` when parsing fails in non-strict mode"
+)
 
 
 def _get_field_validator_values(values, key: str):  # type:ignore
@@ -1516,7 +1526,7 @@ class Converter:
     def parse(self, str_or_uri_or_curie: str, *, strict: bool = False) -> ReferenceTuple | None:
         """Parse a string, URI, or CURIE."""
         if self.is_uri(str_or_uri_or_curie):
-            return self.parse_uri(str_or_uri_or_curie, strict=strict, return_none=True)  # type:ignore[no-any-return,call-overload]
+            return self.parse_uri(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
         if self.is_curie(str_or_uri_or_curie):
             return self.parse_curie(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
         if strict:
@@ -1582,7 +1592,7 @@ class Converter:
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
             instead of ``OBO:GO_0032571``.
         """
-        reference = self.parse_uri(uri, return_none=True)
+        reference: ReferenceTuple | None = self.parse_uri(uri)
         if reference:
             return self.format_curie(reference.prefix, reference.identifier)
         if strict:
@@ -1594,13 +1604,13 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[False] = False
-    ) -> ReferenceTuple | tuple[None, None]: ...
+        self, uri: str, *, strict: Literal[False] = ..., return_none: Literal[False] = ...
+    ) -> Never: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = False, return_none: Literal[True] = True
+        self, uri: str, *, strict: Literal[False] = ..., return_none: Literal[True] | None = ...
     ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
@@ -1610,12 +1620,12 @@ class Converter:
         uri: str,
         *,
         strict: Literal[True] = True,
-        return_none: bool = ...,
+        return_none: bool | None = ...,
     ) -> ReferenceTuple: ...
 
     def parse_uri(
-        self, uri: str, *, strict: bool = False, return_none: bool = False
-    ) -> ReferenceTuple | tuple[None, None] | None:
+        self, uri: str, *, strict: bool = False, return_none: bool | None = None
+    ) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
         :param uri:
@@ -1626,6 +1636,7 @@ class Converter:
             A CURIE pair if the URI could be parsed, otherwise a pair of None's
 
         :raises CompressionError: if strict is set to true and the URI can't be parsed
+        :raises NotImplementedError: If you pass ``False`` to return_none
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map(
@@ -1638,20 +1649,23 @@ class Converter:
         >>> converter.parse_uri("http://purl.obolibrary.org/obo/CHEBI_138488")
         ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
-        (None, None)
         """
         rv = self.trie.parse_uri(uri)
         if rv is not None:
             return rv
         if strict:
             raise CompressionError(uri) from None
-        if return_none:
+        if return_none is None:
             return None
-        warnings.warn(
-            "Converter.parse_uri will switch to returning None instead of (None, None) in curies v0.11.0.",
-            stacklevel=2,
-        )
-        return None, None
+        elif return_none is True:
+            warnings.warn(
+                RETURN_NONE_WARNING_TEXT,
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return None
+        else:  # i.e., return_none=False, which isn't supported anymore.
+            raise NotImplementedError(RETURN_NONE_ERROR_TEXT)
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
@@ -1903,7 +1917,7 @@ class Converter:
         self,
         reference: ReferenceTuple | Reference,
         *,
-        strict: Literal[True] = True,
+        strict: Literal[True] = ...,
         passthrough: bool = ...,
     ) -> str: ...
 
@@ -1913,7 +1927,7 @@ class Converter:
         self,
         reference: ReferenceTuple | Reference,
         *,
-        strict: Literal[False] = False,
+        strict: Literal[False] = ...,
         passthrough: bool = ...,
     ) -> str | None: ...
 
@@ -2215,7 +2229,7 @@ class Converter:
         >>> converter.standardize_uri("http://example.org/NOPE", passthrough=True)
         'http://example.org/NOPE'
         """
-        reference = self.parse_uri(uri, strict=False, return_none=True)
+        reference: ReferenceTuple | None = self.parse_uri(uri, strict=False)
         if reference is not None:
             # prefix is ensured to be in self.prefix_map because of successful parse
             return self.prefix_map[reference.prefix] + reference.identifier
