@@ -1515,7 +1515,7 @@ class Converter:
     def parse(self, str_or_uri_or_curie: str, *, strict: bool = False) -> ReferenceTuple | None:
         """Parse a string, URI, or CURIE."""
         if self.is_uri(str_or_uri_or_curie):
-            return self.parse_uri(str_or_uri_or_curie, strict=strict, return_none=True)  # type:ignore[no-any-return,call-overload]
+            return self.parse_uri(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
         if self.is_curie(str_or_uri_or_curie):
             return self.parse_curie(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
         if strict:
@@ -1581,7 +1581,7 @@ class Converter:
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
             instead of ``OBO:GO_0032571``.
         """
-        reference = self.parse_uri(uri, return_none=True)
+        reference = self.parse_uri(uri)
         if reference:
             return self.format_curie(reference.prefix, reference.identifier)
         if strict:
@@ -1641,7 +1641,9 @@ class Converter:
         if return_none:
             return None
         raise NotImplementedError(
-            "Converter.parse_uri stopped returning (None, None) in curies v0.11.0."
+            "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
+            "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
+            "anymore) and the function returns ``None`` when parsing fails in non-strict mode"
         )
 
     def is_curie(self, s: str) -> bool:
@@ -2206,7 +2208,7 @@ class Converter:
         >>> converter.standardize_uri("http://example.org/NOPE", passthrough=True)
         'http://example.org/NOPE'
         """
-        reference = self.parse_uri(uri, strict=False, return_none=True)
+        reference = self.parse_uri(uri, strict=False)
         if reference is not None:
             # prefix is ensured to be in self.prefix_map because of successful parse
             return self.prefix_map[reference.prefix] + reference.identifier

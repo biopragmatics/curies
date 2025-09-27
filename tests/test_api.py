@@ -1047,9 +1047,10 @@ class TestConverter(unittest.TestCase):
         self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=True))
         self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=False))
 
-        self.assertEqual(
-            (None, None), converter.parse_uri("123345", strict=False, return_none=False)
-        )
+        with self.assertRaises(NotImplementedError):
+            self.assertEqual(
+                (None, None), converter.parse_uri("123345", strict=False, return_none=False)
+            )
         self.assertIsNone(converter.parse_uri("123345", strict=False, return_none=True))
         with self.assertRaises(ValueError):
             converter.parse_uri("123345", strict=True)
