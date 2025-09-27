@@ -17,7 +17,6 @@ from typing import (
     Any,
     Literal,
     NamedTuple,
-    Never,
     TypeAlias,
     TypeVar,
     cast,
@@ -34,7 +33,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import Self
+from typing_extensions import Never, Self
 
 from .utils import NoCURIEDelimiterError, _split
 
