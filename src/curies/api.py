@@ -1619,6 +1619,7 @@ class Converter:
             A CURIE pair if the URI could be parsed, otherwise a pair of None's
 
         :raises CompressionError: if strict is set to true and the URI can't be parsed
+        :raises NotImplementedError: If you pass ``False`` to return_none
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map(
