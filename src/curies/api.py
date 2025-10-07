@@ -824,6 +824,9 @@ class Converter:
     #: .. warning:: patterns are an experimental feature
     pattern_map: dict[str, str]
 
+    #: The list of records. Don't modify this directly
+    records: list[Record]
+
     def __init__(
         self, records: Iterable[Record], *, delimiter: str = ":", strict: bool = True
     ) -> None:
@@ -875,6 +878,14 @@ class Converter:
             for record in self.records
             for uri_prefix in record._all_uri_prefixes
         }
+
+    def __len__(self) -> int:
+        """Count the number of records."""
+        return len(self.records)
+
+    def __iter__(self) -> Iterator[Record]:
+        """Iterate over records."""
+        return iter(self.records)
 
     @property
     def bimap(self) -> Mapping[str, str]:

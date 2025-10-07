@@ -355,6 +355,10 @@ class TestConverter(unittest.TestCase):
         }
         self.converter = Converter.from_prefix_map(self.simple_obo_prefix_map)
 
+    def test_iter(self) -> None:
+        """Test the iterator."""
+        self.assertEqual(self.converter.records, list(self.converter))
+
     def test_reference_tuple(self) -> None:
         """Test the reference tuple data type."""
         t = ReferenceTuple("chebi", "1234")
