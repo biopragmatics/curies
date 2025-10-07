@@ -828,12 +828,12 @@ class Converter:
     records: list[Record]
 
     def __init__(
-        self, records: Iterable[Record], *, delimiter: str = ":", strict: bool = True
+        self, records: Iterable[Record] | None = None, *, delimiter: str = ":", strict: bool = True
     ) -> None:
         """Instantiate a converter.
 
         :param records:
-            A list of records. If you plan to build a converter incrementally, pass an empty list.
+            A list of records. If you plan to build a converter incrementally, pass an empty list or leave this blank.
         :param strict:
             If true, raises issues on duplicate URI prefixes
         :param delimiter:
@@ -841,6 +841,8 @@ class Converter:
         :raises DuplicatePrefixes: if any records share any synonyms
         :raises DuplicateURIPrefixes: if any records share any URI prefixes
         """
+        if records is None:
+            records = []
         records = sorted(records, key=lambda r: r.prefix)
         if strict:
             duplicate_uri_prefixes = _get_duplicate_uri_prefixes(records)
@@ -2562,11 +2564,12 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     >>> c3.prefix_map["GO"]
     'http://purl.obolibrary.org/obo/GO_'
     """
+    converters = list(converters)
     if not converters:
-        raise ValueError
+        return Converter()
     if len(converters) == 1:
         return converters[0]
-    rv = Converter([])
+    rv = Converter()
     for converter in converters:
         for record in converter.records:
             rv.add_record(record, case_sensitive=case_sensitive, merge=True)
