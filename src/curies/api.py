@@ -2434,9 +2434,13 @@ class Converter:
 
     def get_record(self, prefix: str, *, strict: bool = False) -> Record | None:
         """Get the record for the prefix."""
+        # TODO use self._prefix_to_record
+        for record in self.records:
+            if record.prefix == prefix or prefix in record.prefix_synonyms:
+                return record
         if strict:
-            return self._prefix_to_record[prefix]
-        return self._prefix_to_record.get(prefix)
+            raise KeyError(f"could not find prefix: {prefix}")
+        return None
 
     def get_subconverter(self, prefixes: Iterable[str]) -> Converter:
         r"""Get a converter with a subset of prefixes.
