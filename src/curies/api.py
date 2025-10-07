@@ -767,37 +767,6 @@ def _get_duplicate_prefixes(records: list[Record]) -> list[DuplicateSummary]:
     ]
 
 
-def _get_prefix_map(records: list[Record]) -> dict[str, str]:
-    rv = {}
-    for record in records:
-        rv[record.prefix] = record.uri_prefix
-        for prefix_synonym in record.prefix_synonyms:
-            rv[prefix_synonym] = record.uri_prefix
-    return rv
-
-
-def _get_pattern_map(records: list[Record]) -> dict[str, str]:
-    return {record.prefix: record.pattern for record in records if record.pattern}
-
-
-def _get_reverse_prefix_map(records: list[Record]) -> dict[str, str]:
-    rv = {}
-    for record in records:
-        rv[record.uri_prefix] = record.prefix
-        for uri_prefix_synonym in record.uri_prefix_synonyms:
-            rv[uri_prefix_synonym] = record.prefix
-    return rv
-
-
-def _get_prefix_synmap(records: list[Record]) -> dict[str, str]:
-    rv = {}
-    for record in records:
-        rv[record.prefix] = record.prefix
-        for prefix_synonym in record.prefix_synonyms:
-            rv[prefix_synonym] = record.prefix
-    return rv
-
-
 def _prepare(data: LocationOr[X]) -> X:
     if isinstance(data, Path):
         with data.open() as file:
@@ -847,12 +816,9 @@ class Converter:
         >>> converter.expand("missing:0000000")
     """
 
-    #: The expansion dictionary with prefixes as keys and priority URI prefixes as values
-    prefix_map: dict[str, str]
-    #: The mapping from URI prefixes to prefixes
-    reverse_prefix_map: dict[str, str]
     #: A prefix trie for efficient parsing of URIs
     trie: Trie
+
     #: A mapping from prefix to regular expression pattern. Not necessarily complete wrt the prefix map.
     #:
     #: .. warning:: patterns are an experimental feature
@@ -883,11 +849,34 @@ class Converter:
 
         self.delimiter = delimiter
         self.records = records
-        self.prefix_map = _get_prefix_map(records)
-        self.synonym_to_prefix = _get_prefix_synmap(records)
-        self.reverse_prefix_map = _get_reverse_prefix_map(records)
-        self.trie = Trie(self.reverse_prefix_map)
-        self.pattern_map = _get_pattern_map(records)
+
+        self._prefix_to_record: dict[str, Record] = {}
+        self._prefix_ci_to_record: dict[str, Record] = {}
+        self._uri_prefix_to_record: dict[str, Record] = {}
+        self._uri_prefix_ci_to_record: dict[str, Record] = {}
+        self.trie = Trie()
+        self.pattern_map = {}
+
+        for record in records:
+            self._index(record)
+
+    @property
+    def prefix_map(self) -> Mapping[str, str]:
+        """Get the non-URI-prefix-unique prefix map.."""
+        rv = {}
+        for record in self.records:
+            for prefix in record._all_prefixes:
+                rv[prefix] = record.uri_prefix
+        return rv
+
+    @property
+    def reverse_prefix_map(self) -> Mapping[str, str]:
+        """Get the non-URI-prefix-unique prefix map.."""
+        rv = {}
+        for record in self.records:
+            for uri_prefix in record._all_uri_prefixes:
+                rv[uri_prefix] = record.prefix
+        return rv
 
     @property
     def bimap(self) -> Mapping[str, str]:
@@ -904,30 +893,21 @@ class Converter:
     ) -> Mapping[RecordKey, list[str]]:
         """Match the given record to existing records."""
         rv: defaultdict[RecordKey, list[str]] = defaultdict(list)
-        for record in self.records:
-            # Match CURIE prefixes
-            if _eq(external.prefix, record.prefix, case_sensitive=case_sensitive):
-                rv[record._key].append("prefix match")
-            if _in(external.prefix, record.prefix_synonyms, case_sensitive=case_sensitive):
-                rv[record._key].append("prefix match")
-            for prefix_synonym in external.prefix_synonyms:
-                if _eq(prefix_synonym, record.prefix, case_sensitive=case_sensitive):
+        if case_sensitive:
+            for prefix in external._all_prefixes:
+                if record := self._prefix_to_record.get(prefix):
                     rv[record._key].append("prefix match")
-                if _in(prefix_synonym, record.prefix_synonyms, case_sensitive=case_sensitive):
+            for uri_prefix in external._all_uri_prefixes:
+                if record := self._uri_prefix_to_record.get(uri_prefix):
+                    rv[record._key].append("URI prefix match")
+        else:
+            for prefix in external._all_prefixes:
+                if record := self._prefix_ci_to_record.get(prefix.casefold()):
                     rv[record._key].append("prefix match")
+            for uri_prefix in external._all_uri_prefixes:
+                if record := self._uri_prefix_ci_to_record.get(uri_prefix.casefold()):
+                    rv[record._key].append("URI prefix match")
 
-            # Match URI prefixes
-            if _eq(external.uri_prefix, record.uri_prefix, case_sensitive=case_sensitive):
-                rv[record._key].append("URI prefix match")
-            if _in(external.uri_prefix, record.uri_prefix_synonyms, case_sensitive=case_sensitive):
-                rv[record._key].append("URI prefix match")
-            for uri_prefix_synonym in external.uri_prefix_synonyms:
-                if _eq(uri_prefix_synonym, record.uri_prefix, case_sensitive=case_sensitive):
-                    rv[record._key].append("URI prefix match")
-                if _in(
-                    uri_prefix_synonym, record.uri_prefix_synonyms, case_sensitive=case_sensitive
-                ):
-                    rv[record._key].append("URI prefix match")
         return dict(rv)
 
     def add_record(self, record: Record, case_sensitive: bool = True, merge: bool = False) -> None:
@@ -951,28 +931,26 @@ class Converter:
 
     @staticmethod
     def _merge(record: Record, into: Record) -> None:
-        for prefix_synonym in itt.chain([record.prefix], record.prefix_synonyms):
-            if prefix_synonym not in into._all_prefixes:
-                into.prefix_synonyms.append(prefix_synonym)
+        xx = set(into._all_prefixes)
+        for prefix in record._all_prefixes:
+            if prefix not in xx:
+                into.prefix_synonyms.append(prefix)
         into.prefix_synonyms.sort()
 
-        for uri_prefix_synonym in itt.chain([record.uri_prefix], record.uri_prefix_synonyms):
-            if uri_prefix_synonym not in into._all_uri_prefixes:
-                into.uri_prefix_synonyms.append(uri_prefix_synonym)
+        yy = set(into._all_uri_prefixes)
+        for uri_prefix in record._all_uri_prefixes:
+            if uri_prefix not in yy:
+                into.uri_prefix_synonyms.append(uri_prefix)
         into.uri_prefix_synonyms.sort()
 
     def _index(self, record: Record) -> None:
-        self.prefix_map[record.prefix] = record.uri_prefix
-        self.synonym_to_prefix[record.prefix] = record.prefix
-        for prefix_synonym in record.prefix_synonyms:
-            self.prefix_map[prefix_synonym] = record.uri_prefix
-            self.synonym_to_prefix[prefix_synonym] = record.prefix
-
-        self.reverse_prefix_map[record.uri_prefix] = record.prefix
-        self.trie[record.uri_prefix] = record.prefix
-        for uri_prefix_synonym in record.uri_prefix_synonyms:
-            self.reverse_prefix_map[uri_prefix_synonym] = record.prefix
-            self.trie[uri_prefix_synonym] = record.prefix
+        for prefix in record._all_prefixes:
+            self._prefix_to_record[prefix] = record
+            self._prefix_ci_to_record[prefix.casefold()] = record
+        for uri_prefix in record._all_uri_prefixes:
+            self._uri_prefix_to_record[uri_prefix] = record
+            self._uri_prefix_ci_to_record[uri_prefix.casefold()] = record
+            self.trie[uri_prefix] = record
 
         if record.pattern and record.prefix not in self.pattern_map:
             self.pattern_map[record.prefix] = record.pattern
@@ -2097,9 +2075,9 @@ class Converter:
         >>> converter.standardize_prefix("NOPE", passthrough=True)
         'NOPE'
         """
-        rv = self.synonym_to_prefix.get(prefix)
-        if rv:
-            return rv
+        record = self._prefix_to_record.get(prefix)
+        if record:
+            return record.prefix
         if strict:
             raise PrefixStandardizationError(prefix)
         if passthrough:
@@ -2455,13 +2433,9 @@ class Converter:
 
     def get_record(self, prefix: str, *, strict: bool = False) -> Record | None:
         """Get the record for the prefix."""
-        # TODO better data structure for this
-        for record in self.records:
-            if record.prefix == prefix or prefix in record.prefix_synonyms:
-                return record
         if strict:
-            raise KeyError(f"could not find prefix: {prefix}")
-        return None
+            return self._prefix_to_record[prefix]
+        return self._prefix_to_record.get(prefix)
 
     def get_subconverter(self, prefixes: Iterable[str]) -> Converter:
         r"""Get a converter with a subset of prefixes.
@@ -3058,35 +3032,38 @@ def _converter_from_validation_info(info: core_schema.ValidationInfo) -> Convert
         raise TypeError
 
 
-class Trie(UserDict[str, str]):
+class Trie(UserDict[str, Record]):
     """A partial implementation of a string trie."""
 
-    def __init__(self, d: dict[str, str]) -> None:
+    root: TrieNode
+
+    def __init__(self, initial_dict: dict[str, Record] | None = None) -> None:
         """Create a new string trie."""
         super().__init__()
         self.root = TrieNode()
-        for key, value in d.items():
-            self[key] = value
+        if initial_dict:
+            for key, value in initial_dict.items():
+                self[key] = value
 
-    def __setitem__(self, key: str, value: str) -> None:
+    def __setitem__(self, key: str, value: Record) -> None:
         self.root._ensure_node(key).value = value
 
     def parse_uri(self, uri: str) -> ReferenceTuple | None:
-        """Parse a URI into a prefix/identifier pair based prefixes in the trie."""
+        """Parse a URI into a record/identifier pair based prefixes in the trie."""
         node: TrieNode | None = self.root
-        prefix: str | None = self.root.value
+        record: Record | None = self.root.value
         max_non_null_index = -1
         for i, character in enumerate(uri):
             node = cast(TrieNode, node).children.get(character)
             if node is None:
                 break
             if node.value is not None:
-                prefix = node.value
+                record = node.value
                 max_non_null_index = i
-        if prefix is None:
+        if record is None:
             return None
         identifier = uri[max_non_null_index + 1 :]
-        return ReferenceTuple(prefix, identifier)
+        return ReferenceTuple(record.prefix, identifier)
 
     def __contains__(self, key: Any) -> bool:
         node = self.root._find_node(key)
@@ -3098,10 +3075,10 @@ class TrieNode:
 
     __slots__ = ("children", "value")
 
-    value: str | None
+    value: Record | None
     children: dict[str, TrieNode]
 
-    def __init__(self, value: str | None = None) -> None:
+    def __init__(self, value: Record | None = None) -> None:
         """Initialize the node."""
         self.value = value  # this needs to be mutable, which is why this isn't a named tuple
         self.children = {}
