@@ -2566,7 +2566,7 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     """
     converters = list(converters)
     if not converters:
-        return Converter()
+        raise ValueError
     if len(converters) == 1:
         return converters[0]
     rv = Converter()
