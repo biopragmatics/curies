@@ -2015,7 +2015,7 @@ class Converter:
         >>> converter.expand_pair_all("NOPE", "NOPE") is None
         True
         """
-        record = self.get_record(prefix)
+        record = self._prefix_to_record.get(prefix)
         if record is not None:
             rv = [record.uri_prefix + identifier]
             for uri_prefix_synonyms in record.uri_prefix_synonyms:
