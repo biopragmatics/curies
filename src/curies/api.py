@@ -863,20 +863,18 @@ class Converter:
     @property
     def prefix_map(self) -> Mapping[str, str]:
         """Get the non-URI-prefix-unique prefix map.."""
-        rv = {}
-        for record in self.records:
-            for prefix in record._all_prefixes:
-                rv[prefix] = record.uri_prefix
-        return rv
+        return {
+            prefix: record.uri_prefix for record in self.records for prefix in record._all_prefixes
+        }
 
     @property
     def reverse_prefix_map(self) -> Mapping[str, str]:
-        """Get the non-URI-prefix-unique prefix map.."""
-        rv = {}
-        for record in self.records:
-            for uri_prefix in record._all_uri_prefixes:
-                rv[uri_prefix] = record.prefix
-        return rv
+        """Get the non-URI-prefix-unique prefix map."""
+        return {
+            uri_prefix: record.prefix
+            for record in self.records
+            for uri_prefix in record._all_uri_prefixes
+        }
 
     @property
     def bimap(self) -> Mapping[str, str]:
@@ -2489,19 +2487,6 @@ class Converter:
             if any(prefix in prefixes for prefix in record._all_prefixes)
         ]
         return Converter(records)
-
-
-def _eq(a: str, b: str, case_sensitive: bool) -> bool:
-    if case_sensitive:
-        return a == b
-    return a.casefold() == b.casefold()
-
-
-def _in(a: str, bs: Iterable[str], case_sensitive: bool) -> bool:
-    if case_sensitive:
-        return a in bs
-    nfa = a.casefold()
-    return any(nfa == b.casefold() for b in bs)
 
 
 def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
