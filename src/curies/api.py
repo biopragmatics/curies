@@ -858,6 +858,9 @@ class Converter:
     #: .. warning:: patterns are an experimental feature
     pattern_map: dict[str, str]
 
+    #: The list of records. Don't modify this directly
+    records: list[Record]
+
     def __init__(
         self, records: Iterable[Record], *, delimiter: str = ":", strict: bool = True
     ) -> None:
@@ -888,6 +891,14 @@ class Converter:
         self.reverse_prefix_map = _get_reverse_prefix_map(records)
         self.trie = Trie(self.reverse_prefix_map)
         self.pattern_map = _get_pattern_map(records)
+
+    def __len__(self) -> int:
+        """Count the number of records."""
+        return len(self.records)
+
+    def __iter__(self) -> Iterator[Record]:
+        """Iterate over records."""
+        return iter(self.records)
 
     @property
     def bimap(self) -> Mapping[str, str]:
