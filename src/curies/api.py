@@ -903,10 +903,10 @@ class Converter:
         else:
             for prefix in external._all_prefixes:
                 if record := self._prefix_ci_to_record.get(prefix.casefold()):
-                    rv[record._key].append("prefix match")
+                    rv[record._key].append("prefix case-insenstive match")
             for uri_prefix in external._all_uri_prefixes:
                 if record := self._uri_prefix_ci_to_record.get(uri_prefix.casefold()):
-                    rv[record._key].append("URI prefix match")
+                    rv[record._key].append("URI case-insenstive prefix match")
 
         return dict(rv)
 
@@ -947,6 +947,7 @@ class Converter:
         for prefix in record._all_prefixes:
             self._prefix_to_record[prefix] = record
             self._prefix_ci_to_record[prefix.casefold()] = record
+
         for uri_prefix in record._all_uri_prefixes:
             self._uri_prefix_to_record[uri_prefix] = record
             self._uri_prefix_ci_to_record[uri_prefix.casefold()] = record
