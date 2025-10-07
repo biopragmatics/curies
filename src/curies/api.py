@@ -3039,7 +3039,7 @@ class Trie(UserDict[str, Record]):
         self.root._ensure_node(key).value = value
 
     def parse_uri(self, uri: str) -> ReferenceTuple | None:
-        """Parse a URI into a record/identifier pair based prefixes in the trie."""
+        """Parse a URI into a prefix/identifier pair based prefixes in the trie."""
         node: TrieNode | None = self.root
         record: Record | None = self.root.value
         max_non_null_index = -1
