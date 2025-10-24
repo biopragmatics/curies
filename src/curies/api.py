@@ -981,7 +981,7 @@ class Converter:
         # TODO should this have a case insensitive option?
         sr = self._prefix_to_record.get(prefix_synonym)
         if sr is not None and sr.prefix != record.prefix:
-            raise ValueError(f'this prefix synonym is already taken by record for {sr.prefix}')
+            raise ValueError(f"this prefix synonym is already taken by record for {sr.prefix}")
 
         self._index_prefix(prefix_synonym, record)
 
@@ -995,7 +995,7 @@ class Converter:
         # TODO should this have a case insensitive option?
         sr = self._uri_prefix_to_record.get(uri_prefix_synonym)
         if sr is not None and sr.prefix != record.prefix:
-            raise ValueError(f'this URI prefix synonym is already taken by record for {sr.prefix}')
+            raise ValueError(f"this URI prefix synonym is already taken by record for {sr.prefix}")
 
         self._index_uri_prefix(uri_prefix_synonym, record)
 
