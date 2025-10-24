@@ -1029,6 +1029,7 @@ class Converter:
         prefix_synonyms: Collection[str] | None = None,
         uri_prefix_synonyms: Collection[str] | None = None,
         *,
+        pattern: str | None = None,
         case_sensitive: bool = True,
         merge: bool = False,
     ) -> None:
@@ -1043,6 +1044,8 @@ class Converter:
         :param uri_prefix_synonyms:
             An optional collections of synonyms for the URI prefix such as
             ``https://bioregistry.io/go:``, ``http://www.informatics.jax.org/searches/GO.cgi?id=GO:``, etc.
+        :param pattern:
+            An optional pattern
         :param case_sensitive:
             Should prefixes and URI prefixes be compared in a case-sensitive manner when checking
             for uniqueness? Defaults to True.
@@ -1074,6 +1077,7 @@ class Converter:
             uri_prefix=uri_prefix,
             prefix_synonyms=sorted(prefix_synonyms or []),
             uri_prefix_synonyms=sorted(uri_prefix_synonyms or []),
+            pattern=pattern,
         )
         self.add_record(record, case_sensitive=case_sensitive, merge=merge)
 
