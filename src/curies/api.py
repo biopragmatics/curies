@@ -980,12 +980,17 @@ class Converter:
         self, prefix: str, prefix_synonym: str, *, case_sensitive: bool = True
     ) -> None:
         """Add a prefix synonym to the record with the given prefix."""
-        record = self._prefix_to_record[prefix]
+        if not case_sensitive:
+            raise NotImplementedError
 
-        if case_sensitive:
-            sr = self._prefix_to_record.get(prefix_synonym)
-        else:
-            sr = self._prefix_ci_to_record.get(prefix_synonym.casefold())
+        try:
+            record = self._prefix_to_record[prefix]
+        except KeyError as e:
+            raise KeyError(
+                f"can not add prefix synoynm {prefix_synonym} to prefix {prefix} since {prefix} is not already indexed"
+            ) from e
+
+        sr = self._prefix_to_record.get(prefix_synonym)
         if sr is not None and sr.prefix != record.prefix:
             raise ValueError(f"this prefix synonym is already taken by record for {sr.prefix}")
 
@@ -998,12 +1003,17 @@ class Converter:
         self, prefix: str, uri_prefix_synonym: str, *, case_sensitive: bool = True
     ) -> None:
         """Add a URI synonym to the record with the given prefix."""
-        record = self._prefix_to_record[prefix]
+        if not case_sensitive:
+            raise NotImplementedError
 
-        if case_sensitive:
-            sr = self._uri_prefix_to_record.get(uri_prefix_synonym)
-        else:
-            sr = self._uri_prefix_ci_to_record.get(uri_prefix_synonym.casefold())
+        try:
+            record = self._prefix_to_record[prefix]
+        except KeyError as e:
+            raise KeyError(
+                f"can not add URI prefix synoynm {uri_prefix_synonym} to prefix {prefix} since {prefix} is not already indexed"
+            ) from e
+
+        sr = self._uri_prefix_to_record.get(uri_prefix_synonym)
         if sr is not None and sr.prefix != record.prefix:
             raise ValueError(f"this URI prefix synonym is already taken by record for {sr.prefix}")
 
