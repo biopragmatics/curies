@@ -40,6 +40,7 @@ has_description = _r("dcterms", "description", "description")
 has_license = _r("dcterms", "license", "license")
 has_title = _r("dcterms", "title", "title")
 has_contributor = _r("dcterms", "contributor", "contributor")
+has_creator = _r("dcterms", "creator", "creator")
 has_source = _r("dcterms", "source", "source")
 has_date = _r("dcterms", "date", "date")
 
@@ -164,6 +165,7 @@ broad_match = _r("skos", "broadMatch", "broad match")
 close_match = _r("skos", "closeMatch", "close match")
 related_match = _r("skos", "relatedMatch", "related match")
 
+editor_note = _r("IAO", "0000116", "editor note")
 # `alternate term` and `term replaced by` can also be considered as mapping relations
 alternative_term = _r("IAO", "0000118", "alternative term")
 term_replaced_by = _r("IAO", "0100001", "term replaced by")
