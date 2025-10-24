@@ -921,7 +921,9 @@ class Converter:
 
         return dict(rv)
 
-    def add_record(self, record: Record, case_sensitive: bool = True, merge: bool = False) -> None:
+    def add_record(
+        self, record: Record, *, case_sensitive: bool = True, merge: bool = False
+    ) -> None:
         """Append a record to the converter."""
         matched = self._match_record(record, case_sensitive=case_sensitive)
         if len(matched) > 1:
@@ -974,12 +976,16 @@ class Converter:
         self._uri_prefix_ci_to_record[uri_prefix.casefold()] = record
         self.trie[uri_prefix] = record
 
-    def add_prefix_synonym(self, prefix: str, prefix_synonym: str) -> None:
+    def add_prefix_synonym(
+        self, prefix: str, prefix_synonym: str, *, case_sensitive: bool = True
+    ) -> None:
         """Add a prefix synonym to the record with the given prefix."""
         record = self._prefix_to_record[prefix]
 
-        # TODO should this have a case insensitive option?
-        sr = self._prefix_to_record.get(prefix_synonym)
+        if case_sensitive:
+            sr = self._prefix_to_record.get(prefix_synonym)
+        else:
+            sr = self._prefix_ci_to_record.get(prefix_synonym.casefold())
         if sr is not None and sr.prefix != record.prefix:
             raise ValueError(f"this prefix synonym is already taken by record for {sr.prefix}")
 
@@ -988,12 +994,16 @@ class Converter:
         record.prefix_synonyms.append(prefix_synonym)
         record.prefix_synonyms.sort()
 
-    def add_uri_prefix_synonym(self, prefix: str, uri_prefix_synonym: str) -> None:
+    def add_uri_prefix_synonym(
+        self, prefix: str, uri_prefix_synonym: str, *, case_sensitive: bool = True
+    ) -> None:
         """Add a URI synonym to the record with the given prefix."""
         record = self._prefix_to_record[prefix]
 
-        # TODO should this have a case insensitive option?
-        sr = self._uri_prefix_to_record.get(uri_prefix_synonym)
+        if case_sensitive:
+            sr = self._uri_prefix_to_record.get(uri_prefix_synonym)
+        else:
+            sr = self._uri_prefix_ci_to_record.get(uri_prefix_synonym.casefold())
         if sr is not None and sr.prefix != record.prefix:
             raise ValueError(f"this URI prefix synonym is already taken by record for {sr.prefix}")
 
