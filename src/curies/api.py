@@ -921,7 +921,9 @@ class Converter:
 
         return dict(rv)
 
-    def add_record(self, record: Record, case_sensitive: bool = True, merge: bool = False) -> None:
+    def add_record(
+        self, record: Record, *, case_sensitive: bool = True, merge: bool = False
+    ) -> None:
         """Append a record to the converter."""
         matched = self._match_record(record, case_sensitive=case_sensitive)
         if len(matched) > 1:
@@ -932,6 +934,7 @@ class Converter:
                 raise ValueError(f"new record already exists and merge=False: {matched}")
 
             key = next(iter(matched))
+            # TODO make more efficient!
             existing_record = next(r for r in self.records if r._key == key)
             self._merge(record, into=existing_record)
             self._index(existing_record)
@@ -956,16 +959,68 @@ class Converter:
 
     def _index(self, record: Record) -> None:
         for prefix in record._all_prefixes:
-            self._prefix_to_record[prefix] = record
-            self._prefix_ci_to_record[prefix.casefold()] = record
+            self._index_prefix(prefix, record)
 
         for uri_prefix in record._all_uri_prefixes:
-            self._uri_prefix_to_record[uri_prefix] = record
-            self._uri_prefix_ci_to_record[uri_prefix.casefold()] = record
-            self.trie[uri_prefix] = record
+            self._index_uri_prefix(uri_prefix, record)
 
         if record.pattern and record.prefix not in self.pattern_map:
             self.pattern_map[record.prefix] = record.pattern
+
+    def _index_prefix(self, prefix: str, record: Record) -> None:
+        self._prefix_to_record[prefix] = record
+        self._prefix_ci_to_record[prefix.casefold()] = record
+
+    def _index_uri_prefix(self, uri_prefix: str, record: Record) -> None:
+        self._uri_prefix_to_record[uri_prefix] = record
+        self._uri_prefix_ci_to_record[uri_prefix.casefold()] = record
+        self.trie[uri_prefix] = record
+
+    def add_prefix_synonym(
+        self, prefix: str, prefix_synonym: str, *, case_sensitive: bool = True
+    ) -> None:
+        """Add a prefix synonym to the record with the given prefix."""
+        if not case_sensitive:
+            raise NotImplementedError
+
+        try:
+            record = self._prefix_to_record[prefix]
+        except KeyError as e:
+            raise KeyError(
+                f"can not add prefix synoynm {prefix_synonym} to prefix {prefix} since {prefix} is not already indexed"
+            ) from e
+
+        sr = self._prefix_to_record.get(prefix_synonym)
+        if sr is not None and sr.prefix != record.prefix:
+            raise ValueError(f"this prefix synonym is already taken by record for {sr.prefix}")
+
+        self._index_prefix(prefix_synonym, record)
+
+        record.prefix_synonyms.append(prefix_synonym)
+        record.prefix_synonyms.sort()
+
+    def add_uri_prefix_synonym(
+        self, prefix: str, uri_prefix_synonym: str, *, case_sensitive: bool = True
+    ) -> None:
+        """Add a URI synonym to the record with the given prefix."""
+        if not case_sensitive:
+            raise NotImplementedError
+
+        try:
+            record = self._prefix_to_record[prefix]
+        except KeyError as e:
+            raise KeyError(
+                f"can not add URI prefix synoynm {uri_prefix_synonym} to prefix {prefix} since {prefix} is not already indexed"
+            ) from e
+
+        sr = self._uri_prefix_to_record.get(uri_prefix_synonym)
+        if sr is not None and sr.prefix != record.prefix:
+            raise ValueError(f"this URI prefix synonym is already taken by record for {sr.prefix}")
+
+        self._index_uri_prefix(uri_prefix_synonym, record)
+
+        record.uri_prefix_synonyms.append(uri_prefix_synonym)
+        record.uri_prefix_synonyms.sort()
 
     def add_prefix(
         self,
