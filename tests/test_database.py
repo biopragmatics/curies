@@ -119,6 +119,7 @@ class TestDatabase(unittest.TestCase):
             id: int | None = Field(default=None, primary_key=True)
             reference: Reference = Field(sa_column=get_reference_sa_column())
             optional_reference: Reference | None = Field(sa_column=get_reference_sa_column())
+            listed_references: list[Reference] = Field()
             name: str
 
         model_1 = Model(reference=Reference(prefix=prefix, identifier=id_1), name=name_1)
