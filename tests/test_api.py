@@ -500,7 +500,7 @@ class TestConverter(unittest.TestCase):
         self.assertEqual("GO", record.prefix)
 
     @SLOW
-    @unittest.skip
+    @unittest.skip("problem with bioregistry getter")
     def test_bioregistry(self) -> None:
         """Test loading a remote JSON-LD context."""
         for web in [True, False]:
