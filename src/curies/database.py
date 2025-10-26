@@ -60,6 +60,20 @@ using the same column type, such as for the ``author`` field below:
         object: Reference = Field(sa_column=get_reference_sa_column())
         author: Reference | None = Field(sa_column=get_reference_sa_column())
 
+If you want to have a field with a list of references, you can do it using
+:func:`get_reference_list_sa_column`:
+
+.. code-block:: python
+
+    class Record(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        authors: list[Reference] = Field(
+            default_factory=list, sa_column=get_reference_list_sa_column()
+        )
+
+This also works how you would expect if you don't use a default_factory or if you choose
+to make it optional ``list[Reference] | None``.
+
 Using :mod:`sqlalchemy`
 =======================
 
@@ -168,6 +182,17 @@ column, that exposes an appropriate :class:`curies.Reference` class.
             Edge.subject == Reference(prefix="CHEBI", identifier="135125")
         )
         edges = session.exec(statement).all()
+
+Similarly to above, lists can be constructed using :func:`get_reference_list_sa_column`:
+
+.. code-block:: python
+
+    class Record(Base):
+        __tablename__ = "record"
+
+        id = Column(Integer, primary_key=True)
+
+        authors = get_reference_list_sa_column()
 """
 
 from __future__ import annotations
@@ -179,15 +204,46 @@ from sqlalchemy import Column
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.orm import Composite, composite
 from sqlalchemy.sql.type_api import TypeEngine
-from sqlalchemy.types import TEXT, TypeDecorator
+from sqlalchemy.types import JSON, TEXT, TypeDecorator
 
 from curies import Reference
 
 __all__ = [
+    "SAReferenceListTypeDecorator",
     "SAReferenceTypeDecorator",
+    "get_reference_list_sa_column",
     "get_reference_sa_column",
     "get_reference_sa_composite",
 ]
+
+
+class SAReferenceListTypeDecorator(TypeDecorator[list[Reference]]):
+    """A SQLAlchemy type decorator for a list of :mod:`curies.Reference`."""
+
+    impl: ClassVar[type[TypeEngine[str]]] = JSON  # type:ignore[misc]
+    #: Set SQLAlchemy caching to true
+    cache_ok: ClassVar[bool] = True  # type:ignore[misc]
+
+    def process_bind_param(
+        self, value: str | Reference | list[Reference] | None, dialect: Dialect
+    ) -> list[str] | None:
+        """Convert the Python object into a database value."""
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return [value]
+        elif isinstance(value, Reference):
+            return [value.curie]
+        else:
+            return [v.curie for v in value]
+
+    def process_result_value(
+        self, value: list[str] | None, dialect: Dialect
+    ) -> list[Reference] | None:
+        """Convert the database value into a Python object."""
+        if value is None:
+            return None
+        return [Reference.from_curie(v) for v in value]
 
 
 class SAReferenceTypeDecorator(TypeDecorator[Reference]):
@@ -239,6 +295,32 @@ def get_reference_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column[Refe
             object: Reference = Field(sa_column=get_reference_sa_column())
     """
     return sqlalchemy.Column(SAReferenceTypeDecorator(), *args, **kwargs)
+
+
+def get_reference_list_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column[list[Reference]]:
+    """Get a SQLAlchemy column with the type decorator for a :list of mod:`curies.Reference`.
+
+    :param args: positional arguments, passed to :class:`sqlalchemy.Column`
+    :param kwargs: keyword arguments, passed to :class:`sqlalchemy.Column`
+
+    :returns: A column object, parametrized with list of :class:`curies.Reference`
+
+    For example, this can be used to model an author list like in the following:
+
+    .. code-block:: python
+
+        from curies import Reference
+        from curies.database import get_reference_list_sa_column
+        from sqlmodel import Field, SQLModel
+
+
+        class Edge(SQLModel, table=True):
+            id: int | None = Field(default=None, primary_key=True)
+            authors: list[Reference] = Field(
+                default_factory=list, sa_column=get_reference_list_sa_column()
+            )
+    """
+    return sqlalchemy.Column(SAReferenceListTypeDecorator(), *args, **kwargs)
 
 
 class _ReferenceAdapter(Reference):
