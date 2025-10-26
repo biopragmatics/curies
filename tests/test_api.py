@@ -1294,6 +1294,48 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(ValueError):
             converter.parse_curie("CHEBI:nope", strict=True)
 
+    def test_add_prefix_synonym(self) -> None:
+        """Test adding a prefix synonym."""
+        c = Converter()
+        c.add_prefix("a", "https://example.org/a/")
+        c.add_prefix("b", "https://example.org/b/")
+
+        c.add_prefix_synonym("a", "x")
+
+        self.assertEqual(
+            Record(prefix="a", uri_prefix="https://example.org/a/", prefix_synonyms=["x"]),
+            c.get_record("a"),
+        )
+
+        with self.assertRaises(ValueError):
+            c.add_prefix_synonym("a", "b")
+
+        with self.assertRaises(KeyError):
+            c.add_prefix_synonym("A", "y")
+
+    def test_add_uri_prefix_synonym(self) -> None:
+        """Test adding a prefix synonym."""
+        c = Converter()
+        c.add_prefix("a", "https://example.org/a/")
+        c.add_prefix("b", "https://example.org/b/")
+
+        c.add_uri_prefix_synonym("a", "https://example.org/a2/")
+
+        self.assertEqual(
+            Record(
+                prefix="a",
+                uri_prefix="https://example.org/a/",
+                uri_prefix_synonyms=["https://example.org/a2/"],
+            ),
+            c.get_record("a"),
+        )
+
+        with self.assertRaises(ValueError):
+            c.add_uri_prefix_synonym("a", "https://example.org/b/")
+
+        with self.assertRaises(KeyError):
+            c.add_uri_prefix_synonym("A", "y")
+
 
 class TestVersion(unittest.TestCase):
     """Trivially test a version."""
