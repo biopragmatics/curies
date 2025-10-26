@@ -901,25 +901,42 @@ class Converter:
 
     def _match_record(
         self, external: Record, case_sensitive: bool = True
-    ) -> Mapping[RecordKey, list[str]]:
+    ) -> Mapping[str, list[str]]:
         """Match the given record to existing records."""
-        rv: defaultdict[RecordKey, list[str]] = defaultdict(list)
+        rv: defaultdict[str, list[str]] = defaultdict(list)
         if case_sensitive:
-            for prefix in external._all_prefixes:
+            if record := self._prefix_to_record.get(external.prefix):
+                rv[record.prefix].append(
+                    f"primary prefix ({external.prefix}) match to {self._label(external.prefix == record.prefix)} prefix for {record.prefix}"
+                )
+            for prefix in external.prefix_synonyms:
                 if record := self._prefix_to_record.get(prefix):
-                    rv[record._key].append("prefix match")
-            for uri_prefix in external._all_uri_prefixes:
+                    rv[record.prefix].append(
+                        f"secondary prefix ({prefix}) matched {self._label(prefix == record.prefix)} prefix for {record.prefix}"
+                    )
+
+            if record := self._uri_prefix_to_record.get(external.uri_prefix):
+                rv[record.prefix].append(
+                    f"primary URI prefix ({external.uri_prefix}) matched {self._label(record.uri_prefix == external.uri_prefix)} URI prefix for {record.prefix}"
+                )
+            for uri_prefix in external.uri_prefix_synonyms:
                 if record := self._uri_prefix_to_record.get(uri_prefix):
-                    rv[record._key].append("URI prefix match")
+                    rv[record.prefix].append(
+                        f"secondary URI prefix ({uri_prefix}) matched {self._label(record.uri_prefix == uri_prefix)} URI prefix for {record.prefix}"
+                    )
         else:
             for prefix in external._all_prefixes:
                 if record := self._prefix_ci_to_record.get(prefix.casefold()):
-                    rv[record._key].append("prefix case-insenstive match")
+                    rv[record.prefix].append("prefix case-insenstive match")
             for uri_prefix in external._all_uri_prefixes:
                 if record := self._uri_prefix_ci_to_record.get(uri_prefix.casefold()):
-                    rv[record._key].append("URI case-insenstive prefix match")
+                    rv[record.prefix].append("URI case-insenstive prefix match")
 
         return dict(rv)
+
+    @staticmethod
+    def _label(x: bool) -> str:
+        return "primary" if x else "secondary"
 
     def add_record(
         self, record: Record, *, case_sensitive: bool = True, merge: bool = False
@@ -930,12 +947,14 @@ class Converter:
             msg = "".join(f"\n  {m} -> {v}" for m, v in matched.items())
             raise ValueError(f"new record has duplicates:{msg}")
         if len(matched) == 1:
+            prefix, values = next(iter(matched.items()))
             if not merge:
-                raise ValueError(f"new record already exists and merge=False: {matched}")
+                msg = "\n".join(f"- {v}" for v in values)
+                raise ValueError(
+                    f"failed to add {record.prefix} because of overlaps. Full record:\n\n{record.model_dump_json(indent=2)}\n\nExplanation:\n{msg}\n"
+                )
 
-            key = next(iter(matched))
-            # TODO make more efficient!
-            existing_record = next(r for r in self.records if r._key == key)
+            existing_record = self._prefix_to_record[prefix]
             self._merge(record, into=existing_record)
             self._index(existing_record)
         else:
@@ -991,8 +1010,10 @@ class Converter:
             ) from e
 
         sr = self._prefix_to_record.get(prefix_synonym)
-        if sr is not None and sr.prefix != record.prefix:
-            raise ValueError(f"this prefix synonym is already taken by record for {sr.prefix}")
+        if sr is not None:
+            if sr.prefix != record.prefix:
+                raise ValueError(f"this prefix synonym is already taken by record for {sr.prefix}")
+            return None
 
         self._index_prefix(prefix_synonym, record)
 
@@ -1010,12 +1031,18 @@ class Converter:
             record = self._prefix_to_record[prefix]
         except KeyError as e:
             raise KeyError(
-                f"can not add URI prefix synoynm {uri_prefix_synonym} to prefix {prefix} since {prefix} is not already indexed"
+                f"can't add URI prefix synoynm {uri_prefix_synonym} to prefix {prefix} because "
+                f"{prefix} is not already indexed"
             ) from e
 
         sr = self._uri_prefix_to_record.get(uri_prefix_synonym)
-        if sr is not None and sr.prefix != record.prefix:
-            raise ValueError(f"this URI prefix synonym is already taken by record for {sr.prefix}")
+        if sr is not None:
+            if sr.prefix != record.prefix:
+                raise ValueError(
+                    f"can't add URI prefix synonym {uri_prefix_synonym} to {prefix} becauase "
+                    f"it is already taken by record for {sr.prefix}"
+                )
+            return None
 
         self._index_uri_prefix(uri_prefix_synonym, record)
 
