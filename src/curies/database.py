@@ -71,6 +71,9 @@ If you want to have a field with a list of references, you can do it using
             default_factory=list, sa_column=get_reference_list_sa_column()
         )
 
+This also works how you would expect if you don't use a default_factory or if you choose
+to make it optional ``list[Reference] | None``.
+
 Using :mod:`sqlalchemy`
 =======================
 
@@ -179,6 +182,17 @@ column, that exposes an appropriate :class:`curies.Reference` class.
             Edge.subject == Reference(prefix="CHEBI", identifier="135125")
         )
         edges = session.exec(statement).all()
+
+Similarly to above, lists can be constructed using :func:`get_reference_list_sa_column`:
+
+.. code-block:: python
+
+    class Record(Base):
+        __tablename__ = "record"
+
+        id = Column(Integer, primary_key=True)
+
+        authors = get_reference_list_sa_column()
 """
 
 from __future__ import annotations
