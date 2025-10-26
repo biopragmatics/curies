@@ -179,15 +179,44 @@ from sqlalchemy import Column
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.orm import Composite, composite
 from sqlalchemy.sql.type_api import TypeEngine
-from sqlalchemy.types import TEXT, TypeDecorator
+from sqlalchemy.types import JSON, TEXT, TypeDecorator
 
 from curies import Reference
 
 __all__ = [
+    "SAReferenceListTypeDecorator",
     "SAReferenceTypeDecorator",
+    "get_reference_list_sa_column",
     "get_reference_sa_column",
     "get_reference_sa_composite",
 ]
+
+
+class SAReferenceListTypeDecorator(TypeDecorator[list[Reference]]):
+    """A SQLAlchemy type decorator for a list of :mod:`curies.Reference`."""
+
+    impl: ClassVar[type[TypeEngine[str]]] = JSON  # type:ignore[misc]
+    #: Set SQLAlchemy caching to true
+    cache_ok: ClassVar[bool] = True  # type:ignore[misc]
+
+    def process_bind_param(
+        self, value: str | Reference | list[Reference] | None, dialect: Dialect
+    ) -> str | None:
+        """Convert the Python object into a database value."""
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return [value]
+        elif isinstance(value, Reference):
+            return [value.curie]
+        else:
+            return [v.curie for v in value]
+
+    def process_result_value(self, value: list[str] | None, dialect: Dialect) -> Reference | None:
+        """Convert the database value into a Python object."""
+        if value is None:
+            return None
+        return [Reference.from_curie(v) for v in value]
 
 
 class SAReferenceTypeDecorator(TypeDecorator[Reference]):
@@ -239,6 +268,32 @@ def get_reference_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column[Refe
             object: Reference = Field(sa_column=get_reference_sa_column())
     """
     return sqlalchemy.Column(SAReferenceTypeDecorator(), *args, **kwargs)
+
+
+def get_reference_list_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column[list[Reference]]:
+    """Get a SQLAlchemy column with the type decorator for a :list of mod:`curies.Reference`.
+
+    :param args: positional arguments, passed to :class:`sqlalchemy.Column`
+    :param kwargs: keyword arguments, passed to :class:`sqlalchemy.Column`
+
+    :returns: A column object, parametrized with list of :class:`curies.Reference`
+
+    For example, this can be used to model an author list like in the following:
+
+    .. code-block:: python
+
+        from curies import Reference
+        from curies.database import get_reference_list_sa_column
+        from sqlmodel import Field, SQLModel
+
+
+        class Edge(SQLModel, table=True):
+            id: int | None = Field(default=None, primary_key=True)
+            authors: list[Reference] = Field(
+                default_factory=list, sa_column=get_reference_list_sa_column()
+            )
+    """
+    return sqlalchemy.Column(SAReferenceListTypeDecorator(), *args, **kwargs)
 
 
 class _ReferenceAdapter(Reference):

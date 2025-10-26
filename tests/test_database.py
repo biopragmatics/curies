@@ -5,12 +5,18 @@ from __future__ import annotations
 import unittest
 
 from curies import Prefix, Reference
-from curies.database import get_reference_sa_column, get_reference_sa_composite
+from curies.database import (
+    get_reference_list_sa_column,
+    get_reference_sa_column,
+    get_reference_sa_composite,
+)
 
 prefix = Prefix("hero")
 id_1 = "1"
 id_2 = "2"
 id_3 = "3"
+id_4 = "4"
+id_5 = "5"
 name_1 = "Name 1"
 name_2 = "Name 2"
 name_3 = "Name 3"
@@ -119,7 +125,9 @@ class TestDatabase(unittest.TestCase):
             id: int | None = Field(default=None, primary_key=True)
             reference: Reference = Field(sa_column=get_reference_sa_column())
             optional_reference: Reference | None = Field(sa_column=get_reference_sa_column())
-            listed_references: list[Reference] = Field()
+            listed_references: list[Reference] = Field(
+                sa_column=get_reference_list_sa_column(), default_factory=list
+            )
             name: str
 
         model_1 = Model(reference=Reference(prefix=prefix, identifier=id_1), name=name_1)
@@ -128,6 +136,10 @@ class TestDatabase(unittest.TestCase):
             reference=Reference(prefix=prefix, identifier=id_3),
             optional_reference=Reference(prefix=prefix, identifier=id_3),
             name=name_3,
+            listed_references=[
+                Reference(prefix=prefix, identifier="l1"),
+                Reference(prefix=prefix, identifier="l2"),
+            ],
         )
 
         engine = create_engine("sqlite://")
@@ -151,6 +163,7 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(prefix, result_1.reference.prefix)
         self.assertEqual(id_2, result_1.reference.identifier)
         self.assertEqual(name_2, result_1.name)
+        self.assertEqual([], result_1.listed_references)
 
         # Test querying using a string on the reference
         with Session(engine) as session:
@@ -164,6 +177,10 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(id_3, result_4.reference.identifier)
         self.assertEqual(name_3, result_4.name)
         self.assertIsNotNone(result_4.optional_reference)
+        self.assertEqual(
+            [Reference(prefix=prefix, identifier="l1"), Reference(prefix=prefix, identifier="l2")],
+            result_4.listed_references,
+        )
 
         # Tests looking up a reference that's missing
         with Session(engine) as session:
@@ -185,3 +202,4 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(prefix, result_3.reference.prefix)
         self.assertEqual(id_1, result_3.reference.identifier)
         self.assertEqual(name_1, result_3.name)
+        self.assertEqual([], result_3.listed_references)
