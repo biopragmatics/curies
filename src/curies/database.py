@@ -60,6 +60,17 @@ using the same column type, such as for the ``author`` field below:
         object: Reference = Field(sa_column=get_reference_sa_column())
         author: Reference | None = Field(sa_column=get_reference_sa_column())
 
+If you want to have a field with a list of references, you can do it using
+:func:`get_reference_list_sa_column`:
+
+.. code-block:: python
+
+    class Record(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        authors: list[Reference] = Field(
+            default_factory=list, sa_column=get_reference_list_sa_column()
+        )
+
 Using :mod:`sqlalchemy`
 =======================
 
@@ -201,7 +212,7 @@ class SAReferenceListTypeDecorator(TypeDecorator[list[Reference]]):
 
     def process_bind_param(
         self, value: str | Reference | list[Reference] | None, dialect: Dialect
-    ) -> str | None:
+    ) -> list[str] | None:
         """Convert the Python object into a database value."""
         if value is None:
             return None
@@ -212,7 +223,9 @@ class SAReferenceListTypeDecorator(TypeDecorator[list[Reference]]):
         else:
             return [v.curie for v in value]
 
-    def process_result_value(self, value: list[str] | None, dialect: Dialect) -> Reference | None:
+    def process_result_value(
+        self, value: list[str] | None, dialect: Dialect
+    ) -> list[Reference] | None:
         """Convert the database value into a Python object."""
         if value is None:
             return None

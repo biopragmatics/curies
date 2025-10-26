@@ -203,3 +203,108 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(id_1, result_3.reference.identifier)
         self.assertEqual(name_1, result_3.name)
         self.assertEqual([], result_3.listed_references)
+
+    def test_sqlmodel_reference_list_default(self) -> None:
+        """Test SQLModel with a reference list with a default factory."""
+        from sqlmodel import Field, Session, SQLModel, create_engine, select
+
+        class ModelWithReferenceList(SQLModel, table=True):
+            """A class with a reference."""
+
+            id: int | None = Field(default=None, primary_key=True)
+            authors: list[Reference] = Field(
+                sa_column=get_reference_list_sa_column(), default_factory=list
+            )
+
+        model_1 = ModelWithReferenceList(id=1, authors=[Reference(prefix=prefix, identifier=id_1)])
+        model_2 = ModelWithReferenceList(id=2)
+
+        engine = create_engine("sqlite://")
+
+        SQLModel.metadata.create_all(engine)
+
+        with Session(engine) as session:
+            session.add_all([model_1, model_2])
+            session.commit()
+
+        with Session(engine) as session:
+            statement = select(ModelWithReferenceList).where(ModelWithReferenceList.id == 1)
+            result_1 = session.exec(statement).first()
+        if result_1 is None:
+            self.fail()
+        self.assertEqual([Reference(prefix=prefix, identifier=id_1)], result_1.authors)
+
+        with Session(engine) as session:
+            statement = select(ModelWithReferenceList).where(ModelWithReferenceList.id == 2)
+            result_2 = session.exec(statement).first()
+        if result_2 is None:
+            self.fail()
+        self.assertEqual([], result_2.authors)
+
+    def test_sqlmodel_reference_list_no_default(self) -> None:
+        """Test SQLModel with a reference list with no default factory."""
+        from sqlmodel import Field, Session, SQLModel, create_engine, select
+
+        class ModelReferenceListNoDefault(SQLModel, table=True):
+            """A class with a reference."""
+
+            id: int | None = Field(default=None, primary_key=True)
+            authors: list[Reference] = Field(sa_column=get_reference_list_sa_column())
+
+        model_1 = ModelReferenceListNoDefault(
+            id=1, authors=[Reference(prefix=prefix, identifier=id_1)]
+        )
+
+        engine = create_engine("sqlite://")
+
+        SQLModel.metadata.create_all(engine)
+
+        with Session(engine) as session:
+            session.add(model_1)
+            session.commit()
+
+        with Session(engine) as session:
+            statement = select(ModelReferenceListNoDefault).where(
+                ModelReferenceListNoDefault.id == 1
+            )
+            result_1 = session.exec(statement).first()
+        if result_1 is None:
+            self.fail()
+        self.assertEqual([Reference(prefix=prefix, identifier=id_1)], result_1.authors)
+
+    def test_sqlmodel_reference_list_optional(self) -> None:
+        """Test SQLModel with optional reference list."""
+        from sqlmodel import Field, Session, SQLModel, create_engine, select
+
+        class ModelOptionalReferenceList(SQLModel, table=True):
+            """A class with a reference."""
+
+            id: int | None = Field(default=None, primary_key=True)
+            authors: list[Reference] | None = Field(None, sa_column=get_reference_list_sa_column())
+
+        model_1 = ModelOptionalReferenceList(
+            id=1, authors=[Reference(prefix=prefix, identifier=id_1)]
+        )
+        model_2 = ModelOptionalReferenceList(id=2)
+
+        engine = create_engine("sqlite://")
+
+        SQLModel.metadata.create_all(engine)
+
+        with Session(engine) as session:
+            session.add_all([model_1, model_2])
+            session.commit()
+
+        with Session(engine) as session:
+            statement = select(ModelOptionalReferenceList).where(ModelOptionalReferenceList.id == 1)
+            result_1 = session.exec(statement).first()
+        if result_1 is None:
+            self.fail()
+        self.assertEqual([Reference(prefix=prefix, identifier=id_1)], result_1.authors)
+
+        with Session(engine) as session:
+            statement = select(ModelOptionalReferenceList).where(ModelOptionalReferenceList.id == 2)
+            result_2 = session.exec(statement).first()
+        if result_2 is None:
+            self.fail()
+        self.assertIsNone(result_2.authors)
