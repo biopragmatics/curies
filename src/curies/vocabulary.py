@@ -289,3 +289,5 @@ inhibitor_of = _r("RO", "0012006", "is small molecule inhibitor of")
 
 is_model_of = _r("RO", "0003301", "is model of")
 is_marker_for = _r("RO", "0002607", "is marker for")
+
+orthologous_to = _r("RO", "HOM0000017", "in orthology relationship with")
