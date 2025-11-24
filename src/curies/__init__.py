@@ -26,6 +26,7 @@ from .api import (
 )
 from .dataframe import filter_df_by_curies, filter_df_by_prefixes
 from .discovery import discover, discover_from_rdf
+from .mixins import SemanticallyProcessable
 from .preprocessing import (
     PostprocessingRewrites,
     PreprocessingBlocklists,
@@ -62,6 +63,7 @@ __all__ = [
     "Records",
     "Reference",
     "ReferenceTuple",
+    "SemanticallyProcessable",
     "Triple",
     "chain",
     "discover",
