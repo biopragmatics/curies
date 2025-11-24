@@ -43,5 +43,5 @@ class SemanticallyProcessable(ABC, Generic[X]):
 
     @abstractmethod
     def process(self, converter: Converter) -> X:
-        """Process a raw entity."""
+        """Process this raw instance."""
         raise NotImplementedError
