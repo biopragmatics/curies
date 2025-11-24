@@ -37,7 +37,7 @@ class SemanticallyProcessable(ABC, Generic[X]):
 
             def process(self, converter: Converter) -> ProcessedEntity:
                 return ProcessedEntity(
-                    reference=converter.parse_uri(self.uri, strict=True),
+                    reference=converter.parse_uri(self.uri, strict=True).to_pydantic()
                 )
     """
 
