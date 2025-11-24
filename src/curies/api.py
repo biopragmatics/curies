@@ -7,7 +7,6 @@ import itertools as itt
 import json
 import logging
 import warnings
-from abc import ABC
 from collections import UserDict, defaultdict
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
@@ -16,7 +15,6 @@ from textwrap import dedent
 from typing import (
     TYPE_CHECKING,
     Any,
-    Generic,
     Literal,
     NamedTuple,
     TypeAlias,
@@ -57,7 +55,6 @@ __all__ = [
     "Records",
     "Reference",
     "ReferenceTuple",
-    "Semantifible",
     "Trie",
     "TrieNode",
     "chain",
@@ -3194,28 +3191,3 @@ class TrieNode:
                 return None
             node = next_node
         return node
-
-
-class Semantifible(ABC, Generic[X]):
-    """A class that can be processed with a converter.
-
-    The goal of this class
-
-    .. code-block:: python
-
-        class ProcessedEntity(BaseModel):
-            reference: Reference
-
-
-        class RawEntity(Semantifiable[ProcessedEntity]):
-            uri: str
-
-            def process(self, converter: Converter) -> ProcessedEntity:
-                return ProcessedEntity(
-                    reference=converter.parse_uri(self.uri, strict=True),
-                )
-    """
-
-    def process(self, converter: Converter) -> X:
-        """Process a raw entity."""
-        raise NotImplementedError

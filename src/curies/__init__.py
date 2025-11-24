@@ -13,7 +13,6 @@ from .api import (
     Records,
     Reference,
     ReferenceTuple,
-    Semantifible,
     chain,
     load_extended_prefix_map,
     load_jsonld_context,
@@ -27,6 +26,7 @@ from .api import (
 )
 from .dataframe import filter_df_by_curies, filter_df_by_prefixes
 from .discovery import discover, discover_from_rdf
+from .mixins import SemanticallyProcessable
 from .preprocessing import (
     PostprocessingRewrites,
     PreprocessingBlocklists,
@@ -63,7 +63,7 @@ __all__ = [
     "Records",
     "Reference",
     "ReferenceTuple",
-    "Semantifible",
+    "SemanticallyProcessable",
     "Triple",
     "chain",
     "discover",
