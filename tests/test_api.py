@@ -658,6 +658,32 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(URIStandardizationError):
             converter.standardize_uri("NOPE:NOPE", strict=True)
 
+    def test_standardize_reference(self) -> None:
+        """Test standardize reference."""
+        converter = Converter.from_extended_prefix_map(
+            [
+                Record(
+                    prefix="CHEBI",
+                    prefix_synonyms=["chebi"],
+                    uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                ),
+            ]
+        )
+
+        r1 = Reference.from_curie("chebi:138488")
+        r2 = Reference.from_curie("CHEBI:138488")
+        bad = Reference.from_curie("NOPE:NOPE")
+
+        for r in [r1, r2]:
+            self.assertEqual(r2, converter.standardize_reference(r))
+            self.assertEqual(r2, converter.standardize_reference(r, strict=True))
+            self.assertEqual(r2, converter.standardize_reference(r, strict=False))
+
+        self.assertIsNone(converter.standardize_reference(bad))
+        self.assertIsNone(converter.standardize_reference(bad, strict=False))
+        with self.assertRaises(PrefixStandardizationError):
+            converter.standardize_reference(bad, strict=True)
+
     def test_combine(self) -> None:
         """Test chaining converters."""
         with self.assertRaises(ValueError):
