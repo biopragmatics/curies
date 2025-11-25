@@ -9,6 +9,7 @@ from .api import Converter
 
 __all__ = [
     "SemanticallyProcessable",
+    "ReverseSemanticallyProcessable",
 ]
 
 X = TypeVar("X")
@@ -43,5 +44,34 @@ class SemanticallyProcessable(ABC, Generic[X]):
 
     @abstractmethod
     def process(self, converter: Converter) -> X:
+        """Process this raw instance."""
+        raise NotImplementedError
+
+
+class ReverseSemanticallyProcessable(ABC, Generic[X]):
+    """A class that can be processed with a converter.
+
+    The goal of this class is to standardize objects that come with
+    unprocessed URIs that can be processed into references with
+    respect to a :class:`curies.Converter`. For example, this is
+    useful for :mod:`obographs` and :mod:`jskos`.
+
+    .. code-block:: python
+
+        from pydantic import BaseModel
+        from curies import ReverseSemanticallyProcessable
+
+        class RawEntity(BaseModel):
+            uri: str
+
+        class ProcessedEntity(BaseModel, ReverseSemanticallyProcessable[RawEntity]):
+            reference: Reference
+
+            def unprocess(self, converter: Converter) -> RawEntity:
+                return RawEntity(uri=converter.expand_reference(self.reference, strict=True))
+    """
+
+    @abstractmethod
+    def unprocess(self, converter: Converter) -> X:
         """Process this raw instance."""
         raise NotImplementedError
