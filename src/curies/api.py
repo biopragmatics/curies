@@ -1972,7 +1972,21 @@ class Converter:
             return None
         return ReferenceTuple(norm_prefix, norm_identifier)
 
-    def standardize_identifier(self, standard_prefix: str, identifier: str) -> str | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_identifier(
+        self, standard_prefix: str, identifier: str, *, strict: Literal[True] = ...
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_identifier(
+        self, standard_prefix: str, identifier: str, *, strict: Literal[False] = ...
+    ) -> str | None: ...
+
+    def standardize_identifier(
+        self, standard_prefix: str, identifier: str, *, strict: bool = False
+    ) -> str | None:
         """Standardize an identifier.
 
         :param standard_prefix: This is a prefix that has already been standardized using
@@ -2314,6 +2328,26 @@ class Converter:
         if passthrough:
             return uri
         return None
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_reference(
+        self, reference: Reference, *, strict: Literal[True] = ...
+    ) -> Reference: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_reference(
+        self, reference: Reference, *, strict: Literal[False] = ...
+    ) -> Reference | None: ...
+
+    def standardize_reference(
+        self, reference: Reference, *, strict: bool = False
+    ) -> Reference | None:
+        """Standardizes a reference."""
+        st_prefix = self.standardize_prefix(reference.prefix, strict=True)
+        st_identifier = self.standardize_identifier(st_prefix, reference.identifier, strict=True)
+        return reference.model_copy(update={"prefix": st_prefix, "identifier": st_identifier})
 
     def pd_compress(
         self,
