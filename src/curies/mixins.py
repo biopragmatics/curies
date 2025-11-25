@@ -8,8 +8,8 @@ from typing import Generic, TypeVar
 from .api import Converter
 
 __all__ = [
-    "SemanticallyProcessable",
     "ReverseSemanticallyProcessable",
+    "SemanticallyProcessable",
 ]
 
 X = TypeVar("X")
@@ -61,8 +61,10 @@ class ReverseSemanticallyProcessable(ABC, Generic[X]):
         from pydantic import BaseModel
         from curies import ReverseSemanticallyProcessable
 
+
         class RawEntity(BaseModel):
             uri: str
+
 
         class ProcessedEntity(BaseModel, ReverseSemanticallyProcessable[RawEntity]):
             reference: Reference
