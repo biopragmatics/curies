@@ -7,7 +7,8 @@ from typing_extensions import Self
 
 import curies
 from curies import Converter, Reference
-from curies.mixins import SemanticallyProcessable, SemanticallyStandardizable
+from curies.mixins import PrefixGettable, SemanticallyProcessable, SemanticallyStandardizable
+from curies.vocabulary import exact_match
 
 
 class TestMixins(unittest.TestCase):
@@ -62,3 +63,22 @@ class TestMixins(unittest.TestCase):
         init = HoldsReference(reference=Reference(prefix="test", identifier="1234567"))
         end = init.standardize(converter)
         self.assertEqual(Reference(prefix="TEST", identifier="1234567"), end.reference)
+
+    def test_prefixes(self) -> None:
+        """Test getting prefixes."""
+
+        class Triple(BaseModel, PrefixGettable):
+            subject: Reference
+            predicate: Reference
+            object: Reference
+
+            def get_prefixes(self) -> set[str]:
+                return {self.subject.prefix, self.predicate.prefix, self.object.prefix}
+
+        t = Triple(
+            subject=Reference.from_curie("CHEBI:10001"),
+            predicate=exact_match,
+            object=Reference.from_curie("mesh:C067604"),
+        )
+
+        self.assertEqual({"CHEBI", "mesh", "skos"}, t.get_prefixes())

@@ -10,6 +10,7 @@ from typing_extensions import Self
 from .api import Converter
 
 __all__ = [
+    "PrefixGettable",
     "SemanticallyProcessable",
     "SemanticallyStandardizable",
 ]
@@ -116,4 +117,28 @@ class SemanticallyStandardizable(ABC):
     @abstractmethod
     def standardize(self, converter: Converter) -> Self:
         """Standardize all references in the object."""
+        raise NotImplementedError
+
+
+class PrefixGettable(ABC):
+    """An object that contains references with prefixes.
+
+    .. code-block:: python
+
+        from pydantic import BaseModel
+        from curies.mixins import PrefixGettable
+
+
+        class Triple(BaseModel, PrefixGettable):
+            subject: Reference
+            predicate: Reference
+            object: Reference
+
+            def get_prefixes(self) -> set[str]:
+                return {self.subject.prefix, self.predicate.prefix, self.object.prefix}
+    """
+
+    @abstractmethod
+    def get_prefixes(self) -> set[str]:
+        """Get all prefixes used by the object."""
         raise NotImplementedError
