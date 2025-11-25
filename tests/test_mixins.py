@@ -1,7 +1,7 @@
 """Test mixins."""
 
 import unittest
-from typing import Self
+from typing_extensions import Self
 
 from pydantic import BaseModel
 
