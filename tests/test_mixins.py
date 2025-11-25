@@ -1,9 +1,9 @@
 """Test mixins."""
 
 import unittest
-from typing_extensions import Self
 
 from pydantic import BaseModel
+from typing_extensions import Self
 
 import curies
 from curies import Converter, Reference
