@@ -5,7 +5,7 @@ import unittest
 from pydantic import BaseModel
 
 from curies import Converter, Reference
-from curies.mixins import SemanticallyProcessable, ReverseSemanticallyProcessable, X
+from curies.mixins import ReverseSemanticallyProcessable, SemanticallyProcessable
 
 
 class TestMixins(unittest.TestCase):
