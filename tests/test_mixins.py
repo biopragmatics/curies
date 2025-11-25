@@ -40,9 +40,12 @@ class TestMixins(unittest.TestCase):
         """Test standardizable."""
 
         class HoldsReference(BaseModel, Standardizable):
+            """A test class with a reference."""
+
             reference: Reference
 
             def standardize(self, converter: Converter) -> Self:
+                """Standardize the reference in the object."""
                 return self.model_copy(
                     update={
                         "reference": converter.standardize_reference(self.reference, strict=True),

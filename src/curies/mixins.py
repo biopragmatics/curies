@@ -50,5 +50,8 @@ class SemanticallyProcessable(ABC, Generic[X]):
 
 
 class Standardizable:
+    """An object that can be standardized."""
+
     def standardize(self, converter: Converter) -> Self:
+        """Standardize all references in the object."""
         raise NotImplementedError
