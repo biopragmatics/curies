@@ -1992,6 +1992,7 @@ class Converter:
         :param standard_prefix: This is a prefix that has already been standardized using
             :meth:`standardize_prefix` in this converter
         :param identifier: An unstandardized identifier
+        :param strict: If true, requires standardization to succeed or throws an error
         :returns: A standardized identifier.
 
         By default, this function is a no-op, meaning that it just returns the identifier
