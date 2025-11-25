@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 import curies
 from curies import Converter, Reference
-from curies.mixins import SemanticallyProcessable, Standardizable
+from curies.mixins import SemanticallyProcessable, SemanticallyStandardizable
 
 
 class TestMixins(unittest.TestCase):
@@ -39,7 +39,7 @@ class TestMixins(unittest.TestCase):
     def test_standardizable(self) -> None:
         """Test standardizable."""
 
-        class HoldsReference(BaseModel, Standardizable):
+        class HoldsReference(BaseModel, SemanticallyStandardizable):
             """A test class with a reference."""
 
             reference: Reference
