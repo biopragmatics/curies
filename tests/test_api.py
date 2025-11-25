@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Literal, overload
 
 import pandas as pd
 import rdflib
@@ -1262,11 +1263,23 @@ class TestConverter(unittest.TestCase):
         class BananaStripperConverter(Converter):
             """A converter that removes bananas from LUIDs."""
 
+            # docstr-coverage:excused `overload`
+            @overload
             def standardize_identifier(
-                self, prefix: str, identifier: str, strict: bool = False
+                self, standard_prefix: str, identifier: str, strict: Literal[True] = ...
+            ) -> str: ...
+
+            # docstr-coverage:excused `overload`
+            @overload
+            def standardize_identifier(
+                self, standard_prefix: str, identifier: str, strict: Literal[False] = ...
+            ) -> str | None: ...
+
+            def standardize_identifier(
+                self, standard_prefix: str, identifier: str, strict: bool = False
             ) -> str | None:
                 """Standardize the identifier by removing a banana and checking it is numeric."""
-                norm_identifier = identifier.removeprefix(f"{prefix}:")
+                norm_identifier = identifier.removeprefix(f"{standard_prefix}:")
 
                 # now, do some validation
                 if not norm_identifier.isnumeric():
