@@ -5,6 +5,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
+from typing_extensions import Self
+
 from .api import Converter
 
 __all__ = [
@@ -44,4 +46,9 @@ class SemanticallyProcessable(ABC, Generic[X]):
     @abstractmethod
     def process(self, converter: Converter) -> X:
         """Process this raw instance."""
+        raise NotImplementedError
+
+
+class Standardizable:
+    def standardize(self, converter: Converter) -> Self:
         raise NotImplementedError
