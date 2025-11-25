@@ -5,11 +5,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
+from typing_extensions import Self
+
 from .api import Converter
 
 __all__ = [
     "ReverseSemanticallyProcessable",
     "SemanticallyProcessable",
+    "SemanticallyStandardizable",
 ]
 
 X = TypeVar("X")
@@ -76,4 +79,72 @@ class ReverseSemanticallyProcessable(ABC, Generic[X]):
     @abstractmethod
     def unprocess(self, converter: Converter) -> X:
         """Process this raw instance."""
+
+
+class SemanticallyStandardizable(ABC):
+    """An object that can be standardized.
+
+    In the following example, a simple object is constructed:
+
+    .. code-block:: python
+
+        from typing_extensions import Self
+        from curies import Converter, Reference, SemanticallyStandardizable
+
+
+        class ReferenceHolder(SemanticallyStandardizable):
+            def __init__(self, reference):
+                self.reference = reference
+
+            def standardize(self, converter: Converter) -> Self:
+                return ReferenceHolder(converter.standardize_reference(self.reference, strict=True))
+
+    It's good form to make these operations return new objects, but there's no reason
+    you couldn't update the object in place like in :
+
+    .. code-block:: python
+
+        from typing_extensions import Self
+        from curies import Converter, Reference, SemanticallyStandardizable
+
+
+        class ReferenceHolder(SemanticallyStandardizable):
+            def __init__(self, reference):
+                self.reference = reference
+
+            def standardize(self, converter: Converter) -> Self:
+                self.reference = converter.standardize_reference(self.reference, strict=True)
+                return self
+
+    In the following example, the :meth:`pydantic.BaseModel.model_copy` is
+    used to automatically reuse all other fields that aren't updated, which
+    creates a new object.
+
+    .. code-block:: python
+
+        import datetime
+        from typing_extensions import Self
+        from curies import Converter, Reference, SemanticallyStandardizable
+        from pydantic import BaseModel
+
+
+        class Triple(BaseModel, SemanticallyStandardizable):
+            subject: Reference
+            predicate: Reference
+            object: Reference
+            date_asserted: datetime.date
+
+            def standardize(self, converter: Converter) -> Self:
+                return self.model_copy(
+                    update={
+                        "subject": converter.standardize_reference(self.subject, strict=True),
+                        "predicate": converter.standardize_reference(self.predicate, strict=True),
+                        "object": converter.standardize_reference(self.object, strict=True),
+                    }
+                )
+    """
+
+    @abstractmethod
+    def standardize(self, converter: Converter) -> Self:
+        """Standardize all references in the object."""
         raise NotImplementedError

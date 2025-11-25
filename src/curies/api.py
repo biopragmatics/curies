@@ -1972,12 +1972,27 @@ class Converter:
             return None
         return ReferenceTuple(norm_prefix, norm_identifier)
 
-    def standardize_identifier(self, standard_prefix: str, identifier: str) -> str | None:
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_identifier(
+        self, standard_prefix: str, identifier: str, *, strict: Literal[True] = ...
+    ) -> str: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_identifier(
+        self, standard_prefix: str, identifier: str, *, strict: Literal[False] = ...
+    ) -> str | None: ...
+
+    def standardize_identifier(
+        self, standard_prefix: str, identifier: str, *, strict: bool = False
+    ) -> str | None:
         """Standardize an identifier.
 
         :param standard_prefix: This is a prefix that has already been standardized using
             :meth:`standardize_prefix` in this converter
         :param identifier: An unstandardized identifier
+        :param strict: If true, requires standardization to succeed or throws an error
         :returns: A standardized identifier.
 
         By default, this function is a no-op, meaning that it just returns the identifier
@@ -2313,6 +2328,34 @@ class Converter:
             raise URIStandardizationError(uri)
         if passthrough:
             return uri
+        return None
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_reference(
+        self, reference: Reference, *, strict: Literal[True] = ...
+    ) -> Reference: ...
+
+    # docstr-coverage:excused `overload`
+    @overload
+    def standardize_reference(
+        self, reference: Reference, *, strict: Literal[False] = ...
+    ) -> Reference | None: ...
+
+    def standardize_reference(
+        self, reference: Reference, *, strict: bool = False
+    ) -> Reference | None:
+        """Standardizes a reference."""
+        st_prefix = self.standardize_prefix(reference.prefix, strict=False)
+        if st_prefix is None and strict:
+            raise PrefixStandardizationError(reference.prefix)
+
+        st_identifier = self.standardize_identifier(st_prefix, reference.identifier, strict=False)
+        if st_identifier is None and strict:
+            raise IdentifierStandardizationError(reference.curie)
+
+        if st_prefix and st_identifier:
+            return reference.model_copy(update={"prefix": st_prefix, "identifier": st_identifier})
         return None
 
     def pd_compress(

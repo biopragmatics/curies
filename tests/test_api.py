@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Literal, overload
 
 import pandas as pd
 import rdflib
@@ -657,6 +658,32 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(URIStandardizationError):
             converter.standardize_uri("NOPE:NOPE", strict=True)
 
+    def test_standardize_reference(self) -> None:
+        """Test standardize reference."""
+        converter = Converter.from_extended_prefix_map(
+            [
+                Record(
+                    prefix="CHEBI",
+                    prefix_synonyms=["chebi"],
+                    uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                ),
+            ]
+        )
+
+        r1 = Reference.from_curie("chebi:138488")
+        r2 = Reference.from_curie("CHEBI:138488")
+        bad = Reference.from_curie("NOPE:NOPE")
+
+        for r in [r1, r2]:
+            self.assertEqual(r2, converter.standardize_reference(r))
+            self.assertEqual(r2, converter.standardize_reference(r, strict=True))
+            self.assertEqual(r2, converter.standardize_reference(r, strict=False))
+
+        self.assertIsNone(converter.standardize_reference(bad))
+        self.assertIsNone(converter.standardize_reference(bad, strict=False))
+        with self.assertRaises(PrefixStandardizationError):
+            converter.standardize_reference(bad, strict=True)
+
     def test_combine(self) -> None:
         """Test chaining converters."""
         with self.assertRaises(ValueError):
@@ -1262,9 +1289,23 @@ class TestConverter(unittest.TestCase):
         class BananaStripperConverter(Converter):
             """A converter that removes bananas from LUIDs."""
 
-            def standardize_identifier(self, prefix: str, identifier: str) -> str | None:
+            # docstr-coverage:excused `overload`
+            @overload
+            def standardize_identifier(
+                self, standard_prefix: str, identifier: str, strict: Literal[True] = ...
+            ) -> str: ...
+
+            # docstr-coverage:excused `overload`
+            @overload
+            def standardize_identifier(
+                self, standard_prefix: str, identifier: str, strict: Literal[False] = ...
+            ) -> str | None: ...
+
+            def standardize_identifier(
+                self, standard_prefix: str, identifier: str, strict: bool = False
+            ) -> str | None:
                 """Standardize the identifier by removing a banana and checking it is numeric."""
-                norm_identifier = identifier.removeprefix(f"{prefix}:")
+                norm_identifier = identifier.removeprefix(f"{standard_prefix}:")
 
                 # now, do some validation
                 if not norm_identifier.isnumeric():
