@@ -54,6 +54,7 @@ class TestMixins(unittest.TestCase):
             reference: Reference
 
             def unprocess(self, converter: Converter) -> Raw:
+                """Convert to raw."""
                 return Raw(uri=converter.expand_reference(self.reference, strict=True))
 
         c = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
