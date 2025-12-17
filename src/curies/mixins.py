@@ -53,10 +53,12 @@ class SemanticallyProcessable(ABC, Generic[X]):
         raise NotImplementedError
 
 
+# docstr-coverage:excused `overload`
 @overload
 def process_many(instances: None, converter: Converter) -> None: ...
 
 
+# docstr-coverage:excused `overload`
 @overload
 def process_many(
     instances: Iterable[SemanticallyProcessable[X]], converter: Converter
@@ -144,10 +146,12 @@ class SemanticallyStandardizable(ABC):
 Y = TypeVar("Y", bound=SemanticallyStandardizable)
 
 
+# docstr-coverage:excused `overload`
 @overload
 def standardize_many(instances: None, converter: Converter) -> None: ...
 
 
+# docstr-coverage:excused `overload`
 @overload
 def standardize_many(instances: Iterable[Y], converter: Converter) -> list[Y]: ...
 
