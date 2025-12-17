@@ -7,7 +7,12 @@ from typing_extensions import Self
 
 import curies
 from curies import Converter, Reference
-from curies.mixins import SemanticallyProcessable, SemanticallyStandardizable
+from curies.mixins import (
+    SemanticallyProcessable,
+    SemanticallyStandardizable,
+    process_many,
+    standardize_many,
+)
 
 
 class TestMixins(unittest.TestCase):
@@ -30,11 +35,16 @@ class TestMixins(unittest.TestCase):
                 """Process the raw model."""
                 return Processed(reference=converter.parse(self.uri, strict=True).to_pydantic())
 
-        c = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
-        v = Raw(uri="http://purl.obolibrary.org/obo/GO_1234567")
-        p = v.process(c)
-        self.assertIsInstance(p, Processed)
-        self.assertEqual(Reference(prefix="GO", identifier="1234567"), p.reference)
+        converter = Converter.from_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
+        initial = Raw(uri="http://purl.obolibrary.org/obo/GO_1234567")
+        actual = initial.process(converter)
+        self.assertIsInstance(actual, Processed)
+        expected = Processed(reference=Reference(prefix="GO", identifier="1234567"))
+        self.assertEqual(expected, actual)
+        self.assertEqual([expected], process_many([initial], converter))
+
+        # check none handling
+        self.assertIsNone(process_many(None, converter))
 
     def test_standardizable(self) -> None:
         """Test standardizable."""
@@ -59,6 +69,11 @@ class TestMixins(unittest.TestCase):
                 )
             ]
         )
-        init = HoldsReference(reference=Reference(prefix="test", identifier="1234567"))
-        end = init.standardize(converter)
-        self.assertEqual(Reference(prefix="TEST", identifier="1234567"), end.reference)
+        initial = HoldsReference(reference=Reference(prefix="test", identifier="1234567"))
+        actual = initial.standardize(converter)
+        expected = HoldsReference(reference=Reference(prefix="TEST", identifier="1234567"))
+        self.assertEqual(expected, actual)
+        self.assertEqual([expected], standardize_many([initial], converter))
+
+        # check none handling
+        self.assertIsNone(standardize_many(None, converter))
