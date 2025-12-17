@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from collections.abc import Iterable
+from typing import Generic, TypeVar, overload
 
 from typing_extensions import Self
 
@@ -12,6 +13,8 @@ from .api import Converter
 __all__ = [
     "SemanticallyProcessable",
     "SemanticallyStandardizable",
+    "process_many",
+    "standardize_many",
 ]
 
 X = TypeVar("X")
@@ -48,6 +51,27 @@ class SemanticallyProcessable(ABC, Generic[X]):
     def process(self, converter: Converter) -> X:
         """Process this raw instance."""
         raise NotImplementedError
+
+
+# docstr-coverage:excused `overload`
+@overload
+def process_many(instances: None, converter: Converter) -> None: ...
+
+
+# docstr-coverage:excused `overload`
+@overload
+def process_many(
+    instances: Iterable[SemanticallyProcessable[X]], converter: Converter
+) -> list[X]: ...
+
+
+def process_many(
+    instances: Iterable[SemanticallyProcessable[X]] | None, converter: Converter
+) -> list[X] | None:
+    """Process multiple semantically processable instances."""
+    if instances is None:
+        return None
+    return [instance.process(converter) for instance in instances]
 
 
 class SemanticallyStandardizable(ABC):
@@ -117,3 +141,23 @@ class SemanticallyStandardizable(ABC):
     def standardize(self, converter: Converter) -> Self:
         """Standardize all references in the object."""
         raise NotImplementedError
+
+
+Y = TypeVar("Y", bound=SemanticallyStandardizable)
+
+
+# docstr-coverage:excused `overload`
+@overload
+def standardize_many(instances: None, converter: Converter) -> None: ...
+
+
+# docstr-coverage:excused `overload`
+@overload
+def standardize_many(instances: Iterable[Y], converter: Converter) -> list[Y]: ...
+
+
+def standardize_many(instances: Iterable[Y] | None, converter: Converter) -> list[Y] | None:
+    """Standardize multiple semantically standardizable instances."""
+    if instances is None:
+        return None
+    return [instance.standardize(converter) for instance in instances]
