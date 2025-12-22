@@ -61,6 +61,17 @@ owl_inverse_of = _r("owl", "inverseOf", "inverse of")
 has_ontology_root_term = _r("IAO", "0000700", "has ontology root term")
 has_term_editor = _r("IAO", "0000117", "term editor")
 
+
+# Document parts
+title_section = _r("IAO", "0000651", "title section")
+abstract_section = _r("IAO", "0000315", "abstract")
+
+#: A set of document parts that are subclasses of IAO:0000314
+DOCUMENT_PARTS = {
+    title_section,
+    abstract_section,
+}
+
 # Synonyms
 
 ## Synonym Relations
