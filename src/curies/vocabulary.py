@@ -55,6 +55,27 @@ obo_creation_date = _r("oboInOwl", "creation_date", "creation date")
 
 owl_version_info = _r("owl", "versionInfo", "has version")
 owl_inverse_of = _r("owl", "inverseOf", "inverse of")
+owl_class = _r("owl", "class", "class")
+owl_object_property = _r("owl", "ObjectProperty", "object property")
+owl_data_property = _r("owl", "DataProperty", "data property")
+owl_annotation_property = _r("owl", "AnnotationProperty", "annotation property")
+owl_named_individual = _r("owl", "NamedIndividual", "named individual")
+
+# SKOS
+
+skos_concept = _r("skos", "Concept", "concept")
+
+# RDFS
+
+rdfs_resource = _r("rdfs", "Resource", "resource")
+rdfs_class = _r("rdfs", "Class", "class")
+rdfs_literal = _r("rdfs", "Literal", "literal")
+rdfs_datatype = _r("rdfs", "Datatype", "datatype")
+rdfs_property = _r("rdfs", "Property", "property")
+
+# SSSOM
+
+composed_entity_expression = _r("sssom", "ComposedEntityExpression", "composed entity expression")
 
 # IAO
 
