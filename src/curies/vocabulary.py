@@ -55,7 +55,7 @@ obo_creation_date = _r("oboInOwl", "creation_date", "creation date")
 
 owl_version_info = _r("owl", "versionInfo", "has version")
 owl_inverse_of = _r("owl", "inverseOf", "inverse of")
-owl_class = _r("owl", "class", "class")
+owl_class = _r("owl", "Class", "class")
 owl_object_property = _r("owl", "ObjectProperty", "object property")
 owl_data_property = _r("owl", "DataProperty", "data property")
 owl_annotation_property = _r("owl", "AnnotationProperty", "annotation property")
