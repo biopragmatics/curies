@@ -49,9 +49,9 @@ class Triple(BaseModel):
     def as_uri_triple(self, converter: Converter) -> tuple[str, str, str]:
         """Get a three-tuple of strings representing the expanded URIs."""
         return (
-            converter.expand(self.subject, strict=True),
-            converter.expand(self.predicate, strict=True),
-            converter.expand(self.object, strict=True),
+            converter.expand_reference(self.subject, strict=True),
+            converter.expand_reference(self.predicate, strict=True),
+            converter.expand_reference(self.object, strict=True),
         )
 
     def __lt__(self, other: Triple) -> bool:
@@ -73,6 +73,17 @@ class Triple(BaseModel):
             object=reference_cls.from_curie(object_curie),
         )
 
+    @classmethod
+    def from_uris(
+        cls, subject_uri: str, predicate_uri: str, object_uri: str, converter: Converter
+    ) -> Self:
+        """Construct a triple from three URI strings."""
+        return cls(
+            subject=converter.parse_uri(subject_uri, strict=True).to_pydantic(),
+            predicate=converter.parse_uri(predicate_uri, strict=True).to_pydantic(),
+            object=converter.parse_uri(object_uri, strict=True).to_pydantic(),
+        )
+
 
 #: the default header for a three-column file representing triples
 HEADER = list(Triple.model_fields)
@@ -82,9 +93,11 @@ HEADER = list(Triple.model_fields)
 def _get_file(path: str | Path, read: bool) -> Generator[TextIO, None, None]:
     path = Path(path).expanduser().resolve()
     if path.suffix == ".gz":
-        yield gzip.open(path, mode="rt" if read else "wt")
+        with gzip.open(path, mode="rt" if read else "wt") as file:
+            yield file
     else:
-        yield open(path, mode="r" if read else "w")
+        with open(path, mode="r" if read else "w") as file:
+            yield file
 
 
 def write_triples(
@@ -120,7 +133,7 @@ def read_triples(path: str | Path, *, reference_cls: type[Reference] | None = No
 
 
 SEP = "\t"
-ENCODING = "utf8"
+ENCODING = "utf-8"
 
 
 def encode_triple(converter: Converter, triple: Triple) -> str:
@@ -140,11 +153,12 @@ def decode_to_uris(s: str) -> tuple[str, str, str]:
     return cast(tuple[str, str, str], delimited_uris.split(SEP))
 
 
-def decode_triple(converter: Converter, s: str) -> Triple:
+def decode_triple(converter: Converter, xx: str) -> Triple:
     """Decode a triple from URL-safe base64 encoding."""
-    s, p, o = decode_to_uris(s)
-    return Triple(
-        subject=converter.parse_uri(s, strict=True).to_pydantic(),
-        predicate=converter.parse_uri(p, strict=True).to_pydantic(),
-        object=converter.parse_uri(o, strict=True).to_pydantic(),
+    subject_uri, predicate_uri, object_uri = decode_to_uris(xx)
+    return Triple.from_uris(
+        subject_uri=subject_uri,
+        predicate_uri=predicate_uri,
+        object_uri=object_uri,
+        converter=converter,
     )
