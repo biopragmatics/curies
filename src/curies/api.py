@@ -41,6 +41,8 @@ if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import rdflib
 
+    from .triples import Triple
+
 __all__ = [
     "Converter",
     "DuplicatePrefixes",
@@ -2635,6 +2637,18 @@ class Converter:
             if any(prefix in prefixes for prefix in record._all_prefixes)
         ]
         return Converter(records)
+
+    def decode_triple(self, triple_id: str) -> Triple:
+        """Decode a triple identifier."""
+        from .triples import decode_triple
+
+        return decode_triple(self, triple_id)
+
+    def encode_triple(self, triple: Triple) -> str:
+        """Encode a triple into an identifier."""
+        from .triples import encode_triple
+
+        return encode_triple(self, triple)
 
 
 def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:

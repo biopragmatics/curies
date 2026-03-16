@@ -100,7 +100,7 @@ identifiers for triples:
 
     mesh:C000089 skos:exactMatch CHEBI:28646 .
 
-    triple:aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM= rdf:type rdf:Statement ;
+    triple:aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng== rdf:type rdf:Statement ;
         rdf:subject mesh:C000089 ;
         rdf:predicate skos:exactMatch ;
         rdf:object CHEBI:28646 .
@@ -127,10 +127,10 @@ hashing a triple to assign it an identifier.
         object="CHEBI:28646",
     )
 
-    triple_id = encode_triple(converter, triple)
+    triple_id = converter.encode_triple(triple)
     assert (
         triple_id
-        == "aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM="
+        == "aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=="
     )
 
 Identifiers constructed this way can be turned back into Triple objects using
@@ -149,9 +149,8 @@ Identifiers constructed this way can be turned back into Triple objects using
         }
     )
 
-    triple = decode_triple(
-        converter,
-        "aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM=",
+    triple = converter.decode_triple(
+        "aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=="
     )
 
 ***********
@@ -367,7 +366,7 @@ def encode_triple(converter: Converter, triple: Triple) -> str:
     ... )
     >>> triple = Triple(subject="mesh:C000089", predicate="skos:exactMatch", object="CHEBI:28646")
     >>> encode_delimited_uris(converter, triple)
-    'aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM='
+    'aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=='
     """
     return encode_delimited_uris(triple.as_uri_triple(converter))
 
@@ -386,7 +385,7 @@ def encode_delimited_uris(uri_triple: tuple[str, str, str]) -> str:
     ...         "http://purl.obolibrary.org/obo/CHEBI_28646",
     ...     )
     ... )
-    'aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM='
+    'aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=='
     """
     delimited_uris = SEP.join(uri_triple)
     return base64.urlsafe_b64encode(delimited_uris.encode(ENCODING)).decode(ENCODING)
@@ -408,7 +407,7 @@ def decode_to_uris(triple_id: str) -> URITriple:
     :returns: A triple of URIs represented as strings
 
     >>> uris = decode_to_uris(
-    ...     "aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM="
+    ...     "aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=="
     ... )
     >>> uris.subject
     'http://id.nlm.nih.gov/mesh/C000089'
@@ -438,7 +437,7 @@ def decode_triple(converter: Converter, triple_id: str) -> Triple:
     ... )
     >>> triple = decode_triple(
     ...     converter,
-    ...     "aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM=",
+    ...     "aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng==",
     ... )
     >>> triple.subject.curie
     'mesh:C000089'
