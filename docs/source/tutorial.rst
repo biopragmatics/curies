@@ -441,9 +441,6 @@ to a file:
 
 Here's a self-contained example on how this works:
 
-.. code-block:: python
-
-
 >>> import curies
 >>> converter = curies.load_prefix_map(
 ...     {
