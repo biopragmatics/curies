@@ -792,21 +792,21 @@ a string is a CURIE (:meth:`curies.Converter.is_curie`) or a URI
 
     converter = curies.get_obo_converter()
 
-    >>> converter.is_curie("GO:1234567")
-    True
-    >>> converter.is_curie("http://purl.obolibrary.org/obo/GO_1234567")
-    False
-    # This is a valid CURIE, but not under this converter's definition
-    >>> converter.is_curie("pdb:2gc4")
-    False
+    assert converter.is_curie("GO:1234567")
 
-    >>> converter.is_uri("http://purl.obolibrary.org/obo/GO_1234567")
-    True
-    >>> converter.is_uri("GO:1234567")
-    False
+    # This is a URL
+    assert not converter.is_curie("http://purl.obolibrary.org/obo/GO_1234567")
+
+    # This is a valid CURIE, but not under this converter's definition
+    assert not converter.is_curie("pdb:2gc4")
+
+    assert converter.is_uri("http://purl.obolibrary.org/obo/GO_1234567")
+
+    # This is a CURIE, but not a URI
+    assert converter.is_uri("GO:1234567")
+
     # This is a valid URI, but not under this converter's definition
-    >>> converter.is_uri("http://proteopedia.org/wiki/index.php/2gc4")
-    False
+    assert not converter.is_uri("http://proteopedia.org/wiki/index.php/2gc4")
 
 Extended Expansion and Compression
 ----------------------------------
