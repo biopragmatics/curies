@@ -1,5 +1,9 @@
 """Similarly to how the :mod:`curies` package enables the semantic representation of references (i.e., as CURIEs) with the :class:`curies.Reference` class, it enables the representation of semantic triples (i.e., as subject-predicate-object triples of CURIEs) with the :class:`curies.Triple` class.
 
+######################
+ Constructing Triples
+######################
+
 Triples can be constructed either from strings representing CURIEs or pre-parsed
 :class:`Reference` objects representing CURIEs.
 
@@ -50,10 +54,10 @@ while parsing.
     )
 
     triple = Triple.from_uris(
-        converter=converter,
         subject="http://id.nlm.nih.gov/mesh/C000089",
         predicate="http://www.w3.org/2004/02/skos/core#exactMatch",
         object="http://purl.obolibrary.org/obo/CHEBI_28646",
+        converter=converter,
     )
 
 ###########################
@@ -71,14 +75,16 @@ RDF enables explicit reification of triples with the following:
 .. code-block::
 
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX ex: <http://example.org/> .
+    PREFIX mesh: <http://id.nlm.nih.gov/mesh/>
+    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    PREFIX chebi: <http://purl.obolibrary.org/obo/CHEBI_>
 
-    ex:1 ex:2 ex:3 .
+    mesh:C000089 skos:exactMatch chebi:28646 .
 
     [] rdf:type rdf:Statement ;
-        rdf:subject ex:1 ;
-        rdf:predicate ex:2 ;
-        rdf:object ex:3 .
+        rdf:subject mesh:C000089 ;
+        rdf:predicate skos:exactMatch ;
+        rdf:object chebi:28646 .
 
 It would be nice to have an implementation-agnostic way of assigning an identifier to
 the triple!
@@ -86,18 +92,20 @@ the triple!
 .. code-block::
 
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX ex: <http://example.org/> .
-    PREFIX triple: <https://w3id.org/triple/> .
+    PREFIX mesh: <http://id.nlm.nih.gov/mesh/>
+    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    PREFIX chebi: <http://purl.obolibrary.org/obo/CHEBI_>
+    PREFIX triple: <https://w3id.org/triple/>
 
-    ex:1 ex:2 ex:3 .
+    mesh:C000089 skos:exactMatch chebi:28646 .
 
     triple:aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM= rdf:type rdf:Statement ;
-        rdf:subject ex:1 ;
-        rdf:predicate ex:2 ;
-        rdf:object ex:3 .
+        rdf:subject mesh:C000089 ;
+        rdf:predicate skos:exactMatch ;
+        rdf:object chebi:28646 .
 
-We introduce a deterministic, reversible way of hashing a triple to assign it an
-identifier:
+:func:`curies.triples.encode_triple` introduces a deterministic, reversible way of
+hashing a triple to assign it an identifier.
 
 .. code-block:: python
 
@@ -119,7 +127,19 @@ identifier:
     )
 
     luid = encode_triple(converter, triple)
-"""  # noqa:D205
+
+***********
+ Algorithm
+***********
+
+1. Expand the CURIEs in a triple into URIs, encoded with UTF-8
+2. String concatenate them in subject-predicate-object order, delimited by the tab
+   character as a separator
+3. String decode UTF-8 into bytes
+4. Do a URL-safe base64 encoding of the bytes. See Python's implementation :func:`base64.urlsafe_b64encode`,
+       where the alphabet uses ``-`` instead of ``+`` and ``_`` instead of ``/``.
+5. Encode the result with UTF-8 to get a string.
+"""
 
 from __future__ import annotations
 
@@ -222,12 +242,20 @@ class Triple(BaseModel):
         )
 
     @classmethod
-    def from_uris(cls, subject: str, predicate: str, object: str, converter: Converter) -> Self:
+    def from_uris(
+        cls,
+        subject: str,
+        predicate: str,
+        object: str,
+        *,
+        converter: Converter,
+        reference_cls: type[Reference] = Reference,
+    ) -> Self:
         """Construct a triple from three URI strings."""
         return cls(
-            subject=converter.parse_uri(subject, strict=True).to_pydantic(),
-            predicate=converter.parse_uri(predicate, strict=True).to_pydantic(),
-            object=converter.parse_uri(object, strict=True).to_pydantic(),
+            subject=reference_cls.from_reference(converter.parse_uri(subject, strict=True)),
+            predicate=reference_cls.from_reference(converter.parse_uri(predicate, strict=True)),
+            object=reference_cls.from_reference(converter.parse_uri(object, strict=True)),
         )
 
 
