@@ -57,6 +57,18 @@ dependencies = [
     "typing-extensions",
 ]
 
+[dependency-groups]
+typing = [
+    "mypy",
+    "types-requests",
+    "types-PyYAML",
+    "types-ujson",
+    "pandas-stubs",
+    "pydantic",
+    "bioregistry",
+    "types-Markdown",
+]
+
 [project.optional-dependencies]
 tests = [
     "pytest",
