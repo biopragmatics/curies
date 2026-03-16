@@ -87,7 +87,8 @@ RDF enables explicit reification of triples with the following:
         rdf:object CHEBI:28646 .
 
 It would be nice to have an implementation-agnostic way of assigning an identifier to
-the triple!
+the triple. This example imagines a namespace with the prefix ``triple`` that can host
+identifiers for triples:
 
 .. code-block::
 
@@ -130,6 +131,27 @@ hashing a triple to assign it an identifier.
     assert (
         triple_id
         == "aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM="
+    )
+
+Identifiers constructed this way can be turned back into Triple objects using
+:func:`curies.triples.decode_triple`:
+
+.. code-block:: python
+
+    from curies import Triple, Reference, Converter
+    from curies.triples import decode_triple
+
+    converter = curies.load_prefix_map(
+        {
+            "mesh": "http://id.nlm.nih.gov/mesh/",
+            "skos": "http://www.w3.org/2004/02/skos/core#",
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        }
+    )
+
+    triple = decode_triple(
+        converter,
+        "aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM=",
     )
 
 ***********
