@@ -1,0 +1,5 @@
+#########
+ Triples
+#########
+
+.. automodapi:: curies.triples
