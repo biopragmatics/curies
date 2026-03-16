@@ -347,9 +347,11 @@ def decode_to_uris(triple_id: str) -> URITriple:
     """Decode a triple from URL-safe base64 encoding.
 
     :param triple_id: An encoded triple of URIs
-    :return: A triple of URIs represented as strings
+
+    :returns: A triple of URIs represented as strings
 
     Example:
+
     >>> uris = decode_to_uris(
     ...     "aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM="
     ... )
@@ -369,9 +371,11 @@ def decode_triple(converter: Converter, triple_id: str) -> Triple:
 
     :param converter: A converter
     :param s: An encoded triple of URIs
-    :return: A triple of URIs represented as strings
+
+    :returns: A triple of URIs represented as strings
 
     Example:
+
     >>> converter = curies.load_prefix_map(
     ...     {
     ...         "mesh": "http://id.nlm.nih.gov/mesh/",
