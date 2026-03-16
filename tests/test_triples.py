@@ -55,17 +55,17 @@ class TestTriples(unittest.TestCase):
         converter.add_prefix("a", "https://example.org/a:")
         converter.add_prefix("b", "https://example.org/b:")
         converter.add_prefix("c", "https://example.org/c:")
-        a = converter.parse_curie("a:1", strict=True).to_pydantic()
-        b = converter.parse_curie("b:1", strict=True).to_pydantic()
-        c = converter.parse_curie("c:1", strict=True).to_pydantic()
-        t = Triple(subject=a, predicate=b, object=c)
+        subject = converter.parse_curie("a:1", strict=True).to_pydantic()
+        predicate = converter.parse_curie("b:1", strict=True).to_pydantic()
+        obj = converter.parse_curie("c:1", strict=True).to_pydantic()
 
-        s = encode_triple(converter, t)
+        triple = Triple(subject=subject, predicate=predicate, object=obj)
+        triple_id = encode_triple(converter, triple)
 
         self.assertEqual(
             "aHR0cHM6Ly9leGFtcGxlLm9yZy9hOjEJaHR0cHM6Ly9leGFtcGxlLm9yZy9iOjEJaHR0cHM6Ly9leGFtcGxlLm9yZy9jOjE=",
-            s,
+            triple_id,
         )
 
-        t2 = decode_triple(converter, s)
-        self.assertEqual(t, t2)
+        t2 = decode_triple(converter, triple_id)
+        self.assertEqual(triple, t2)
