@@ -4,23 +4,30 @@ references (i.e., as CURIEs) with the :class:`curies.Reference` class, it enable
 representation of semantic triples (i.e., as subject-predicate-object triples of CURIEs)
 with the :class:`curies.Triple` class.
 
-Triples can be constructed either from strings, which are implicitly parsed as CURIEs o
+Triples can be constructed either from strings representing CURIEs or pre-parsed
+:class:`Reference` objects representing CURIEs.
 
 .. code-block:: python
 
     from curies import Triple, Reference
 
+    # construction with string representations of CURIEs
     triple = Triple(
         subject="mesh:C000089",
         predicate="skos:exactMatch",
         object="chebi:28646",
     )
 
+    # construction with object representations of CURIEs
     triple = Triple(
         subject=Reference(prefix="mesh", identifier="C000089"),
         predicate=Reference(prefix="skos", identifier="exactMatch"),
         object=Reference(prefix="chebi", identifier="28646"),
     )
+
+Any reference objects can be used, including ones with names:
+
+.. code-block:: python
 
     from curies import NamableReference
 
@@ -30,13 +37,28 @@ Triples can be constructed either from strings, which are implicitly parsed as C
         object=NamedReference(prefix="chebi", identifier="28646", name="ammeline"),
     )
 
+The :class:`Triple` interface does not enforce any CURIE validation.
+The :meth:`Triple.from_uris` constructor implicitly performs validation
+against a converter while parsing.
+
+.. code-block:: python
+
+    from curies import Triple, Reference, Converter
+
+    converter = curies.load_prefix_map({
+        "mesh": "http://id.nlm.nih.gov/mesh/",
+        "skos": "http://www.w3.org/2004/02/skos/core#",
+        "chebi": "http://purl.obolibrary.org/obo/CHEBI_",
+    })
 
     triple = Triple.from_uris(
         converter=converter,
-        subject="http://example.org/1",
-        predicate="http://example.org/2",
-        object="http://example.org/3",
+        subject="http://id.nlm.nih.gov/mesh/C000089",
+        predicate="http://www.w3.org/2004/02/skos/core#exactMatch",
+        object="http://purl.obolibrary.org/obo/CHEBI_28646",
     )
+
+
 
 ###########################
  Identification of Triples
@@ -231,7 +253,7 @@ def _get_file(path: str | Path, read: bool) -> Generator[TextIO, None, None]:
 def write_triples(
     triples: Iterable[Triple], path: str | Path, *, header: Sequence[str] | None = None
 ) -> None:
-    """Write triples to a file."""
+    """Write triples as a three-column TSV file."""
     if header is None:
         header = HEADER
     with _get_file(path, read=False) as file:
@@ -244,7 +266,7 @@ def write_triples(
 
 
 def read_triples(path: str | Path, *, reference_cls: type[Reference] | None = None) -> list[Triple]:
-    """Read triples."""
+    """Read triples from a three-column TSV file."""
     if reference_cls is None:
         reference_cls = Reference
     with _get_file(path, read=True) as file:
