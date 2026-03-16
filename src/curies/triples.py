@@ -1,8 +1,4 @@
-"""
-Similarly to how the :mod:`curies` package enables the semantic representation of
-references (i.e., as CURIEs) with the :class:`curies.Reference` class, it enables the
-representation of semantic triples (i.e., as subject-predicate-object triples of CURIEs)
-with the :class:`curies.Triple` class.
+"""Similarly to how the :mod:`curies` package enables the semantic representation of references (i.e., as CURIEs) with the :class:`curies.Reference` class, it enables the representation of semantic triples (i.e., as subject-predicate-object triples of CURIEs) with the :class:`curies.Triple` class.
 
 Triples can be constructed either from strings representing CURIEs or pre-parsed
 :class:`Reference` objects representing CURIEs.
@@ -37,19 +33,21 @@ Any reference objects can be used, including ones with names:
         object=NamedReference(prefix="chebi", identifier="28646", name="ammeline"),
     )
 
-The :class:`Triple` interface does not enforce any CURIE validation.
-The :meth:`Triple.from_uris` constructor implicitly performs validation
-against a converter while parsing.
+The :class:`Triple` interface does not enforce any CURIE validation. The
+:meth:`Triple.from_uris` constructor implicitly performs validation against a converter
+while parsing.
 
 .. code-block:: python
 
     from curies import Triple, Reference, Converter
 
-    converter = curies.load_prefix_map({
-        "mesh": "http://id.nlm.nih.gov/mesh/",
-        "skos": "http://www.w3.org/2004/02/skos/core#",
-        "chebi": "http://purl.obolibrary.org/obo/CHEBI_",
-    })
+    converter = curies.load_prefix_map(
+        {
+            "mesh": "http://id.nlm.nih.gov/mesh/",
+            "skos": "http://www.w3.org/2004/02/skos/core#",
+            "chebi": "http://purl.obolibrary.org/obo/CHEBI_",
+        }
+    )
 
     triple = Triple.from_uris(
         converter=converter,
@@ -57,8 +55,6 @@ against a converter while parsing.
         predicate="http://www.w3.org/2004/02/skos/core#exactMatch",
         object="http://purl.obolibrary.org/obo/CHEBI_28646",
     )
-
-
 
 ###########################
  Identification of Triples
