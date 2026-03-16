@@ -322,8 +322,14 @@ def get_df_unique_prefixes(
 
 def _disallowed_dtype(series: pd.Series[Any] | str) -> TypeGuard[pd.Series[str]]:
     import numpy as np
+    import pandas
 
     if isinstance(series, str):
+        return False
+
+    # pandas 3.0 introduced a new datatype - this code implicitly
+    # checks if we're using pandas 3.0 if pandas.StringDtype is available
+    if (string_dtype := getattr(pandas, "StringDtype", None)) and isinstance(series, string_dtype):
         return False
 
     return series.dtype != np.str_ and series.dtype != np.dtype("O")
