@@ -1,5 +1,4 @@
-"""Utilities for triples.
-
+"""
 Similarly to how the :mod:`curies` package enables the semantic representation of
 references (i.e., as CURIEs) with the :class:`curies.Reference` class, it enables the
 representation of semantic triples (i.e., as subject-predicate-object triples of CURIEs)
@@ -102,7 +101,7 @@ identifier:
     )
 
     luid = encode_triple(converter, triple)
-"""
+"""  # noqa:D205
 
 from __future__ import annotations
 
