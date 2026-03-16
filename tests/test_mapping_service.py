@@ -345,6 +345,7 @@ class TestFastAPIMappingApp(ConverterMixin):
 class TestUtils(unittest.TestCase):
     """Test utilities."""
 
+    @unittest.skip(reason="Wikidata query service is down")
     @SLOW
     def test_availability(self) -> None:
         """Test sparql service availability check."""
