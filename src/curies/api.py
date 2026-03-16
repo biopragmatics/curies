@@ -41,7 +41,6 @@ if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import rdflib
 
-    from .triples import Triple
 
 __all__ = [
     "Converter",
