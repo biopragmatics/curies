@@ -74,6 +74,10 @@ jobs:
       matrix:
         os: [ ubuntu-latest ]
         python-version: [ "3.13", "3.10" ]
+        pandas: [ "pandas2", "pandas3" ]
+        exclude:
+          - python-version: "3.10"
+            pandas: "pandas3"
     steps:
       - uses: actions/checkout@v4
       - name: "Install uv"
@@ -83,7 +87,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Test with pytest and generate coverage file
         run:
-          uvx -p ${{ matrix.python-version }} --with tox-uv tox -e py
+          uvx -p ${{ matrix.python-version }} --with tox-uv tox -e py-${{ matrix.pandas }}
       - name: Upload coverage report to codecov
         uses: codecov/codecov-action@v4
         if: success()
