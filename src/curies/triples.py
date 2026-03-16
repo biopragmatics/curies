@@ -63,7 +63,6 @@ while parsing.
 
 from __future__ import annotations
 
-import base64
 import csv
 import gzip
 from collections.abc import Generator, Iterable, Sequence
