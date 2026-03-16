@@ -325,12 +325,43 @@ TRIPLE_URI_PREFIX = "https://w3id.org/triple/"
 
 
 def encode_triple(converter: Converter, triple: Triple) -> str:
-    """Encode a triple with URL-safe base64 encoding."""
+    """Encode a triple with URL-safe base64 encoding.
+
+    :param converter: A converter
+    :param triple: A triple of CURIE objects
+
+    :returns: An encoded triple of URIs
+
+    >>> converter = curies.load_prefix_map(
+    ...     {
+    ...         "mesh": "http://id.nlm.nih.gov/mesh/",
+    ...         "skos": "http://www.w3.org/2004/02/skos/core#",
+    ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+    ...     }
+    ... )
+    >>> triple = Triple(subject="mesh:C000089", predicate="skos:exactMatch", object="CHEBI:28646")
+    >>> encode_delimited_uris(converter, triple)
+    'aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM='
+    """
     return encode_delimited_uris(triple.as_uri_triple(converter))
 
 
 def encode_delimited_uris(uri_triple: tuple[str, str, str]) -> str:
-    """Encode a subject-predicate-object triple."""
+    """Encode a subject-predicate-object triple.
+
+    :param uri_triple: A triple of URIs represented as strings
+
+    :returns: An encoded triple of URIs
+
+    >>> encode_delimited_uris(
+    ...     (
+    ...         "http://id.nlm.nih.gov/mesh/C000089",
+    ...         "http://www.w3.org/2004/02/skos/core#exactMatch",
+    ...         "http://purl.obolibrary.org/obo/CHEBI_28646",
+    ...     )
+    ... )
+    'aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM='
+    """
     delimited_uris = SEP.join(uri_triple)
     return base64.urlsafe_b64encode(delimited_uris.encode(ENCODING)).decode(ENCODING)
 
