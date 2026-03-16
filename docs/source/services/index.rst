@@ -1,5 +1,6 @@
-Services
-========
+##########
+ Services
+##########
 
 .. automodule:: curies.cli
 

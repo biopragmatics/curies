@@ -23,10 +23,9 @@ X = TypeVar("X")
 class SemanticallyProcessable(ABC, Generic[X]):
     """A class that can be processed with a converter.
 
-    The goal of this class is to standardize objects that come with
-    unprocessed URIs that can be processed into references with
-    respect to a :class:`curies.Converter`. For example, this is
-    useful for :mod:`obographs` and :mod:`jskos`.
+    The goal of this class is to standardize objects that come with unprocessed URIs
+    that can be processed into references with respect to a :class:`curies.Converter`.
+    For example, this is useful for :mod:`obographs` and :mod:`jskos`.
 
     .. code-block:: python
 
@@ -109,9 +108,9 @@ class SemanticallyStandardizable(ABC):
                 self.reference = converter.standardize_reference(self.reference, strict=True)
                 return self
 
-    In the following example, the :meth:`pydantic.BaseModel.model_copy` is
-    used to automatically reuse all other fields that aren't updated, which
-    creates a new object.
+    In the following example, the :meth:`pydantic.BaseModel.model_copy` is used to
+    automatically reuse all other fields that aren't updated, which creates a new
+    object.
 
     .. code-block:: python
 

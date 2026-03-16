@@ -1,7 +1,8 @@
 """Database adapters for :mod:`curies`.
 
-Using :mod:`sqlmodel`
-=====================
+#######################
+ Using :mod:`sqlmodel`
+#######################
 
 SQLModel is a joint abstraction over :mod:`pydantic` and :mod:`sqlalchemy`. If you want
 to use :class:`curies.Reference` within a SQLModel class, you can do so by setting the
@@ -74,8 +75,9 @@ If you want to have a field with a list of references, you can do it using
 This also works how you would expect if you don't use a default_factory or if you choose
 to make it optional ``list[Reference] | None``.
 
-Using :mod:`sqlalchemy`
-=======================
+#########################
+ Using :mod:`sqlalchemy`
+#########################
 
 SQLAlchemy is a combine high- and mid-level database abstraction layer and
 object-relational mapping. It has more opportunities for configuration over SQLModel.

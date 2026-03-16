@@ -65,7 +65,7 @@ class MappingServiceGraph(Graph):
                     ],
                     "GO": ["http://purl.obolibrary.org/obo/GO_"],
                     "OBO": ["http://purl.obolibrary.org/obo/"],
-                    ...,
+                    # ...
                 }
             )
             graph = MappingServiceGraph(converter=converter)
