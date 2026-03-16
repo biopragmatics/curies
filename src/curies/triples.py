@@ -350,8 +350,6 @@ def decode_to_uris(triple_id: str) -> URITriple:
 
     :returns: A triple of URIs represented as strings
 
-    Example:
-
     >>> uris = decode_to_uris(
     ...     "aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM="
     ... )
@@ -373,8 +371,6 @@ def decode_triple(converter: Converter, triple_id: str) -> Triple:
     :param s: An encoded triple of URIs
 
     :returns: A triple of URIs represented as strings
-
-    Example:
 
     >>> converter = curies.load_prefix_map(
     ...     {
