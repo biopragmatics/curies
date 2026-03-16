@@ -1,10 +1,12 @@
-URI Prefix Discovery
-====================
+######################
+ URI Prefix Discovery
+######################
 
 .. automodule:: curies.discovery
 
-Discovering URI Prefixes from an Ontology
------------------------------------------
+*******************************************
+ Discovering URI Prefixes from an Ontology
+*******************************************
 
 A common place where discovering URI prefixes is important is when working with new
 ontologies. In the following example, we look at the `Academic Event Ontology (AEON)
@@ -253,8 +255,9 @@ it's okay to write a simple prefix map or a JSON-LD context without losing infor
             )
             print(tabulate(rows, headers=["curie_prefix", "uri_prefix"], tablefmt="rst"))
 
-Just Make It Work, or, A Guide to Being a Questionable Semantic Citizen
------------------------------------------------------------------------
+*************************************************************************
+ Just Make It Work, or, A Guide to Being a Questionable Semantic Citizen
+*************************************************************************
 
 The goal of the :mod:`curies` package is to provide the tools towards making
 semantically well-defined data, which has a meaningful (extended) prefix map associated

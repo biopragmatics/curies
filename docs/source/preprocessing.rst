@@ -1,13 +1,15 @@
-Converter with Preprocessing
-============================
+##############################
+ Converter with Preprocessing
+##############################
 
 When simple expansion and contraction aren't enough, and you want to inject global or
 context-specific rewrite rules, you can wrap a :class:`curies.Converter` and
 preprocessing rules encoded in an instance of :class:`curies.PreprocessingRules` inside
 a :class:`curies.PreprocessingConverter`.
 
-Rewrites
---------
+**********
+ Rewrites
+**********
 
 For example, you always want to fix legacy references to the ``OBO_REL`` namespace:
 
@@ -108,8 +110,9 @@ Similarly, this can be used to inject knowledge about resources that improperly 
 EDAM sub-trees such as MCRO, which uses ``format`` as a prefix where it means
 ``edam.format``
 
-Blocks
-------
+********
+ Blocks
+********
 
 Some references are _never_ informative, and can be configured to be thrown away, such
 as ``Bgee:curators``, ``BioGRID:curators``, ``GROUP:OBI``, and similar group curation
@@ -139,8 +142,9 @@ returning a None. This is done because in some places, it's nice to have the dis
 between ``None`` being returned by parsing failing, versus actively being blocked. This
 can be toggled with the ``block_action`` argument.
 
-Suffix Post-processing
-----------------------
+************************
+ Suffix Post-processing
+************************
 
 URIs from some prefixes that are known to sometimes have unneeded suffixes can be
 configured to be stripped in the following way

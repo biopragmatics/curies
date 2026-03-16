@@ -1,8 +1,10 @@
-Getting Started
-===============
+#################
+ Getting Started
+#################
 
-Loading a Context
------------------
+*******************
+ Loading a Context
+*******************
 
 There are several ways to load a context with this package, including:
 
@@ -12,7 +14,7 @@ There are several ways to load a context with this package, including:
 4. contexts encoded in the extended prefix map format
 
 Loading a pre-defined context
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=============================
 
 There exist many registries of semantic spaces that include CURIE prefixes, URI
 prefixes, sometimes synonyms, and other associated metadata. The Bioregistry provides a
@@ -48,7 +50,7 @@ below.
     monarch_converter = curies.get_monarch_converter()
 
 Loading Prefix Maps
-~~~~~~~~~~~~~~~~~~~
+===================
 
 A prefix map is a dictionary whose keys are CURIE prefixes and values are URI prefixes.
 An abridged example using OBO Foundry preferred CURIE prefixes and URI prefixes is
@@ -101,7 +103,7 @@ well as a local file path.
     map from a non-bijective prefix map.
 
 Loading Extended Prefix Maps
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+============================
 
 Extended prefix maps (EPMs) address the issues with prefix maps by including explicit
 fields for CURIE prefix synonyms and URI prefix synonyms while maintaining an explicit
@@ -163,7 +165,7 @@ following. This works with both :class:`pathlib.Path` and vanilla strings.
     converter = curies.load_extended_prefix_map(path)
 
 Loading JSON-LD Contexts
-~~~~~~~~~~~~~~~~~~~~~~~~
+========================
 
 A `JSON-LD context <https://niem.github.io/json/reference/json-ld/context/>`_ allows for
 embedding of a simple prefix map within a linked data document. They can be identified
@@ -209,7 +211,7 @@ with both :class:`pathlib.Path` and vanilla strings.
     converter = curies.load_jsonld_context(path)
 
 Loading SHACL
-~~~~~~~~~~~~~
+=============
 
 The `shapes constraint language (SHACL) <https://bioregistry.io/sh>`_ can be used to
 represent prefix maps directly in RDF using the `sh:prefix` and `sh:namespace`
@@ -251,8 +253,9 @@ both :class:`pathlib.Path` and vanilla strings.
     urlretrieve(url, path)
     converter = curies.load_shacl(path)
 
-Introspecting on a Context
---------------------------
+****************************
+ Introspecting on a Context
+****************************
 
 After loading a context, it's possible to get certain information out of the converter.
 For example, if you want to get all of the CURIE prefixes from the converter, you can
@@ -303,11 +306,12 @@ the following:
 
     assert prefix_map["chebi"] == "http://purl.obolibrary.org/obo/CHEBI_"
 
-Modifying a Context
--------------------
+*********************
+ Modifying a Context
+*********************
 
 Incremental Converters
-~~~~~~~~~~~~~~~~~~~~~~
+======================
 
 As suggested in `#13 <https://github.com/cthoyt/curies/issues/33>`_, new data can be
 added to an existing converter with either :meth:`curies.Converter.add_prefix` or
@@ -352,7 +356,7 @@ Such a merging strategy is the basis for wholesale merging of converters, descri
 below.
 
 Chaining and Merging
-~~~~~~~~~~~~~~~~~~~~
+====================
 
 This package implements a faultless chain operation :func:`curies.chain` that is
 configurable for case sensitivity and fully considers all synonyms.
@@ -387,7 +391,7 @@ specify a custom URI prefix (e.g., using Identifiers.org), you can do the follow
     assert converter.expand("pubmed:1234") == "https://identifiers.org/pubmed:1234"
 
 Subsetting
-~~~~~~~~~~
+==========
 
 A subset of a converter can be extracted using
 :meth:`curies.Converter.get_subconverter`. This functionality is useful for downstream
@@ -423,8 +427,9 @@ do this on the SSSOM mappings from the `Disease Ontology
 >>> converter = curies.get_bioregistry_converter()
 >>> slim_converter = converter.get_subconverter(prefixes)
 
-Writing a Context
------------------
+*******************
+ Writing a Context
+*******************
 
 After loading and modifying a context, there are several functions for writing a context
 to a file:
@@ -459,8 +464,9 @@ which outputs the following file:
         [ sh:prefix "CHEBI" ; sh:namespace "http://purl.obolibrary.org/obo/CHEBI_"^^xsd:anyURI  ]
     ] .
 
-Faultless handling of overlapping URI prefixes
-----------------------------------------------
+************************************************
+ Faultless handling of overlapping URI prefixes
+************************************************
 
 Most implementations of URI parsing iterate through the CURIE prefix/URI prefix pairs in
 a prefix map, check if the given URI starts with the URI prefix, then returns the CURIE
@@ -499,8 +505,9 @@ the order of the dictionary, iteration, or any other factors.
     >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
     'CHEBI:1'
 
-Standardization
----------------
+*****************
+ Standardization
+*****************
 
 The :class:`curies.Converter` data structure supports prefix and URI prefix synonyms.
 The following example demonstrates using these synonyms to support standardizing
@@ -538,14 +545,15 @@ Note: non-standard URIs (i.e., ones based on URI prefix synonyms) can still be p
 with :meth:`curies.Converter.parse_uri` and compressed into CURIEs with
 :meth:`curies.Converter.compress`.
 
-Bulk Operations
----------------
+*****************
+ Bulk Operations
+*****************
 
 Expansion, compression, and standardization operations can be done in bulk to all rows
 in a :class:`pandas.DataFrame` using the following examples.
 
 Bulk Compress URIs
-~~~~~~~~~~~~~~~~~~
+==================
 
 In order to demonstrate bulk operations using :meth:`curies.Converter.pd_compress`, we
 construct a small dataframe:
@@ -601,7 +609,7 @@ or URI. Then, the semantics of compression are used from
 :meth:`curies.Converter.compress_or_standardize`.
 
 Bulk Expand CURIEs
-~~~~~~~~~~~~~~~~~~
+==================
 
 In order to demonstrate bulk operations using :meth:`curies.Converter.pd_expand`, we
 construct a small dataframe used in conjunction with the OBO converter (which only
@@ -683,7 +691,7 @@ or URI. Then, the semantics of compression are used from
 :meth:`curies.Converter.compress_or_standardize`.
 
 Bulk Standardizing Prefixes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+===========================
 
 The `Gene Ontology (GO) Annotations Database
 <https://geneontology.org/docs/go-annotations/>`_ distributes its file where references
@@ -714,7 +722,7 @@ following:
 The ``target_column`` keyword can be given if you don't want to overwrite the original.
 
 Bulk Standardizing CURIEs
-~~~~~~~~~~~~~~~~~~~~~~~~~
+=========================
 
 Using the same example data from GO, the sixth column contains CURIE for references such
 as `GO_REF:0000043 <https://bioregistry.io/go.ref:0000043>`_. When using the
@@ -740,7 +748,7 @@ with the following:
 The ``target_column`` keyword can be given if you don't want to overwrite the original.
 
 File Operations
-~~~~~~~~~~~~~~~
+===============
 
 Apply in bulk to a CSV file with :meth:`curies.Converter.file_expand` and
 :meth:`curies.Converter.file_compress` (defaults to using tab separator):
@@ -759,18 +767,19 @@ Apply in bulk to a CSV file with :meth:`curies.Converter.file_expand` and
 Like with the Pandas operations, the keyword ``ambiguous=True``` can be set when entries
 can either be CURIEs or URIs.
 
-Tools for Developers and Semantic Engineers
--------------------------------------------
+*********************************************
+ Tools for Developers and Semantic Engineers
+*********************************************
 
 Working with strings that might be a URI or a CURIE
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+===================================================
 
 Sometimes, it's not clear if a string is a CURIE or a URI. While the `SafeCURIE syntax
 <https://www.w3.org/TR/2010/NOTE-curie-20101216/#P_safe_curie>`_ is intended to address
 this, it's often overlooked.
 
 CURIE and URI Checks
-++++++++++++++++++++
+--------------------
 
 The first way to handle this ambiguity is to be able to check if the string is a CURIE
 or a URI. Therefore, each :class:`curies.Converter` comes with functions for checking if
@@ -800,7 +809,7 @@ a string is a CURIE (:meth:`curies.Converter.is_curie`) or a URI
     False
 
 Extended Expansion and Compression
-++++++++++++++++++++++++++++++++++
+----------------------------------
 
 The :meth:`curies.Converter.expand_or_standardize` extends the CURIE expansion function
 to handle the situation where you might get passed a CURIE or a URI. If it's a CURIE,
@@ -866,7 +875,7 @@ for compressing URIs where a CURIE might get passed.
     >>> converter.compress_or_standardize("https://example.com/missing:0000000")
 
 Reusable data structures for references
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=======================================
 
 While URIs and CURIEs are often represented as strings, for many programmatic
 applications, it is preferable to pre-parse them into a pair of prefix corresponding to
@@ -885,7 +894,7 @@ standardizing this data type and providing utilities to flip-flop back and forth
 OBO ontologies)
 
 Integrating with :mod:`rdflib`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+==============================
 
 RDFlib is a pure Python package for manipulating RDF data. The following example shows
 how to bind the extended prefix map from a :class:`curies.Converter` to a graph

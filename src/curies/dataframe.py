@@ -91,14 +91,17 @@ def get_filter_df_by_prefixes_index(
 ) -> pd.Series[bool]:
     """Get an index of CURIEs in the given column that start with the prefix(es).
 
-    :param df: A dataframe or series. If a dataframe is given, the ``column`` must not be none.
-    :param column: The column to check, if a dataframe was passed. If a series was passed, this can be left as none.
+    :param df: A dataframe or series. If a dataframe is given, the ``column`` must not
+        be none.
+    :param column: The column to check, if a dataframe was passed. If a series was
+        passed, this can be left as none.
     :param prefixes: The prefix or set of prefixes to identify
     :param method: The indexing method
     :param validate: Should the prefixes be validated against the converter?
     :param converter: A converter for validating CURIEs
 
-    :returns: A pandas boolean series that corresponds to the rows of the dataframe or series provided
+    :returns: A pandas boolean series that corresponds to the rows of the dataframe or
+        series provided
 
     :raises ValueError: If validation is set to true but no converter is passed
 
@@ -113,7 +116,12 @@ def get_filter_df_by_prefixes_index(
             ("DOID:0080795", "skos:exactMatch", "EFO:0003029", "semapv:ManualMappingCuration"),
             ("DOID:0080795", "skos:exactMatch", "mesh:D015471", "semapv:ManualMappingCuration"),
             ("DOID:0080799", "skos:exactMatch", "EFO:1000527", "semapv:ManualMappingCuration"),
-            ("DOID:0080808", "skos:exactMatch", "mesh:D000069295", "semapv:ManualMappingCuration"),
+            (
+                "DOID:0080808",
+                "skos:exactMatch",
+                "mesh:D000069295",
+                "semapv:ManualMappingCuration",
+            ),
         ]
         df = pd.DataFrame(
             rows, columns=["subject_id", "predicate_id", "object_id", "mapping_justification"]
@@ -150,8 +158,8 @@ def filter_df_by_prefixes(
 
     :param df: A dataframe
     :param column: The integer index or column name of a column containing CURIEs
-    :param prefixes: The prefix (given as a string) or collection of prefixes (given as a
-        list, set, etc.) to keep
+    :param prefixes: The prefix (given as a string) or collection of prefixes (given as
+        a list, set, etc.) to keep
     :param method: The implementation for getting the prefix index
     :param validate: Should the prefixes be validated against the converter?
     :param converter: A converter for validating CURIEs
@@ -169,7 +177,12 @@ def filter_df_by_prefixes(
             ("DOID:0080795", "skos:exactMatch", "EFO:0003029", "semapv:ManualMappingCuration"),
             ("DOID:0080795", "skos:exactMatch", "mesh:D015471", "semapv:ManualMappingCuration"),
             ("DOID:0080799", "skos:exactMatch", "EFO:1000527", "semapv:ManualMappingCuration"),
-            ("DOID:0080808", "skos:exactMatch", "mesh:D000069295", "semapv:ManualMappingCuration"),
+            (
+                "DOID:0080808",
+                "skos:exactMatch",
+                "mesh:D000069295",
+                "semapv:ManualMappingCuration",
+            ),
         ]
         df = pd.DataFrame(
             rows, columns=["subject_id", "predicate_id", "object_id", "mapping_justification"]
@@ -248,7 +261,12 @@ def filter_df_by_curies(
             ("DOID:0080795", "skos:exactMatch", "EFO:0003029", "semapv:ManualMappingCuration"),
             ("DOID:0080795", "skos:exactMatch", "mesh:D015471", "semapv:ManualMappingCuration"),
             ("DOID:0080799", "skos:exactMatch", "EFO:1000527", "semapv:ManualMappingCuration"),
-            ("DOID:0080808", "skos:exactMatch", "mesh:D000069295", "semapv:ManualMappingCuration"),
+            (
+                "DOID:0080808",
+                "skos:exactMatch",
+                "mesh:D000069295",
+                "semapv:ManualMappingCuration",
+            ),
         ]
         df = pd.DataFrame(
             rows, columns=["subject_id", "predicate_id", "object_id", "mapping_justification"]
@@ -292,8 +310,10 @@ def get_df_unique_prefixes(
 ) -> set[str]:
     """Get unique prefixes.
 
-    :param df: A dataframe or series. If a dataframe is given, the ``column`` must not be none.
-    :param column: The column to check, if a dataframe was passed. If a series was passed, this can be left as none.
+    :param df: A dataframe or series. If a dataframe is given, the ``column`` must not
+        be none.
+    :param column: The column to check, if a dataframe was passed. If a series was
+        passed, this can be left as none.
     :param validate: Should the prefixes be validated against the converter?
     :param converter: A converter for validating CURIEs
 
@@ -308,7 +328,12 @@ def get_df_unique_prefixes(
             ("DOID:0080795", "skos:exactMatch", "EFO:0003029", "semapv:ManualMappingCuration"),
             ("DOID:0080795", "skos:exactMatch", "mesh:D015471", "semapv:ManualMappingCuration"),
             ("DOID:0080799", "skos:exactMatch", "EFO:1000527", "semapv:ManualMappingCuration"),
-            ("DOID:0080808", "skos:exactMatch", "mesh:D000069295", "semapv:ManualMappingCuration"),
+            (
+                "DOID:0080808",
+                "skos:exactMatch",
+                "mesh:D000069295",
+                "semapv:ManualMappingCuration",
+            ),
         ]
         df = pd.DataFrame(
             rows, columns=["subject_id", "predicate_id", "object_id", "mapping_justification"]
