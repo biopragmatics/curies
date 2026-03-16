@@ -75,6 +75,9 @@ jobs:
         os: [ ubuntu-latest ]
         python-version: [ "3.13", "3.10" ]
         pandas: [ "pandas2", "pandas3" ]
+        exclude:
+          - python-version: "3.10"
+            pandas: "pandas3"
     steps:
       - uses: actions/checkout@v4
       - name: "Install uv"
