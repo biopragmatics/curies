@@ -443,14 +443,14 @@ Here's a self-contained example on how this works:
 
 .. code-block:: python
 
-    import curies
 
-    converter = curies.load_prefix_map(
-        {
-            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        }
-    )
-    curies.write_shacl(converter, "example_shacl.ttl")
+>>> import curies
+>>> converter = curies.load_prefix_map(
+...     {
+...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+...     }
+... )
+>>> curies.write_shacl(converter, "example_shacl.ttl")
 
 which outputs the following file:
 
@@ -493,17 +493,15 @@ The following code demonstrates that the scenario above. It will always return t
 correct CURIE ``CHEBI:1`` instead of the incorrect CURIE ``OBO:CHEBI_1``, regardless of
 the order of the dictionary, iteration, or any other factors.
 
-.. code-block::
-
-    import curies
-
-    converter = curies.load_prefix_map({
-        "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        "OBO": "http://purl.obolibrary.org/obo/
-    })
-
-    >>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
-    'CHEBI:1'
+>>> import curies
+>>> converter = curies.load_prefix_map(
+...     {
+...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+...         "OBO": "http://purl.obolibrary.org/obo/",
+...     }
+... )
+>>> converter.compress("http://purl.obolibrary.org/obo/CHEBI_1")
+'CHEBI:1'
 
 *****************
  Standardization
@@ -515,31 +513,28 @@ prefixes, CURIEs, and URIs. Note below, the colloquial prefix `gomf`, sometimes 
 represent the subspace in the `Gene Ontology (GO) <https://obofoundry.org/ontology/go>`_
 corresponding to molecular functions, is upgraded to the preferred prefix, ``GO``.
 
-.. code-block::
-
-    from curies import Converter, Record
-
-    converter = Converter([
-        Record(
-            prefix="GO",
-            prefix_synonyms=["gomf", "gocc", "gobp", "go", ...],
-            uri_prefix="http://purl.obolibrary.org/obo/GO_",
-            uri_prefix_synonyms=[
-                "http://amigo.geneontology.org/amigo/term/GO:",
-                "https://identifiers.org/GO:",
-                ...
-            ],
-        ),
-        # And so on
-        ...
-    ])
-
-    >>> converter.standardize_prefix("gomf")
-    'GO'
-    >>> converter.standardize_curie('gomf:0032571')
-    'GO:0032571'
-    >>> converter.standardize_uri('http://amigo.geneontology.org/amigo/term/GO:0032571')
-    'http://purl.obolibrary.org/obo/GO_0032571'
+>>> from curies import Converter, Record
+>>> converter = Converter(
+...     [
+...         Record(
+...             prefix="GO",
+...             prefix_synonyms=["gomf", "gocc", "gobp", "go", ...],
+...             uri_prefix="http://purl.obolibrary.org/obo/GO_",
+...             uri_prefix_synonyms=[
+...                 "http://amigo.geneontology.org/amigo/term/GO:",
+...                 "https://identifiers.org/GO:",
+...                 # ...
+...             ],
+...         ),
+...         # ...
+...     ]
+... )
+>>> converter.standardize_prefix("gomf")
+'GO'
+>>> converter.standardize_curie("gomf:0032571")
+'GO:0032571'
+>>> converter.standardize_uri("http://amigo.geneontology.org/amigo/term/GO:0032571")
+'http://purl.obolibrary.org/obo/GO_0032571'
 
 Note: non-standard URIs (i.e., ones based on URI prefix synonyms) can still be parsed
 with :meth:`curies.Converter.parse_uri` and compressed into CURIEs with
