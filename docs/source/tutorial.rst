@@ -423,7 +423,7 @@ do this on the SSSOM mappings from the `Disease Ontology
 ...     curies.Reference.from_curie(curie).prefix
 ...     for column in ["subject_id", "predicate_id", "object_id"]
 ...     for curie in df[column]
->>> }
+... }
 >>> converter = curies.get_bioregistry_converter()
 >>> slim_converter = converter.get_subconverter(prefixes)
 
