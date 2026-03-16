@@ -73,3 +73,4 @@ The most recent code and data can be installed directly from GitHub with:
     preprocessing
     database
     dataframe
+    triples

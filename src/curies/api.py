@@ -41,6 +41,8 @@ if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import rdflib
 
+    from .triples import Triple
+
 __all__ = [
     "Converter",
     "DuplicatePrefixes",
@@ -486,7 +488,9 @@ class Reference(BaseModel):
         return cls.model_validate({"prefix": prefix, "identifier": identifier}, context=converter)
 
     @classmethod
-    def from_reference(cls, reference: Reference, *, converter: Converter | None = None) -> Self:
+    def from_reference(
+        cls, reference: Reference | ReferenceTuple, *, converter: Converter | None = None
+    ) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param reference: A pre-parsed reference
@@ -537,7 +541,9 @@ class NamableReference(Reference):
         )
 
     @classmethod
-    def from_reference(cls, reference: Reference, *, converter: Converter | None = None) -> Self:
+    def from_reference(
+        cls, reference: Reference | ReferenceTuple, *, converter: Converter | None = None
+    ) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param reference: A pre-parsed reference
@@ -581,7 +587,9 @@ class NamedReference(NamableReference):
         )
 
     @classmethod
-    def from_reference(cls, reference: Reference, *, converter: Converter | None = None) -> Self:
+    def from_reference(
+        cls, reference: Reference | ReferenceTuple, *, converter: Converter | None = None
+    ) -> Self:
         """Parse a CURIE string and populate a reference.
 
         :param reference: A pre-parsed reference
