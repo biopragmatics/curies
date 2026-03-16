@@ -1,5 +1,6 @@
-curies |release| Documentation
-==============================
+################################
+ curies |release| Documentation
+################################
 
 Uniform resource identifiers (URIs) and compact URIs (CURIEs) have become the
 predominant syntaxes for identifying concepts in linked data applications. Therefore,
@@ -40,8 +41,9 @@ important tools.
 See the tutorial for more pre-defined converters, information on defining custom
 converters, chaining converters, and more.
 
-Installation
-------------
+**************
+ Installation
+**************
 
 The most recent release can be installed from `PyPI <https://pypi.org/project/curies>`_
 with:

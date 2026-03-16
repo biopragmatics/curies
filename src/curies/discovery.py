@@ -24,8 +24,9 @@ include some or all of the following steps:
 Finally, you should save the prefix map that you create in a persistent place (i.e.,
 inside a JSON file) such that it can be reused.
 
-Algorithm
-=========
+###########
+ Algorithm
+###########
 
 The :func:`curies.discover` function implements the following algorithm that does the
 following for each URI:
