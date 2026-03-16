@@ -109,24 +109,28 @@ hashing a triple to assign it an identifier.
 
 .. code-block:: python
 
-    import curies
-    from curies import Triple, Reference
+    from curies import Triple, Reference, Converter
     from curies.triples import encode_triple
 
     converter = curies.load_prefix_map(
         {
-            "ex": "http://example.org/",
+            "mesh": "http://id.nlm.nih.gov/mesh/",
+            "skos": "http://www.w3.org/2004/02/skos/core#",
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         }
     )
 
-    triple = Triple.from_uris(
-        converter=converter,
-        subject="http://example.org/1",
-        predicate="http://example.org/2",
-        object="http://example.org/3",
+    triple = Triple(
+        subject="mesh:C000089",
+        predicate="skos:exactMatch",
+        object="CHEBI:28646",
     )
 
-    luid = encode_triple(converter, triple)
+    triple_id = encode_triple(converter, triple)
+    assert (
+        triple_id
+        == "aHR0cDovL2V4YW1wbGUub3JnLzEJaHR0cDovL2V4YW1wbGUub3JnLzIJaHR0cDovL2V4YW1wbGUub3JnLzM="
+    )
 
 ***********
  Algorithm
@@ -399,7 +403,7 @@ def decode_triple(converter: Converter, triple_id: str) -> Triple:
     """Decode a triple from URL-safe base64 encoding.
 
     :param converter: A converter
-    :param s: An encoded triple of URIs
+    :param triple_id: An encoded triple of URIs
 
     :returns: A triple of URIs represented as strings
 
