@@ -203,7 +203,7 @@ class Triple(BaseModel):
 
     def as_uri_triple(self, converter: Converter) -> tuple[str, str, str]:
         """Get a three-tuple of strings representing the expanded URIs."""
-        return URITriple(
+        return (
             converter.expand_reference(self.subject, strict=True),
             converter.expand_reference(self.predicate, strict=True),
             converter.expand_reference(self.object, strict=True),
