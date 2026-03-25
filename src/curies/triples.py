@@ -63,14 +63,12 @@ while parsing.
 
 from __future__ import annotations
 
-import csv
-import gzip
-from collections.abc import Generator, Iterable, Sequence
-from contextlib import contextmanager
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import NamedTuple, TextIO
 
 from pydantic import BaseModel, ConfigDict
+from pystow.utils import safe_open_reader, safe_open_writer
 from typing_extensions import Self
 
 from .api import Converter, Reference
@@ -180,25 +178,13 @@ class Triple(BaseModel):
 HEADER = list(Triple.model_fields)
 
 
-@contextmanager
-def _get_file(path: str | Path, read: bool) -> Generator[TextIO, None, None]:
-    path = Path(path).expanduser().resolve()
-    if path.suffix == ".gz":
-        with gzip.open(path, mode="rt" if read else "wt") as file:
-            yield file
-    else:
-        with open(path, mode="r" if read else "w") as file:
-            yield file
-
-
 def write_triples(
-    triples: Iterable[Triple], path: str | Path, *, header: Sequence[str] | None = None
+    triples: Iterable[Triple], path: str | Path | TextIO, *, header: Sequence[str] | None = None
 ) -> None:
     """Write triples as a three-column TSV file."""
     if header is None:
         header = HEADER
-    with _get_file(path, read=False) as file:
-        writer = csv.writer(file, delimiter="\t")
+    with safe_open_writer(path) as writer:
         writer.writerow(header)
         writer.writerows(
             (triple.subject.curie, triple.predicate.curie, triple.object.curie)
@@ -210,8 +196,7 @@ def read_triples(path: str | Path, *, reference_cls: type[Reference] | None = No
     """Read triples from a three-column TSV file."""
     if reference_cls is None:
         reference_cls = Reference
-    with _get_file(path, read=True) as file:
-        reader = csv.reader(file, delimiter="\t")
+    with safe_open_reader(path) as reader:
         _header = next(reader)
         return [
             Triple(
