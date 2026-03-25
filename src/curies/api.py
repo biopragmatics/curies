@@ -32,7 +32,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import Never, Self
+from typing_extensions import Self
 
 from .utils import NoCURIEDelimiterError, _split
 
@@ -1682,13 +1682,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = ..., return_none: Literal[False] = ...
-    ) -> Never: ...
-
-    # docstr-coverage:excused `overload`
-    @overload
-    def parse_uri(
-        self, uri: str, *, strict: Literal[False] = ..., return_none: Literal[True] | None = ...
+        self, uri: str, *, strict: Literal[False] = ..., return_none: None = ...
     ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
@@ -1698,11 +1692,11 @@ class Converter:
         uri: str,
         *,
         strict: Literal[True] = True,
-        return_none: bool | None = ...,
+        return_none: None = ...,
     ) -> ReferenceTuple: ...
 
     def parse_uri(
-        self, uri: str, *, strict: bool = False, return_none: bool | None = None
+        self, uri: str, *, strict: bool = False, return_none: None = None
     ) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
@@ -1736,7 +1730,7 @@ class Converter:
         if return_none is None:
             return None
         elif return_none is True:
-            raise ValueError("return_none should not be passed as of curies v0.13.0")
+            raise NotImplementedError("return_none should not be passed as of curies v0.13.0")
         else:  # i.e., return_none=False, which isn't supported anymore.
             raise NotImplementedError(RETURN_NONE_ERROR_TEXT)
 
