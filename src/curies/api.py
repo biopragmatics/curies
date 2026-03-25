@@ -74,10 +74,6 @@ logger = logging.getLogger(__name__)
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
 
-RETURN_NONE_WARNING_TEXT = (
-    "return_none=True is a no-op argument now. Please remove it. ``return_none`` "
-    "will be removed as an argument in curies v0.12.0"
-)
 RETURN_NONE_ERROR_TEXT = (
     "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
     "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
