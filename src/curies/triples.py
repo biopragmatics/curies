@@ -161,14 +161,6 @@ class StrTriple(NamedTuple):
     object: str
 
 
-class URITriple(NamedTuple):
-    """A triple of URIs."""
-
-    subject: str
-    predicate: str
-    object: str
-
-
 class Triple(BaseModel):
     """A Pydantic model for a subject-predicate-object triple.
 
@@ -209,7 +201,7 @@ class Triple(BaseModel):
         """Get a three-tuple of strings representing this triple."""
         return StrTriple(self.subject.curie, self.predicate.curie, self.object.curie)
 
-    def as_uri_triple(self, converter: Converter) -> URITriple:
+    def as_uri_triple(self, converter: Converter) -> tuple[str, str, str]:
         """Get a three-tuple of strings representing the expanded URIs."""
         return URITriple(
             converter.expand_reference(self.subject, strict=True),
