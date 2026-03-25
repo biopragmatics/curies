@@ -40,6 +40,7 @@ if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import rdflib
 
+    from .triples import Triple
 
 __all__ = [
     "Converter",
@@ -2644,6 +2645,33 @@ class Converter:
             if any(prefix in prefixes for prefix in record._all_prefixes)
         ]
         return Converter(records)
+
+    def hash_triple(self, triple: Triple) -> str:
+        """Hash a triple using :func:`curies.triples.hash_triple`, implementing https://ts4nfdi.github.io/mapping-sameness-identifier.
+
+        :param triple: A subject-predicate-object triple
+        :return: A hexadecimal digest of the SHA-256 hash of the space-joined expanded URI triple
+
+        >>> import curies
+        >>> from curies import Triple, Converter
+        >>> converter = curies.load_prefix_map(
+        ...     {
+        ...         "mesh": "http://id.nlm.nih.gov/mesh/",
+        ...         "skos": "http://www.w3.org/2004/02/skos/core#",
+        ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        ...     }
+        ... )
+        >>> triple = Triple(
+        ...     subject="mesh:C000089",
+        ...     predicate="skos:exactMatch",
+        ...     object="CHEBI:28646",
+        ... )
+        >>> converter.hash_triple(triple)
+        '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a'
+        """
+        from .triples import hash_triple
+
+        return hash_triple(self, triple)
 
 
 def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
