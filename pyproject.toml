@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.6,<1.0"]
+build-backend = "uv_build"
 
 [project]
 name = "curies"
@@ -58,7 +58,23 @@ dependencies = [
 ]
 
 [dependency-groups]
+tests = [
+    "pytest",
+    "coverage[toml]",
+    "requests",
+]
+docs = [
+    "sphinx>=8",
+    "sphinx-rtd-theme>=3.0",
+    "sphinx-click",
+    "sphinx-automodapi",
+    "autodoc-pydantic",
+]
+lint = [
+    "ruff",
+]
 typing = [
+    { include-group = "tests" },
     "mypy",
     "types-requests",
     "types-PyYAML",
@@ -68,13 +84,24 @@ typing = [
     "bioregistry",
     "types-Markdown",
 ]
+docs-lint = [
+    { include-group = "docs" },
+    "doc8",
+]
+format-docs = [
+    { include-group = "docs" },
+    "docstrfmt",
+]
+doctests = [
+    "xdoctest",
+    "pygments",
+]
+pyroma = [
+    "pyroma",
+    "pygments",
+]
 
 [project.optional-dependencies]
-tests = [
-    "pytest",
-    "coverage[toml]",
-    "requests",
-]
 pandas = [
     "pandas",
 ]
@@ -97,11 +124,6 @@ fastapi = [
 ]
 rdflib = [
     "rdflib"
-]
-docs = [
-    "sphinx>=8",
-    "sphinx-rtd-theme>=3.0",
-    "sphinx_automodapi",
 ]
 
 # See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls
@@ -147,6 +169,9 @@ source = [
 omit = [
     "tests/*",
     "docs/*",
+    "src/curies/version.py",
+    "src/curies/__main__.py",
+    "src/curies/cli.py",
 ]
 
 [tool.coverage.paths]
