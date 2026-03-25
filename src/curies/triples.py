@@ -192,7 +192,9 @@ def write_triples(
         )
 
 
-def read_triples(path: str | Path, *, reference_cls: type[Reference] | None = None) -> list[Triple]:
+def read_triples(
+    path: str | Path | TextIO, *, reference_cls: type[Reference] | None = None
+) -> list[Triple]:
     """Read triples from a three-column TSV file."""
     if reference_cls is None:
         reference_cls = Reference
