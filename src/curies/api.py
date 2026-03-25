@@ -1416,6 +1416,30 @@ class Converter:
         prefix_map = {prefix: str(namespace) for prefix, namespace in graph_or_manager.namespaces()}
         return cls.from_prefix_map(prefix_map, **kwargs)
 
+    def bind_rdflib(
+        self,
+        graph_or_manager: rdflib.Graph | rdflib.namespace.NamespaceManager,
+        synonyms: bool = False,
+    ) -> Converter:
+        """Add the prefix map from this converter to a RDFlib graph or manager.
+
+        :param graph_or_manager: A RDFLib graph or manager object
+        :param synonyms: Should CURIE prefix synonyms be bound?
+
+        >>> import curies, rdflib
+        >>> converter = curies.get_obo_converter()
+        >>> graph = rdflib.Graph()
+        >>> converter.bind_rdflib(graph_or_manager)
+        """
+        from rdflib import Namespace
+
+        for record in self.records:
+            namespace = Namespace(record.uri_prefix)
+            graph_or_manager.bind(record.prefix, namespace)
+            if synonyms:
+                for synonym in record.prefix_synonyms:
+                    graph_or_manager.bind(synonym, namespace)
+
     @classmethod
     def from_shacl(
         cls,

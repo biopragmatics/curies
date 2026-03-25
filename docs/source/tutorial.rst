@@ -894,26 +894,22 @@ how to bind the extended prefix map from a :class:`curies.Converter` to a graph
 
 .. code-block::
 
-    import curies, rdflib, rdflib.namespace
+    import curies, rdflib
 
     converter = curies.get_obo_converter()
     graph = rdflib.Graph()
-
-    for prefix, uri_prefix in converter.bimap.items():
-        graph.bind(prefix, rdflib.Namespace(uri_prefix))
+    converter.bind_rdflib(graph)
 
 A more flexible approach is to instantiate a namespace manager
 (:class:`rdflib.namespace.NamespaceManager`) and bind directly to that.
 
 .. code-block::
 
-    import curies, rdflib
+    import curies, rdflib.namespace
 
     converter = curies.get_obo_converter()
     namespace_manager = rdflib.namespace.NamespaceManager(rdflib.Graph())
-
-    for prefix, uri_prefix in converter.bimap.items():
-        namespace_manager.bind(prefix, rdflib.Namespace(uri_prefix))
+    converter.bind_rdflib(namespace_manager)
 
 URI references for use in RDFLib's graph class can be constructed from CURIEs using a
 combination of :meth:`curies.Converter.expand` and :class:`rdflib.URIRef`.
