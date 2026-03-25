@@ -59,10 +59,79 @@ while parsing.
         object="http://purl.obolibrary.org/obo/CHEBI_28646",
         converter=converter,
     )
+
+###########################
+ Identification of Triples
+###########################
+
+The ``rdf`` namespace supports the explicit reification of triples. This means that an
+explicit identifier (typically, a blank node) can be used to refer to a triple itself,
+and the ``rdf:subject``, ``rdf:predicate`` and ``rdf:object`` predicates can be used to
+connect the identifier representing the triple to its respective subject, predicate, and
+object components.
+
+RDF enables explicit reification of triples with the following:
+
+.. code-block::
+
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX mesh: <http://id.nlm.nih.gov/mesh/>
+    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    PREFIX CHEBI: <http://purl.obolibrary.org/obo/CHEBI_>
+
+    mesh:C000089 skos:exactMatch CHEBI:28646 .
+
+    [] rdf:type rdf:Statement ;
+        rdf:subject mesh:C000089 ;
+        rdf:predicate skos:exactMatch ;
+        rdf:object CHEBI:28646 .
+
+It would be nice to have an implementation-agnostic way of assigning an identifier to
+the triple. This example imagines a namespace with the prefix ``triple`` that can host
+identifiers for triples:
+
+.. code-block::
+
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX mesh: <http://id.nlm.nih.gov/mesh/>
+    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    PREFIX CHEBI: <http://purl.obolibrary.org/obo/CHEBI_>
+    PREFIX triple: <https://w3id.org/triple/>
+
+    mesh:C000089 skos:exactMatch CHEBI:28646 .
+
+    triple:36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a rdf:type rdf:Statement ;
+        rdf:subject mesh:C000089 ;
+        rdf:predicate skos:exactMatch ;
+        rdf:object CHEBI:28646 .
+
+:meth:`curies.Converter.hash_triple` implements a deterministic, one-way hash of a
+triple based on the algorithm in https://ts4nfdi.github.io/mapping-sameness-identifier:
+
+.. code-block:: python
+
+    import curies
+    from curies import Triple, Converter
+
+    converter = curies.load_prefix_map(
+        {
+            "mesh": "http://id.nlm.nih.gov/mesh/",
+            "skos": "http://www.w3.org/2004/02/skos/core#",
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+        }
+    )
+    triple = Triple(
+        subject="mesh:C000089",
+        predicate="skos:exactMatch",
+        object="CHEBI:28646",
+    )
+    triple_id = converter.hash_triple(triple)
+    assert triple_id == "36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a"
 """
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import NamedTuple, TextIO
@@ -76,6 +145,7 @@ from .api import Converter, Reference
 __all__ = [
     "StrTriple",
     "Triple",
+    "hash_triple",
     "read_triples",
     "write_triples",
 ]
@@ -208,3 +278,54 @@ def read_triples(
             )
             for subject_curie, predicate_curie, object_curie in reader
         ]
+
+
+def hash_triple(converter: Converter, triple: Triple) -> str:
+    """Encode a triple with URL-safe base64 encoding.
+
+    :param converter: A converter
+    :param triple: A triple of CURIE objects
+
+    :returns: An encoded triple of URIs
+
+    .. seealso::
+
+        https://ts4nfdi.github.io/mapping-sameness-identifier/
+
+    >>> converter = curies.load_prefix_map(
+    ...     {
+    ...         "mesh": "http://id.nlm.nih.gov/mesh/",
+    ...         "skos": "http://www.w3.org/2004/02/skos/core#",
+    ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
+    ...     }
+    ... )
+    >>> triple = Triple(subject="mesh:C000089", predicate="skos:exactMatch", object="CHEBI:28646")
+    >>> hash_triple(converter, triple)
+    '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a'
+    """
+    return encode_delimited_uris(triple.as_uri_triple(converter))
+
+
+def encode_delimited_uris(uri_triple: tuple[str, str, str]) -> str:
+    """Encode a subject-predicate-object triple.
+
+    :param uri_triple: A triple of URIs represented as strings
+
+    :returns: An encoded triple of URIs
+
+    .. seealso::
+
+        https://ts4nfdi.github.io/mapping-sameness-identifier/
+
+    >>> encode_delimited_uris(
+    ...     (
+    ...         "http://id.nlm.nih.gov/mesh/C000089",
+    ...         "http://www.w3.org/2004/02/skos/core#exactMatch",
+    ...         "http://purl.obolibrary.org/obo/CHEBI_28646",
+    ...     )
+    ... )
+    '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a'
+    """
+    delimited_uris = " ".join(uri_triple)
+    digest = hashlib.sha256(delimited_uris.encode("utf-8")).hexdigest()
+    return digest
