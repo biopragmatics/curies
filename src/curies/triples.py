@@ -105,7 +105,7 @@ identifiers for triples:
         rdf:predicate skos:exactMatch ;
         rdf:object CHEBI:28646 .
 
-:func:`curies.Converter.hash_triple` implements a deterministic, one-way hash of a
+:meth:`curies.Converter.hash_triple` implements a deterministic, one-way hash of a
 triple based on the algorithm in https://ts4nfdi.github.io/mapping-sameness-identifier:
 
 .. code-block:: python
@@ -120,14 +120,12 @@ triple based on the algorithm in https://ts4nfdi.github.io/mapping-sameness-iden
             "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         }
     )
-
     triple = Triple(
         subject="mesh:C000089",
         predicate="skos:exactMatch",
         object="CHEBI:28646",
     )
-
-    triple_id = converter.encode_triple(triple)
+    triple_id = converter.hash_triple(triple)
     assert triple_id == "36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a"
 """
 
