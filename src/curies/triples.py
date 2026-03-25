@@ -100,18 +100,18 @@ identifiers for triples:
 
     mesh:C000089 skos:exactMatch CHEBI:28646 .
 
-    triple:aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng== rdf:type rdf:Statement ;
+    triple:36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a rdf:type rdf:Statement ;
         rdf:subject mesh:C000089 ;
         rdf:predicate skos:exactMatch ;
         rdf:object CHEBI:28646 .
 
-:func:`curies.triples.encode_triple` introduces a deterministic, reversible way of
-hashing a triple to assign it an identifier.
+:func:`curies.Converter.hash_triple` implements a deterministic, one-way hash of a
+triple based on the algorithm in https://ts4nfdi.github.io/mapping-sameness-identifier:
 
 .. code-block:: python
 
-    from curies import Triple, Reference, Converter
-    from curies.triples import encode_triple
+    import curies
+    from curies import Triple, Converter
 
     converter = curies.load_prefix_map(
         {
@@ -128,21 +128,7 @@ hashing a triple to assign it an identifier.
     )
 
     triple_id = converter.encode_triple(triple)
-    assert (
-        triple_id
-        == "aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=="
-    )
-
-Algorithm (implemented in :func:`curies.triples.encode_triple`):
-
-1. Expand the CURIEs in a triple into URIs, encoded with UTF-8
-2. String concatenate them in subject-predicate-object order, delimited by the tab
-   character as a separator
-3. String decode UTF-8 into bytes
-4. Do a URL-safe base64 encoding of the bytes. See Python's implementation
-   :func:`base64.urlsafe_b64encode`, where the alphabet uses ``-`` instead of ``+`` and
-   ``_`` instead of ``/``.
-5. Encode the result with UTF-8 to get a string.
+    assert triple_id == "36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a"
 """
 
 from __future__ import annotations
@@ -325,7 +311,9 @@ def hash_triple(converter: Converter, triple: Triple) -> str:
 
     :returns: An encoded triple of URIs
 
-    .. seealso:: https://ts4nfdi.github.io/mapping-sameness-identifier/
+    .. seealso::
+
+        https://ts4nfdi.github.io/mapping-sameness-identifier/
 
     >>> converter = curies.load_prefix_map(
     ...     {
@@ -348,7 +336,9 @@ def encode_delimited_uris(uri_triple: tuple[str, str, str]) -> str:
 
     :returns: An encoded triple of URIs
 
-    .. seealso:: https://ts4nfdi.github.io/mapping-sameness-identifier/
+    .. seealso::
+
+        https://ts4nfdi.github.io/mapping-sameness-identifier/
 
     >>> encode_delimited_uris(
     ...     (
