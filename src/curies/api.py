@@ -1420,7 +1420,7 @@ class Converter:
         self,
         graph_or_manager: rdflib.Graph | rdflib.namespace.NamespaceManager,
         synonyms: bool = False,
-    ) -> Converter:
+    ) -> None:
         """Add the prefix map from this converter to a RDFlib graph or manager.
 
         :param graph_or_manager: A RDFLib graph or manager object
