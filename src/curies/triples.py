@@ -133,31 +133,7 @@ hashing a triple to assign it an identifier.
         == "aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=="
     )
 
-Identifiers constructed this way can be turned back into Triple objects using
-:func:`curies.triples.decode_triple`:
-
-.. code-block:: python
-
-    from curies import Triple, Reference, Converter
-    from curies.triples import decode_triple
-
-    converter = curies.load_prefix_map(
-        {
-            "mesh": "http://id.nlm.nih.gov/mesh/",
-            "skos": "http://www.w3.org/2004/02/skos/core#",
-            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-        }
-    )
-
-    triple = converter.decode_triple(
-        "aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=="
-    )
-
-***********
- Algorithm
-***********
-
-Encoding (implemented in :func:`curies.triples.encode_triple`):
+Algorithm (implemented in :func:`curies.triples.encode_triple`):
 
 1. Expand the CURIEs in a triple into URIs, encoded with UTF-8
 2. String concatenate them in subject-predicate-object order, delimited by the tab
@@ -167,22 +143,13 @@ Encoding (implemented in :func:`curies.triples.encode_triple`):
    :func:`base64.urlsafe_b64encode`, where the alphabet uses ``-`` instead of ``+`` and
    ``_`` instead of ``/``.
 5. Encode the result with UTF-8 to get a string.
-
-Decoding (implemented in :func:`curies.triples.decode_triple`):
-
-1. Decode the string to bytes using UTF-8
-2. Do a URL-safe base64 decoding of the bytes. See Python's implementation
-   :func:`base64.urlsafe_b64decode`
-3. Encode the result with UTF-8 to get a string
-4. Retrieve the subject-predicate-object URIs by splitting on the tab character
-5. Parse the URIs into CURIEs
 """
 
 from __future__ import annotations
 
-import base64
 import csv
 import gzip
+import hashlib
 from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from pathlib import Path
@@ -196,8 +163,7 @@ from .api import Converter, Reference
 __all__ = [
     "StrTriple",
     "Triple",
-    "decode_triple",
-    "encode_triple",
+    "hash_triple",
     "read_triples",
     "write_triples",
 ]
@@ -205,6 +171,14 @@ __all__ = [
 
 class StrTriple(NamedTuple):
     """A triple of curies."""
+
+    subject: str
+    predicate: str
+    object: str
+
+
+class URITriple(NamedTuple):
+    """A triple of URIs."""
 
     subject: str
     predicate: str
@@ -251,9 +225,9 @@ class Triple(BaseModel):
         """Get a three-tuple of strings representing this triple."""
         return StrTriple(self.subject.curie, self.predicate.curie, self.object.curie)
 
-    def as_uri_triple(self, converter: Converter) -> tuple[str, str, str]:
+    def as_uri_triple(self, converter: Converter) -> URITriple:
         """Get a three-tuple of strings representing the expanded URIs."""
-        return (
+        return URITriple(
             converter.expand_reference(self.subject, strict=True),
             converter.expand_reference(self.predicate, strict=True),
             converter.expand_reference(self.object, strict=True),
@@ -343,19 +317,15 @@ def read_triples(path: str | Path, *, reference_cls: type[Reference] | None = No
         ]
 
 
-SEP = "\t"
-ENCODING = "utf-8"
-TRIPLE_PREFIX = "triple"
-TRIPLE_URI_PREFIX = "https://w3id.org/triple/"
-
-
-def encode_triple(converter: Converter, triple: Triple) -> str:
+def hash_triple(converter: Converter, triple: Triple) -> str:
     """Encode a triple with URL-safe base64 encoding.
 
     :param converter: A converter
     :param triple: A triple of CURIE objects
 
     :returns: An encoded triple of URIs
+
+    .. seealso:: https://ts4nfdi.github.io/mapping-sameness-identifier/
 
     >>> converter = curies.load_prefix_map(
     ...     {
@@ -365,8 +335,8 @@ def encode_triple(converter: Converter, triple: Triple) -> str:
     ...     }
     ... )
     >>> triple = Triple(subject="mesh:C000089", predicate="skos:exactMatch", object="CHEBI:28646")
-    >>> encode_delimited_uris(converter, triple)
-    'aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=='
+    >>> hash_triple(converter, triple)
+    '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a'
     """
     return encode_delimited_uris(triple.as_uri_triple(converter))
 
@@ -378,6 +348,8 @@ def encode_delimited_uris(uri_triple: tuple[str, str, str]) -> str:
 
     :returns: An encoded triple of URIs
 
+    .. seealso:: https://ts4nfdi.github.io/mapping-sameness-identifier/
+
     >>> encode_delimited_uris(
     ...     (
     ...         "http://id.nlm.nih.gov/mesh/C000089",
@@ -385,71 +357,8 @@ def encode_delimited_uris(uri_triple: tuple[str, str, str]) -> str:
     ...         "http://purl.obolibrary.org/obo/CHEBI_28646",
     ...     )
     ... )
-    'aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=='
+    '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a'
     """
-    delimited_uris = SEP.join(uri_triple)
-    return base64.urlsafe_b64encode(delimited_uris.encode(ENCODING)).decode(ENCODING)
-
-
-class URITriple(NamedTuple):
-    """A triple of URIs represented as strings."""
-
-    subject: str
-    predicate: str
-    object: str
-
-
-def decode_to_uris(triple_id: str) -> URITriple:
-    """Decode a triple from URL-safe base64 encoding.
-
-    :param triple_id: An encoded triple of URIs
-
-    :returns: A triple of URIs represented as strings
-
-    >>> uris = decode_to_uris(
-    ...     "aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng=="
-    ... )
-    >>> uris.subject
-    'http://id.nlm.nih.gov/mesh/C000089'
-    >>> uris.predicate
-    'http://www.w3.org/2004/02/skos/core#exactMatch'
-    >>> uris.object
-    'http://purl.obolibrary.org/obo/CHEBI_28646'
-    """
-    delimited_uris = base64.urlsafe_b64decode(triple_id.encode(ENCODING)).decode(ENCODING)
-    return URITriple(*delimited_uris.split(SEP))
-
-
-def decode_triple(converter: Converter, triple_id: str) -> Triple:
-    """Decode a triple from URL-safe base64 encoding.
-
-    :param converter: A converter
-    :param triple_id: An encoded triple of URIs
-
-    :returns: A triple of URIs represented as strings
-
-    >>> converter = curies.load_prefix_map(
-    ...     {
-    ...         "mesh": "http://id.nlm.nih.gov/mesh/",
-    ...         "skos": "http://www.w3.org/2004/02/skos/core#",
-    ...         "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-    ...     }
-    ... )
-    >>> triple = decode_triple(
-    ...     converter,
-    ...     "aHR0cDovL2lkLm5sbS5uaWguZ292L21lc2gvQzAwMDA4OQlodHRwOi8vd3d3LnczLm9yZy8yMDA0LzAyL3Nrb3MvY29yZSNleGFjdE1hdGNoCWh0dHA6Ly9wdXJsLm9ib2xpYnJhcnkub3JnL29iby9DSEVCSV8yODY0Ng==",
-    ... )
-    >>> triple.subject.curie
-    'mesh:C000089'
-    >>> triple.predicate.curie
-    'skos:exactMatch'
-    >>> triple.object.curie
-    'CHEBI:28646'
-    """
-    subject_uri, predicate_uri, object_uri = decode_to_uris(triple_id)
-    return Triple.from_uris(
-        subject=subject_uri,
-        predicate=predicate_uri,
-        object=object_uri,
-        converter=converter,
-    )
+    delimited_uris = " ".join(uri_triple)
+    digest = hashlib.sha256(delimited_uris.encode("utf-8")).hexdigest()
+    return digest

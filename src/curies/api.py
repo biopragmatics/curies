@@ -2646,17 +2646,17 @@ class Converter:
         ]
         return Converter(records)
 
-    def decode_triple(self, triple_id: str) -> Triple:
-        """Decode a triple identifier."""
-        from .triples import decode_triple
+    def hash_triple(self, triple: Triple) -> str:
+        """Hash a triple using :func:`curies.triples.hash_triple`.
 
-        return decode_triple(self, triple_id)
+        :param triple: A subject-predicate-object triple
+        :return: A hexadecimal digest of the SHA-256 hash of the space-joined triple
 
-    def encode_triple(self, triple: Triple) -> str:
-        """Encode a triple into an identifier."""
-        from .triples import encode_triple
+        .. seealso:: https://ts4nfdi.github.io/mapping-sameness-identifier/
+        """
+        from .triples import hash_triple
 
-        return encode_triple(self, triple)
+        return hash_triple(self, triple)
 
 
 def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
