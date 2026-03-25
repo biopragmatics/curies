@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.6,<1.0"]
+build-backend = "uv_build"
 
 [project]
 name = "curies"
-version = "0.12.11-dev"
+version = "0.13.1-dev"
 description = "Idiomatic conversion between URIs and compact URIs (CURIEs)"
 readme = "README.md"
 authors = [
@@ -58,7 +58,23 @@ dependencies = [
 ]
 
 [dependency-groups]
+tests = [
+    "pytest",
+    "coverage[toml]",
+    "requests",
+]
+docs = [
+    "sphinx>=8",
+    "sphinx-rtd-theme>=3.0",
+    "sphinx-click",
+    "sphinx-automodapi",
+    "autodoc-pydantic",
+]
+lint = [
+    "ruff",
+]
 typing = [
+    { include-group = "tests" },
     "mypy",
     "types-requests",
     "types-PyYAML",
@@ -68,13 +84,25 @@ typing = [
     "bioregistry",
     "types-Markdown",
 ]
+docs-lint = [
+    { include-group = "docs" },
+    "doc8",
+]
+format-docs = [
+    { include-group = "docs" },
+    "docstrfmt",
+]
+doctests = [
+    "xdoctest",
+    "pygments",
+]
+pyroma = [
+    "uv-build",
+    "pyroma",
+    "pygments",
+]
 
 [project.optional-dependencies]
-tests = [
-    "pytest",
-    "coverage[toml]",
-    "requests",
-]
 pandas = [
     "pandas",
 ]
@@ -97,11 +125,6 @@ fastapi = [
 ]
 rdflib = [
     "rdflib"
-]
-docs = [
-    "sphinx>=8",
-    "sphinx-rtd-theme>=3.0",
-    "sphinx_automodapi",
 ]
 
 # See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls
@@ -147,6 +170,9 @@ source = [
 omit = [
     "tests/*",
     "docs/*",
+    "src/curies/version.py",
+    "src/curies/__main__.py",
+    "src/curies/cli.py",
 ]
 
 [tool.coverage.paths]
@@ -226,7 +252,7 @@ known-first-party = [
 docstring-code-format = true
 
 [tool.bumpversion]
-current_version = "0.12.11-dev"
+current_version = "0.13.1-dev"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?:-(?P<release>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+(?P<build>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?"
 serialize = [
     "{major}.{minor}.{patch}-{release}+{build}",

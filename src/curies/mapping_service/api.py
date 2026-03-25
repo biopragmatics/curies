@@ -93,7 +93,7 @@ class MappingServiceGraph(Graph):
         super().__init__(*args, **kwargs)
 
     def _expand_pair_all(self, uri_in: str) -> list[URIRef]:
-        reference = self.converter.parse_uri(uri_in, return_none=True)
+        reference = self.converter.parse_uri(uri_in)
         if reference is None:
             return []
         uris = self.converter.expand_pair_all(reference.prefix, reference.identifier, strict=True)

@@ -6,7 +6,6 @@ import csv
 import itertools as itt
 import json
 import logging
-import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
@@ -33,7 +32,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import Never, Self
+from typing_extensions import Self
 
 from .utils import NoCURIEDelimiterError, _split
 
@@ -76,10 +75,6 @@ logger = logging.getLogger(__name__)
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
 
-RETURN_NONE_WARNING_TEXT = (
-    "return_none=True is a no-op argument now. Please remove it. ``return_none`` "
-    "will be removed as an argument in curies v0.12.0"
-)
 RETURN_NONE_ERROR_TEXT = (
     "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
     "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
@@ -1417,6 +1412,30 @@ class Converter:
         prefix_map = {prefix: str(namespace) for prefix, namespace in graph_or_manager.namespaces()}
         return cls.from_prefix_map(prefix_map, **kwargs)
 
+    def bind_rdflib(
+        self,
+        graph_or_manager: rdflib.Graph | rdflib.namespace.NamespaceManager,
+        synonyms: bool = False,
+    ) -> None:
+        """Add the prefix map from this converter to a RDFlib graph or manager.
+
+        :param graph_or_manager: A RDFLib graph or manager object
+        :param synonyms: Should CURIE prefix synonyms be bound?
+
+        >>> import curies, rdflib
+        >>> converter = curies.get_obo_converter()
+        >>> graph = rdflib.Graph()
+        >>> converter.bind_rdflib(graph_or_manager)
+        """
+        from rdflib import Namespace
+
+        for record in self.records:
+            namespace = Namespace(record.uri_prefix)
+            graph_or_manager.bind(record.prefix, namespace)
+            if synonyms:
+                for synonym in record.prefix_synonyms:
+                    graph_or_manager.bind(synonym, namespace)
+
     @classmethod
     def from_shacl(
         cls,
@@ -1688,13 +1707,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = ..., return_none: Literal[False] = ...
-    ) -> Never: ...
-
-    # docstr-coverage:excused `overload`
-    @overload
-    def parse_uri(
-        self, uri: str, *, strict: Literal[False] = ..., return_none: Literal[True] | None = ...
+        self, uri: str, *, strict: Literal[False] = ..., return_none: None = ...
     ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
@@ -1704,11 +1717,11 @@ class Converter:
         uri: str,
         *,
         strict: Literal[True] = True,
-        return_none: bool | None = ...,
+        return_none: None = ...,
     ) -> ReferenceTuple: ...
 
     def parse_uri(
-        self, uri: str, *, strict: bool = False, return_none: bool | None = None
+        self, uri: str, *, strict: bool = False, return_none: None = None
     ) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
@@ -1742,12 +1755,7 @@ class Converter:
         if return_none is None:
             return None
         elif return_none is True:
-            warnings.warn(
-                RETURN_NONE_WARNING_TEXT,
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            return None
+            raise NotImplementedError("return_none should not be passed as of curies v0.13.0")
         else:  # i.e., return_none=False, which isn't supported anymore.
             raise NotImplementedError(RETURN_NONE_ERROR_TEXT)
 

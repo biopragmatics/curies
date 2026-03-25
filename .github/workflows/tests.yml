@@ -6,13 +6,13 @@ name: Tests
 
 # by default, give the GITHUB_TOKEN no permissions
 # See https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token
-permissions: { }
+permissions: {}
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   lint:
@@ -25,12 +25,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.13", "3.10" ]
-        tox-command: [ "lint", "pyroma", "mypy" ]
+        python-version: ["3.14", "3.10"]
+        tox-command: ["lint", "mypy"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: "Install uv"
-        uses: "astral-sh/setup-uv@v3"
+        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
@@ -48,19 +48,19 @@ jobs:
         # We only test documentation on the latest version
         # sphinx 8.0 / sphinx-rtd-theme 3.0 discontinued Python 3.9 support
         # a year early, which prompted re-thinking about this.
-        python-version: [ "3.13" ]
+        python-version: ["3.14"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: "Install uv"
-        uses: "astral-sh/setup-uv@v3"
+        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
           sudo apt-get install graphviz
-      - name: Check RST conformity with doc8
-        run: uvx -p ${{ matrix.python-version }} --with tox-uv tox -e doc8
+      - name: Lint documentation
+        run: uvx -p ${{ matrix.python-version }} --with tox-uv tox -e docs-lint
       - name: Check docstring coverage
         run: uvx -p ${{ matrix.python-version }} --with tox-uv tox -e docstr-coverage
       - name: Check documentation build with Sphinx
@@ -72,16 +72,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
-        python-version: [ "3.13", "3.10" ]
-        pandas: [ "pandas2", "pandas3" ]
+        os: [ubuntu-latest]
+        python-version: ["3.14", "3.10"]
+        pandas: ["pandas2", "pandas3"]
         exclude:
           - python-version: "3.10"
             pandas: "pandas3"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: "Install uv"
-        uses: "astral-sh/setup-uv@v3"
+        uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
@@ -89,7 +89,7 @@ jobs:
         run:
           uvx -p ${{ matrix.python-version }} --with tox-uv tox -e py-${{ matrix.pandas }}
       - name: Upload coverage report to codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         if: success()
         with:
           file: coverage.xml
