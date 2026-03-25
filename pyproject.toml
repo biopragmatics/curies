@@ -53,6 +53,7 @@ license-files = [
 
 requires-python = ">=3.10"
 dependencies = [
+    "pystow>=0.8.0",
     "pydantic>=2.0",
     "typing-extensions",
 ]
