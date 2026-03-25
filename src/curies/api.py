@@ -6,7 +6,6 @@ import csv
 import itertools as itt
 import json
 import logging
-import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
@@ -1741,12 +1740,7 @@ class Converter:
         if return_none is None:
             return None
         elif return_none is True:
-            warnings.warn(
-                RETURN_NONE_WARNING_TEXT,
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            return None
+            raise ValueError("return_none should not be passed as of curies v0.13.0")
         else:  # i.e., return_none=False, which isn't supported anymore.
             raise NotImplementedError(RETURN_NONE_ERROR_TEXT)
 
