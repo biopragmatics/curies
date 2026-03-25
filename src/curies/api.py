@@ -2647,12 +2647,10 @@ class Converter:
         return Converter(records)
 
     def hash_triple(self, triple: Triple) -> str:
-        """Hash a triple using :func:`curies.triples.hash_triple`.
+        """Hash a triple using :func:`curies.triples.hash_triple`, implementing https://ts4nfdi.github.io/mapping-sameness-identifier.
 
         :param triple: A subject-predicate-object triple
-        :return: A hexadecimal digest of the SHA-256 hash of the space-joined triple
-
-        .. seealso:: https://ts4nfdi.github.io/mapping-sameness-identifier/
+        :return: A hexadecimal digest of the SHA-256 hash of the space-joined expanded URI triple
 
         >>> import curies
         >>> from curies import Triple, Converter
