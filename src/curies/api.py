@@ -6,7 +6,6 @@ import csv
 import itertools as itt
 import json
 import logging
-import warnings
 from collections import UserDict, defaultdict
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
@@ -33,7 +32,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import Never, Self
+from typing_extensions import Self
 
 from .utils import NoCURIEDelimiterError, _split
 
@@ -75,10 +74,6 @@ logger = logging.getLogger(__name__)
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
 
-RETURN_NONE_WARNING_TEXT = (
-    "return_none=True is a no-op argument now. Please remove it. ``return_none`` "
-    "will be removed as an argument in curies v0.12.0"
-)
 RETURN_NONE_ERROR_TEXT = (
     "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
     "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
@@ -1711,13 +1706,7 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
-        self, uri: str, *, strict: Literal[False] = ..., return_none: Literal[False] = ...
-    ) -> Never: ...
-
-    # docstr-coverage:excused `overload`
-    @overload
-    def parse_uri(
-        self, uri: str, *, strict: Literal[False] = ..., return_none: Literal[True] | None = ...
+        self, uri: str, *, strict: Literal[False] = ..., return_none: None = ...
     ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
@@ -1727,11 +1716,11 @@ class Converter:
         uri: str,
         *,
         strict: Literal[True] = True,
-        return_none: bool | None = ...,
+        return_none: None = ...,
     ) -> ReferenceTuple: ...
 
     def parse_uri(
-        self, uri: str, *, strict: bool = False, return_none: bool | None = None
+        self, uri: str, *, strict: bool = False, return_none: None = None
     ) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
@@ -1765,12 +1754,7 @@ class Converter:
         if return_none is None:
             return None
         elif return_none is True:
-            warnings.warn(
-                RETURN_NONE_WARNING_TEXT,
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            return None
+            raise NotImplementedError("return_none should not be passed as of curies v0.13.0")
         else:  # i.e., return_none=False, which isn't supported anymore.
             raise NotImplementedError(RETURN_NONE_ERROR_TEXT)
 
