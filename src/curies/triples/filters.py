@@ -17,7 +17,8 @@ __all__ = [
     "exclude_triples",
     "keep_object_prefixes",
     "keep_prefixes",
-    "keep_references",
+    "keep_references_both",
+    "keep_references_either",
     "keep_subject_prefixes",
     "keep_triples_by_hash",
 ]
@@ -362,7 +363,51 @@ def _exclude_triples(
     return _func
 
 
-def keep_references(
+def keep_references_either(
+    triples: Iterable[TripleType],
+    references: Reference | Collection[Reference],
+    *,
+    progress: bool = False,
+) -> Iterable[TripleType]:
+    """Keep triples whose subject and object appear in the given references.
+
+    :param triples: An iterable of triples
+    :param references: A collection of references
+    :param progress: Should a progress bar be shown?
+
+    :returns: A sub-iterable of triples whose subject
+        and object appear in the given references.
+
+    >>> from curies import Reference, Triple
+    >>> from curies.vocabulary import exact_match, subclass_of
+    >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "DOID:225"
+    >>> r1, r2, r3 = (Reference.from_curie(c) for c in (c1, c2, c3))
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, subclass_of.curie, c3)
+    >>> assert list(keep_references_either([m1, m2, m3], [r2, r1])) == [m1]
+    """
+    return _filter(_include_references_either(references), triples, progress=progress)
+
+
+def _include_references_either(
+    references: Reference | Collection[Reference],
+) -> TriplePredicate[TripleType]:
+    if isinstance(references, Reference):
+
+        def _func(triple: TripleType) -> bool:
+            return triple.subject == references or triple.object == references
+
+    else:
+        references = set(references)
+
+        def _func(triple: TripleType) -> bool:
+            return triple.subject in references or triple.object in references
+
+    return _func
+
+
+def keep_references_both(
     triples: Iterable[TripleType], references: Collection[Reference], *, progress: bool = False
 ) -> Iterable[TripleType]:
     """Keep triples whose subject and object appear in the given references.
@@ -381,18 +426,18 @@ def keep_references(
     >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
     >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
     >>> m3 = Triple.from_curies(c1, subclass_of.curie, c3)
-    >>> assert list(keep_references([m1, m2, m3], [r2, r1])) == [m1]
+    >>> assert list(keep_references_both([m1, m2, m3], [r2, r1])) == [m1]
     """
-    return _filter(_include_references(references), triples, progress=progress)
+    return _filter(_include_references_both(references), triples, progress=progress)
 
 
-def _include_references(references: Collection[Reference]) -> TriplePredicate[TripleType]:
+def _include_references_both(references: Collection[Reference]) -> TriplePredicate[TripleType]:
     references = set(references)
     if len(references) < 2:
-        raise ValueError
+        raise ValueError("two or more references are required")
 
     def _func(triple: TripleType) -> bool:
-        return triple.subject in references or triple.object in references
+        return triple.subject in references and triple.object in references
 
     return _func
 
