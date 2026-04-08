@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 
-from .model import TriplePredicate, TripleType
+from .model import Triple, TriplePredicate, TripleType
 
 __all__ = [
     "exclude_object_prefixes",
     "exclude_prefixes",
     "exclude_same_prefixes",
     "exclude_subject_prefixes",
+    "exclude_triples",
     "keep_object_prefixes",
     "keep_prefixes",
     "keep_subject_prefixes",
@@ -262,3 +263,43 @@ def exclude_same_prefixes(
 
 def _same_prefix_filter(triple: TripleType) -> bool:
     return triple.subject.prefix != triple.object.prefix
+
+
+def exclude_triples(
+    triples: Iterable[TripleType],
+    exclusion: TripleType | Collection[TripleType],
+    *,
+    progress: bool = False,
+) -> Iterable[TripleType]:
+    """Exclude triples in the given set.
+
+    :param triples: An iterable of triples
+    :param exclusion: A triple or collection of triples to exclude
+    :param progress: Should a progress bar be shown?
+
+    :returns: A sub-iterable of triples whose subject
+        and object prefixes are not the same.
+
+    >>> from curies import Reference, Triple
+    >>> from curies.vocabulary import exact_match, subclass_of
+    >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "DOID:225"
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, subclass_of.curie, c3)
+    >>> assert list(exclude_triples([m1, m2, m3], m3)) == [m1, m2]
+    """
+    return _filter(_exclude_triples(exclusion), triples, progress=progress)
+
+
+def _exclude_triples(
+    exclusion_triples: TripleType | Iterable[TripleType],
+) -> TriplePredicate[TripleType]:
+    if isinstance(exclusion_triples, Triple):
+        exclusion_triples = {exclusion_triples}
+    else:
+        exclusion_triples = set(exclusion_triples)
+
+    def _func(triple: TripleType) -> bool:
+        return triple not in exclusion_triples
+
+    return _func
