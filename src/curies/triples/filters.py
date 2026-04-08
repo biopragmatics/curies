@@ -16,7 +16,8 @@ __all__ = [
     "exclude_subject_prefixes",
     "exclude_triples",
     "keep_object_prefixes",
-    "keep_prefixes",
+    "keep_prefixes_both",
+    "keep_prefixes_either",
     "keep_references_both",
     "keep_references_either",
     "keep_subject_prefixes",
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 def _filter(
     func: TriplePredicate[TripleType], triples: Iterable[TripleType], progress: bool = False
 ) -> Iterable[TripleType]:
-    if progress:
+    if progress:  # pragma: no cover
         try:
             from tqdm import tqdm
         except ImportError:
@@ -39,7 +40,7 @@ def _filter(
     return filter(func, triples)
 
 
-def keep_prefixes(
+def keep_prefixes_both(
     triples: Iterable[TripleType], prefixes: Iterable[str], *, progress: bool = False
 ) -> Iterable[TripleType]:
     """Keep triples whose subjects' and objects' prefixes are in the given prefixes.
@@ -57,18 +58,56 @@ def keep_prefixes(
     >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
     >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
     >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
-    >>> assert list(keep_prefixes([m1, m2, m3], {"DOID", "mesh"})) == [m1]
+    >>> assert list(keep_prefixes_both([m1, m2, m3], {"DOID", "mesh"})) == [m1]
     """
-    return _filter(_keep_prefixes_filter(prefixes), triples, progress=progress)
+    return _filter(_keep_prefixes_both_filter(prefixes), triples, progress=progress)
 
 
-def _keep_prefixes_filter(prefixes: Iterable[str]) -> TriplePredicate[TripleType]:
+def _keep_prefixes_both_filter(prefixes: Iterable[str]) -> TriplePredicate[TripleType]:
     prefixes = set(prefixes)
     if len(prefixes) < 2:
         raise ValueError
 
     def _func(triple: TripleType) -> bool:
         return triple.subject.prefix in prefixes and triple.object.prefix in prefixes
+
+    return _func
+
+
+def keep_prefixes_either(
+    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = False
+) -> Iterable[TripleType]:
+    """Keep triples whose subjects' and objects' prefixes are in the given prefixes.
+
+    :param triples: An iterable of triples
+    :param prefixes: A set of prefixes to use for filtering the triples
+    :param progress: Should a progress bar be shown?
+
+    :returns: A sub-iterable of triples whose subjects' and objects'
+        prefixes are in the given prefixes
+
+    >>> from curies import Triple
+    >>> from curies.vocabulary import exact_match
+    >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "umls:C4551571"
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
+    >>> assert list(keep_prefixes_either([m1, m2, m3], {"DOID", "mesh"})) == [m1]
+    """
+    return _filter(_keep_prefixes_either_filter(prefixes), triples, progress=progress)
+
+
+def _keep_prefixes_either_filter(prefixes: Iterable[str]) -> TriplePredicate[TripleType]:
+    if isinstance(prefixes, str):
+
+        def _func(triple: TripleType) -> bool:
+            return triple.subject.prefix == prefixes or triple.object.prefix == prefixes
+
+    else:
+        prefixes = set(prefixes)
+
+        def _func(triple: TripleType) -> bool:
+            return triple.subject.prefix in prefixes or triple.object.prefix in prefixes
 
     return _func
 

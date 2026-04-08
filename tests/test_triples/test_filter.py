@@ -12,7 +12,8 @@ from curies.triples import (
     exclude_subject_prefixes,
     exclude_triples,
     keep_object_prefixes,
-    keep_prefixes,
+    keep_prefixes_both,
+    keep_prefixes_either,
     keep_references_both,
     keep_references_either,
     keep_subject_prefixes,
@@ -20,6 +21,7 @@ from curies.triples import (
 )
 from curies.vocabulary import exact_match, subclass_of
 
+p1, p2, p3 = "DOID", "mesh", "umls"
 c1, c2, c3, c4 = "DOID:0050577", "mesh:C562966", "umls:C4551571", "DOID:225"
 r1, r2, r3, r4 = (Reference.from_curie(c) for c in [c1, c2, c3, c4])
 m1 = Triple.from_curies(c1, exact_match.curie, c2)
@@ -51,18 +53,21 @@ class TestFilters(unittest.TestCase):
 
     def test_exclude_object_prefixes(self) -> None:
         """Test excluding object prefixes."""
+        self.assert_triple_lists([m1], exclude_object_prefixes(M123, "umls"))
         self.assert_triple_lists([m1], exclude_object_prefixes(M123, {"umls"}))
         self.assert_triple_lists([m2, m3], exclude_object_prefixes(M123, {"mesh"}))
         self.assert_triple_lists(M123, exclude_object_prefixes(M123, {"DOID"}))
 
     def test_exclude_prefixes(self) -> None:
         """Test excluding prefixes."""
+        self.assert_triple_lists([m1], exclude_prefixes(M123, "umls"))
         self.assert_triple_lists([m1], exclude_prefixes(M123, {"umls"}))
         self.assert_triple_lists([m2], exclude_prefixes(M123, {"DOID"}))
         self.assert_triple_lists([m3], exclude_prefixes(M123, {"mesh"}))
 
     def test_exclude_subject_prefixes(self) -> None:
         """Test excluding subject prefixes."""
+        self.assert_triple_lists([m2], exclude_subject_prefixes(M123, "DOID"))
         self.assert_triple_lists([m2], exclude_subject_prefixes(M123, {"DOID"}))
         self.assert_triple_lists(M123, exclude_subject_prefixes(M123, {"umls"}))
         self.assert_triple_lists([m1, m3], exclude_subject_prefixes(M123, {"mesh"}))
@@ -78,18 +83,33 @@ class TestFilters(unittest.TestCase):
 
     def test_keep_object_prefixes(self) -> None:
         """Test keeping object prefixes."""
+        self.assert_triple_lists([m2, m3], keep_object_prefixes(M123, "umls"))
         self.assert_triple_lists([m2, m3], keep_object_prefixes(M123, {"umls"}))
 
-    def test_keep_prefixes(self) -> None:
+    def test_keep_prefixes_both(self) -> None:
         """Test keeping prefixes."""
-        self.assert_triple_lists([], keep_prefixes(M123, {"NOPE", "also nope"}))
-        self.assert_triple_lists([m1], keep_prefixes(M123, {"DOID", "mesh"}))
-        self.assert_triple_lists([m1], keep_prefixes(M123, {"DOID", "umls"}))
-        self.assert_triple_lists([m1], keep_prefixes(M123, {"mesh", "umls"}))
-        self.assert_triple_lists(M123, keep_prefixes(M123, {"DOID", "umls", "mesh"}))
+        with self.assertRaises(ValueError):
+            keep_prefixes_both(M123, {"DOID"})
+        self.assert_triple_lists([], keep_prefixes_both(M123, {"NOPE", "also nope"}))
+        self.assert_triple_lists([m1], keep_prefixes_both(M123, {"DOID", "mesh"}))
+        self.assert_triple_lists([m3], keep_prefixes_both(M123, {"DOID", "umls"}))
+        self.assert_triple_lists([m2], keep_prefixes_both(M123, {"mesh", "umls"}))
+        self.assert_triple_lists(M123, keep_prefixes_both(M123, {"DOID", "umls", "mesh"}))
+
+    def test_keep_prefixes_either(self) -> None:
+        """Test keeping prefixes."""
+        self.assert_triple_lists([], keep_prefixes_either(M123, {"NOPE", "also nope"}))
+        self.assert_triple_lists([m1, m2], keep_prefixes_either(M123, "mesh"))
+        self.assert_triple_lists([m1, m3], keep_prefixes_either(M123, "DOID"))
+        self.assert_triple_lists([m2, m3], keep_prefixes_either(M123, "umls"))
+        self.assert_triple_lists([m1, m2, m3], keep_prefixes_either(M123, {"DOID", "mesh"}))
+        self.assert_triple_lists([m1, m2, m3], keep_prefixes_either(M123, {"DOID", "umls"}))
+        self.assert_triple_lists([m1, m2, m3], keep_prefixes_either(M123, {"mesh", "umls"}))
+        self.assert_triple_lists(M123, keep_prefixes_either(M123, {"DOID", "umls", "mesh"}))
 
     def test_keep_subject_prefixes(self) -> None:
         """Test keeping subject prefixes."""
+        self.assert_triple_lists([m1, m3], keep_subject_prefixes(M123, "DOID"))
         self.assert_triple_lists([m1, m3], keep_subject_prefixes(M123, {"DOID"}))
 
     def test_keep_triple_by_hash(self) -> None:
@@ -106,6 +126,7 @@ class TestFilters(unittest.TestCase):
 
     def test_keep_references_either(self) -> None:
         """Test keeping references."""
+        self.assert_triple_lists([m1, m3], keep_references_either(M123, r1))
         self.assert_triple_lists([m1, m3], keep_references_either(M123, [r1]))
         self.assert_triple_lists([m1, m2], keep_references_either(M123, [r2]))
         self.assert_triple_lists([m2, m3], keep_references_either(M123, [r3]))
@@ -115,6 +136,8 @@ class TestFilters(unittest.TestCase):
 
     def test_keep_references_both(self) -> None:
         """Test keeping references."""
+        with self.assertRaises(ValueError):
+            keep_references_both(M123, [r1])
         self.assert_triple_lists([m1], keep_references_both(M123, [r1, r2]))
         self.assert_triple_lists([m2], keep_references_both(M123, [r2, r3]))
         self.assert_triple_lists([m3], keep_references_both(M123, [r1, r3]))
@@ -122,6 +145,7 @@ class TestFilters(unittest.TestCase):
 
     def test_exclude_references(self) -> None:
         """Test exclude references."""
+        self.assert_triple_lists([m2], exclude_references(M123, r1))
         self.assert_triple_lists([m2], exclude_references(M123, [r1]))
         self.assert_triple_lists([m3], exclude_references(M123, [r2]))
         self.assert_triple_lists([m1], exclude_references(M123, [r3]))
