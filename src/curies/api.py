@@ -467,6 +467,10 @@ class Reference(BaseModel):
         """Get the reference as a 2-tuple of prefix and identifier."""
         return ReferenceTuple(self.prefix, self.identifier)
 
+    def without_name(self) -> curies.Reference:
+        """Return this reference, since it already has no name."""
+        return self
+
     @classmethod
     def from_curie(cls, curie: str, *, sep: str = ":", converter: Converter | None = None) -> Self:
         """Parse a CURIE string and populate a reference.
@@ -550,6 +554,10 @@ class NamableReference(Reference):
             {"prefix": reference.prefix, "identifier": reference.identifier, "name": name},
             context=converter,
         )
+
+    def without_name(self) -> curies.Reference:
+        """Return this reference without a name."""
+        return curies.Reference(prefix=self.prefix, identifier=self.identifier)
 
 
 class NamedReference(NamableReference):
