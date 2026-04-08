@@ -25,6 +25,8 @@ def hash_triple(converter: Converter, triple: Triple) -> str:
 
         https://ts4nfdi.github.io/mapping-sameness-identifier/
 
+    >>> import curies
+    >>> from curies.triples import Triple
     >>> converter = curies.load_prefix_map(
     ...     {
     ...         "mesh": "http://id.nlm.nih.gov/mesh/",

@@ -71,7 +71,7 @@ def _keep_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[Trip
 
 
 def keep_subject_prefixes(
-    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = True
+    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = False
 ) -> Iterable[TripleType]:
     """Keep triples whose subjects' prefixes are in the given prefixes.
 
@@ -103,7 +103,7 @@ def _keep_subject_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredic
 
 
 def keep_object_prefixes(
-    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = True
+    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = False
 ) -> Iterable[TripleType]:
     """Keep triples whose objects' prefixes are in the given prefixes.
 
@@ -170,7 +170,7 @@ def _exclude_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[T
 
 
 def exclude_subject_prefixes(
-    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = True
+    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = False
 ) -> Iterable[TripleType]:
     """Exclude triples whose subjects' prefixes are in the given prefixes.
 
@@ -204,7 +204,7 @@ def _exclude_subject_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePre
 
 
 def exclude_object_prefixes(
-    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = True
+    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = False
 ) -> Iterable[TripleType]:
     """Exclude triples whose objects' prefixes are in the given prefixes.
 
