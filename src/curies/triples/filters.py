@@ -53,9 +53,9 @@ def keep_prefixes(
     >>> from curies import Reference, Triple
     >>> from curies.vocabulary import exact_match
     >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "umls:C4551571"
-    >>> m1 = Triple.from_curies(c1, exact_match, c2)
-    >>> m2 = Triple.from_curies(c2, exact_match, c3)
-    >>> m3 = Triple.from_curies(c1, exact_match, c3)
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
     >>> assert list(keep_prefixes([m1, m2, m3], {"DOID", "mesh"})) == [m1]
     """
     return _filter(_keep_prefixes_filter(prefixes), triples, progress=progress)
@@ -85,9 +85,9 @@ def keep_subject_prefixes(
     >>> from curies import Reference, Triple
      >>> from curies.vocabulary import exact_match
      >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "umls:C4551571"
-     >>> m1 = Triple.from_curies(c1, exact_match, c2)
-     >>> m2 = Triple.from_curies(c2, exact_match, c3)
-     >>> m3 = Triple.from_curies(c1, exact_match, c3)
+     >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+     >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+     >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
      >>> assert list(keep_subject_prefixes([m1, m2, m3], {"DOID"})) == [m1, m2]
     """
     return _filter(_keep_subject_prefixes_filter(prefixes), triples, progress=progress)
@@ -118,9 +118,9 @@ def keep_object_prefixes(
     >>> from curies import Reference, Triple
     >>> from curies.vocabulary import exact_match
     >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "umls:C4551571"
-    >>> m1 = Triple.from_curies(c1, exact_match, c2)
-    >>> m2 = Triple.from_curies(c2, exact_match, c3)
-    >>> m3 = Triple.from_curies(c1, exact_match, c3)
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
     >>> assert list(keep_object_prefixes([m1, m2, m3], {"umls"})) == [m2, m3]
     """
     return _filter(_keep_object_prefixes_filter(prefixes), triples, progress=progress)
@@ -150,9 +150,9 @@ def exclude_prefixes(
     >>> from curies import Reference, Triple
     >>> from curies.vocabulary import exact_match
     >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "umls:C4551571"
-    >>> m1 = Triple.from_curies(c1, exact_match, c2)
-    >>> m2 = Triple.from_curies(c2, exact_match, c3)
-    >>> m3 = Triple.from_curies(c1, exact_match, c3)
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
     >>> assert list(exclude_prefixes([m1, m2, m3], {"umls"})) == [m1]
     >>> assert list(exclude_prefixes([m1, m2, m3], {"DOID"})) == [m2]
     >>> assert list(exclude_prefixes([m1, m2, m3], {"mesh"})) == [m3]
@@ -184,9 +184,9 @@ def exclude_subject_prefixes(
     >>> from curies import Reference, Triple
     >>> from curies.vocabulary import exact_match
     >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "umls:C4551571"
-    >>> m1 = Triple.from_curies(c1, exact_match, c2)
-    >>> m2 = Triple.from_curies(c2, exact_match, c3)
-    >>> m3 = Triple.from_curies(c1, exact_match, c3)
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
     >>> assert list(exclude_subject_prefixes([m1, m2, m3], {"DOID"})) == [m2]
     >>> assert list(exclude_subject_prefixes([m1, m2, m3], {"umls"})) == [m1, m2, m3]
     >>> assert list(exclude_subject_prefixes([m1, m2, m3], {"mesh"})) == [m1, m3]
@@ -215,13 +215,12 @@ def exclude_object_prefixes(
     :returns: A sub-iterable of triples whose objects'
         prefixes are not in the given prefixes
 
-
     >>> from curies import Reference, Triple
     >>> from curies.vocabulary import exact_match
     >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "umls:C4551571"
-    >>> m1 = Triple.from_curies(c1, exact_match, c2)
-    >>> m2 = Triple.from_curies(c2, exact_match, c3)
-    >>> m3 = Triple.from_curies(c1, exact_match, c3)
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
     >>> assert list(exclude_object_prefixes([m1, m2, m3], {"umls"})) == [m1]
     >>> assert list(exclude_object_prefixes([m1, m2, m3], {"mesh"})) == [m2, m3]
     >>> assert list(exclude_object_prefixes([m1, m2, m3], {"DOID"})) == [m1, m2, m3]
