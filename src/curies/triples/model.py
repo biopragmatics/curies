@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import NamedTuple, Self, TypeAlias
+from typing import NamedTuple, Self, TypeAlias, TypeVar
 
 from pydantic import BaseModel, ConfigDict
-from typing_extensions import TypeVar
 
 from ..api import Converter, Reference
 
@@ -110,7 +109,7 @@ class Triple(BaseModel):
         )
 
 
-TripleType = TypeVar("TripleType", bound=Triple, default=Triple)
+TripleType = TypeVar("TripleType", bound=Triple)
 
 #: A predicate over a triple
 TriplePredicate: TypeAlias = Callable[[TripleType], bool]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterable
 
-from .model import Triple, TriplePredicate, TripleType
+from .model import TriplePredicate, TripleType
 
 __all__ = [
     "exclude_object_prefixes",
@@ -61,10 +61,10 @@ def keep_prefixes(
     return _filter(_keep_prefixes_filter(prefixes), triples, progress=progress)
 
 
-def _keep_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate:
+def _keep_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
     prefixes = _cleanup_prefixes(prefixes)
 
-    def _func(triple: Triple) -> bool:
+    def _func(triple: TripleType) -> bool:
         return triple.subject.prefix in prefixes and triple.object.prefix in prefixes
 
     return _func
@@ -93,7 +93,7 @@ def keep_subject_prefixes(
     return _filter(_keep_subject_prefixes_filter(prefixes), triples, progress=progress)
 
 
-def _keep_subject_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate:
+def _keep_subject_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
     prefixes = _cleanup_prefixes(prefixes)
 
     def _func(triple: TripleType) -> bool:
@@ -126,7 +126,7 @@ def keep_object_prefixes(
     return _filter(_keep_object_prefixes_filter(prefixes), triples, progress=progress)
 
 
-def _keep_object_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate:
+def _keep_object_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
     prefixes = _cleanup_prefixes(prefixes)
 
     def _func(triple: TripleType) -> bool:
@@ -160,7 +160,7 @@ def exclude_prefixes(
     return _filter(_exclude_prefixes_filter(prefixes), triples, progress=progress)
 
 
-def _exclude_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate:
+def _exclude_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
     prefixes = _cleanup_prefixes(prefixes)
 
     def _func(triple: TripleType) -> bool:
@@ -194,7 +194,7 @@ def exclude_subject_prefixes(
     return _filter(_exclude_subject_prefixes_filter(prefixes), triples, progress=progress)
 
 
-def _exclude_subject_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate:
+def _exclude_subject_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
     prefixes = _cleanup_prefixes(prefixes)
 
     def _func(triple: TripleType) -> bool:
@@ -229,7 +229,7 @@ def exclude_object_prefixes(
     return _filter(_exclude_object_prefixes_filter(prefixes), triples, progress=progress)
 
 
-def _exclude_object_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate:
+def _exclude_object_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
     prefixes = _cleanup_prefixes(prefixes)
 
     def _func(triple: TripleType) -> bool:
