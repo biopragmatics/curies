@@ -133,13 +133,18 @@ from __future__ import annotations
 
 from .filters import (
     exclude_object_prefixes,
-    exclude_prefixes,
+    exclude_prefixes_both,
+    exclude_references_both,
     exclude_same_prefixes,
     exclude_subject_prefixes,
     exclude_triples,
     keep_object_prefixes,
-    keep_prefixes,
+    keep_prefixes_both,
+    keep_prefixes_either,
+    keep_references_both,
+    keep_references_either,
     keep_subject_prefixes,
+    keep_triples_by_hash,
 )
 from .hash_utils import encode_uri_triple, hash_triple
 from .io import read_triples, write_triples
@@ -151,14 +156,19 @@ __all__ = [
     "TriplePredicate",
     "encode_uri_triple",
     "exclude_object_prefixes",
-    "exclude_prefixes",
+    "exclude_prefixes_both",
+    "exclude_references_both",
     "exclude_same_prefixes",
     "exclude_subject_prefixes",
     "exclude_triples",
     "hash_triple",
     "keep_object_prefixes",
-    "keep_prefixes",
+    "keep_prefixes_both",
+    "keep_prefixes_either",
+    "keep_references_both",
+    "keep_references_either",
     "keep_subject_prefixes",
+    "keep_triples_by_hash",
     "read_triples",
     "write_triples",
 ]
