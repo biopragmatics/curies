@@ -110,7 +110,7 @@ class Triple(BaseModel):
         )
 
 
-TripleType = TypeVar("X", bound=Triple, default=Triple)
+TripleType = TypeVar("TripleType", bound=Triple, default=Triple)
 
 #: A predicate over a triple
 TriplePredicate: TypeAlias = Callable[[TripleType], bool]
