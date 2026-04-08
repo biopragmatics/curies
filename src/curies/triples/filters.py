@@ -26,12 +26,6 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-def _cleanup_prefixes(prefixes: str | Iterable[str]) -> set[str]:
-    if isinstance(prefixes, str):
-        return {prefixes}
-    return set(prefixes)
-
-
 def _filter(
     func: TriplePredicate[TripleType], triples: Iterable[TripleType], progress: bool = False
 ) -> Iterable[TripleType]:
@@ -46,7 +40,7 @@ def _filter(
 
 
 def keep_prefixes(
-    triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = False
+    triples: Iterable[TripleType], prefixes: Iterable[str], *, progress: bool = False
 ) -> Iterable[TripleType]:
     """Keep triples whose subjects' and objects' prefixes are in the given prefixes.
 
@@ -68,8 +62,10 @@ def keep_prefixes(
     return _filter(_keep_prefixes_filter(prefixes), triples, progress=progress)
 
 
-def _keep_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
-    prefixes = _cleanup_prefixes(prefixes)
+def _keep_prefixes_filter(prefixes: Iterable[str]) -> TriplePredicate[TripleType]:
+    prefixes = set(prefixes)
+    if len(prefixes) < 2:
+        raise ValueError
 
     def _func(triple: TripleType) -> bool:
         return triple.subject.prefix in prefixes and triple.object.prefix in prefixes
@@ -101,10 +97,16 @@ def keep_subject_prefixes(
 
 
 def _keep_subject_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
-    prefixes = _cleanup_prefixes(prefixes)
+    if isinstance(prefixes, str):
 
-    def _func(triple: TripleType) -> bool:
-        return triple.subject.prefix in prefixes
+        def _func(triple: TripleType) -> bool:
+            return triple.subject.prefix == prefixes
+
+    else:
+        prefixes = set(prefixes)
+
+        def _func(triple: TripleType) -> bool:
+            return triple.subject.prefix in prefixes
 
     return _func
 
@@ -134,10 +136,15 @@ def keep_object_prefixes(
 
 
 def _keep_object_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
-    prefixes = _cleanup_prefixes(prefixes)
+    if isinstance(prefixes, str):
 
-    def _func(triple: TripleType) -> bool:
-        return triple.object.prefix in prefixes
+        def _func(triple: TripleType) -> bool:
+            return triple.object.prefix == prefixes
+    else:
+        prefixes = set(prefixes)
+
+        def _func(triple: TripleType) -> bool:
+            return triple.object.prefix in prefixes
 
     return _func
 
@@ -168,10 +175,16 @@ def exclude_prefixes(
 
 
 def _exclude_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
-    prefixes = _cleanup_prefixes(prefixes)
+    if isinstance(prefixes, str):
 
-    def _func(triple: TripleType) -> bool:
-        return triple.subject.prefix not in prefixes and triple.object.prefix not in prefixes
+        def _func(triple: TripleType) -> bool:
+            return triple.subject.prefix != prefixes and triple.object.prefix != prefixes
+
+    else:
+        prefixes = set(prefixes)
+
+        def _func(triple: TripleType) -> bool:
+            return triple.subject.prefix not in prefixes and triple.object.prefix not in prefixes
 
     return _func
 
@@ -202,10 +215,16 @@ def exclude_subject_prefixes(
 
 
 def _exclude_subject_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
-    prefixes = _cleanup_prefixes(prefixes)
+    if isinstance(prefixes, str):
 
-    def _func(triple: TripleType) -> bool:
-        return triple.subject.prefix not in prefixes
+        def _func(triple: TripleType) -> bool:
+            return triple.subject.prefix != prefixes
+
+    else:
+        prefixes = set(prefixes)
+
+        def _func(triple: TripleType) -> bool:
+            return triple.subject.prefix not in prefixes
 
     return _func
 
@@ -236,10 +255,16 @@ def exclude_object_prefixes(
 
 
 def _exclude_object_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredicate[TripleType]:
-    prefixes = _cleanup_prefixes(prefixes)
+    if isinstance(prefixes, str):
 
-    def _func(triple: TripleType) -> bool:
-        return triple.object.prefix not in prefixes
+        def _func(triple: TripleType) -> bool:
+            return triple.object.prefix != prefixes
+
+    else:
+        prefixes = set(prefixes)
+
+        def _func(triple: TripleType) -> bool:
+            return triple.object.prefix not in prefixes
 
     return _func
 
