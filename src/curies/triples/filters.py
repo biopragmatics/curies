@@ -90,7 +90,7 @@ def keep_subject_prefixes(
      >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
      >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
      >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
-     >>> assert list(keep_subject_prefixes([m1, m2, m3], {"DOID"})) == [m1, m2]
+     >>> assert list(keep_subject_prefixes([m1, m2, m3], {"DOID"})) == [m1, m3]
     """
     return _filter(_keep_subject_prefixes_filter(prefixes), triples, progress=progress)
 

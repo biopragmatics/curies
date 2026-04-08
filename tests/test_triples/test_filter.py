@@ -52,8 +52,8 @@ class TestFilters(unittest.TestCase):
 
     def test_exclude_triples(self) -> None:
         """Test excluding triples."""
-        self.assertEqual([m1, m2], exclude_triples([m1, m2, m3], m3))
-        self.assertEqual([m1, m2], exclude_triples([m1, m2, m3], [m3]))
+        self.assertEqual([m1, m2], list(exclude_triples([m1, m2, m3], m3)))
+        self.assertEqual([m1, m2], list(exclude_triples([m1, m2, m3], [m3])))
 
     def test_keep_object_prefixes(self) -> None:
         """Test keeping object prefixes."""
@@ -65,4 +65,4 @@ class TestFilters(unittest.TestCase):
 
     def test_keep_subject_prefixes(self) -> None:
         """Test keeping subject prefixes."""
-        self.assertEqual([m1, m2], list(keep_subject_prefixes([m1, m2, m3], {"DOID"})))
+        self.assertEqual([m1, m3], list(keep_subject_prefixes([m1, m2, m3], {"DOID"})))
