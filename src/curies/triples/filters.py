@@ -10,8 +10,8 @@ from ..api import Converter, Reference
 
 __all__ = [
     "exclude_object_prefixes",
-    "exclude_prefixes",
-    "exclude_references",
+    "exclude_prefixes_both",
+    "exclude_references_both",
     "exclude_same_prefixes",
     "exclude_subject_prefixes",
     "exclude_triples",
@@ -188,7 +188,7 @@ def _keep_object_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePredica
     return _func
 
 
-def exclude_prefixes(
+def exclude_prefixes_both(
     triples: Iterable[TripleType], prefixes: str | Iterable[str], *, progress: bool = False
 ) -> Iterable[TripleType]:
     """Exclude triples whose subjects' and objects' prefixes are in the given prefixes.
@@ -206,9 +206,9 @@ def exclude_prefixes(
     >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
     >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
     >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
-    >>> assert list(exclude_prefixes([m1, m2, m3], {"umls"})) == [m1]
-    >>> assert list(exclude_prefixes([m1, m2, m3], {"DOID"})) == [m2]
-    >>> assert list(exclude_prefixes([m1, m2, m3], {"mesh"})) == [m3]
+    >>> assert list(exclude_prefixes_both([m1, m2, m3], {"umls"})) == [m1]
+    >>> assert list(exclude_prefixes_both([m1, m2, m3], {"DOID"})) == [m2]
+    >>> assert list(exclude_prefixes_both([m1, m2, m3], {"mesh"})) == [m3]
     """
     return _filter(_exclude_prefixes_filter(prefixes), triples, progress=progress)
 
@@ -506,7 +506,7 @@ def _include_references_both(references: Collection[Reference]) -> TriplePredica
     return _func
 
 
-def exclude_references(
+def exclude_references_both(
     triples: Iterable[TripleType],
     references: Reference | Collection[Reference],
     *,
@@ -528,9 +528,9 @@ def exclude_references(
     >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
     >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
     >>> m3 = Triple.from_curies(c1, subclass_of.curie, c3)
-    >>> assert list(exclude_references([m1, m2, m3], [r1])) == [m2]
-    >>> assert list(exclude_references([m1, m2, m3], [r2])) == [m3]
-    >>> assert list(exclude_references([m1, m2, m3], [r3])) == [m1]
+    >>> assert list(exclude_references_both([m1, m2, m3], [r1])) == [m2]
+    >>> assert list(exclude_references_both([m1, m2, m3], [r2])) == [m3]
+    >>> assert list(exclude_references_both([m1, m2, m3], [r3])) == [m1]
     """
     return _filter(_exclude_references(references), triples, progress=progress)
 

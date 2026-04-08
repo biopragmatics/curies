@@ -6,8 +6,8 @@ from collections.abc import Iterable
 from curies import Converter, Reference, Triple
 from curies.triples import (
     exclude_object_prefixes,
-    exclude_prefixes,
-    exclude_references,
+    exclude_prefixes_both,
+    exclude_references_both,
     exclude_same_prefixes,
     exclude_subject_prefixes,
     exclude_triples,
@@ -60,10 +60,10 @@ class TestFilters(unittest.TestCase):
 
     def test_exclude_prefixes(self) -> None:
         """Test excluding prefixes."""
-        self.assert_triple_lists([m1], exclude_prefixes(M123, "umls"))
-        self.assert_triple_lists([m1], exclude_prefixes(M123, {"umls"}))
-        self.assert_triple_lists([m2], exclude_prefixes(M123, {"DOID"}))
-        self.assert_triple_lists([m3], exclude_prefixes(M123, {"mesh"}))
+        self.assert_triple_lists([m1], exclude_prefixes_both(M123, "umls"))
+        self.assert_triple_lists([m1], exclude_prefixes_both(M123, {"umls"}))
+        self.assert_triple_lists([m2], exclude_prefixes_both(M123, {"DOID"}))
+        self.assert_triple_lists([m3], exclude_prefixes_both(M123, {"mesh"}))
 
     def test_exclude_subject_prefixes(self) -> None:
         """Test excluding subject prefixes."""
@@ -145,7 +145,7 @@ class TestFilters(unittest.TestCase):
 
     def test_exclude_references(self) -> None:
         """Test exclude references."""
-        self.assert_triple_lists([m2], exclude_references(M123, r1))
-        self.assert_triple_lists([m2], exclude_references(M123, [r1]))
-        self.assert_triple_lists([m3], exclude_references(M123, [r2]))
-        self.assert_triple_lists([m1], exclude_references(M123, [r3]))
+        self.assert_triple_lists([m2], exclude_references_both(M123, r1))
+        self.assert_triple_lists([m2], exclude_references_both(M123, [r1]))
+        self.assert_triple_lists([m3], exclude_references_both(M123, [r2]))
+        self.assert_triple_lists([m1], exclude_references_both(M123, [r3]))

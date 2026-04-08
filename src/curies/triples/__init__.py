@@ -133,8 +133,8 @@ from __future__ import annotations
 
 from .filters import (
     exclude_object_prefixes,
-    exclude_prefixes,
-    exclude_references,
+    exclude_prefixes_both,
+    exclude_references_both,
     exclude_same_prefixes,
     exclude_subject_prefixes,
     exclude_triples,
@@ -156,8 +156,8 @@ __all__ = [
     "TriplePredicate",
     "encode_uri_triple",
     "exclude_object_prefixes",
-    "exclude_prefixes",
-    "exclude_references",
+    "exclude_prefixes_both",
+    "exclude_references_both",
     "exclude_same_prefixes",
     "exclude_subject_prefixes",
     "exclude_triples",
