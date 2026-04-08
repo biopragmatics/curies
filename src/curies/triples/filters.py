@@ -10,6 +10,7 @@ from .model import TriplePredicate, TripleType
 __all__ = [
     "exclude_object_prefixes",
     "exclude_prefixes",
+    "exclude_same_prefixes",
     "exclude_subject_prefixes",
     "keep_object_prefixes",
     "keep_prefixes",
@@ -235,3 +236,29 @@ def _exclude_object_prefixes_filter(prefixes: str | Iterable[str]) -> TriplePred
         return triple.object.prefix not in prefixes
 
     return _func
+
+
+def exclude_same_prefixes(
+    triples: Iterable[TripleType], *, progress: bool = False
+) -> Iterable[TripleType]:
+    """Exclude triples whose subject and object prefixes are the same.
+
+    :param triples: An iterable of triples
+    :param progress: Should a progress bar be shown?
+
+    :returns: A sub-iterable of triples whose subject
+        and object prefixes are not the same.
+
+    >>> from curies import Reference, Triple
+    >>> from curies.vocabulary import exact_match, subclass_of
+    >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "DOID:225"
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, subclass_of.curie, c3)
+    >>> assert list(exclude_same_prefixes([m1, m2, m3])) == [m1, m2]
+    """
+    return _filter(_same_prefix_filter, triples, progress=progress)
+
+
+def _same_prefix_filter(triple: TripleType) -> bool:
+    return triple.subject.prefix != triple.object.prefix

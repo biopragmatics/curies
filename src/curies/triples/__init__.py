@@ -134,6 +134,7 @@ from __future__ import annotations
 from .filters import (
     exclude_object_prefixes,
     exclude_prefixes,
+    exclude_same_prefixes,
     exclude_subject_prefixes,
     keep_object_prefixes,
     keep_prefixes,
@@ -150,6 +151,7 @@ __all__ = [
     "encode_uri_triple",
     "exclude_object_prefixes",
     "exclude_prefixes",
+    "exclude_same_prefixes",
     "exclude_subject_prefixes",
     "hash_triple",
     "keep_object_prefixes",

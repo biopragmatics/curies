@@ -6,3 +6,4 @@
     :no-inheritance-diagram:
     :no-heading:
     :include-all-objects:
+    :skip: Triple
