@@ -9,7 +9,7 @@ import pydantic
 
 import curies
 from curies import Reference, Triple
-from curies.triples import encode_delimited_uris, read_triples, write_triples
+from curies.triples import encode_uri_triple, read_triples, write_triples
 
 T1 = Triple.from_curies("a:1", "a:2", "a:3")
 T2 = Triple.from_curies("a:1", "a:2", "a:4")
@@ -68,7 +68,7 @@ class TestTriples(unittest.TestCase):
         ]
         for expected, s, p, o in examples:
             with self.subTest():
-                self.assertEqual(expected, encode_delimited_uris((s, p, o)))
+                self.assertEqual(expected, encode_uri_triple((s, p, o)))
 
     def test_hash_triple(self) -> None:
         """Test URL-safe base64 encoding and decoding of triples."""
