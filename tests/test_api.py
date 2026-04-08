@@ -179,6 +179,18 @@ class TestStruct(unittest.TestCase):
             NamedReference.from_reference(r4),
         )
 
+    def test_without_name(self) -> None:
+        """Test removing names."""
+        c1 = Reference.from_curie("a:1")
+        c2 = NamableReference.from_curie("a:1")
+        c3 = NamableReference.from_curie("a:1", name="test")
+        c4 = NamedReference.from_curie("a:1", name="test")
+
+        for reference in [c1, c2, c3, c4]:
+            new = reference.without_name()
+            self.assertIsInstance(new, Reference)
+            self.assertNotIsInstance(new, NamableReference)
+
 
 class TestAddRecord(unittest.TestCase):
     """Test adding records."""

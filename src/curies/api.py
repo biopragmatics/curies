@@ -467,7 +467,10 @@ class Reference(BaseModel):
         """Get the reference as a 2-tuple of prefix and identifier."""
         return ReferenceTuple(self.prefix, self.identifier)
 
-    def without_name(self) -> curies.Reference:
+    # note that it's important that this is explicitly
+    # Reference and not Self, since all subclasses should
+    # return only a reference.
+    def without_name(self) -> Reference:
         """Return this reference, since it already has no name."""
         return self
 
@@ -555,9 +558,9 @@ class NamableReference(Reference):
             context=converter,
         )
 
-    def without_name(self) -> curies.Reference:
+    def without_name(self) -> Reference:
         """Return this reference without a name."""
-        return curies.Reference(prefix=self.prefix, identifier=self.identifier)
+        return Reference(prefix=self.prefix, identifier=self.identifier)
 
 
 class NamedReference(NamableReference):
