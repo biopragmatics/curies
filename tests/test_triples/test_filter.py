@@ -2,24 +2,36 @@
 
 import unittest
 
-from curies import Triple
+from curies import Converter, Reference, Triple
 from curies.triples import (
     exclude_object_prefixes,
     exclude_prefixes,
+    exclude_references,
     exclude_same_prefixes,
     exclude_subject_prefixes,
     exclude_triples,
     keep_object_prefixes,
     keep_prefixes,
+    keep_references,
     keep_subject_prefixes,
+    keep_triples_by_hash,
 )
 from curies.vocabulary import exact_match, subclass_of
 
 c1, c2, c3, c4 = "DOID:0050577", "mesh:C562966", "umls:C4551571", "DOID:225"
+r1, r2, r3, r4 = (Reference.from_curie(c) for c in [c1, c2, c3, c4])
 m1 = Triple.from_curies(c1, exact_match.curie, c2)
 m2 = Triple.from_curies(c2, exact_match.curie, c3)
 m3 = Triple.from_curies(c1, exact_match.curie, c3)
 m4 = Triple.from_curies(c1, subclass_of.curie, c4)
+converter = Converter.from_prefix_map(
+    {
+        "DOID": "http://purl.obolibrary.org/obo/DOID_",
+        "skos": "http://www.w3.org/2004/02/skos/core#",
+        "mesh": "http://id.nlm.nih.gov/mesh/",
+        "umls": "https://uts.nlm.nih.gov/uts/umls/concept/",
+    }
+)
 
 
 class TestFilters(unittest.TestCase):
@@ -66,3 +78,27 @@ class TestFilters(unittest.TestCase):
     def test_keep_subject_prefixes(self) -> None:
         """Test keeping subject prefixes."""
         self.assertEqual([m1, m3], list(keep_subject_prefixes([m1, m2, m3], {"DOID"})))
+
+    def test_keep_triple_by_hash(self) -> None:
+        """Test keeping triples by hash."""
+        self.assertEqual(
+            [m1], list(keep_triples_by_hash([m1, m2, m3], converter, converter.hash_triple(m1)))
+        )
+        self.assertEqual(
+            [m1, m2],
+            list(
+                keep_triples_by_hash(
+                    [m1, m2, m3], converter, [converter.hash_triple(m2), converter.hash_triple(m1)]
+                )
+            ),
+        )
+
+    def test_keep_references(self) -> None:
+        """Test keeping references."""
+        self.assertEqual([m1], list(keep_references([m1, m2, m3], [r2, r1])))
+
+    def test_exclude_references(self) -> None:
+        """Test exclude references."""
+        self.assertEqual([m2], list(exclude_references([m1, m2, m3], [r1])))
+        self.assertEqual([m3], list(exclude_references([m1, m2, m3], [r2])))
+        self.assertEqual([m1], list(exclude_references([m1, m2, m3], [r3])))
