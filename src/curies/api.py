@@ -301,6 +301,25 @@ class Prefix(str):
                 ...
             },
         )
+
+    .. warning::
+
+        Serialization with YAML with :mod:`yaml` might not work as expected for classes containing
+        :class:`Prefix` instances, since they are subclasses of strings. Do something like this:
+
+        .. code-block:: python
+
+            def _reference_representer(
+                dumper: SafeRepresenter, data: curies.Prefix
+            ) -> yaml.ScalarNode:
+                return dumper.represent_str(str(data))
+
+
+            # if you're using yaml.safe_dump()
+            yaml.add_representer(curies.Prefix, _reference_representer, Dumper=yaml.SafeDumper)
+
+            # if you're using yaml.dump()
+            yaml.add_representer(curies.Prefix, _reference_representer, Dumper=yaml.Dumper)
     """
 
     @classmethod

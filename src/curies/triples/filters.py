@@ -49,8 +49,8 @@ def keep_prefixes_both(
     :param prefixes: A set of prefixes to use for filtering the triples
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subjects' and objects'
-        prefixes are in the given prefixes
+    :returns: A sub-iterable of triples whose subjects' and objects' prefixes are in the
+        given prefixes
 
     >>> from curies import Triple
     >>> from curies.vocabulary import exact_match
@@ -83,8 +83,8 @@ def keep_prefixes_either(
     :param prefixes: A set of prefixes to use for filtering the triples
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subjects' and objects'
-        prefixes are in the given prefixes
+    :returns: A sub-iterable of triples whose subjects' and objects' prefixes are in the
+        given prefixes
 
     >>> from curies import Triple
     >>> from curies.vocabulary import exact_match
@@ -121,16 +121,16 @@ def keep_subject_prefixes(
     :param prefixes: A set of prefixes to use for filtering the triples
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subjects'
-        prefixes are in the given prefixes
+    :returns: A sub-iterable of triples whose subjects' prefixes are in the given
+        prefixes
 
     >>> from curies import Triple
-     >>> from curies.vocabulary import exact_match
-     >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "umls:C4551571"
-     >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
-     >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
-     >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
-     >>> assert list(keep_subject_prefixes([m1, m2, m3], {"DOID"})) == [m1, m3]
+    >>> from curies.vocabulary import exact_match
+    >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "umls:C4551571"
+    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
+    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
+    >>> m3 = Triple.from_curies(c1, exact_match.curie, c3)
+    >>> assert list(keep_subject_prefixes([m1, m2, m3], {"DOID"})) == [m1, m3]
     """
     return _filter(_keep_subject_prefixes_filter(prefixes), triples, progress=progress)
 
@@ -159,9 +159,8 @@ def keep_object_prefixes(
     :param prefixes: A set of prefixes to use for filtering the triples
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose objects'
-        prefixes are in the given prefixes
-
+    :returns: A sub-iterable of triples whose objects' prefixes are in the given
+        prefixes
 
     >>> from curies import Triple
     >>> from curies.vocabulary import exact_match
@@ -197,8 +196,8 @@ def exclude_prefixes_both(
     :param prefixes: A set of prefixes to use for filtering the triples
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subjects' and objects'
-        prefixes are not in the given prefixes
+    :returns: A sub-iterable of triples whose subjects' and objects' prefixes are not in
+        the given prefixes
 
     >>> from curies import Triple
     >>> from curies.vocabulary import exact_match
@@ -237,8 +236,8 @@ def exclude_subject_prefixes(
     :param prefixes: A set of prefixes to use for filtering the triples
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subjects'
-        prefixes are not in the given prefixes
+    :returns: A sub-iterable of triples whose subjects' prefixes are not in the given
+        prefixes
 
     >>> from curies import Triple
     >>> from curies.vocabulary import exact_match
@@ -277,8 +276,8 @@ def exclude_object_prefixes(
     :param prefixes: A set of prefixes to use for filtering the triples
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose objects'
-        prefixes are not in the given prefixes
+    :returns: A sub-iterable of triples whose objects' prefixes are not in the given
+        prefixes
 
     >>> from curies import Triple
     >>> from curies.vocabulary import exact_match
@@ -316,8 +315,8 @@ def exclude_same_prefixes(
     :param triples: An iterable of triples
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subject
-        and object prefixes are not the same.
+    :returns: A sub-iterable of triples whose subject and object prefixes are not the
+        same.
 
     >>> from curies import Triple
     >>> from curies.vocabulary import exact_match, subclass_of
@@ -399,8 +398,8 @@ def exclude_triples(
     :param exclusion: A triple or collection of triples to exclude
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subject
-        and object prefixes are not the same.
+    :returns: A sub-iterable of triples whose subject and object prefixes are not the
+        same.
 
     >>> from curies import Triple
     >>> from curies.vocabulary import exact_match, subclass_of
@@ -439,8 +438,8 @@ def keep_references_either(
     :param references: A collection of references
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subject
-        and object appear in the given references.
+    :returns: A sub-iterable of triples whose subject and object appear in the given
+        references.
 
     >>> from curies import Reference, Triple
     >>> from curies.vocabulary import exact_match, subclass_of
@@ -480,8 +479,8 @@ def keep_references_both(
     :param references: A collection of references
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subject
-        and object appear in the given references.
+    :returns: A sub-iterable of triples whose subject and object appear in the given
+        references.
 
     >>> from curies import Reference, Triple
     >>> from curies.vocabulary import exact_match, subclass_of
@@ -518,8 +517,8 @@ def exclude_references_both(
     :param references: A collection of references
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose subject
-        and object don't appear in the given references.
+    :returns: A sub-iterable of triples whose subject and object don't appear in the
+        given references.
 
     >>> from curies import Reference, Triple
     >>> from curies.vocabulary import exact_match, subclass_of
