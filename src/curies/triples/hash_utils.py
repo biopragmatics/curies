@@ -13,11 +13,13 @@ __all__ = [
 ]
 
 
-def hash_triple(converter: Converter, triple: Triple) -> str:
+def hash_triple(converter: Converter, triple: Triple, *, negate: bool = False) -> str:
     """Encode a triple with URL-safe base64 encoding.
 
     :param converter: A converter
     :param triple: A triple of CURIE objects
+    :param negate: If true, considers the triple as "negative" and postpends a ``~`` to
+        the hash
 
     :returns: An encoded triple of URIs
 
@@ -37,14 +39,18 @@ def hash_triple(converter: Converter, triple: Triple) -> str:
     >>> triple = Triple(subject="mesh:C000089", predicate="skos:exactMatch", object="CHEBI:28646")
     >>> hash_triple(converter, triple)
     '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a'
+    >>> hash_triple(converter, triple, negate=True)
+    '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a~'
     """
-    return encode_uri_triple(triple.as_uri_triple(converter))
+    return encode_uri_triple(triple.as_uri_triple(converter), negate=negate)
 
 
-def encode_uri_triple(uri_triple: tuple[str, str, str]) -> str:
+def encode_uri_triple(uri_triple: tuple[str, str, str], *, negate: bool = False) -> str:
     """Encode a subject-predicate-object triple.
 
     :param uri_triple: A triple of URIs represented as strings
+    :param negate: If true, considers the triple as "negative" and postpends a ``~`` to
+        the hash
 
     :returns: An encoded triple of URIs
 
@@ -52,15 +58,18 @@ def encode_uri_triple(uri_triple: tuple[str, str, str]) -> str:
 
         https://ts4nfdi.github.io/mapping-sameness-identifier/
 
-    >>> encode_uri_triple(
-    ...     (
-    ...         "http://id.nlm.nih.gov/mesh/C000089",
-    ...         "http://www.w3.org/2004/02/skos/core#exactMatch",
-    ...         "http://purl.obolibrary.org/obo/CHEBI_28646",
-    ...     )
+    >>> triple = (
+    ...     "http://id.nlm.nih.gov/mesh/C000089",
+    ...     "http://www.w3.org/2004/02/skos/core#exactMatch",
+    ...     "http://purl.obolibrary.org/obo/CHEBI_28646",
     ... )
+    >>> encode_uri_triple(triple)
     '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a'
+    >>> encode_uri_triple(triple, negate=True)
+    '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a~'
     """
     delimited_uris = " ".join(uri_triple)
     digest = hashlib.sha256(delimited_uris.encode("utf-8")).hexdigest()
+    if negate:
+        digest += "~"
     return digest
