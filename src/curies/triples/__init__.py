@@ -146,7 +146,7 @@ from .filters import (
     keep_subject_prefixes,
     keep_triples_by_hash,
 )
-from .hash_utils import encode_uri_triple, hash_triple
+from .hash_utils import encode_uri_triple, hash_triple, encode_curie_triple
 from .io import read_triples, write_triples
 from .model import StrTriple, Triple, TriplePredicate
 
@@ -165,6 +165,7 @@ __all__ = [
     "keep_object_prefixes",
     "keep_prefixes_both",
     "keep_prefixes_either",
+    "encode_curie_triple",
     "keep_references_both",
     "keep_references_either",
     "keep_subject_prefixes",
