@@ -9,7 +9,7 @@ import pydantic
 
 import curies
 from curies import Reference, Triple
-from curies.triples import encode_uri_triple, read_triples, write_triples, encode_curie_triple
+from curies.triples import encode_curie_triple, encode_uri_triple, read_triples, write_triples
 
 T1 = Triple.from_curies("a:1", "a:2", "a:3")
 T2 = Triple.from_curies("a:1", "a:2", "a:4")
