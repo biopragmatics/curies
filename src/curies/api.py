@@ -90,10 +90,9 @@ def _get_field_validator_values(values, key: str):  # type:ignore
 class ReferenceTuple(NamedTuple):
     """A pair of a prefix (corresponding to a semantic space) and a local unique identifier in that semantic space.
 
-    This class derives from the "named tuple" which means that it acts
-    like a tuple in most senses - it can be hashed and unpacked
-    like most other tuples. Underneath, it has a C implementation
-    and is very efficient.
+    This class derives from the "named tuple" which means that it acts like a tuple in
+    most senses - it can be hashed and unpacked like most other tuples. Underneath, it
+    has a C implementation and is very efficient.
 
     A reference tuple can be constructed two ways:
 
@@ -103,8 +102,7 @@ class ReferenceTuple(NamedTuple):
     >>> ReferenceTuple.from_curie("chebi:1234")
     ReferenceTuple(prefix='chebi', identifier='1234')
 
-    A reference tuple can be formatted as a CURIE string with
-    the ``curie`` attribute
+    A reference tuple can be formatted as a CURIE string with the ``curie`` attribute
 
     >>> ReferenceTuple.from_curie("chebi:1234").curie
     'chebi:1234'
@@ -125,8 +123,7 @@ class ReferenceTuple(NamedTuple):
     >>> identifier
     '1234'
 
-    Because they are named tuples, reference tuples can be accessed
-    with attributes
+    Because they are named tuples, reference tuples can be accessed with attributes
 
     >>> t = ReferenceTuple.from_curie("chebi:1234")
     >>> t.prefix
@@ -142,8 +139,7 @@ class ReferenceTuple(NamedTuple):
     def curie(self) -> str:
         """Get the reference as a CURIE string.
 
-        :return:
-            A string representation of a compact URI (CURIE).
+        :returns: A string representation of a compact URI (CURIE).
 
         >>> ReferenceTuple("chebi", "1234").curie
         'chebi:1234'
@@ -156,7 +152,8 @@ class ReferenceTuple(NamedTuple):
 
         :param curie: A string representation of a compact URI (CURIE)
         :param sep: The separator
-        :return: A reference tuple
+
+        :returns: A reference tuple
 
         >>> ReferenceTuple.from_curie("chebi:1234")
         ReferenceTuple(prefix='chebi', identifier='1234')
@@ -186,8 +183,8 @@ class ReferenceTuple(NamedTuple):
 class Prefix(str):
     """A string that is validated by Pydantic as a CURIE prefix.
 
-    This class is a subclass of Python's built-in string class,
-    so you can wrap any string with it:
+    This class is a subclass of Python's built-in string class, so you can wrap any
+    string with it:
 
     .. code-block:: python
 
@@ -205,8 +202,9 @@ class Prefix(str):
             "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         }
 
-    You can more explicitly type annotate data with this class using
-    Pydantic's `root model <https://docs.pydantic.dev/2.3/usage/models/#rootmodel-and-custom-root-types>`_:
+    You can more explicitly type annotate data with this class using Pydantic's `root
+    model
+    <https://docs.pydantic.dev/2.3/usage/models/#rootmodel-and-custom-root-types>`_:
 
     .. code-block:: python
 
@@ -223,9 +221,9 @@ class Prefix(str):
 
     This pattern is common enough that it's included in :class:`curies.PrefixMap`.
 
-    When used inside a Pydantic model, this class knows how to
-    do validation that the prefix matches the regular expression
-    for an XSD NCName. Here's an example usage with Pydantic:
+    When used inside a Pydantic model, this class knows how to do validation that the
+    prefix matches the regular expression for an XSD NCName. Here's an example usage
+    with Pydantic:
 
     .. code-block:: python
 
@@ -254,10 +252,9 @@ class Prefix(str):
             }
         )
 
-    This class implements a hook that uses Pydantic's "context"
-    for validation that lets you pass a :class:`Converter` to check
-    for existence and standardization with respect to the context
-    in the converter:
+    This class implements a hook that uses Pydantic's "context" for validation that lets
+    you pass a :class:`Converter` to check for existence and standardization with
+    respect to the context in the converter:
 
     .. code-block:: python
 
@@ -305,8 +302,9 @@ class Prefix(str):
 
     .. warning::
 
-        Serialization with YAML with :mod:`yaml` might not work as expected for classes containing
-        :class:`Prefix` instances, since they are subclasses of strings. Do something like this:
+        Serialization with YAML with :mod:`yaml` might not work as expected for classes
+        containing :class:`Prefix` instances, since they are subclasses of strings. Do
+        something like this:
 
         .. code-block:: python
 
@@ -361,8 +359,7 @@ class PrefixMap(RootModel[dict[Prefix, str]]):
         # note that you have to unpack it
         prefix_map_dict = prefix_map_model.root
 
-    Similarly, a prefix map can be used as part of another Pydantic model
-    like in:
+    Similarly, a prefix map can be used as part of another Pydantic model like in:
 
     .. code-block:: python
 
@@ -394,11 +391,10 @@ class PrefixMap(RootModel[dict[Prefix, str]]):
 class Reference(BaseModel):
     """A reference to an entity in a given identifier space.
 
-    This class uses Pydantic to make it easier to build other
-    more complex data types with Pydantic that also uses a first-
-    class notion of parsed reference (instead of merely stringified
-    CURIEs). Instances of this class can also be hashed because of the
-    "frozen" configuration from Pydantic (see
+    This class uses Pydantic to make it easier to build other more complex data types
+    with Pydantic that also uses a first- class notion of parsed reference (instead of
+    merely stringified CURIEs). Instances of this class can also be hashed because of
+    the "frozen" configuration from Pydantic (see
     https://docs.pydantic.dev/latest/usage/model_config/ for more details).
 
     A reference can be constructed several ways:
@@ -409,17 +405,16 @@ class Reference(BaseModel):
     >>> Reference.from_curie("chebi:1234")
     Reference(prefix='chebi', identifier='1234')
 
-    A reference can also be constructued using Pydantic's parsing utilities,
-    but keep in mind if you're using Pydantic v1 or Pydantic v2.
+    A reference can also be constructued using Pydantic's parsing utilities, but keep in
+    mind if you're using Pydantic v1 or Pydantic v2.
 
-    A reference can be formatted as a CURIE string with
-    the ``curie`` attribute
+    A reference can be formatted as a CURIE string with the ``curie`` attribute
 
     >>> Reference.from_curie("chebi:1234").curie
     'chebi:1234'
 
-    References can't be sliced like reference tuples, but they can still
-    be accessed through attributes
+    References can't be sliced like reference tuples, but they can still be accessed
+    through attributes
 
     >>> t = Reference.from_curie("chebi:1234")
     >>> t.prefix
@@ -427,8 +422,8 @@ class Reference(BaseModel):
     >>> t.identifier
     '1234'
 
-    If you need a performance gain, you can get a :class:`ReferenceTuple`
-    using the ``pair`` attribute:
+    If you need a performance gain, you can get a :class:`ReferenceTuple` using the
+    ``pair`` attribute:
 
     >>> reference = Reference.from_curie("chebi:1234")
     >>> reference.pair
@@ -474,8 +469,7 @@ class Reference(BaseModel):
     def curie(self) -> str:
         """Get the reference as a CURIE string.
 
-        :return:
-            A string representation of a compact URI (CURIE).
+        :returns: A string representation of a compact URI (CURIE).
 
         >>> Reference(prefix="chebi", identifier="1234").curie
         'chebi:1234'
@@ -501,7 +495,8 @@ class Reference(BaseModel):
         :param curie: A string representation of a compact URI (CURIE)
         :param sep: The separator
         :param converter: The converter to use as context when parsing
-        :return: A reference object
+
+        :returns: A reference object
 
         >>> Reference.from_curie("chebi:1234")
         Reference(prefix='chebi', identifier='1234')
@@ -517,7 +512,8 @@ class Reference(BaseModel):
 
         :param reference: A pre-parsed reference
         :param converter: The converter to use as context when parsing
-        :return: A reference object
+
+        :returns: A reference object
         """
         return cls.model_validate(
             {"prefix": reference.prefix, "identifier": reference.identifier}, context=converter
@@ -549,7 +545,8 @@ class NamableReference(Reference):
         :param name: The optional name of the reference
         :param sep: The separator
         :param converter: The converter to use as context when parsing
-        :return: A reference object
+
+        :returns: A reference object
 
         >>> NamableReference.from_curie("chebi:1234")
         NamableReference(prefix='chebi', identifier='1234', name=None)
@@ -570,7 +567,8 @@ class NamableReference(Reference):
 
         :param reference: A pre-parsed reference
         :param converter: The converter to use as context when parsing
-        :return: A reference object
+
+        :returns: A reference object
         """
         name = reference.name if isinstance(reference, NamableReference) else None
         return cls.model_validate(
@@ -602,7 +600,8 @@ class NamedReference(NamableReference):
         :param name: The name of the reference
         :param sep: The separator
         :param converter: The converter to use as context when parsing
-        :return: A reference object
+
+        :returns: A reference object
 
         >>> NamedReference.from_curie("chebi:1234", "6-methoxy-2-octaprenyl-1,4-benzoquinone")
         NamedReference(prefix='chebi', identifier='1234', name='6-methoxy-2-octaprenyl-1,4-benzoquinone')
@@ -620,10 +619,11 @@ class NamedReference(NamableReference):
 
         :param reference: A pre-parsed reference
         :param converter: The converter to use as context when parsing
-        :return: A reference object
 
-        :raises TypeError:
-            if a reference that has no name field is passed (e.g., a vanilla :class:`curies.Reference`)
+        :returns: A reference object
+
+        :raises TypeError: if a reference that has no name field is passed (e.g., a
+            vanilla :class:`curies.Reference`)
         """
         if not isinstance(reference, NamableReference):
             raise TypeError(
@@ -645,7 +645,9 @@ RecordKey = tuple[str, str, str, str]
 class Record(BaseModel):
     """A record of some prefixes and their associated URI prefixes.
 
-    .. seealso:: https://github.com/cthoyt/curies/issues/70
+    .. seealso::
+
+        https://github.com/cthoyt/curies/issues/70
     """
 
     prefix: str = Field(
@@ -866,12 +868,11 @@ class Converter:
     ) -> None:
         """Instantiate a converter.
 
-        :param records:
-            A list of records. If you plan to build a converter incrementally, pass an empty list or leave this blank.
-        :param strict:
-            If true, raises issues on duplicate URI prefixes
-        :param delimiter:
-            The delimiter used for CURIEs. Defaults to a colon.
+        :param records: A list of records. If you plan to build a converter
+            incrementally, pass an empty list or leave this blank.
+        :param strict: If true, raises issues on duplicate URI prefixes
+        :param delimiter: The delimiter used for CURIEs. Defaults to a colon.
+
         :raises DuplicatePrefixes: if any records share any synonyms
         :raises DuplicateURIPrefixes: if any records share any URI prefixes
         """
@@ -1096,24 +1097,20 @@ class Converter:
     ) -> None:
         """Append a prefix to the converter.
 
-        :param prefix:
-            The prefix to append, e.g., ``go``
-        :param uri_prefix:
-            The URI prefix to append, e.g., ``http://purl.obolibrary.org/obo/GO_``
-        :param prefix_synonyms:
-            An optional collection of synonyms for the prefix such as ``gomf``, ``gocc``, etc.
-        :param uri_prefix_synonyms:
-            An optional collections of synonyms for the URI prefix such as
-            ``https://bioregistry.io/go:``, ``http://www.informatics.jax.org/searches/GO.cgi?id=GO:``, etc.
-        :param pattern:
-            An optional pattern
-        :param case_sensitive:
-            Should prefixes and URI prefixes be compared in a case-sensitive manner when checking
-            for uniqueness? Defaults to True.
-        :param merge:
-            Should this record be merged into an existing record if it uniquely maps to a single
-            existing record? When false, will raise an error if one or more existing records can
-            be mapped. Defaults to false.
+        :param prefix: The prefix to append, e.g., ``go``
+        :param uri_prefix: The URI prefix to append, e.g.,
+            ``http://purl.obolibrary.org/obo/GO_``
+        :param prefix_synonyms: An optional collection of synonyms for the prefix such
+            as ``gomf``, ``gocc``, etc.
+        :param uri_prefix_synonyms: An optional collections of synonyms for the URI
+            prefix such as ``https://bioregistry.io/go:``,
+            ``http://www.informatics.jax.org/searches/GO.cgi?id=GO:``, etc.
+        :param pattern: An optional pattern
+        :param case_sensitive: Should prefixes and URI prefixes be compared in a
+            case-sensitive manner when checking for uniqueness? Defaults to True.
+        :param merge: Should this record be merged into an existing record if it
+            uniquely maps to a single existing record? When false, will raise an error
+            if one or more existing records can be mapped. Defaults to false.
 
         This can be used to add missing namespaces on-the-fly to an existing converter:
 
@@ -1148,15 +1145,17 @@ class Converter:
     ) -> Converter:
         """Get a converter from a list of dictionaries by creating records out of them.
 
-        :param records:
-             One of the following:
+        :param records:     One of the following:
 
             - An iterable of :class:`curies.Record` objects or dictionaries that will
-              get converted into record objects that together constitute an extended prefix map
-            - A string containing a remote location of a JSON file containg an extended prefix map
-            - A string or :class:`pathlib.Path` object corresponding to a local file path to a JSON file
-              containing an extended prefix map
+              get converted into record objects that together constitute an extended
+              prefix map
+            - A string containing a remote location of a JSON file containg an extended
+              prefix map
+            - A string or :class:`pathlib.Path` object corresponding to a local file
+              path to a JSON file containing an extended prefix map
         :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
+
         :returns: A converter
 
         An extended prefix map is a list of dictionaries containing four keys:
@@ -1166,9 +1165,9 @@ class Converter:
         3. An optional list of strings ``prefix_synonyms``
         4. An optional list of strings ``uri_prefix_synonyms``
 
-        Across the whole list of dictionaries, there should be uniqueness within
-        the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
-        within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
+        Across the whole list of dictionaries, there should be uniqueness within the
+        union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness within the
+        union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
 
         >>> epm = [
         ...     {
@@ -1225,11 +1224,12 @@ class Converter:
     ) -> Converter:
         """Get a converter from a priority prefix map.
 
-        :param data:
-            A prefix map where the keys are prefixes (e.g., `chebi`)
-            and the values are lists of URI prefixes (e.g., ``http://purl.obolibrary.org/obo/CHEBI_``)
-            with the first element of the list being the priority URI prefix for expansions.
+        :param data: A prefix map where the keys are prefixes (e.g., `chebi`) and the
+            values are lists of URI prefixes (e.g.,
+            ``http://purl.obolibrary.org/obo/CHEBI_``) with the first element of the
+            list being the priority URI prefix for expansions.
         :param kwargs: Keyword arguments to pass to the parent class's init
+
         :returns: A converter
 
         >>> priority_prefix_map = {
@@ -1262,16 +1262,16 @@ class Converter:
     def from_prefix_map(cls, prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) -> Converter:
         """Get a converter from a simple prefix map.
 
-        :param prefix_map:
-            One of the following:
+        :param prefix_map: One of the following:
 
-            - A mapping whose keys represent CURIE prefixes and values represent URI prefixes
+            - A mapping whose keys represent CURIE prefixes and values represent URI
+              prefixes
             - A string containing a remote location of a JSON file containg a prefix map
-            - A string or :class:`pathlib.Path` object corresponding to a local file path to a JSON file
-              containing a prefix map
+            - A string or :class:`pathlib.Path` object corresponding to a local file
+              path to a JSON file containing a prefix map
         :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
-        :returns:
-            A converter
+
+        :returns: A converter
 
         >>> converter = Converter.from_prefix_map(
         ...     {
@@ -1300,13 +1300,12 @@ class Converter:
     ) -> Converter:
         """Get a converter from a reverse prefix map.
 
-        :param reverse_prefix_map:
-            A mapping whose keys are URI prefixes and whose values are the corresponding prefixes.
-            This data structure allow for multiple different URI formats to point to the same
-            prefix.
+        :param reverse_prefix_map: A mapping whose keys are URI prefixes and whose
+            values are the corresponding prefixes. This data structure allow for
+            multiple different URI formats to point to the same prefix.
         :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
-        :return:
-            A converter
+
+        :returns: A converter
 
         >>> converter = Converter.from_reverse_prefix_map(
         ...     {
@@ -1345,10 +1344,10 @@ class Converter:
     def from_jsonld(cls, data: LocationOr[dict[str, Any]], **kwargs: Any) -> Converter:
         """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
-        :param data:
-            A JSON-LD object
+        :param data: A JSON-LD object
         :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
-        :return: A converter
+
+        :returns: A converter
 
         Example from a remote context file:
 
@@ -1357,7 +1356,10 @@ class Converter:
         >>> converter = Converter.from_jsonld(url)
         >>> "rdf" in converter.prefix_map
 
-        .. seealso:: https://www.w3.org/TR/json-ld11/#the-context defines the ``@context`` aspect of JSON-LD
+        .. seealso::
+
+            https://www.w3.org/TR/json-ld11/#the-context defines the ``@context`` aspect
+            of JSON-LD
         """
         prefix_map = {}
         for key, value in _prepare(data)["@context"].items():
@@ -1383,16 +1385,17 @@ class Converter:
     ) -> Converter:
         """Construct a remote JSON-LD URL on GitHub then parse with :meth:`Converter.from_jsonld`.
 
-        :param owner: A github repository owner or organization (e.g., ``biopragmatics``)
+        :param owner: A github repository owner or organization (e.g.,
+            ``biopragmatics``)
         :param repo: The name of the repository (e.g., ``bioregistry``)
         :param path: The file path in the GitHub repository to a JSON-LD context file.
-        :param branch: The branch from which the file should be downloaded. Defaults to ``main``, for old
-            repositories this might need to be changed to ``master``.
+        :param branch: The branch from which the file should be downloaded. Defaults to
+            ``main``, for old repositories this might need to be changed to ``master``.
         :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
-        :return:
-            A converter
-        :raises ValueError:
-            If the given path doesn't end in a .jsonld file name
+
+        :returns: A converter
+
+        :raises ValueError: If the given path doesn't end in a .jsonld file name
 
         >>> converter = Converter.from_jsonld_github(
         ...     "biopragmatics",
@@ -1420,10 +1423,11 @@ class Converter:
 
         :param graph_or_manager: A RDFLib graph or manager object
         :param kwargs: Keyword arguments to pass to :meth:`from_prefix_map`
-        :return: A converter
 
-        In the following example, a :class:`rdflib.Graph` is created, a namespace
-        is bound to it, then a converter is made:
+        :returns: A converter
+
+        In the following example, a :class:`rdflib.Graph` is created, a namespace is
+        bound to it, then a converter is made:
 
         >>> import rdflib, curies
         >>> graph = rdflib.Graph()
@@ -1432,7 +1436,8 @@ class Converter:
         >>> converter.expand("hgnc:1234")
         'https://bioregistry.io/hgnc:1234'
 
-        This also works if you directly start with a :class:`rdflib.namespace.NamespaceManager`:
+        This also works if you directly start with a
+        :class:`rdflib.namespace.NamespaceManager`:
 
         >>> converter = curies.Converter.from_rdflib(graph.namespace_manager)
         >>> converter.expand("hgnc:1234")
@@ -1485,10 +1490,12 @@ class Converter:
     ) -> Converter:
         """Get a converter from SHACL, either in a turtle f.
 
-        :param graph: A RDFLib graph, a Path, a string representing a file path, or a string URL
+        :param graph: A RDFLib graph, a Path, a string representing a file path, or a
+            string URL
         :param format: The RDF format, if a file path is given
         :param kwargs: Keyword arguments to pass to :meth:`Converter.__init__`
-        :return: A converter
+
+        :returns: A converter
         """
         if isinstance(graph, (str, Path)):
             import rdflib
@@ -1517,10 +1524,10 @@ class Converter:
         """Get the set of prefixes covered by this converter.
 
         :param include_synonyms: If true, include secondary prefixes.
-        :return:
-            A set of primary prefixes covered by the converter. If ``include_synonyms`` is
-            set to ``True``, secondary prefixes (i.e., ones in :data:`Record.prefix_synonyms`
-            are also included
+
+        :returns: A set of primary prefixes covered by the converter. If
+            ``include_synonyms`` is set to ``True``, secondary prefixes (i.e., ones in
+            :data:`Record.prefix_synonyms` are also included
         """
         rv = {record.prefix for record in self.records}
         if include_synonyms:
@@ -1535,10 +1542,10 @@ class Converter:
         """Get the set of URI prefixes covered by this converter.
 
         :param include_synonyms: If true, include secondary prefixes.
-        :return:
-            A set of primary URI prefixes covered by the converter. If ``include_synonyms`` is
-            set to ``True``, secondary URI prefixes (i.e., ones in :data:`Record.uri_prefix_synonyms`
-            are also included
+
+        :returns: A set of primary URI prefixes covered by the converter. If
+            ``include_synonyms`` is set to ``True``, secondary URI prefixes (i.e., ones
+            in :data:`Record.uri_prefix_synonyms` are also included
         """
         rv = {record.uri_prefix for record in self.records}
         if include_synonyms:
@@ -1557,10 +1564,10 @@ class Converter:
         """Check if the string can be parsed as a URI by this converter.
 
         :param s: A string that might be a URI
-        :returns: If the string can be parsed as a URI by this converter.
-            Note that some valid URIs, when passed to this function, will
-            result in False if their URI prefixes are not registered with this
-            converter.
+
+        :returns: If the string can be parsed as a URI by this converter. Note that some
+            valid URIs, when passed to this function, will result in False if their URI
+            prefixes are not registered with this converter.
 
         >>> import curies
         >>> converter = curies.get_obo_converter()
@@ -1569,9 +1576,8 @@ class Converter:
         >>> converter.is_uri("GO:1234567")
         False
 
-        The following is a valid URI, but the prefix is not registered
-        with the converter based on the OBO Foundry prefix map, so it returns
-        False.
+        The following is a valid URI, but the prefix is not registered with the
+        converter based on the OBO Foundry prefix map, so it returns False.
 
         >>> converter.is_uri("http://proteopedia.org/wiki/index.php/2gc4")
         False
@@ -1609,17 +1615,18 @@ class Converter:
     ) -> str | None:
         """Compress a URI or standardize a CURIE.
 
-        :param uri_or_curie:
-            A string representing a compact URI (CURIE) or a URI.
-        :param strict: If true and the string is neither a URI that can be compressed nor a CURIE that can be
-            standardized, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the string is neither a URI that can be compressed
-            nor a CURIE that can be standardized, return the input. Defaults to false.
-        :returns:
-            If the string is a URI, and it can be compressed, returns the corresponding CURIE.
-            If the string is a CURIE, and it can be standardized, returns the standard CURIE.
-        :raises CompressionError:
-            If strict is true and the URI can't be compressed
+        :param uri_or_curie: A string representing a compact URI (CURIE) or a URI.
+        :param strict: If true and the string is neither a URI that can be compressed
+            nor a CURIE that can be standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the string is neither a URI
+            that can be compressed nor a CURIE that can be standardized, return the
+            input. Defaults to false.
+
+        :returns: If the string is a URI, and it can be compressed, returns the
+            corresponding CURIE. If the string is a CURIE, and it can be standardized,
+            returns the standard CURIE.
+
+        :raises CompressionError: If strict is true and the URI can't be compressed
 
         >>> from curies import Converter, Record
         >>> converter = Converter.from_extended_prefix_map(
@@ -1701,15 +1708,17 @@ class Converter:
     def compress(self, uri: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
         """Compress a URI to a CURIE, if possible.
 
-        :param uri:
-            A string representing a valid uniform resource identifier (URI)
-        :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
+        :param uri: A string representing a valid uniform resource identifier (URI)
+        :param strict: If true and the URI can't be compressed, returns an error.
             Defaults to false.
-        :returns:
-            A compact URI if this converter could find an appropriate URI prefix, otherwise none.
-        :raises CompressionError:
-            If strict is set to true and the URI can't be compressed
+        :param passthrough: If true, strict is false, and the URI can't be compressed,
+            return the input. Defaults to false.
+
+        :returns: A compact URI if this converter could find an appropriate URI prefix,
+            otherwise none.
+
+        :raises CompressionError: If strict is set to true and the URI can't be
+            compressed
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map(
@@ -1728,10 +1737,10 @@ class Converter:
 
         .. note::
 
-            If there are partially overlapping *URI prefixes* in this converter
-            (e.g., ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
-            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest
-            URI prefix will always be matched. For example, parsing
+            If there are partially overlapping *URI prefixes* in this converter (e.g.,
+            ``http://purl.obolibrary.org/obo/GO_`` for the prefix ``GO`` and
+            ``http://purl.obolibrary.org/obo/`` for the prefix ``OBO``), the longest URI
+            prefix will always be matched. For example, parsing
             ``http://purl.obolibrary.org/obo/GO_0032571`` will return ``GO:0032571``
             instead of ``OBO:GO_0032571``.
         """
@@ -1765,12 +1774,13 @@ class Converter:
     ) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
-        :param uri:
-            A string representing a valid uniform resource identifier (URI)
-        :param strict: If true and the URI can't be parsed, returns an error. Defaults to false.
-        :param return_none: Opt into future type returning of a single None instead of a pair of Nones
-        :returns:
-            A CURIE pair if the URI could be parsed, otherwise a pair of None's
+        :param uri: A string representing a valid uniform resource identifier (URI)
+        :param strict: If true and the URI can't be parsed, returns an error. Defaults
+            to false.
+        :param return_none: Opt into future type returning of a single None instead of a
+            pair of Nones
+
+        :returns: A CURIE pair if the URI could be parsed, otherwise a pair of None's
 
         :raises CompressionError: if strict is set to true and the URI can't be parsed
         :raises NotImplementedError: If you pass ``False`` to return_none
@@ -1803,10 +1813,10 @@ class Converter:
         """Check if the string can be parsed as a CURIE by this converter.
 
         :param s: A string that might be a CURIE
-        :returns: If the string can be parsed as a CURIE by this converter.
-            Note that some valid CURIEs, when passed to this function, will
-            result in False if their prefixes are not registered with this
-            converter.
+
+        :returns: If the string can be parsed as a CURIE by this converter. Note that
+            some valid CURIEs, when passed to this function, will result in False if
+            their prefixes are not registered with this converter.
 
         >>> import curies
         >>> converter = curies.get_obo_converter()
@@ -1815,9 +1825,8 @@ class Converter:
         >>> converter.is_curie("http://purl.obolibrary.org/obo/GO_1234567")
         False
 
-        The following is a valid CURIE, but the prefix is not registered
-        with the converter based on the OBO Foundry prefix map, so it returns
-        False.
+        The following is a valid CURIE, but the prefix is not registered with the
+        converter based on the OBO Foundry prefix map, so it returns False.
 
         >>> converter.is_curie("pdb:2gc4")
         False
@@ -1858,17 +1867,18 @@ class Converter:
     ) -> str | None:
         """Expand a CURIE or standardize a URI.
 
-        :param curie_or_uri:
-            A string representing a compact URI (CURIE) or a URI.
-        :param strict: If true and the string is neither a CURIE that can be expanded nor a URI that can be
-            standardized, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the string is neither a CURIE that can be expanded
-            nor a URI that can be standardized, return the input. Defaults to false.
-        :returns:
-            If the string is a CURIE, and it can be expanded, returns the corresponding URI.
-            If the string is a URI, and it can be standardized, returns the standard URI.
-        :raises ExpansionError:
-            If strict is true and the CURIE can't be expanded
+        :param curie_or_uri: A string representing a compact URI (CURIE) or a URI.
+        :param strict: If true and the string is neither a CURIE that can be expanded
+            nor a URI that can be standardized, returns an error. Defaults to false.
+        :param passthrough: If true, strict is false, and the string is neither a CURIE
+            that can be expanded nor a URI that can be standardized, return the input.
+            Defaults to false.
+
+        :returns: If the string is a CURIE, and it can be expanded, returns the
+            corresponding URI. If the string is a URI, and it can be standardized,
+            returns the standard URI.
+
+        :raises ExpansionError: If strict is true and the CURIE can't be expanded
 
         >>> from curies import Converter, Record
         >>> converter = Converter.from_extended_prefix_map(
@@ -1883,7 +1893,7 @@ class Converter:
         ... )
         >>> converter.expand_or_standardize("CHEBI:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
-         >>> converter.expand_or_standardize("chebi:138488")
+        >>> converter.expand_or_standardize("chebi:138488")
         'http://purl.obolibrary.org/obo/CHEBI_138488'
 
         >>> converter.expand_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
@@ -1928,16 +1938,17 @@ class Converter:
     def expand(self, curie: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
         """Expand a CURIE to a URI, if possible.
 
-        :param curie:
-            A string representing a compact URI (CURIE)
-        :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
-            Defaults to false. If your strings can either be a CURIE _or_ a URI, consider using
-            :meth:`Converter.expand_or_standardize` instead.
-        :returns:
-            A URI if this converter contains a URI prefix for the prefix in this CURIE
-        :raises ExpansionError:
-            If strict is true and the CURIE can't be expanded
+        :param curie: A string representing a compact URI (CURIE)
+        :param strict: If true and the CURIE can't be expanded, returns an error.
+            Defaults to false.
+        :param passthrough: If true, strict is false, and the CURIE can't be expanded,
+            return the input. Defaults to false. If your strings can either be a CURIE
+            _or_ a URI, consider using :meth:`Converter.expand_or_standardize` instead.
+
+        :returns: A URI if this converter contains a URI prefix for the prefix in this
+            CURIE
+
+        :raises ExpansionError: If strict is true and the CURIE can't be expanded
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map(
@@ -1973,16 +1984,17 @@ class Converter:
     def expand_all(self, curie: str, *, strict: bool = False) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
-        :param curie:
-            A string representing a compact URI
-        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
-        :returns:
-            A list of URIs that this converter can create for the given CURIE. The
+        :param curie: A string representing a compact URI
+        :param strict: If true and the prefix can't be expanded, returns an error.
+            Defaults to false.
+
+        :returns: A list of URIs that this converter can create for the given CURIE. The
             first entry is the "standard" URI then others are based on URI prefix
             synonyms. If the prefix is not registered to this converter, none is
             returned.
 
-        :raises PrefixStandardizationError: if the prefix in the CURIE can not be looked up
+        :raises PrefixStandardizationError: if the prefix in the CURIE can not be looked
+            up
 
         >>> priority_prefix_map = {
         ...     "CHEBI": [
@@ -2045,16 +2057,17 @@ class Converter:
     ) -> str | None:
         """Standardize an identifier.
 
-        :param standard_prefix: This is a prefix that has already been standardized using
-            :meth:`standardize_prefix` in this converter
+        :param standard_prefix: This is a prefix that has already been standardized
+            using :meth:`standardize_prefix` in this converter
         :param identifier: An unstandardized identifier
         :param strict: If true, requires standardization to succeed or throws an error
+
         :returns: A standardized identifier.
 
-        By default, this function is a no-op, meaning that it just returns the identifier
-        as is. You can override the :class:`Converter` class to implement this method to
-        do standardization (e.g., removing redundant prefixes) and to do validation
-        (e.g., checking against a regular expression).
+        By default, this function is a no-op, meaning that it just returns the
+        identifier as is. You can override the :class:`Converter` class to implement
+        this method to do standardization (e.g., removing redundant prefixes) and to do
+        validation (e.g., checking against a regular expression).
         """
         return identifier
 
@@ -2117,15 +2130,15 @@ class Converter:
     ) -> str | None:
         """Expand a CURIE pair to the standard URI.
 
-        :param prefix:
-            The prefix of the CURIE
-        :param identifier:
-            The local unique identifier of the CURIE
-        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the prefix can't be expanded, return the input.
+        :param prefix: The prefix of the CURIE
+        :param identifier: The local unique identifier of the CURIE
+        :param strict: If true and the prefix can't be expanded, returns an error.
             Defaults to false.
-        :returns:
-            A URI if this converter contains a URI prefix for the prefix in this CURIE
+        :param passthrough: If true, strict is false, and the prefix can't be expanded,
+            return the input. Defaults to false.
+
+        :returns: A URI if this converter contains a URI prefix for the prefix in this
+            CURIE
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map(
@@ -2160,13 +2173,12 @@ class Converter:
     ) -> Collection[str] | None:
         """Expand a CURIE pair to all possible URIs.
 
-        :param prefix:
-            The prefix of the CURIE
-        :param identifier:
-            The local unique identifier of the CURIE
-        :param strict: If true and the prefix can't be expanded, returns an error. Defaults to false.
-        :returns:
-            A list of URIs that this converter can create for the given CURIE. The
+        :param prefix: The prefix of the CURIE
+        :param identifier: The local unique identifier of the CURIE
+        :param strict: If true and the prefix can't be expanded, returns an error.
+            Defaults to false.
+
+        :returns: A list of URIs that this converter can create for the given CURIE. The
             first entry is the "standard" URI then others are based on URI prefix
             synonyms. If the prefix is not registered to this converter, none is
             returned.
@@ -2218,16 +2230,17 @@ class Converter:
     ) -> str | None:
         """Standardize a prefix.
 
-        :param prefix:
-            The prefix of the CURIE
-        :param strict: If true and the prefix can't be standardized, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the prefix can't be standardized, return the input.
+        :param prefix: The prefix of the CURIE
+        :param strict: If true and the prefix can't be standardized, returns an error.
             Defaults to false.
-        :returns:
-            The standardized version of this prefix wrt this converter.
-            If the prefix is not registered in this converter, returns none.
-        :raises PrefixStandardizationError:
-            If strict is true and the prefix can't be standardied
+        :param passthrough: If true, strict is false, and the prefix can't be
+            standardized, return the input. Defaults to false.
+
+        :returns: The standardized version of this prefix wrt this converter. If the
+            prefix is not registered in this converter, returns none.
+
+        :raises PrefixStandardizationError: If strict is true and the prefix can't be
+            standardied
 
         >>> from curies import Converter, Record
         >>> converter = Converter.from_extended_prefix_map(
@@ -2276,18 +2289,19 @@ class Converter:
     ) -> str | None:
         """Standardize a CURIE.
 
-        :param curie:
-            A string representing a compact URI (CURIE)
-        :param strict: If true and the CURIE can't be standardized, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the CURIE can't be standardized, return the input.
+        :param curie: A string representing a compact URI (CURIE)
+        :param strict: If true and the CURIE can't be standardized, returns an error.
             Defaults to false.
-        :returns:
-            A standardized version of the CURIE in case a prefix synonym was used.
-            Note that this function is idempotent, i.e., if you give an already
-            standard CURIE, it will just return it as is. If the CURIE can't be parsed
-            with respect to the records in the converter, None is returned.
-        :raises CURIEStandardizationError:
-            If strict is true and the CURIE can't be standardized
+        :param passthrough: If true, strict is false, and the CURIE can't be
+            standardized, return the input. Defaults to false.
+
+        :returns: A standardized version of the CURIE in case a prefix synonym was used.
+            Note that this function is idempotent, i.e., if you give an already standard
+            CURIE, it will just return it as is. If the CURIE can't be parsed with
+            respect to the records in the converter, None is returned.
+
+        :raises CURIEStandardizationError: If strict is true and the CURIE can't be
+            standardized
 
         >>> from curies import Converter, Record
         >>> converter = Converter.from_extended_prefix_map(
@@ -2340,18 +2354,19 @@ class Converter:
     ) -> str | None:
         """Standardize a URI.
 
-        :param uri:
-            A string representing a valid uniform resource identifier (URI)
-        :param strict: If true and the URI can't be standardized, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the URI can't be standardized, return the input.
+        :param uri: A string representing a valid uniform resource identifier (URI)
+        :param strict: If true and the URI can't be standardized, returns an error.
             Defaults to false.
-        :returns:
-            A standardized version of the URI in case a URI prefix synonym was used.
-            Note that this function is idempotent, i.e., if you give an already
-            standard URI, it will just return it as is. If the URI can't be parsed
-            with respect to the records in the converter, None is returned.
-        :raises URIStandardizationError:
-            If strict is true and the URI can't be standardized
+        :param passthrough: If true, strict is false, and the URI can't be standardized,
+            return the input. Defaults to false.
+
+        :returns: A standardized version of the URI in case a URI prefix synonym was
+            used. Note that this function is idempotent, i.e., if you give an already
+            standard URI, it will just return it as is. If the URI can't be parsed with
+            respect to the records in the converter, None is returned.
+
+        :raises URIStandardizationError: If strict is true and the URI can't be
+            standardized
 
         >>> from curies import Converter, Record
         >>> converter = Converter.from_extended_prefix_map(
@@ -2427,11 +2442,14 @@ class Converter:
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
-        :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
+        :param target_column: The column to put the results in. Defaults to input
+            column.
+        :param strict: If true and the URI can't be compressed, returns an error.
             Defaults to false.
-        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
+        :param passthrough: If true, strict is false, and the URI can't be compressed,
+            return the input. Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or
+            URIs.
         """
         if ambiguous:
             func = partial(self.compress_or_standardize, strict=strict, passthrough=passthrough)
@@ -2452,11 +2470,14 @@ class Converter:
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
-        :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
+        :param target_column: The column to put the results in. Defaults to input
+            column.
+        :param strict: If true and the CURIE can't be expanded, returns an error.
             Defaults to false.
-        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
+        :param passthrough: If true, strict is false, and the CURIE can't be expanded,
+            return the input. Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or
+            URIs.
         """
         if ambiguous:
             func = partial(self.expand_or_standardize, strict=strict, passthrough=passthrough)
@@ -2477,10 +2498,12 @@ class Converter:
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing prefixes to standardize.
-        :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and any prefix can't be standardized, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and any prefix can't be standardized, return the input.
+        :param target_column: The column to put the results in. Defaults to input
+            column.
+        :param strict: If true and any prefix can't be standardized, returns an error.
             Defaults to false.
+        :param passthrough: If true, strict is false, and any prefix can't be
+            standardized, return the input. Defaults to false.
         """
         func = partial(self.standardize_prefix, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
@@ -2498,16 +2521,19 @@ class Converter:
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing CURIEs to standardize.
-        :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and any CURIE can't be standardized, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and any CURIE can't be standardized, return the input.
+        :param target_column: The column to put the results in. Defaults to input
+            column.
+        :param strict: If true and any CURIE can't be standardized, returns an error.
             Defaults to false.
+        :param passthrough: If true, strict is false, and any CURIE can't be
+            standardized, return the input. Defaults to false.
 
-        The Disease Ontology curates mappings to other semantic spaces and distributes them in the
-        tabular SSSOM format. However, they use a wide variety of non-standard prefixes for referring
-        to external vocabularies like SNOMED-CT. The Bioregistry contains these synonyms to support
-        reconciliation. The following example shows how the SSSOM mappings dataframe can be loaded
-        and this function applied to the mapping ``object_id`` column (in place).
+        The Disease Ontology curates mappings to other semantic spaces and distributes
+        them in the tabular SSSOM format. However, they use a wide variety of
+        non-standard prefixes for referring to external vocabularies like SNOMED-CT. The
+        Bioregistry contains these synonyms to support reconciliation. The following
+        example shows how the SSSOM mappings dataframe can be loaded and this function
+        applied to the mapping ``object_id`` column (in place).
 
         >>> import curies
         >>> import pandas as pd
@@ -2533,10 +2559,12 @@ class Converter:
 
         :param df: A pandas DataFrame
         :param column: The column in the dataframe containing URIs to standardize.
-        :param target_column: The column to put the results in. Defaults to input column.
-        :param strict: If true and any URI can't be standardized, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and any URI can't be standardized, return the input.
+        :param target_column: The column to put the results in. Defaults to input
+            column.
+        :param strict: If true and any URI can't be standardized, returns an error.
             Defaults to false.
+        :param passthrough: If true, strict is false, and any URI can't be standardized,
+            return the input. Defaults to false.
         """
         func = partial(self.standardize_uri, strict=strict, passthrough=passthrough)
         df[column if target_column is None else target_column] = df[column].map(func)
@@ -2558,10 +2586,12 @@ class Converter:
         :param column: The column in the dataframe containing URIs to convert to CURIEs.
         :param sep: The delimiter of the CSV file, defaults to tab
         :param header: Does the file have a header row?
-        :param strict: If true and the URI can't be compressed, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the URI can't be compressed, return the input.
+        :param strict: If true and the URI can't be compressed, returns an error.
             Defaults to false.
-        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
+        :param passthrough: If true, strict is false, and the URI can't be compressed,
+            return the input. Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or
+            URIs.
         """
         if ambiguous:
             func = partial(self.compress_or_standardize, strict=strict, passthrough=passthrough)
@@ -2586,10 +2616,12 @@ class Converter:
         :param column: The column in the dataframe containing CURIEs to convert to URIs.
         :param sep: The delimiter of the CSV file, defaults to tab
         :param header: Does the file have a header row?
-        :param strict: If true and the CURIE can't be expanded, returns an error. Defaults to false.
-        :param passthrough: If true, strict is false, and the CURIE can't be expanded, return the input.
+        :param strict: If true and the CURIE can't be expanded, returns an error.
             Defaults to false.
-        :param ambiguous: If true, consider the column as containing either CURIEs or URIs.
+        :param passthrough: If true, strict is false, and the CURIE can't be expanded,
+            return the input. Defaults to false.
+        :param ambiguous: If true, consider the column as containing either CURIEs or
+            URIs.
         """
         if ambiguous:
             func = partial(self.expand_or_standardize, strict=strict, passthrough=passthrough)
@@ -2643,26 +2675,27 @@ class Converter:
 
         :param prefixes: A list of prefixes to keep from this converter. These can
             correspond either to preferred CURIE prefixes or CURIE prefix synonyms.
+
         :returns: A new, slimmed down converter
 
         This functionality is useful for downstream applications like the following:
 
-        1. You load a comprehensive extended prefix map, e.g., from the Bioregistry using
-           :func:`curies.get_bioregistry_converter()`.
-        2. You load some data that conforms to this prefix map by convention. This
-           is often the case for semantic mappings stored in the
-           `SSSOM format <https://github.com/mapping-commons/sssom>`_.
+        1. You load a comprehensive extended prefix map, e.g., from the Bioregistry
+           using :func:`curies.get_bioregistry_converter()`.
+        2. You load some data that conforms to this prefix map by convention. This is
+           often the case for semantic mappings stored in the `SSSOM format
+           <https://github.com/mapping-commons/sssom>`_.
         3. You extract the list of prefixes *actually* used within your data
-        4. You subset the detailed extended prefix map to only include prefixes
-           relevant for your data
-        5. You make some kind of output of the subsetted extended prefix map to
-           go with your data. Effectively, this is a way of reconciling data. This
-           is especially effective when using the Bioregistry or other comprehensive
-           extended prefix maps.
+        4. You subset the detailed extended prefix map to only include prefixes relevant
+           for your data
+        5. You make some kind of output of the subsetted extended prefix map to go with
+           your data. Effectively, this is a way of reconciling data. This is especially
+           effective when using the Bioregistry or other comprehensive extended prefix
+           maps.
 
-        Here's a concrete example of doing this (which also includes a bit of data science)
-        to do this on the SSSOM mappings from the `Disease Ontology <https://disease-ontology.org/>`_
-        project.
+        Here's a concrete example of doing this (which also includes a bit of data
+        science) to do this on the SSSOM mappings from the `Disease Ontology
+        <https://disease-ontology.org/>`_ project.
 
         >>> import curies
         >>> import pandas as pd
@@ -2690,8 +2723,11 @@ class Converter:
         """Hash a triple using :func:`curies.triples.hash_triple`, implementing https://ts4nfdi.github.io/mapping-sameness-identifier.
 
         :param triple: A subject-predicate-object triple
-        :param negate: If true, considers the triple as "negative" and postpends a ``~`` to the hash
-        :return: A hexadecimal digest of the SHA-256 hash of the space-joined expanded URI triple
+        :param negate: If true, considers the triple as "negative" and postpends a ``~``
+            to the hash
+
+        :returns: A hexadecimal digest of the SHA-256 hash of the space-joined expanded
+            URI triple
 
         >>> import curies
         >>> from curies import Triple, Converter
@@ -2722,15 +2758,15 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
 
     :param converters: A list or tuple of converters
     :param case_sensitive: If false, will not allow case-sensitive duplicates
-    :returns:
-        A converter that looks up one at a time in the other converters.
-    :raises ValueError:
-        If there are no converters
+
+    :returns: A converter that looks up one at a time in the other converters.
+
+    :raises ValueError: If there are no converters
 
     Chain is the perfect tool if you want to override parts of an existing extended
-    prefix map. For example, if you want to use most of the Bioregistry, but you
-    would like to specify a custom URI prefix (e.g., using Identifiers.org), you
-    can do the following:
+    prefix map. For example, if you want to use most of the Bioregistry, but you would
+    like to specify a custom URI prefix (e.g., using Identifiers.org), you can do the
+    following:
 
     >>> import curies
     >>> bioregistry_converter = curies.get_bioregistry_converter()
@@ -2739,17 +2775,17 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     >>> converter.bimap["pubmed"]
     'https://identifiers.org/pubmed:'
 
-    Similarly, this also works if you want to override a prefix. Keep in mind for this to work
-    with a simple prefix map, you need to make sure the URI prefix matches in each converter,
-    otherwise you will get duplicates:
+    Similarly, this also works if you want to override a prefix. Keep in mind for this
+    to work with a simple prefix map, you need to make sure the URI prefix matches in
+    each converter, otherwise you will get duplicates:
 
     >>> overrides = curies.load_prefix_map({"PMID": "https://www.ncbi.nlm.nih.gov/pubmed/"})
     >>> converter = chain([overrides, bioregistry_converter])
     >>> converter.bimap["PMID"]
     'https://www.ncbi.nlm.nih.gov/pubmed/'
 
-    A safer way is to specify your override using an extended prefix map, which can tie together
-    prefix synonyms and URI prefix synonyms:
+    A safer way is to specify your override using an extended prefix map, which can tie
+    together prefix synonyms and URI prefix synonyms:
 
     >>> import curies
     >>> from curies import Converter, chain, get_bioregistry_converter
@@ -2770,8 +2806,8 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
     >>> converter.bimap["PMID"]
     'https://www.ncbi.nlm.nih.gov/pubmed/'
 
-    Chain prioritizes based on the order given. Therefore, if two prefix maps
-    having the same prefix but different URI prefixes are given, the first is retained
+    Chain prioritizes based on the order given. Therefore, if two prefix maps having the
+    same prefix but different URI prefixes are given, the first is retained
 
     >>> c1 = curies.load_prefix_map({"GO": "http://purl.obolibrary.org/obo/GO_"})
     >>> c2 = curies.load_prefix_map({"GO": "https://identifiers.org/go:"})
@@ -2794,16 +2830,16 @@ def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Co
 def load_prefix_map(prefix_map: LocationOr[Mapping[str, str]], **kwargs: Any) -> Converter:
     """Get a converter from a simple prefix map.
 
-    :param prefix_map:
-        One of the following:
+    :param prefix_map: One of the following:
 
-        - A mapping whose keys represent CURIE prefixes and values represent URI prefixes
+        - A mapping whose keys represent CURIE prefixes and values represent URI
+          prefixes
         - A string containing a remote location of a JSON file containg a prefix map
-        - A string or :class:`pathlib.Path` object corresponding to a local file path to a JSON file
-          containing a prefix map
+        - A string or :class:`pathlib.Path` object corresponding to a local file path to
+          a JSON file containing a prefix map
     :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
-    :returns:
-        A converter
+
+    :returns: A converter
 
     >>> import curies
     >>> converter = curies.load_prefix_map(
@@ -2824,15 +2860,16 @@ def load_extended_prefix_map(
 ) -> Converter:
     """Get a converter from a list of dictionaries by creating records out of them.
 
-    :param records:
-        One of the following:
+    :param records: One of the following:
 
-        - An iterable of :class:`curies.Record` objects or dictionaries that will
-          get converted into record objects that together constitute an extended prefix map
-        - A string containing a remote location of a JSON file containg an extended prefix map
-        - A string or :class:`pathlib.Path` object corresponding to a local file path to a JSON file
-          containing an extended prefix map
+        - An iterable of :class:`curies.Record` objects or dictionaries that will get
+          converted into record objects that together constitute an extended prefix map
+        - A string containing a remote location of a JSON file containg an extended
+          prefix map
+        - A string or :class:`pathlib.Path` object corresponding to a local file path to
+          a JSON file containing an extended prefix map
     :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
+
     :returns: A converter
 
     An extended prefix map is a list of dictionaries containing four keys:
@@ -2842,9 +2879,9 @@ def load_extended_prefix_map(
     3. An optional list of strings ``prefix_synonyms``
     4. An optional list of strings ``uri_prefix_synonyms``
 
-    Across the whole list of dictionaries, there should be uniqueness within
-    the union of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness
-    within the union of all ``uri_prefix`` and ``uri_prefix_synonyms``.
+    Across the whole list of dictionaries, there should be uniqueness within the union
+    of all ``prefix`` and ``prefix_synonyms`` as well as uniqueness within the union of
+    all ``uri_prefix`` and ``uri_prefix_synonyms``.
 
     >>> import curies
     >>> epm = [
@@ -2892,11 +2929,10 @@ def load_extended_prefix_map(
 def load_jsonld_context(data: LocationOr[dict[str, Any]], **kwargs: Any) -> Converter:
     """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
-    :param data:
-        A JSON-LD object
+    :param data: A JSON-LD object
     :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
-    :return:
-        A converter
+
+    :returns: A converter
 
     Example from a remote context file:
 
@@ -2911,11 +2947,10 @@ def load_jsonld_context(data: LocationOr[dict[str, Any]], **kwargs: Any) -> Conv
 def load_shacl(data: LocationOr[rdflib.Graph], **kwargs: Any) -> Converter:
     """Get a converter from a JSON-LD object, which contains a prefix map in its ``@context`` key.
 
-    :param data:
-        A path to an RDF file or a RDFlib graph
+    :param data: A path to an RDF file or a RDFlib graph
     :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
-    :return:
-        A converter
+
+    :returns: A converter
     """
     return Converter.from_shacl(data, **kwargs)
 
@@ -2979,11 +3014,11 @@ def write_jsonld_context(
 
     :param converter: The converter to export
     :param path: The path to a file to write to
-    :param include_synonyms: If true, includes CURIE prefix synonyms.
-        URI prefix synonyms are not output.
-    :param expand: If False, output a dictionary-like ``@context`` element.
-        If True, use ``@prefix`` and ``@id`` as keys for the CURIE prefix
-        and URI prefix, respectively, to maximize compatibility.
+    :param include_synonyms: If true, includes CURIE prefix synonyms. URI prefix
+        synonyms are not output.
+    :param expand: If False, output a dictionary-like ``@context`` element. If True, use
+        ``@prefix`` and ``@id`` as keys for the CURIE prefix and URI prefix,
+        respectively, to maximize compatibility.
 
     The following example shows writing a JSON-LD context:
 
@@ -3006,10 +3041,9 @@ def write_jsonld_context(
           }
         }
 
-    Because some implementations of JSON-LD do not like URI prefixes that end
-    with an underscore ``_``, we can use the ``expand`` keyword to turn on more
-    verbose JSON-LD context output that contains explicit ``@prefix`` and
-    ``@id`` annotations
+    Because some implementations of JSON-LD do not like URI prefixes that end with an
+    underscore ``_``, we can use the ``expand`` keyword to turn on more verbose JSON-LD
+    context output that contains explicit ``@prefix`` and ``@id`` annotations
 
     .. code-block:: python
 
@@ -3064,10 +3098,12 @@ def write_shacl(
 
     :param converter: The converter to export
     :param path: The path to a file to write to
-    :param include_synonyms: If true, includes CURIE prefix synonyms.
-        URI prefix synonyms are not output.
+    :param include_synonyms: If true, includes CURIE prefix synonyms. URI prefix
+        synonyms are not output.
 
-    .. seealso:: https://www.w3.org/TR/shacl/#sparql-prefixes
+    .. seealso::
+
+        https://www.w3.org/TR/shacl/#sparql-prefixes
 
     .. code-block:: python
 
@@ -3120,9 +3156,9 @@ def write_tsv(
 
     :param converter: The converter to export
     :param path: The path to a file to write to
-    :param header: A 2-tuple of strings representing the header used in the file,
-        where the first element is the label for CURIE prefixes and the second
-        element is the label for URI prefixes
+    :param header: A 2-tuple of strings representing the header used in the file, where
+        the first element is the label for CURIE prefixes and the second element is the
+        label for URI prefixes
 
     .. code-block:: python
 
@@ -3162,14 +3198,17 @@ def _get_shacl_line(prefix: str, uri_prefix: str, pattern: str | None = None) ->
 def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> list[Record]:
     """Convert a (potentially problematic) prefix map (i.e., not bijective) into a list of records.
 
-    A prefix map is bijective if it has no duplicate CURIE prefixes (i.e., keys in a dictionary) and
-    no duplicate URI prefixes (i.e., values in a dictionary). Because of the way that dictionaries work in Python,
-    we are always guaranteed that there are no duplicate keys.
+    A prefix map is bijective if it has no duplicate CURIE prefixes (i.e., keys in a
+    dictionary) and no duplicate URI prefixes (i.e., values in a dictionary). Because of
+    the way that dictionaries work in Python, we are always guaranteed that there are no
+    duplicate keys.
 
-    However, it is both possible and frequent to have duplicate values. This happens because many semantic spaces
-    have multiple synonymous CURIE prefixes. For example, the `OBO in OWL <https://bioregistry.io/oboinowl>`_
-    vocabulary has two common, interchangable prefixes: ``oio`` and ``oboInOwl`` (and the case variant ``oboinowl``).
-    Therefore, a prefix map might contain the following parts that make it non-bijective:
+    However, it is both possible and frequent to have duplicate values. This happens
+    because many semantic spaces have multiple synonymous CURIE prefixes. For example,
+    the `OBO in OWL <https://bioregistry.io/oboinowl>`_ vocabulary has two common,
+    interchangable prefixes: ``oio`` and ``oboInOwl`` (and the case variant
+    ``oboinowl``). Therefore, a prefix map might contain the following parts that make
+    it non-bijective:
 
     .. code-block:: json
 
@@ -3178,38 +3217,47 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> list[Record]:
           "oboInOwl": "http://www.geneontology.org/formats/oboInOwl#"
         }
 
-    This is bad because this prefix map can't be used to determinstically compress a URI. For example, should
-    ``http://www.geneontology.org/formats/oboInOwl#hasDbXref`` be compressed to ``oio:hasDbXref`` or
-    ``oboInOwl:hasDbXref``? Neither is necessarily incorrect, but the issue here is that there is not an explicit
-    choice by the data modeler, meaning that data compressed into CURIEs with this non-bijective map might not be
-    readily integrable with other datasets.
+    This is bad because this prefix map can't be used to determinstically compress a
+    URI. For example, should ``http://www.geneontology.org/formats/oboInOwl#hasDbXref``
+    be compressed to ``oio:hasDbXref`` or ``oboInOwl:hasDbXref``? Neither is necessarily
+    incorrect, but the issue here is that there is not an explicit choice by the data
+    modeler, meaning that data compressed into CURIEs with this non-bijective map might
+    not be readily integrable with other datasets.
 
-    The best solution to this situation is not more code, but rather for the data modeler to address the issue
-    upstream in the following steps:
+    The best solution to this situation is not more code, but rather for the data
+    modeler to address the issue upstream in the following steps:
 
-    1. Choose the which of prefix synonyms is going to be the primary prefix. If you're not sure, the
-       `Bioregistry <https://bioregistry.io/>`_ is a comprehensive registry of prefixes and their syonyms
-       applicable in the semantic web and the natural sciences. It gives a good suggestion of what the best
-       prefix is. In the OBO in OWL case, it suggests ``oboInOwl``.
+    1. Choose the which of prefix synonyms is going to be the primary prefix. If you're
+       not sure, the `Bioregistry <https://bioregistry.io/>`_ is a comprehensive
+       registry of prefixes and their syonyms applicable in the semantic web and the
+       natural sciences. It gives a good suggestion of what the best prefix is. In the
+       OBO in OWL case, it suggests ``oboInOwl``.
     2. Update all related data artifacts to only use that preferred prefix
-    3. Either 1) remove the other synonyms (in this example, ``oio``) from the prefix map *or* 2) transition to
-       using :ref:`epms`, a more modern data structure for supporting URI and CURIE interconversion.
+    3. Either 1) remove the other synonyms (in this example, ``oio``) from the prefix
+       map *or* 2) transition to using :ref:`epms`, a more modern data structure for
+       supporting URI and CURIE interconversion.
 
-    The first part of step 3 in this solution highlights one of the key shortcomings of prefix maps themselves -
-    they can't keep track of synonyms, which are often useful in data integration, especially when a single
-    prefix map is defined on the level of a project or community. The extended prefix map is a simple data structure
-    proposed to address this.
+    The first part of step 3 in this solution highlights one of the key shortcomings of
+    prefix maps themselves - they can't keep track of synonyms, which are often useful
+    in data integration, especially when a single prefix map is defined on the level of
+    a project or community. The extended prefix map is a simple data structure proposed
+    to address this.
 
-    * * *
+    - - -
 
-    This function is for people who are not in the position to make the sustainable fix, and want to automate
-    the assignment of which is the preferred prefix. It uses a deterministic algorithm to choose from two or more
-    CURIE prefixes that have the same URI prefix and generate an extended prefix map in which they have bene collapsed
-    into a single record. More specitically, the algorithm is based on a case-sensitive lexical sort of the prefixes.
-    The first in the sort order becomes the primary prefix and the others become synonyms in the resulting record.
+    This function is for people who are not in the position to make the sustainable fix,
+    and want to automate the assignment of which is the preferred prefix. It uses a
+    deterministic algorithm to choose from two or more CURIE prefixes that have the same
+    URI prefix and generate an extended prefix map in which they have bene collapsed
+    into a single record. More specitically, the algorithm is based on a case-sensitive
+    lexical sort of the prefixes. The first in the sort order becomes the primary prefix
+    and the others become synonyms in the resulting record.
 
-    :param prefix_map: A mapping whose keys represent CURIE prefixes and values represent URI prefixes
-    :return: A list of :class:`curies.Record` objects that together constitute an extended prefix map
+    :param prefix_map: A mapping whose keys represent CURIE prefixes and values
+        represent URI prefixes
+
+    :returns: A list of :class:`curies.Record` objects that together constitute an
+        extended prefix map
 
     >>> from curies import Converter, upgrade_prefix_map
     >>> pm = {"a": "https://example.com/a/", "b": "https://example.com/a/"}
@@ -3224,9 +3272,9 @@ def upgrade_prefix_map(prefix_map: Mapping[str, str]) -> list[Record]:
 
     .. note::
 
-        Thanks to `Joe Flack <https://github.com/joeflack4>`_ for proposing this algorithm
-        `in this discussion <https://github.com/mapping-commons/sssom-py/pull/485#discussion_r1451812733>`_.
-
+        Thanks to `Joe Flack <https://github.com/joeflack4>`_ for proposing this
+        algorithm `in this discussion
+        <https://github.com/mapping-commons/sssom-py/pull/485#discussion_r1451812733>`_.
     """
     uri_prefix_to_curie_synonyms = defaultdict(list)
     for curie_prefix, uri_prefix in prefix_map.items():
