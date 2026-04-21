@@ -1145,7 +1145,7 @@ class Converter:
     ) -> Converter:
         """Get a converter from a list of dictionaries by creating records out of them.
 
-        :param records:     One of the following:
+        :param records: One of the following:
 
             - An iterable of :class:`curies.Record` objects or dictionaries that will
               get converted into record objects that together constitute an extended
