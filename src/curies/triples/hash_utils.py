@@ -72,9 +72,9 @@ def encode_curie_triple(
     ...     }
     ... )
     >>> triple = ("mesh:C000089", "skos:exactMatch", "CHEBI:28646")
-    >>> encode_curie_triple(triple)
+    >>> encode_curie_triple(triple, converter)
     '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a'
-    >>> encode_curie_triple(triple, negate=True)
+    >>> encode_curie_triple(triple, converter, negate=True)
     '36a1f9244ea7641a90987c82f33c25c0c13712ee8f48207b2a0825f8a4e4e26a~'
     """
     uri_triple = (
