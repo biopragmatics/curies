@@ -810,30 +810,41 @@ expansions happen with the normal rules. If it's a URI, it tries to standardize 
 .. code-block:: python
 
     from curies import Converter, Record
-    converter = Converter.from_extended_prefix_map([
-        Record(
-            prefix="CHEBI",
-            prefix_synonyms=["chebi"],
-            uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
-            uri_prefix_synonyms=["https://identifiers.org/chebi:"],
-        ),
-    ])
+
+    converter = Converter.from_extended_prefix_map(
+        [
+            Record(
+                prefix="CHEBI",
+                prefix_synonyms=["chebi"],
+                uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+            ),
+        ]
+    )
 
     # Expand CURIEs
-    >>> converter.expand_or_standardize("CHEBI:138488")
-    'http://purl.obolibrary.org/obo/CHEBI_138488'
-    >>> converter.expand_or_standardize("chebi:138488")
-    'http://purl.obolibrary.org/obo/CHEBI_138488'
+    assert (
+        converter.expand_or_standardize("CHEBI:138488")
+        == "http://purl.obolibrary.org/obo/CHEBI_138488"
+    )
+    assert (
+        converter.expand_or_standardize("chebi:138488")
+        == "http://purl.obolibrary.org/obo/CHEBI_138488"
+    )
 
     # standardize URIs
-    >>> converter.expand_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
-    'http://purl.obolibrary.org/obo/CHEBI_138488'
-    >>> converter.expand_or_standardize("https://identifiers.org/chebi:138488")
-    'http://purl.obolibrary.org/obo/CHEBI_138488'
+    assert (
+        converter.expand_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
+        == "http://purl.obolibrary.org/obo/CHEBI_138488"
+    )
+    assert (
+        converter.expand_or_standardize("https://identifiers.org/chebi:138488")
+        == "http://purl.obolibrary.org/obo/CHEBI_138488"
+    )
 
     # Handle cases that aren't valid w.r.t. the converter
-    >>> converter.expand_or_standardize("missing:0000000")
-    >>> converter.expand_or_standardize("https://example.com/missing:0000000")
+    assert converter.expand_or_standardize("missing:0000000") is None
+    assert converter.expand_or_standardize("https://example.com/missing:0000000") is None
 
 A similar workflow is implemented in :meth:`curies.Converter.compress_or_standardize`
 for compressing URIs where a CURIE might get passed.
@@ -841,30 +852,35 @@ for compressing URIs where a CURIE might get passed.
 .. code-block:: python
 
     from curies import Converter, Record
-    converter = Converter.from_extended_prefix_map([
-        Record(
-            prefix="CHEBI",
-            prefix_synonyms=["chebi"],
-            uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
-            uri_prefix_synonyms=["https://identifiers.org/chebi:"],
-        ),
-    ])
+
+    converter = Converter.from_extended_prefix_map(
+        [
+            Record(
+                prefix="CHEBI",
+                prefix_synonyms=["chebi"],
+                uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                uri_prefix_synonyms=["https://identifiers.org/chebi:"],
+            ),
+        ]
+    )
 
     # Compress URIs
-    >>> converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
-    'CHEBI:138488'
-    >>> converter.compress_or_standardize("https://identifiers.org/chebi:138488")
-    'CHEBI:138488'
+    assert (
+        converter.compress_or_standardize("http://purl.obolibrary.org/obo/CHEBI_138488")
+        == "CHEBI:138488"
+    )
+    assert (
+        converter.compress_or_standardize("https://identifiers.org/chebi:138488")
+        == "CHEBI:138488"
+    )
 
     # standardize CURIEs
-    >>> converter.compress_or_standardize("CHEBI:138488")
-    'CHEBI:138488'
-    >>> converter.compress_or_standardize("chebi:138488")
-    'CHEBI:138488'
+    assert converter.compress_or_standardize("CHEBI:138488") == "CHEBI:138488"
+    assert converter.compress_or_standardize("chebi:138488") == "CHEBI:138488"
 
     # Handle cases that aren't valid w.r.t. the converter
-    >>> converter.compress_or_standardize("missing:0000000")
-    >>> converter.compress_or_standardize("https://example.com/missing:0000000")
+    assert converter.compress_or_standardize("missing:0000000") is None
+    assert converter.compress_or_standardize("https://example.com/missing:0000000") is None
 
 Reusable data structures for references
 =======================================
@@ -892,7 +908,7 @@ RDFlib is a pure Python package for manipulating RDF data. The following example
 how to bind the extended prefix map from a :class:`curies.Converter` to a graph
 (:class:`rdflib.Graph`).
 
-.. code-block::
+.. code-block:: python
 
     import curies, rdflib
 
@@ -903,7 +919,7 @@ how to bind the extended prefix map from a :class:`curies.Converter` to a graph
 A more flexible approach is to instantiate a namespace manager
 (:class:`rdflib.namespace.NamespaceManager`) and bind directly to that.
 
-.. code-block::
+.. code-block:: python
 
     import curies, rdflib.namespace
 
@@ -914,7 +930,7 @@ A more flexible approach is to instantiate a namespace manager
 URI references for use in RDFLib's graph class can be constructed from CURIEs using a
 combination of :meth:`curies.Converter.expand` and :class:`rdflib.URIRef`.
 
-.. code-block::
+.. code-block:: python
 
     import curies, rdflib
 

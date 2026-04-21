@@ -364,8 +364,8 @@ def keep_triples_by_hash(
     >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
     >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
     >>> m3 = Triple.from_curies(c1, subclass_of.curie, c3)
-    >>> h = ...
-    >>> assert list(keep_triples_by_hash([m1, m2, m3], converter, h)) == [m1]
+    >>> m1_hash = "081f943d3791dae3a85f8eb9190fee3fbdc47ba269a374e4a0a28a2b0b982625"
+    >>> assert list(keep_triples_by_hash([m1, m2, m3], converter, m1_hash)) == [m1]
     """
     return _filter(_triple_has_hash(converter, triple_hashes), triples, progress=progress)
 

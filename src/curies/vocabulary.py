@@ -214,6 +214,19 @@ semantic_mapping_scopes: dict[SemanticMappingScope, NamedReference] = {
     "RELATED": related_match,
 }
 
+
+#: A mapping of inverse relationships that can be applied when inverting mappings
+semantic_mapping_inversions = {
+    broad_match: narrow_match,
+    narrow_match: broad_match,
+    exact_match: exact_match,
+    close_match: close_match,
+    has_dbxref: has_dbxref,
+    equivalent_class: equivalent_class,
+    equivalent_property: equivalent_property,
+    same_as: same_as,
+}
+
 ## Matching Process Types
 
 #: The parent class for matching processes, see :data:`matching_processes`
