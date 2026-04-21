@@ -1452,10 +1452,19 @@ class Converter:
         :param graph_or_manager: A RDFLib graph or manager object
         :param synonyms: Should CURIE prefix synonyms be bound?
 
+        Binding a graph:
+
         >>> import curies, rdflib
         >>> converter = curies.get_obo_converter()
         >>> graph = rdflib.Graph()
-        >>> converter.bind_rdflib(graph_or_manager)
+        >>> converter.bind_rdflib(graph)
+
+        Binding a manager:
+
+        >>> import curies, rdflib, rdflib.namespace
+        >>> converter = curies.get_obo_converter()
+        >>> manager = rdflib.namespace.NamespaceManager(graph=rdflib.Graph())
+        >>> converter.bind_rdflib(manager)
         """
         from rdflib import Namespace
 
@@ -2704,7 +2713,7 @@ class Converter:
         """
         from .triples import hash_triple
 
-        return hash_triple(self, triple)
+        return hash_triple(self, triple, negate=negate)
 
 
 def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
