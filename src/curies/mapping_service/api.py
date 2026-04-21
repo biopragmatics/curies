@@ -70,14 +70,14 @@ class MappingServiceGraph(Graph):
             )
             graph = MappingServiceGraph(converter=converter)
 
-            res = graph.query(\"""
+            res = graph.query('''
                 SELECT ?o WHERE {
                     VALUES ?s {
                         <http://purl.obolibrary.org/obo/CHEBI_1>
                     }
                     ?s owl:sameAs ?o
                 }
-            \""")
+            ''')
 
         The results of this are:
 
