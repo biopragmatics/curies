@@ -264,9 +264,11 @@ class Prefix(str):
         from curies import Prefix, get_obo_converter
         from pydantic import BaseModel
 
+
         class ResourceInfo(BaseModel):
             prefix: Prefix
             name: str
+
 
         converter = get_obo_converter()
         model = ResourceInfo.model_validate(
@@ -298,7 +300,6 @@ class Prefix(str):
             },
             context={
                 "converter": converter,
-                ...
             },
         )
 
