@@ -12,6 +12,7 @@ from curies.triples import (
     exclude_subject_prefixes,
     exclude_triples,
     keep_object_prefixes,
+    keep_predicates,
     keep_prefixes_both,
     keep_prefixes_either,
     keep_references_both,
@@ -149,3 +150,11 @@ class TestFilters(unittest.TestCase):
         self.assert_triple_lists([m2], exclude_references_both(M123, [r1]))
         self.assert_triple_lists([m3], exclude_references_both(M123, [r2]))
         self.assert_triple_lists([m1], exclude_references_both(M123, [r3]))
+
+    def test_keep_predicate(self) -> None:
+        """Test keep predicate."""
+        self.assert_triple_lists([m1, m2, m3], keep_predicates([m1, m2, m3, m4], exact_match))
+        self.assert_triple_lists([m1, m2, m3], keep_predicates([m1, m2, m3, m4], [exact_match]))
+        self.assert_triple_lists(
+            [m1, m2, m3, m4], keep_predicates([m1, m2, m3, m4], [exact_match, subclass_of])
+        )
