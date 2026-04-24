@@ -161,14 +161,29 @@ class SemanticallyStandardizable(ABC):
                     }
                 )
 
-
     :mod:`curies` provides a high-level interface for standardizing classes in
     :func:`curies.standardize`.
 
     .. code-block:: python
 
-        t1 = Triple(subject="a:1", predicate="b:1", object="c:1")
-        curies.standardize(t1, converter)
+        from curies import Triple, Converter
+        from curies.vocabulary import exact_match, subclass_of
+
+        converter = Converter()
+        converter.add_prefix("CHEBI", "http://purl.obolibrary.org/obo/CHEBI_")
+        converter.add_synonym("CHEBI", "chebi")
+
+        r1 = ReferenceHolder(Reference.from_curie("chebi:1"))
+        r2 = ReferenceHolder(Reference.from_curie("chebi:2"))
+
+        # can be used directly on an object
+        assert ReferenceHolder(Reference.from_curie("CHEBI:1")) == curies.standardize(r1, converter)
+
+        # can also be used on an iterable/collection
+        assert [
+            ReferenceHolder(Reference.from_curie("CHEBI:1")),
+            ReferenceHolder(Reference.from_curie("CHEBI:2")),
+        ] == curies.standardize((r1, r2), converter)
     """
 
     @abstractmethod
