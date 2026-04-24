@@ -3312,8 +3312,8 @@ class Trie(UserDict[str, Record]):
             for key, value in initial_dict.items():
                 self[key] = value
 
-    def __setitem__(self, key: str, value: Record) -> None:
-        self.root._ensure_node(key).value = value
+    def __setitem__(self, key: str, item: Record) -> None:
+        self.root._ensure_node(key).value = item
 
     def parse_uri(self, uri: str) -> ReferenceTuple | None:
         """Parse a URI into a prefix/identifier pair based prefixes in the trie."""
