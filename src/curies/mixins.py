@@ -46,6 +46,29 @@ class SemanticallyProcessable(ABC, Generic[X]):
                 return ProcessedEntity(
                     reference=converter.parse_uri(self.uri, strict=True).to_pydantic()
                 )
+
+    :mod:`curies` provides a high-level interface for standardizing classes in
+    :func:`curies.process`.
+
+    .. code-block:: python
+
+        from curies import Converter
+
+        converter = Converter.from_prefix_map({"CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"})
+
+        e1 = RawEntity(uri="http://purl.obolibrary.org/obo/CHEBI_1")
+        e2 = RawEntity(uri="http://purl.obolibrary.org/obo/CHEBI_2")
+
+        # can be used directly on an object
+        assert ProcessedEntity(reference=Reference.from_curie("CHEBI:1")) == curies.standardize(
+            e1, converter
+        )
+
+        # can also be used on an iterable/collection
+        assert [
+            ProcessedEntity(reference=Reference.from_curie("CHEBI:1")),
+            ProcessedEntity(reference=Reference.from_curie("CHEBI:2")),
+        ] == curies.process((e1, e2), converter)
     """
 
     @abstractmethod
@@ -166,8 +189,7 @@ class SemanticallyStandardizable(ABC):
 
     .. code-block:: python
 
-        from curies import Triple, Converter
-        from curies.vocabulary import exact_match, subclass_of
+        from curies import Converter
 
         converter = Converter()
         converter.add_prefix("CHEBI", "http://purl.obolibrary.org/obo/CHEBI_")
