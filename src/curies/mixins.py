@@ -77,9 +77,6 @@ class SemanticallyProcessable(ABC, Generic[X]):
         raise NotImplementedError
 
 
-Z = TypeVar("Z", bound=SemanticallyProcessable)
-
-
 # docstr-coverage:excused `overload`
 @overload
 def process(instances: None, converter: Converter, *, iterable: bool = ...) -> None: ...
@@ -87,31 +84,40 @@ def process(instances: None, converter: Converter, *, iterable: bool = ...) -> N
 
 # docstr-coverage:excused `overload`
 @overload
-def process(instances: Z, converter: Converter, *, iterable: bool = ...) -> Z: ...
+def process(
+    instances: SemanticallyProcessable[X], converter: Converter, *, iterable: bool = ...
+) -> X: ...
 
 
 # docstr-coverage:excused `overload`
 @overload
 def process(
-    instances: Iterable[Z], converter: Converter, iterable: Literal[False] = ...
-) -> list[Z]: ...
+    instances: Iterable[SemanticallyProcessable[X]],
+    converter: Converter,
+    iterable: Literal[False] = ...,
+) -> list[X]: ...
 
 
 # docstr-coverage:excused `overload`
 @overload
 def process(
-    instances: Iterable[Z], converter: Converter, iterable: Literal[True] = ...
-) -> Iterable[Z]: ...
+    instances: Iterable[SemanticallyProcessable[X]],
+    converter: Converter,
+    iterable: Literal[True] = ...,
+) -> Iterable[X]: ...
 
 
 def process(
-    instances: Z | Iterable[Z] | None, converter: Converter, *, iterable: bool = False
-) -> Z | list[Z] | Iterable[Z] | None:
+    instances: SemanticallyProcessable[X] | Iterable[SemanticallyProcessable[X]] | None,
+    converter: Converter,
+    *,
+    return_iterator: bool = False,
+) -> X | list[X] | Iterable[X] | None:
     """Process multiple semantically processable instances."""
     if instances is None:
         return None
     elif isinstance(instances, Iterable | list):
-        if iterable:
+        if return_iterator:
             return (instance.process(converter) for instance in instances)
         else:
             return [instance.process(converter) for instance in instances]
@@ -214,41 +220,59 @@ class SemanticallyStandardizable(ABC):
         raise NotImplementedError
 
 
-Y = TypeVar("Y", bound=SemanticallyStandardizable)
+SemanticallyStandardizableType = TypeVar(
+    "SemanticallyStandardizableType", bound=SemanticallyStandardizable
+)
 
 
 # docstr-coverage:excused `overload`
 @overload
-def standardize(instances: None, converter: Converter, *, iterable: bool = ...) -> None: ...
-
-
-# docstr-coverage:excused `overload`
-@overload
-def standardize(instances: Y, converter: Converter, *, iterable: bool = ...) -> Y: ...
+def standardize(instances: None, converter: Converter, *, return_iterator: bool = ...) -> None: ...
 
 
 # docstr-coverage:excused `overload`
 @overload
 def standardize(
-    instances: Iterable[Y], converter: Converter, *, iterable: Literal[True] = ...
-) -> Iterable[Y]: ...
+    instances: SemanticallyStandardizableType, converter: Converter, *, return_iterator: bool = ...
+) -> SemanticallyStandardizableType: ...
 
 
 # docstr-coverage:excused `overload`
 @overload
 def standardize(
-    instances: Iterable[Y], converter: Converter, *, iterable: Literal[False] = ...
-) -> list[Y]: ...
+    instances: Iterable[SemanticallyStandardizableType],
+    converter: Converter,
+    *,
+    return_iterator: Literal[True] = ...,
+) -> Iterable[SemanticallyStandardizableType]: ...
+
+
+# docstr-coverage:excused `overload`
+@overload
+def standardize(
+    instances: Iterable[SemanticallyStandardizableType],
+    converter: Converter,
+    *,
+    return_iterator: Literal[False] = ...,
+) -> list[SemanticallyStandardizableType]: ...
 
 
 def standardize(
-    instances: Y | Iterable[Y] | None, converter: Converter, *, iterable: bool = False
-) -> Y | Iterable[Y] | list[Y] | None:
+    instances: SemanticallyStandardizableType | Iterable[SemanticallyStandardizableType] | None,
+    converter: Converter,
+    *,
+    return_iterator: bool = False,
+) -> (
+    SemanticallyStandardizableType
+    | Iterable[SemanticallyStandardizableType]
+    | list[SemanticallyStandardizableType]
+    | None
+):
     """Standardize an instance."""
     if instances is None:
         return None
     elif isinstance(instances, Iterable | list):
-        if iterable:
+        if return_iterator:
             return (instance.standardize(converter) for instance in instances)
         else:
             return [instance.standardize(converter) for instance in instances]
