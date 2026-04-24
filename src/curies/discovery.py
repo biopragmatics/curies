@@ -55,21 +55,22 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import PurePath
-from typing import IO, TYPE_CHECKING, Any, Literal, TextIO, Union
+from typing import IO, TYPE_CHECKING, Any, Literal, TextIO
 
 from curies import Converter, Record
 
 if TYPE_CHECKING:
     import rdflib
+    import rdflib.parser
+
+    GraphInput = IO[bytes] | TextIO | rdflib.parser.InputSource | str | bytes | PurePath
 
 __all__ = [
     "discover",
     "discover_from_rdf",
 ]
 
-
 GraphFormats = Literal["turtle", "xml", "n3", "nt", "trix"]
-GraphInput = Union[IO[bytes], TextIO, "rdflib.parser.InputSource", str, bytes, PurePath]
 
 
 def discover_from_rdf(

@@ -370,7 +370,7 @@ def _get_series(df_or_series: DataframeOrSeries, column: str | int | None = None
             raise TypeError(
                 f"passed series that does not have strings: {df_or_series.dtype=} {type(df_or_series.dtype)=}\n\n{df_or_series}"
             )
-        return df_or_series
+        return df_or_series  # ty:ignore
 
     if column is None:
         raise ValueError("must pass non-none column when using a dataframe directly")

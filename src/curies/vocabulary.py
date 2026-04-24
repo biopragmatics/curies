@@ -5,11 +5,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Literal, TypeAlias
 
-from .api import NamedReference
+from .api import NamedReference, Prefix
 
 
 def _r(p: str, i: str, n: str) -> NamedReference:
-    return NamedReference(prefix=p, identifier=i, name=n)
+    return NamedReference(prefix=Prefix(p), identifier=i, name=n)
 
 
 # RDF Schema

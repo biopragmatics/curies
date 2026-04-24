@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from rdflib import OWL, Graph, URIRef
 from rdflib.term import _is_valid_uri
 
-from .rdflib_custom import MappingServiceSPARQLProcessor  # type: ignore
+from .rdflib_custom import MappingServiceSPARQLProcessor
 from .utils import CONTENT_TYPE_TO_RDFLIB_FORMAT, handle_header
 from ..api import Converter
 
@@ -134,7 +134,7 @@ def get_flask_mapping_blueprint(
 
     blueprint = Blueprint("mapping", __name__, **kwargs)
     graph = MappingServiceGraph(converter=converter)
-    processor = MappingServiceSPARQLProcessor(graph=graph)
+    processor = MappingServiceSPARQLProcessor(graph=graph)  # type:ignore[no-untyped-call]
 
     @blueprint.route(route, methods=["GET", "POST"])
     def serve_sparql() -> Response:
@@ -168,7 +168,7 @@ def get_fastapi_router(
 
     api_router = APIRouter(**kwargs)
     graph = MappingServiceGraph(converter=converter)
-    processor = MappingServiceSPARQLProcessor(graph=graph)
+    processor = MappingServiceSPARQLProcessor(graph=graph)  # type:ignore[no-untyped-call]
 
     def _resolve(accept: str, sparql: str) -> Response:
         content_type = handle_header(accept)
