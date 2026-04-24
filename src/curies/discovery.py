@@ -55,7 +55,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import PurePath
-from typing import IO, TYPE_CHECKING, Any, Literal, TextIO, Union
+from typing import IO, TYPE_CHECKING, Any, Literal, TextIO
 
 from curies import Converter, Record
 
@@ -63,7 +63,7 @@ if TYPE_CHECKING:
     import rdflib
     import rdflib.parser
 
-    GraphInput = Union[IO[bytes], TextIO, rdflib.parser.InputSource, str, bytes, PurePath]  # noqa:UP007
+    GraphInput = IO[bytes] | TextIO | rdflib.parser.InputSource | str | bytes | PurePath
 
 __all__ = [
     "discover",
