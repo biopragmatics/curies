@@ -63,14 +63,14 @@ if TYPE_CHECKING:
     import rdflib
     import rdflib.parser
 
+    GraphInput = Union[IO[bytes], TextIO, rdflib.parser.InputSource, str, bytes, PurePath]  # noqa:UP007
+
 __all__ = [
     "discover",
     "discover_from_rdf",
 ]
 
-
 GraphFormats = Literal["turtle", "xml", "n3", "nt", "trix"]
-GraphInput = Union[IO[bytes], TextIO, rdflib.parser.InputSource, str, bytes, PurePath]  # noqa:UP007
 
 
 def discover_from_rdf(
