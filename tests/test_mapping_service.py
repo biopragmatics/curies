@@ -107,7 +107,7 @@ class TestMappingService(unittest.TestCase):
         """Set up the converter."""
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
         self.graph = MappingServiceGraph(converter=self.converter)
-        self.processor = MappingServiceSPARQLProcessor(self.graph)
+        self.processor = MappingServiceSPARQLProcessor(self.graph)  # type:ignore[no-untyped-call]
 
     def test_parse_header(self) -> None:
         """Test parsing a rather complex header."""

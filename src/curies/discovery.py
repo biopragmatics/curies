@@ -61,6 +61,7 @@ from curies import Converter, Record
 
 if TYPE_CHECKING:
     import rdflib
+    import rdflib.parser
 
 __all__ = [
     "discover",
@@ -69,7 +70,7 @@ __all__ = [
 
 
 GraphFormats = Literal["turtle", "xml", "n3", "nt", "trix"]
-GraphInput = Union[IO[bytes], TextIO, "rdflib.parser.InputSource", str, bytes, PurePath]
+GraphInput = Union[IO[bytes], TextIO, rdflib.parser.InputSource, str, bytes, PurePath]  # noqa:UP007
 
 
 def discover_from_rdf(
