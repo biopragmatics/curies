@@ -26,7 +26,7 @@ from .api import (
 )
 from .dataframe import filter_df_by_curies, filter_df_by_prefixes
 from .discovery import discover, discover_from_rdf
-from .mixins import SemanticallyProcessable
+from .mixins import SemanticallyProcessable, SemanticallyStandardizable, process, standardize
 from .preprocessing import (
     PostprocessingRewrites,
     PreprocessingBlocklists,
@@ -64,6 +64,7 @@ __all__ = [
     "Reference",
     "ReferenceTuple",
     "SemanticallyProcessable",
+    "SemanticallyStandardizable",
     "Triple",
     "chain",
     "discover",
@@ -80,9 +81,11 @@ __all__ = [
     "load_jsonld_context",
     "load_prefix_map",
     "load_shacl",
+    "process",
     "remap_curie_prefixes",
     "remap_uri_prefixes",
     "rewire",
+    "standardize",
     "upgrade_prefix_map",
     "write_extended_prefix_map",
     "write_jsonld_context",

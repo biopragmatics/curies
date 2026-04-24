@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Generic, TypeVar, overload
+from typing import Generic, Literal, TypeVar, overload
 
 from typing_extensions import Self
 
@@ -13,7 +13,9 @@ from .api import Converter
 __all__ = [
     "SemanticallyProcessable",
     "SemanticallyStandardizable",
+    "process",
     "process_many",
+    "standardize",
     "standardize_many",
 ]
 
@@ -52,25 +54,49 @@ class SemanticallyProcessable(ABC, Generic[X]):
         raise NotImplementedError
 
 
-# docstr-coverage:excused `overload`
-@overload
-def process_many(instances: None, converter: Converter) -> None: ...
+Z = TypeVar("Z", bound=SemanticallyProcessable)
 
 
 # docstr-coverage:excused `overload`
 @overload
-def process_many(
-    instances: Iterable[SemanticallyProcessable[X]], converter: Converter
-) -> list[X]: ...
+def process(instances: None, converter: Converter, *, iterable: bool = ...) -> None: ...
 
 
-def process_many(
-    instances: Iterable[SemanticallyProcessable[X]] | None, converter: Converter
-) -> list[X] | None:
+# docstr-coverage:excused `overload`
+@overload
+def process(instances: Z, converter: Converter, *, iterable: bool = ...) -> Z: ...
+
+
+# docstr-coverage:excused `overload`
+@overload
+def process(
+    instances: Iterable[Z], converter: Converter, iterable: Literal[False] = ...
+) -> list[Z]: ...
+
+
+# docstr-coverage:excused `overload`
+@overload
+def process(
+    instances: Iterable[Z], converter: Converter, iterable: Literal[True] = ...
+) -> Iterable[Z]: ...
+
+
+def process(
+    instances: Z | Iterable[Z] | None, converter: Converter, *, iterable: bool = False
+) -> Z | list[Z] | Iterable[Z] | None:
     """Process multiple semantically processable instances."""
     if instances is None:
         return None
-    return [instance.process(converter) for instance in instances]
+    elif isinstance(instances, Iterable | list):
+        if iterable:
+            return (instance.process(converter) for instance in instances)
+        else:
+            return [instance.process(converter) for instance in instances]
+    else:
+        return instances.process(converter)
+
+
+process_many = process
 
 
 class SemanticallyStandardizable(ABC):
@@ -134,6 +160,15 @@ class SemanticallyStandardizable(ABC):
                         "object": converter.standardize_reference(self.object, strict=True),
                     }
                 )
+
+
+    :mod:`curies` provides a high-level interface for standardizing classes in
+    :func:`curies.standardize`.
+
+    .. code-block:: python
+
+        t1 = Triple(subject="a:1", predicate="b:1", object="c:1")
+        curies.standardize(t1, converter)
     """
 
     @abstractmethod
@@ -147,16 +182,41 @@ Y = TypeVar("Y", bound=SemanticallyStandardizable)
 
 # docstr-coverage:excused `overload`
 @overload
-def standardize_many(instances: None, converter: Converter) -> None: ...
+def standardize(instances: None, converter: Converter, *, iterable: bool = ...) -> None: ...
 
 
 # docstr-coverage:excused `overload`
 @overload
-def standardize_many(instances: Iterable[Y], converter: Converter) -> list[Y]: ...
+def standardize(instances: Y, converter: Converter, *, iterable: bool = ...) -> Y: ...
 
 
-def standardize_many(instances: Iterable[Y] | None, converter: Converter) -> list[Y] | None:
-    """Standardize multiple semantically standardizable instances."""
+# docstr-coverage:excused `overload`
+@overload
+def standardize(
+    instances: Iterable[Y], converter: Converter, *, iterable: Literal[True] = ...
+) -> Iterable[Y]: ...
+
+
+# docstr-coverage:excused `overload`
+@overload
+def standardize(
+    instances: Iterable[Y], converter: Converter, *, iterable: Literal[False] = ...
+) -> list[Y]: ...
+
+
+def standardize(
+    instances: Y | Iterable[Y] | None, converter: Converter, *, iterable: bool = False
+) -> Y | Iterable[Y] | list[Y] | None:
+    """Standardize an instance."""
     if instances is None:
         return None
-    return [instance.standardize(converter) for instance in instances]
+    elif isinstance(instances, Iterable | list):
+        if iterable:
+            return (instance.standardize(converter) for instance in instances)
+        else:
+            return [instance.standardize(converter) for instance in instances]
+    else:
+        return instances.standardize(converter)
+
+
+standardize_many = standardize
