@@ -94,6 +94,7 @@ def process(
 def process(
     instances: Iterable[SemanticallyProcessable[X]],
     converter: Converter,
+    *,
     return_iterator: Literal[False] = ...,
 ) -> list[X]: ...
 
@@ -103,6 +104,7 @@ def process(
 def process(
     instances: Iterable[SemanticallyProcessable[X]],
     converter: Converter,
+    *,
     return_iterator: Literal[True] = ...,
 ) -> Iterable[X]: ...
 
