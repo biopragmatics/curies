@@ -79,13 +79,13 @@ class SemanticallyProcessable(ABC, Generic[X]):
 
 # docstr-coverage:excused `overload`
 @overload
-def process(instances: None, converter: Converter, *, iterable: bool = ...) -> None: ...
+def process(instances: None, converter: Converter, *, return_iterator: bool = ...) -> None: ...
 
 
 # docstr-coverage:excused `overload`
 @overload
 def process(
-    instances: SemanticallyProcessable[X], converter: Converter, *, iterable: bool = ...
+    instances: SemanticallyProcessable[X], converter: Converter, *, return_iterator: bool = ...
 ) -> X: ...
 
 
@@ -94,7 +94,7 @@ def process(
 def process(
     instances: Iterable[SemanticallyProcessable[X]],
     converter: Converter,
-    iterable: Literal[False] = ...,
+    return_iterator: Literal[False] = ...,
 ) -> list[X]: ...
 
 
@@ -103,7 +103,7 @@ def process(
 def process(
     instances: Iterable[SemanticallyProcessable[X]],
     converter: Converter,
-    iterable: Literal[True] = ...,
+    return_iterator: Literal[True] = ...,
 ) -> Iterable[X]: ...
 
 
