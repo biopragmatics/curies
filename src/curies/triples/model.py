@@ -14,6 +14,7 @@ __all__ = [
     "StrTriple",
     "Triple",
     "TriplePredicate",
+    "TripleType",
 ]
 
 
