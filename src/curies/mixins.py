@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Generic, TypeVar, overload
+from typing import Generic, Literal, TypeVar, overload
 
 from typing_extensions import Self
 
@@ -13,7 +13,9 @@ from .api import Converter
 __all__ = [
     "SemanticallyProcessable",
     "SemanticallyStandardizable",
+    "process",
     "process_many",
+    "standardize",
     "standardize_many",
 ]
 
@@ -44,6 +46,29 @@ class SemanticallyProcessable(ABC, Generic[X]):
                 return ProcessedEntity(
                     reference=converter.parse_uri(self.uri, strict=True).to_pydantic()
                 )
+
+    :mod:`curies` provides a high-level interface for standardizing classes in
+    :func:`curies.process`.
+
+    .. code-block:: python
+
+        from curies import Converter
+
+        converter = Converter.from_prefix_map({"CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"})
+
+        e1 = RawEntity(uri="http://purl.obolibrary.org/obo/CHEBI_1")
+        e2 = RawEntity(uri="http://purl.obolibrary.org/obo/CHEBI_2")
+
+        # can be used directly on an object
+        assert ProcessedEntity(reference=Reference.from_curie("CHEBI:1")) == curies.standardize(
+            e1, converter
+        )
+
+        # can also be used on an iterable/collection
+        assert [
+            ProcessedEntity(reference=Reference.from_curie("CHEBI:1")),
+            ProcessedEntity(reference=Reference.from_curie("CHEBI:2")),
+        ] == curies.process((e1, e2), converter)
     """
 
     @abstractmethod
@@ -54,23 +79,55 @@ class SemanticallyProcessable(ABC, Generic[X]):
 
 # docstr-coverage:excused `overload`
 @overload
-def process_many(instances: None, converter: Converter) -> None: ...
+def process(instances: None, converter: Converter, *, return_iterator: bool = ...) -> None: ...
 
 
 # docstr-coverage:excused `overload`
 @overload
-def process_many(
-    instances: Iterable[SemanticallyProcessable[X]], converter: Converter
+def process(
+    instances: SemanticallyProcessable[X], converter: Converter, *, return_iterator: bool = ...
+) -> X: ...
+
+
+# docstr-coverage:excused `overload`
+@overload
+def process(
+    instances: Iterable[SemanticallyProcessable[X]],
+    converter: Converter,
+    *,
+    return_iterator: Literal[False] = ...,
 ) -> list[X]: ...
 
 
-def process_many(
-    instances: Iterable[SemanticallyProcessable[X]] | None, converter: Converter
-) -> list[X] | None:
+# docstr-coverage:excused `overload`
+@overload
+def process(
+    instances: Iterable[SemanticallyProcessable[X]],
+    converter: Converter,
+    *,
+    return_iterator: Literal[True] = ...,
+) -> Iterable[X]: ...
+
+
+def process(
+    instances: SemanticallyProcessable[X] | Iterable[SemanticallyProcessable[X]] | None,
+    converter: Converter,
+    *,
+    return_iterator: bool = False,
+) -> X | list[X] | Iterable[X] | None:
     """Process multiple semantically processable instances."""
     if instances is None:
         return None
-    return [instance.process(converter) for instance in instances]
+    elif isinstance(instances, Iterable):
+        if return_iterator:
+            return (instance.process(converter) for instance in instances)
+        else:
+            return [instance.process(converter) for instance in instances]
+    else:
+        return instances.process(converter)
+
+
+process_many = process
 
 
 class SemanticallyStandardizable(ABC):
@@ -134,6 +191,29 @@ class SemanticallyStandardizable(ABC):
                         "object": converter.standardize_reference(self.object, strict=True),
                     }
                 )
+
+    :mod:`curies` provides a high-level interface for standardizing classes in
+    :func:`curies.standardize`.
+
+    .. code-block:: python
+
+        from curies import Converter
+
+        converter = Converter()
+        converter.add_prefix("CHEBI", "http://purl.obolibrary.org/obo/CHEBI_")
+        converter.add_synonym("CHEBI", "chebi")
+
+        r1 = ReferenceHolder(Reference.from_curie("chebi:1"))
+        r2 = ReferenceHolder(Reference.from_curie("chebi:2"))
+
+        # can be used directly on an object
+        assert ReferenceHolder(Reference.from_curie("CHEBI:1")) == curies.standardize(r1, converter)
+
+        # can also be used on an iterable/collection
+        assert [
+            ReferenceHolder(Reference.from_curie("CHEBI:1")),
+            ReferenceHolder(Reference.from_curie("CHEBI:2")),
+        ] == curies.standardize((r1, r2), converter)
     """
 
     @abstractmethod
@@ -142,21 +222,64 @@ class SemanticallyStandardizable(ABC):
         raise NotImplementedError
 
 
-Y = TypeVar("Y", bound=SemanticallyStandardizable)
+SemanticallyStandardizableType = TypeVar(
+    "SemanticallyStandardizableType", bound=SemanticallyStandardizable
+)
 
 
 # docstr-coverage:excused `overload`
 @overload
-def standardize_many(instances: None, converter: Converter) -> None: ...
+def standardize(instances: None, converter: Converter, *, return_iterator: bool = ...) -> None: ...
 
 
 # docstr-coverage:excused `overload`
 @overload
-def standardize_many(instances: Iterable[Y], converter: Converter) -> list[Y]: ...
+def standardize(
+    instances: SemanticallyStandardizableType, converter: Converter, *, return_iterator: bool = ...
+) -> SemanticallyStandardizableType: ...
 
 
-def standardize_many(instances: Iterable[Y] | None, converter: Converter) -> list[Y] | None:
-    """Standardize multiple semantically standardizable instances."""
+# docstr-coverage:excused `overload`
+@overload
+def standardize(
+    instances: Iterable[SemanticallyStandardizableType],
+    converter: Converter,
+    *,
+    return_iterator: Literal[True] = ...,
+) -> Iterable[SemanticallyStandardizableType]: ...
+
+
+# docstr-coverage:excused `overload`
+@overload
+def standardize(
+    instances: Iterable[SemanticallyStandardizableType],
+    converter: Converter,
+    *,
+    return_iterator: Literal[False] = ...,
+) -> list[SemanticallyStandardizableType]: ...
+
+
+def standardize(
+    instances: SemanticallyStandardizableType | Iterable[SemanticallyStandardizableType] | None,
+    converter: Converter,
+    *,
+    return_iterator: bool = False,
+) -> (
+    SemanticallyStandardizableType
+    | Iterable[SemanticallyStandardizableType]
+    | list[SemanticallyStandardizableType]
+    | None
+):
+    """Standardize an instance."""
     if instances is None:
         return None
-    return [instance.standardize(converter) for instance in instances]
+    elif isinstance(instances, Iterable):
+        if return_iterator:
+            return (instance.standardize(converter) for instance in instances)
+        else:
+            return [instance.standardize(converter) for instance in instances]
+    else:
+        return instances.standardize(converter)
+
+
+standardize_many = standardize
