@@ -1327,7 +1327,7 @@ class Converter:
         >>> converter = Converter.from_reverse_prefix_map(url)
         >>> "chebi" in converter.prefix_map
         """
-        dd = defaultdict(list)
+        dd: defaultdict[str, list[str]] = defaultdict(list)
         for uri_prefix, prefix in _prepare(reverse_prefix_map).items():
             dd[prefix].append(uri_prefix)
         records = []
