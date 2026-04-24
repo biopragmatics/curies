@@ -43,6 +43,7 @@ has_contributor = _r("dcterms", "contributor", "contributor")
 has_creator = _r("dcterms", "creator", "creator")
 has_source = _r("dcterms", "source", "source")
 has_date = _r("dcterms", "date", "date")
+conforms_to = _r("dcterms", "conformsTo", "conforms to")
 
 # OBO in OWL
 
@@ -81,7 +82,8 @@ composed_entity_expression = _r("sssom", "ComposedEntityExpression", "composed e
 
 has_ontology_root_term = _r("IAO", "0000700", "has ontology root term")
 has_term_editor = _r("IAO", "0000117", "term editor")
-
+has_obsolescence_reason = _r("IAO", "0000231", "has obsolescence reason")
+term_tracker_item = _r("IAO", "0000233", "term tracker item")
 
 # Document parts
 title_section = _r("IAO", "0000651", "title section")
@@ -214,19 +216,6 @@ semantic_mapping_scopes: dict[SemanticMappingScope, NamedReference] = {
     "RELATED": related_match,
 }
 
-
-#: A mapping of inverse relationships that can be applied when inverting mappings
-semantic_mapping_inversions = {
-    broad_match: narrow_match,
-    narrow_match: broad_match,
-    exact_match: exact_match,
-    close_match: close_match,
-    has_dbxref: has_dbxref,
-    equivalent_class: equivalent_class,
-    equivalent_property: equivalent_property,
-    same_as: same_as,
-}
-
 ## Matching Process Types
 
 #: The parent class for matching processes, see :data:`matching_processes`
@@ -336,3 +325,27 @@ is_model_of = _r("RO", "0003301", "is model of")
 is_marker_for = _r("RO", "0002607", "is marker for")
 
 orthologous_to = _r("RO", "HOM0000017", "in orthology relationship with")
+
+deprotonated_form_of = _r("RO", "0018033", "is deprotonated form of")
+protonated_form_of = _r("RO", "0018034", "is protonated form of")
+
+#: A mapping of inverse relationships that can be applied when inverting mappings
+inversions = {
+    broad_match: narrow_match,
+    narrow_match: broad_match,
+    exact_match: exact_match,
+    close_match: close_match,
+    has_dbxref: has_dbxref,
+    equivalent_class: equivalent_class,
+    equivalent_property: equivalent_property,
+    same_as: same_as,
+    # not semantic, but maybe useful?
+    deprotonated_form_of: protonated_form_of,
+    protonated_form_of: deprotonated_form_of,
+    orthologous_to: orthologous_to,
+    part_of: has_part,
+    has_part: part_of,
+}
+
+
+semantic_mapping_inversions = inversions
