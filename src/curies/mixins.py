@@ -116,7 +116,7 @@ def process(
     """Process multiple semantically processable instances."""
     if instances is None:
         return None
-    elif isinstance(instances, Iterable | list):
+    elif isinstance(instances, Iterable):
         if return_iterator:
             return (instance.process(converter) for instance in instances)
         else:
@@ -271,7 +271,7 @@ def standardize(
     """Standardize an instance."""
     if instances is None:
         return None
-    elif isinstance(instances, Iterable | list):
+    elif isinstance(instances, Iterable):
         if return_iterator:
             return (instance.standardize(converter) for instance in instances)
         else:
