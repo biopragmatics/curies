@@ -100,8 +100,11 @@ def _run_app(app: AppHint, server: str, host: str, port: int) -> None:
 
         uvicorn.run(app, host=host, port=port)
     elif server == "werkzeug":
-        # we ignore the type because at this point, we know the app has to be a flask.Flask
-        app.run(host=host, port=port)  # type:ignore[union-attr]
+        import flask
+
+        if not isinstance(app, flask.Flask):
+            raise NotImplementedError
+        app.run(host=host, port=port)
     elif server == "gunicorn":
         raise NotImplementedError
     else:

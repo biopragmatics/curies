@@ -109,7 +109,7 @@ from .api import (
     get_flask_mapping_app,
     get_flask_mapping_blueprint,
 )
-from .rdflib_custom import MappingServiceSPARQLProcessor  # type:ignore
+from .rdflib_custom import MappingServiceSPARQLProcessor
 
 __all__ = [
     "MappingServiceGraph",

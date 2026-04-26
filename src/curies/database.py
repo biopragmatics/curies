@@ -208,7 +208,7 @@ from sqlalchemy.orm import Composite, composite
 from sqlalchemy.sql.type_api import TypeEngine
 from sqlalchemy.types import JSON, TEXT, TypeDecorator
 
-from curies import Reference
+from curies import Prefix, Reference
 
 __all__ = [
     "SAReferenceListTypeDecorator",
@@ -330,7 +330,7 @@ class _ReferenceAdapter(Reference):
 
     def __init__(self, prefix: str, identifier: str) -> None:
         """Initialize the SQLAlchemy model."""
-        super().__init__(prefix=prefix, identifier=identifier)
+        super().__init__(prefix=Prefix(prefix), identifier=identifier)
 
 
 def get_reference_sa_composite(

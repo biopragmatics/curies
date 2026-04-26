@@ -82,9 +82,9 @@ RETURN_NONE_ERROR_TEXT = (
 )
 
 
-def _get_field_validator_values(values, key: str):  # type:ignore
+def _get_field_validator_values(values: Any, key: str) -> str:
     """Get the value for the key from a field validator object."""
-    return values.data[key]
+    return cast(str, values.data[key])
 
 
 class ReferenceTuple(NamedTuple):
@@ -172,12 +172,12 @@ class ReferenceTuple(NamedTuple):
     def to_pydantic(self, *, name: str | None = None) -> Reference | NamedReference:
         """Get a Pydantic model."""
         if name is None:
-            return Reference(prefix=self.prefix, identifier=self.identifier)
+            return Reference(prefix=Prefix(self.prefix), identifier=self.identifier)
         if not name:
             raise ValueError(
                 f"tried to construct a pydantic named reference with a missing name from {self.curie}"
             )
-        return NamedReference(prefix=self.prefix, identifier=self.identifier, name=name)
+        return NamedReference(prefix=Prefix(self.prefix), identifier=self.identifier, name=name)
 
 
 class Prefix(str):
@@ -1327,7 +1327,7 @@ class Converter:
         >>> converter = Converter.from_reverse_prefix_map(url)
         >>> "chebi" in converter.prefix_map
         """
-        dd = defaultdict(list)
+        dd: defaultdict[str, list[str]] = defaultdict(list)
         for uri_prefix, prefix in _prepare(reverse_prefix_map).items():
             dd[prefix].append(uri_prefix)
         records = []
@@ -3312,21 +3312,22 @@ class Trie(UserDict[str, Record]):
             for key, value in initial_dict.items():
                 self[key] = value
 
-    def __setitem__(self, key: str, value: Record) -> None:
-        self.root._ensure_node(key).value = value
+    def __setitem__(self, key: str, item: Record) -> None:
+        self.root._ensure_node(key).value = item
 
     def parse_uri(self, uri: str) -> ReferenceTuple | None:
         """Parse a URI into a prefix/identifier pair based prefixes in the trie."""
-        node: TrieNode | None = self.root
+        node: TrieNode = self.root
         record: Record | None = self.root.value
         max_non_null_index = -1
         for i, character in enumerate(uri):
-            node = cast(TrieNode, node).children.get(character)
-            if node is None:
+            new_node = node.children.get(character)
+            if new_node is None:
                 break
-            if node.value is not None:
-                record = node.value
+            if new_node.value is not None:
+                record = new_node.value
                 max_non_null_index = i
+            node = new_node
         if record is None:
             return None
         identifier = uri[max_non_null_index + 1 :]

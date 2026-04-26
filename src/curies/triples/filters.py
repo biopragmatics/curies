@@ -417,12 +417,12 @@ def _exclude_triples(
     exclusion_triples: TripleType | Iterable[TripleType],
 ) -> TriplePredicate[TripleType]:
     if isinstance(exclusion_triples, Triple):
-        exclusion_triples = {exclusion_triples}
+        exclusion_triples_ = {exclusion_triples}
     else:
-        exclusion_triples = set(exclusion_triples)
+        exclusion_triples_ = set(exclusion_triples)
 
     def _func(triple: TripleType) -> bool:
-        return triple not in exclusion_triples
+        return triple not in exclusion_triples_
 
     return _func
 
