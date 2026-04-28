@@ -45,18 +45,61 @@ def get_subject_object_indexes(
           subject/predicate prefix pair to object identifier to subject identifier to
           list of triples.
     """
-    forward: _DD[TripleType] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    backward: _DD[TripleType] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    for triple in triples:
-        forward[triple.subject.prefix, triple.object.prefix][triple.subject.identifier][
-            triple.object.identifier
-        ].append(triple)
-        backward[triple.object.prefix, triple.subject.prefix][triple.object.identifier][
-            triple.subject.identifier
-        ].append(triple)
-    return _downgrade_defaultdict(forward), _downgrade_defaultdict(backward)
+    # forward index
+    f: _DD[TripleType] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    # backward index
+    b: _DD[TripleType] = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    for t in triples:
+        f[t.subject.prefix, t.object.prefix][t.subject.identifier][t.object.identifier].append(t)
+        b[t.object.prefix, t.subject.prefix][t.object.identifier][t.subject.identifier].append(t)
+    return _downgrade_defaultdict(f), _downgrade_defaultdict(b)
 
 
+def get_one_to_many(index: SubjectObjectIndex[TripleType]) -> SubjectObjectIndex[TripleType]:
+    rv = {}
+    for pair, inner in index.items():
+        filtered_inner = {k: v for k, v in inner.items() if len(v) > 1}
+        if filtered_inner:
+            rv[pair] = filtered_inner
+    return rv
+
+
+def flip(d: SubjectObjectIndex[TripleType]) -> SubjectObjectIndex[TripleType]:
+    rv = {}
+    for (left, right), inner1 in d.items():
+        ddd = defaultdict(dict)
+        for subject_id, inner2 in inner1.items():
+            for object_id, triples in inner2.items():
+                ddd[object_id][subject_id] = triples
+        rv[right, left] = {k: v for k, v in ddd.items() if len(v) > 1}
+    return rv
+
+
+def get_many_to_many(triples: Iterable[TripleType]) -> set[TripleType]:
+    """Get many to many triples."""
+    forward, backward = get_subject_object_indexes(triples)
+    forward_sliced = get_one_to_many(forward)
+    b = flip(get_one_to_many(backward))
+    rv = set()
+    for pair, xx in forward_sliced.items():
+        if yy := b.get(pair):
+            rv.update(_compare(xx, yy))
+    return rv
+
+
+def _compare(xx, yy) -> set[TripleType]:
+    rv = set()
+    keys = set(xx.keys()) & set(yy.keys())
+    for key in keys:
+        inner_keys = set(xx[key]) & set(yy[key])
+        for value in inner_keys:
+            rv.add((key, value))
+    return rv
+
+
+#: A simple index from reference to references. This can
+#: either be subject to objects, or object to subjects,
+#: depending on the implementation.
 SimpleIndex = dict[Reference, set[Reference]]
 
 
@@ -68,22 +111,3 @@ def get_simple_indexes(triples: Iterable[TripleType]) -> tuple[SimpleIndex, Simp
         forward[triple.subject].add(triple.object)
         backward[triple.object].add(triple.subject)
     return dict(forward), dict(backward)
-
-
-def get_one_to_many(
-    forward_index: SubjectObjectIndex[TripleType],
-) -> dict[tuple[str, str], dict[str, set[str]]]:
-    return {
-        pair: xx
-        for pair, inner in forward_index.items()
-        if (xx := {k: set(v) for k, v in inner.items() if len(v) > 1})
-    }
-
-
-def get_many_to_one(forward: SubjectObjectIndex[TripleType]) -> dict[str, set[str]]:
-    raise NotImplementedError
-
-
-def get_many_to_many(triples: Iterable[TripleType]) -> set[Reference]:
-    """Get many to many triples."""
-    raise NotImplementedError

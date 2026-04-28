@@ -5,6 +5,7 @@ import unittest
 from curies import Reference
 from curies.triples import Triple
 from curies.triples.ops import (
+    flip,
     get_many_to_many,
     get_one_to_many,
     get_simple_indexes,
@@ -61,12 +62,9 @@ triples = [m1, m2, m3, m4, m5, m6, m7, m8, m9, m10, m11]
 class TestOperations(unittest.TestCase):
     """Test triples operations."""
 
-    def test_get_many_to_many(self) -> None:
-        """Test getting many-to-many triples."""
-        self.assertEqual({m6, m7, m8, m9}, get_many_to_many(triples))
-
     def test_many_to_many_index(self) -> None:
         """Get getting a many-to-many index."""
+        self.maxDiff = None
         forward, backward = get_subject_object_indexes(triples)
         with self.subTest(part="contents"):
             self.assertEqual(
@@ -93,7 +91,9 @@ class TestOperations(unittest.TestCase):
                         "E": {"6": [m6], "7": [m8]},
                         "F": {"6": [m7], "7": [m9]},
                     },
-                    ("p3", "p1"): {"gamma": {"1": [m10]}},
+                    ("p3", "p1"): {
+                        "gamma": {"1": [m10]},
+                    },
                 },
                 backward,
             )
@@ -102,22 +102,34 @@ class TestOperations(unittest.TestCase):
             self.assertEqual(
                 {
                     ("p1", "p2"): {
-                        "2": {"B", "C"},
-                        "6": {"E", "F"},
-                        "7": {"E", "F"},
-                    }
+                        "2": {"B": [m2], "C": [m3]},
+                        "6": {"E": [m6], "F": [m7]},
+                        "7": {"E": [m8], "F": [m9]},
+                    },
                 },
                 get_one_to_many(forward),
+                msg="\nfailed on 1-n (forward)",
             )
             self.assertEqual(
                 {
                     ("p2", "p1"): {
-                        "D": {"4", "5"},
-                        "E": {"6", "7"},
-                        "F": {"6", "7"},
+                        "D": {"4": [m4], "5": [m5]},
+                        "E": {"6": [m6], "7": [m8]},
+                        "F": {"6": [m7], "7": [m9]},
                     }
                 },
                 get_one_to_many(backward),
+                msg="\nfailed on n-1 (backward)",
+            )
+            self.assertEqual(
+                {
+                    ("p1", "p2"): {
+                        "6": {"E": [m6], "F": [m7]},
+                        "7": {"E": [m8], "F": [m9]},
+                    },
+                },
+                flip(get_one_to_many(backward)),
+                msg="\nfailed on n-1 (backward, flipped)",
             )
 
     def test_simple_indexes(self) -> None:
@@ -146,3 +158,7 @@ class TestOperations(unittest.TestCase):
             },
             backward,
         )
+
+    def test_get_many_to_many(self) -> None:
+        """Test getting many-to-many triples."""
+        self.assertEqual({m6, m7, m8, m9}, get_many_to_many(triples))
