@@ -570,9 +570,12 @@ class NamableReference(Reference):
 
         :returns: A reference object
         """
-        name = reference.name if isinstance(reference, NamableReference) else None
         return cls.model_validate(
-            {"prefix": reference.prefix, "identifier": reference.identifier, "name": name},
+            {
+                "prefix": reference.prefix,
+                "identifier": reference.identifier,
+                "name": getattr(reference, "name", None),
+            },
             context=converter,
         )
 
