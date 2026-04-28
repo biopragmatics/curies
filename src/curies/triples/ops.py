@@ -2,11 +2,15 @@
 
 from collections import defaultdict
 from collections.abc import Iterable
+from typing import TypeAlias
 
 from .model import TripleType
+from .. import Reference
 
 __all__ = [
-    "ManyToManyIndex",
+    "SubjectObjectIndex",
+    "get_many_to_many",
+    "get_simple_indexes",
     "get_subject_object_indexes",
 ]
 
@@ -16,19 +20,19 @@ __all__ = [
 #:
 #: This data structure can be used to index either forward or backwards mappings,
 #: as done inside :func:`get_many_to_many`
-ManyToManyIndex = dict[tuple[str, str], dict[str, dict[str, list[TripleType]]]]
+SubjectObjectIndex: TypeAlias = dict[tuple[str, str], dict[str, dict[str, list[TripleType]]]]
 
 _DD = defaultdict[tuple[str, str], defaultdict[str, defaultdict[str, list[TripleType]]]]
 
 
-def _fix_dd(dd: _DD[TripleType]) -> ManyToManyIndex[TripleType]:
+def _downgrade_defaultdict(dd: _DD[TripleType]) -> SubjectObjectIndex[TripleType]:
     return {k1: {k2: dict(v2) for k2, v2 in v1.items()} for k1, v1 in dd.items()}
 
 
 def get_subject_object_indexes(
     triples: Iterable[TripleType],
-) -> tuple[ManyToManyIndex[TripleType], ManyToManyIndex[TripleType]]:
-    """Get a forward and backwards many-to-many index.
+) -> tuple[SubjectObjectIndex[TripleType], SubjectObjectIndex[TripleType]]:
+    """Get a forward and backwards subject/object index.
 
     :param triples: An iterable of triples
 
@@ -47,12 +51,39 @@ def get_subject_object_indexes(
         forward[triple.subject.prefix, triple.object.prefix][triple.subject.identifier][
             triple.object.identifier
         ].append(triple)
-        backward[triple.subject.prefix, triple.object.prefix][triple.object.identifier][
+        backward[triple.object.prefix, triple.subject.prefix][triple.object.identifier][
             triple.subject.identifier
         ].append(triple)
-    return _fix_dd(forward), _fix_dd(backward)
+    return _downgrade_defaultdict(forward), _downgrade_defaultdict(backward)
 
 
-def get_many_to_many(triples: Iterable[TripleType]) -> list[TripleType]:
+SimpleIndex = dict[Reference, set[Reference]]
+
+
+def get_simple_indexes(triples: Iterable[TripleType]) -> tuple[SimpleIndex, SimpleIndex]:
+    """Get simple entity indexes."""
+    forward = defaultdict(set)
+    backward = defaultdict(set)
+    for triple in triples:
+        forward[triple.subject].add(triple.object)
+        backward[triple.object].add(triple.subject)
+    return dict(forward), dict(backward)
+
+
+def get_one_to_many(
+    forward_index: SubjectObjectIndex[TripleType],
+) -> dict[tuple[str, str], dict[str, set[str]]]:
+    return {
+        pair: xx
+        for pair, inner in forward_index.items()
+        if (xx := {k: set(v) for k, v in inner.items() if len(v) > 1})
+    }
+
+
+def get_many_to_one(forward: SubjectObjectIndex[TripleType]) -> dict[str, set[str]]:
+    raise NotImplementedError
+
+
+def get_many_to_many(triples: Iterable[TripleType]) -> set[Reference]:
     """Get many to many triples."""
     raise NotImplementedError
