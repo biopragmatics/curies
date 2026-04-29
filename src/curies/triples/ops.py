@@ -54,15 +54,6 @@ def exclude_prefix_stratified_many_to_many(
         .. warning::
 
             This operation fully consumes the iterator since it requires two passes
-
-
-    >>> from curies import Triple
-    >>> from curies.vocabulary import exact_match, subclass_of
-    >>> c1, c2, c3 = "DOID:0050577", "mesh:C562966", "DOID:225"
-    >>> m1 = Triple.from_curies(c1, exact_match.curie, c2)
-    >>> m2 = Triple.from_curies(c2, exact_match.curie, c3)
-    >>> m3 = Triple.from_curies(c1, subclass_of.curie, c3)
-    >>> assert list(exclude_triples([m1, m2, m3], m3)) == [m1, m2]
     """
     triples = list(triples)
     exclusion = get_prefix_stratified_many_to_many(triples)
