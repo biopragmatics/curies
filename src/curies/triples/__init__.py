@@ -149,15 +149,18 @@ from .filters import (
 )
 from .hash_utils import encode_curie_triple, encode_uri_triple, hash_triple
 from .io import read_triples, write_triples
-from .model import StrTriple, Triple, TriplePredicate
+from .model import StrTriple, Triple, TriplePredicate, TripleType
+from .ops import exclude_prefix_stratified_many_to_many
 
 __all__ = [
     "StrTriple",
     "Triple",
     "TriplePredicate",
+    "TripleType",
     "encode_curie_triple",
     "encode_uri_triple",
     "exclude_object_prefixes",
+    "exclude_prefix_stratified_many_to_many",
     "exclude_prefixes_both",
     "exclude_references_both",
     "exclude_same_prefixes",
