@@ -5,11 +5,11 @@ import unittest
 from curies import Reference
 from curies.triples import Triple
 from curies.triples.ops import (
-    flip,
-    get_many_to_many,
+    flip_prefix_pair_stratified_index,
     get_one_to_many,
-    get_simple_indexes,
-    get_subject_object_indexes,
+    get_prefix_pair_stratified_indexes,
+    get_prefix_stratified_many_to_many,
+    get_reference_indexes,
 )
 from curies.vocabulary import exact_match
 
@@ -65,7 +65,7 @@ class TestOperations(unittest.TestCase):
     def test_many_to_many_index(self) -> None:
         """Get getting a many-to-many index."""
         self.maxDiff = None
-        forward, backward = get_subject_object_indexes(triples)
+        forward, backward = get_prefix_pair_stratified_indexes(triples)
         with self.subTest(part="contents"):
             self.assertEqual(
                 {
@@ -128,13 +128,13 @@ class TestOperations(unittest.TestCase):
                         "7": {"E": [m8], "F": [m9]},
                     },
                 },
-                flip(get_one_to_many(backward)),
+                flip_prefix_pair_stratified_index(get_one_to_many(backward)),
                 msg="\nfailed on n-1 (backward, flipped)",
             )
 
     def test_simple_indexes(self) -> None:
         """Test getting many-to-many triples."""
-        forward, backward = get_simple_indexes(triples)
+        forward, backward = get_reference_indexes(triples)
         self.assertEqual(
             {
                 p11: {p2a, p3gamma},
@@ -161,4 +161,4 @@ class TestOperations(unittest.TestCase):
 
     def test_get_many_to_many(self) -> None:
         """Test getting many-to-many triples."""
-        self.assertEqual({m6, m7, m8, m9}, get_many_to_many(triples))
+        self.assertEqual({m6, m7, m8, m9}, get_prefix_stratified_many_to_many(triples))
