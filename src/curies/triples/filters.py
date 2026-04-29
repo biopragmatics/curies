@@ -561,8 +561,7 @@ def keep_predicates(
     :param predicates: A collection of references
     :param progress: Should a progress bar be shown?
 
-    :returns: A sub-iterable of triples whose predicate appear in the given
-        references.
+    :returns: A sub-iterable of triples whose predicate appear in the given references.
 
     >>> from curies import Reference, Triple
     >>> from curies.vocabulary import exact_match, subclass_of
