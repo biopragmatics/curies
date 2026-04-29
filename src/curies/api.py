@@ -488,6 +488,10 @@ class Reference(BaseModel):
         """Return this reference, since it already has no name."""
         return self
 
+    def with_name(self, name: str) -> NamableReference:
+        """Return this reference, with a name."""
+        return NamedReference(prefix=self.prefix, identifier=self.identifier, name=name)
+
     @classmethod
     def from_curie(cls, curie: str, *, sep: str = ":", converter: Converter | None = None) -> Self:
         """Parse a CURIE string and populate a reference.
@@ -580,6 +584,10 @@ class NamableReference(Reference):
         """Return this reference without a name."""
         return Reference(prefix=self.prefix, identifier=self.identifier)
 
+    def with_name(self, name: str) -> Self:
+        """Return this reference, with a name."""
+        return self.model_copy(update={"name": name})
+
 
 class NamedReference(NamableReference):
     """A reference with a name."""
@@ -637,6 +645,10 @@ class NamedReference(NamableReference):
             },
             context=converter,
         )
+
+    def with_name(self, name: str) -> Self:
+        """Return this reference, with a name."""
+        return self.model_copy(update={"name": name})
 
 
 RecordKey = tuple[str, str, str, str]
