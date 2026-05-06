@@ -13,6 +13,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Literal,
     NamedTuple,
@@ -430,13 +431,15 @@ class Reference(BaseModel):
     ReferenceTuple(prefix='chebi', identifier='1234')
     """
 
-    prefix: Prefix = Field(
-        ...,
-        description="The prefix used in a compact URI (CURIE).",
-    )
-    identifier: str = Field(
-        ..., description="The local unique identifier used in a compact URI (CURIE)."
-    )
+    prefix: Annotated[
+        Prefix,
+        Field(
+            description="The prefix used in a compact URI (CURIE).",
+        ),
+    ]
+    identifier: Annotated[
+        str, Field(description="The local unique identifier used in a compact URI (CURIE).")
+    ]
 
     model_config = ConfigDict(frozen=True)
 
@@ -527,10 +530,12 @@ class Reference(BaseModel):
 class NamableReference(Reference):
     """A reference, maybe with a name."""
 
-    name: str | None = Field(
-        None,
-        description="The name of the entity referenced by this object's prefix and identifier, if exists.",
-    )
+    name: Annotated[
+        str | None,
+        Field(
+            description="The name of the entity referenced by this object's prefix and identifier, if exists.",
+        ),
+    ] = None
 
     model_config = ConfigDict(frozen=True)
 
@@ -592,9 +597,12 @@ class NamableReference(Reference):
 class NamedReference(NamableReference):
     """A reference with a name."""
 
-    name: str = Field(
-        ..., description="The name of the entity referenced by this object's prefix and identifier."
-    )
+    name: Annotated[
+        str,
+        Field(
+            description="The name of the entity referenced by this object's prefix and identifier."
+        ),
+    ]
 
     model_config = ConfigDict(frozen=True)
 
@@ -662,23 +670,29 @@ class Record(BaseModel):
         https://github.com/cthoyt/curies/issues/70
     """
 
-    prefix: str = Field(
-        ...,
-        title="CURIE prefix",
-        description="The canonical CURIE prefix, used in the reverse prefix map",
-    )
-    uri_prefix: str = Field(
-        ...,
-        title="URI prefix",
-        description="The canonical URI prefix, used in the forward prefix map",
-    )
+    prefix: Annotated[
+        str,
+        Field(
+            title="CURIE prefix",
+            description="The canonical CURIE prefix, used in the reverse prefix map",
+        ),
+    ]
+    uri_prefix: Annotated[
+        str,
+        Field(
+            title="URI prefix",
+            description="The canonical URI prefix, used in the forward prefix map",
+        ),
+    ]
     prefix_synonyms: list[str] = Field(default_factory=list, title="CURIE prefix synonyms")
     uri_prefix_synonyms: list[str] = Field(default_factory=list, title="URI prefix synonyms")
-    pattern: str | None = Field(
-        default=None,
-        description="The regular expression pattern for entries in this semantic space. "
-        "Warning: this is an experimental feature.",
-    )
+    pattern: Annotated[
+        str | None,
+        Field(
+            description="The regular expression pattern for entries in this semantic space. "
+            "Warning: this is an experimental feature.",
+        ),
+    ] = None
 
     @field_validator("prefix_synonyms")  # type:ignore
     @classmethod
