@@ -142,6 +142,8 @@ synonym_scope_to_oio: dict[SynonymScope, SynonymScopeOIO] = {
 
 ## OMO Synonym Types
 
+has_ontology_hierarchical_property = _r("OMO", "0003014", "has ontology hierarchical property")
+
 #: The parent class for all synonym types, see :data:`synonym_types`
 #: for the set of all synonym types
 synonym_type = _r("oboInOwl", "SynonymType", "synonym type")
@@ -329,6 +331,9 @@ orthologous_to = _r("RO", "HOM0000017", "in orthology relationship with")
 deprotonated_form_of = _r("RO", "0018033", "is deprotonated form of")
 protonated_form_of = _r("RO", "0018034", "is protonated form of")
 
+has_suborganization = _r("org", "hasSubOrganization", "has suborganization")
+is_suborganization_of = _r("org", "subOrganizationOf", "is suborganization of")
+
 #: A mapping of inverse relationships that can be applied when inverting mappings
 inversions = {
     broad_match: narrow_match,
@@ -345,6 +350,8 @@ inversions = {
     orthologous_to: orthologous_to,
     part_of: has_part,
     has_part: part_of,
+    has_suborganization: is_suborganization_of,
+    is_suborganization_of: has_suborganization,
 }
 
 
