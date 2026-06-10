@@ -321,6 +321,8 @@ class TestConverter(unittest.TestCase):
 
     def _assert_convert(self, converter: Converter) -> None:
         self.assertIn("GO", converter.prefix_map)
+        self.assertTrue(converter.has_prefix("GO"))
+        self.assertFalse(converter.has_prefix("nope-nope-nope"))
         self.assertIn("GO", converter.bimap)
         self.assertIn("GO", converter.reverse_bimap.values())
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_prefix_map)
@@ -411,7 +413,9 @@ class TestConverter(unittest.TestCase):
         """Test the OBO converter."""
         obo_converter = get_obo_converter()
         self.assertIn("CHEBI", obo_converter.prefix_map)
+        self.assertTrue(obo_converter.has_prefix("CHEBI"))
         self.assertNotIn("chebi", obo_converter.prefix_map)
+        self.assertFalse(obo_converter.has_prefix("chebi"))
 
     @SLOW
     def test_monarch(self) -> None:
@@ -445,6 +449,9 @@ class TestConverter(unittest.TestCase):
         chebi_uri = converter.prefix_map["chebi"]
         self.assertIn(chebi_uri, converter.reverse_prefix_map)
         self.assertEqual("chebi", converter.reverse_prefix_map[chebi_uri])
+
+        self.assertTrue(converter.has_prefix("CHEBI"))
+        self.assertTrue(converter.has_prefix("chebi"))
 
     def test_load_path(self) -> None:
         """Test loading from paths."""
@@ -619,6 +626,10 @@ class TestConverter(unittest.TestCase):
         self.assertIn("go", c3.prefix_map, msg=f"PM: {c3.prefix_map}")
         self.assertNotIn("go", c3.bimap)
         self.assertIn("GO", c3.bimap)
+
+        self.assertTrue(c3.has_prefix("go"))
+        self.assertTrue(c3.has_prefix("GO"))
+        self.assertFalse(c3.has_prefix("nope"))
 
     def test_combine_ci(self) -> None:
         """Test combining case-insensitive."""

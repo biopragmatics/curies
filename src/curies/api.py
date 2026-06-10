@@ -960,6 +960,10 @@ class Converter:
         """Get the bijective mapping between URI CURIE prefixes and CURIE prefixes."""
         return {r.uri_prefix: r.prefix for r in self.records}
 
+    def has_prefix(self, prefix: str) -> bool:
+        """Check if the converter has the prefix (either as a primary or secondary)."""
+        return prefix in self._prefix_to_record
+
     def _match_record(
         self, external: Record, case_sensitive: bool = True
     ) -> Mapping[str, list[str]]:
