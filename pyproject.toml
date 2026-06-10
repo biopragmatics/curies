@@ -82,6 +82,8 @@ typing = [
     "pydantic",
     "bioregistry",
     "types-Markdown",
+    "types-defusedxml",
+    "types-tqdm",
 ]
 docs-lint = [
     { include-group = "docs" },
