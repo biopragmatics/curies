@@ -285,6 +285,8 @@ match_typedefs: Sequence[NamedReference] = (
     equivalent_property,  # for properties
     has_dbxref,
     see_also,
+    subclass_of,
+    subproperty_of,
 )
 
 # Extension past the SSSOM spec
