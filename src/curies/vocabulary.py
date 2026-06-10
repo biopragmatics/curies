@@ -45,6 +45,10 @@ has_source = _r("dcterms", "source", "source")
 has_date = _r("dcterms", "date", "date")
 conforms_to = _r("dcterms", "conformsTo", "conforms to")
 
+# PAV
+
+has_author = _r("pav", "authoredBy", "authored by")
+
 # OBO in OWL
 
 obo_in_subset = _r("oboInOwl", "inSubset", "in subset")
