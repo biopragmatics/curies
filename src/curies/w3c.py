@@ -21,8 +21,11 @@ import re
 
 __all__ = [
     "CURIE_PATTERN",
+    "CURIE_RE",
     "LOCAL_UNIQUE_IDENTIFIER_PATTERN",
+    "LOCAL_UNIQUE_IDENTIFIER_RE",
     "NCNAME_PATTERN",
+    "NCNAME_RE",
     "is_w3c_curie",
     "is_w3c_prefix",
 ]
