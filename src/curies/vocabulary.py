@@ -210,6 +210,10 @@ editor_note = _r("IAO", "0000116", "editor note")
 alternative_term = _r("IAO", "0000118", "alternative term")
 term_replaced_by = _r("IAO", "0100001", "term replaced by")
 
+cross_species_exact = _r("semapv", "crossSpeciesExactMatch", "cross-species exact match")
+cross_species_narrow = _r("semapv", "crossSpeciesNarrowMatch", "cross-species narrow match")
+cross_species_broad = _r("semapv", "crossSpeciesBroadMatch", "cross-species broad match")
+
 #: A list of strings used to refer to mapping types in ``skos``
 SemanticMappingScope: TypeAlias = Literal["EXACT", "NARROW", "BROAD", "CLOSE", "RELATED"]
 
@@ -287,6 +291,9 @@ match_typedefs: Sequence[NamedReference] = (
     see_also,
     subclass_of,
     subproperty_of,
+    cross_species_broad,
+    cross_species_exact,
+    cross_species_narrow,
 )
 
 # Extension past the SSSOM spec
@@ -350,6 +357,9 @@ inversions: dict[Reference, NamedReference] = {
     equivalent_class: equivalent_class,
     equivalent_property: equivalent_property,
     same_as: same_as,
+    cross_species_exact: cross_species_exact,
+    cross_species_narrow: cross_species_broad,
+    cross_species_broad: cross_species_narrow,
     # not semantic, but maybe useful?
     deprotonated_form_of: protonated_form_of,
     protonated_form_of: deprotonated_form_of,
