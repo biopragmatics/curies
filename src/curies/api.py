@@ -2448,16 +2448,18 @@ class Converter:
     ) -> Reference | None:
         """Standardizes a reference."""
         st_prefix = self.standardize_prefix(reference.prefix, strict=False)
-        if st_prefix is None and strict:
-            raise PrefixStandardizationError(reference.prefix)
-
+        if st_prefix is None:
+            if strict:
+                raise PrefixStandardizationError(reference.prefix)
+            return None
         st_identifier = self.standardize_identifier(st_prefix, reference.identifier, strict=False)
-        if st_identifier is None and strict:
-            raise IdentifierStandardizationError(reference.curie)
-
-        if st_prefix and st_identifier:
-            return reference.model_copy(update={"prefix": st_prefix, "identifier": st_identifier})
-        return None
+        if st_identifier is None:
+            if strict:
+                raise IdentifierStandardizationError(reference.curie)
+            return None
+        return reference.model_copy(
+            update={"prefix": Prefix(st_prefix), "identifier": st_identifier}
+        )
 
     def pd_compress(
         self,
