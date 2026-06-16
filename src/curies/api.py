@@ -2457,7 +2457,9 @@ class Converter:
             if strict:
                 raise IdentifierStandardizationError(reference.curie)
             return None
-        return reference.model_copy(update={"prefix": Prefix(st_prefix), "identifier": st_identifier})
+        return reference.model_copy(
+            update={"prefix": Prefix(st_prefix), "identifier": st_identifier}
+        )
 
     def pd_compress(
         self,
