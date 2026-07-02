@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Literal, TypeAlias, TypeVar, overload
 
 from pydantic import BaseModel, Field
-from typing_extensions import Never, Self
+from typing_extensions import Self
 
 from .api import (
     Converter,
@@ -352,8 +352,6 @@ class PreprocessingConverter(Converter):
 
         rv = super().parse_curie(curie, strict=strict)  # type:ignore[call-overload]
         return self._post_process(rv)
-
-.
 
     # docstr-coverage:excused `overload`
     @overload
