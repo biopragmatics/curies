@@ -8,10 +8,9 @@ from pathlib import Path
 from typing import Any, Literal, TypeAlias, TypeVar, overload
 
 from pydantic import BaseModel, Field
-from typing_extensions import Never, Self
+from typing_extensions import Self
 
 from .api import (
-    RETURN_NONE_ERROR_TEXT,
     Converter,
     Reference,
     ReferenceTuple,
@@ -361,19 +360,6 @@ class PreprocessingConverter(Converter):
         uri: str,
         *,
         strict: Literal[False] = ...,
-        return_none: Literal[False] = ...,
-        context: str | None = ...,
-        block_action: BlockAction = ...,
-    ) -> Never: ...
-
-    # docstr-coverage:excused `overload`
-    @overload
-    def parse_uri(
-        self,
-        uri: str,
-        *,
-        strict: Literal[False] = ...,
-        return_none: Literal[True] | None = ...,
         context: str | None = ...,
         block_action: BlockAction = ...,
     ) -> ReferenceTuple | None: ...
@@ -385,7 +371,6 @@ class PreprocessingConverter(Converter):
         uri: str,
         *,
         strict: Literal[True] = True,
-        return_none: bool | None = ...,
         context: str | None = ...,
         block_action: BlockAction = ...,
     ) -> ReferenceTuple: ...
@@ -395,7 +380,6 @@ class PreprocessingConverter(Converter):
         uri: str,
         *,
         strict: bool = False,
-        return_none: bool | None = None,
         context: str | None = None,
         block_action: BlockAction = "raise",
     ) -> ReferenceTuple | None:
@@ -404,8 +388,6 @@ class PreprocessingConverter(Converter):
         :param uri: The URI to parse and standardize
         :param strict: If the URI can't be parsed, should an error be thrown? Defaults
             to false.
-        :param return_none: A dummy value, do not use. If given as False, will raise a
-            not implemented error
         :param context: Is there a context, e.g., an ontology prefix that should be
             applied to the remapping and blocklist rules?
         :param block_action: What action should be taken when the blocklist is invoked?
@@ -416,11 +398,7 @@ class PreprocessingConverter(Converter):
         :returns: A tuple representing a parsed and standardized URI
 
         :raises BlocklistError: If the URI is blocked
-        :raises NotImplementedError: If return_none is given as False
         """
-        if return_none is False:
-            raise NotImplementedError(RETURN_NONE_ERROR_TEXT)
-
         uri = self._preclean(uri)
 
         if r1 := self.rules.remap_full(uri, reference_cls=self._reference_cls, context=context):

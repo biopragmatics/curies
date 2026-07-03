@@ -77,12 +77,6 @@ logger = logging.getLogger(__name__)
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
 
-RETURN_NONE_ERROR_TEXT = (
-    "Converter.parse_uri stopped returning ``(None, None)`` in curies v0.11.0. "
-    "``return_none`` is now a no-op argument (i.e., you shouldn't pass it "
-    "anymore) and the function returns ``None`` when parsing fails in non-strict mode"
-)
-
 
 def _get_field_validator_values(values: Any, key: str) -> str:
     """Get the value for the key from a field validator object."""
@@ -1790,9 +1784,7 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def parse_uri(
-        self, uri: str, *, strict: Literal[False] = ..., return_none: None = ...
-    ) -> ReferenceTuple | None: ...
+    def parse_uri(self, uri: str, *, strict: Literal[False] = ...) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
     @overload
@@ -1801,24 +1793,18 @@ class Converter:
         uri: str,
         *,
         strict: Literal[True] = True,
-        return_none: None = ...,
     ) -> ReferenceTuple: ...
 
-    def parse_uri(
-        self, uri: str, *, strict: bool = False, return_none: None = None
-    ) -> ReferenceTuple | None:
+    def parse_uri(self, uri: str, *, strict: bool = False) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
         :param uri: A string representing a valid uniform resource identifier (URI)
         :param strict: If true and the URI can't be parsed, returns an error. Defaults
             to false.
-        :param return_none: Opt into future type returning of a single None instead of a
-            pair of Nones
 
         :returns: A CURIE pair if the URI could be parsed, otherwise a pair of None's
 
         :raises CompressionError: if strict is set to true and the URI can't be parsed
-        :raises NotImplementedError: If you pass ``False`` to return_none
 
         >>> from curies import Converter
         >>> converter = Converter.from_prefix_map(
@@ -1837,12 +1823,7 @@ class Converter:
             return rv
         if strict:
             raise CompressionError(uri) from None
-        if return_none is None:
-            return None
-        elif return_none is True:
-            raise NotImplementedError("return_none should not be passed as of curies v0.13.0")
-        else:  # i.e., return_none=False, which isn't supported anymore.
-            raise NotImplementedError(RETURN_NONE_ERROR_TEXT)
+        return None
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
