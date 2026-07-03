@@ -398,7 +398,6 @@ class PreprocessingConverter(Converter):
         :returns: A tuple representing a parsed and standardized URI
 
         :raises BlocklistError: If the URI is blocked
-        :raises NotImplementedError: If return_none is given as False
         """
         uri = self._preclean(uri)
 
