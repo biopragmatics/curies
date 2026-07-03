@@ -385,7 +385,7 @@ class PrefixMap(RootModel[dict[Prefix, str]]):
 
 
 #: A type variable for prefixes which defaults to the simplest
-PrefixType: TypeAlias = TypeVar("PrefixType", bound=Prefix, default=Prefix)
+PrefixType = TypeVar("PrefixType", bound=Prefix, default=Prefix)
 
 
 class Reference(BaseModel, Generic[PrefixType]):
@@ -486,7 +486,7 @@ class Reference(BaseModel, Generic[PrefixType]):
     # note that it's important that this is explicitly
     # Reference and not Self, since all subclasses should
     # return only a reference.
-    def without_name(self) -> Reference:
+    def without_name(self) -> Reference[PrefixType]:
         """Return this reference, since it already has no name."""
         return self
 
