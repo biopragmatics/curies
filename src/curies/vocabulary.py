@@ -316,7 +316,9 @@ charlie = _r("orcid", "0000-0003-4423-4370", "Charles Tapley Hoyt")
 part_of = _r("BFO", "0000050", "part of")
 has_part = _r("BFO", "0000051", "has part")
 located_in = _r("RO", "0001025", "located in")
+location_of = _r("RO", "0001015", "location of")
 enables = _r("RO", "0002327", "enables")
+enabled_by = _r("RO", "0002333", "enabled by")
 involved_in = _r("RO", "0002331", "involved in")
 colocalizes_with = _r("RO", "0002325", "colocalizes with")
 acts_upstream_of = _r("RO", "0002263", "acts upstream of")
@@ -331,6 +333,10 @@ acts_upstream_of_or_within_negative_effect = _r(
 )
 acts_upstream_of_positive_effect = _r("RO", "0004034", "acts upstream of, positive effect")
 acts_upstream_of_negative_effect = _r("RO", "0004035", "acts upstream of, negative effect")
+
+derives_from = _r("RO", "0002202", "derives from")
+derives_into = _r("RO", "0001001", "derives into")
+contained_in = _r("RO", "0001018", "contained in")
 
 molecularly_interacts_with = _r("ro", "0002436", "molecularly interacts with")
 regulator_of = _r("RO", "0012004", "is small molecule regulator of")
@@ -360,7 +366,6 @@ inversions: dict[Reference, NamedReference] = {
     cross_species_exact: cross_species_exact,
     cross_species_narrow: cross_species_broad,
     cross_species_broad: cross_species_narrow,
-    # not semantic, but maybe useful?
     deprotonated_form_of: protonated_form_of,
     protonated_form_of: deprotonated_form_of,
     orthologous_to: orthologous_to,
@@ -368,7 +373,12 @@ inversions: dict[Reference, NamedReference] = {
     has_part: part_of,
     has_suborganization: is_suborganization_of,
     is_suborganization_of: has_suborganization,
+    derives_from: derives_into,
+    derives_into: derives_from,
+    located_in: location_of,
+    location_of: located_in,
+    enabled_by: enables,
+    enables: enabled_by,
 }
-
 
 semantic_mapping_inversions = inversions
