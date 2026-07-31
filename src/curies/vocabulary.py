@@ -91,6 +91,20 @@ XSD_TO_PARSER: dict[Reference, Callable[[str], XSDPrimitive]] = {
     xsd_boolean: _parse_xsd_boolean_str,
 }
 
+
+def parse_xsd(value: str, datatype: Reference) -> XSDPrimitive:
+    """Parse an XSD-conformant string into a primitive type.
+
+    :param value: The XSD-conformant string to parse
+    :param datatype: A reference to an XSD term, must be inside :data:`XSD_TO_PARSER`
+
+    :returns: An integer, float, date, datetime, boolean, URL, or string, depending on
+        the datatype
+    """
+    parser = XSD_TO_PARSER[datatype]
+    return parser(value)
+
+
 # DC Terms
 
 has_description = _r("dcterms", "description", "description")

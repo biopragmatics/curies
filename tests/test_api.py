@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import tempfile
 import unittest
@@ -11,8 +12,10 @@ from typing import Literal, overload
 
 import pandas as pd
 import rdflib
+from pydantic import AnyUrl
 
 import curies
+from curies import vocabulary as v
 from curies.api import (
     CompressionError,
     Converter,
@@ -36,6 +39,7 @@ from curies.sources import (
     get_obo_converter,
 )
 from curies.version import get_version
+from curies.vocabulary import parse_xsd
 from tests.constants import SLOW
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
@@ -1282,3 +1286,20 @@ class TestUtils(unittest.TestCase):
         self.assertEqual([], c_record.prefix_synonyms)
         self.assertEqual("https://example.com/c/", c_record.uri_prefix)
         self.assertEqual([], c_record.uri_prefix_synonyms)
+
+    def test_parse_xsd(self) -> None:
+        """Test parsing XSD."""
+        with self.assertRaises(KeyError):
+            parse_xsd("doesn't matter", Reference(prefix="something", identifier="wrong"))
+
+        for expected, s, datatype in [
+            (True, "true", v.xsd_boolean),
+            (False, "false", v.xsd_boolean),
+            (datetime.date(2026, 7, 31), "2026-07-31", v.xsd_date),
+            (5, "5", v.xsd_integer),
+            (5.0, "5", v.xsd_float),
+            (5.1, "5.1", v.xsd_float),
+            (AnyUrl("https://example.org"), "https://example.org/", v.xsd_uri),
+        ]:
+            with self.subTest(value=s):
+                self.assertEqual(expected, parse_xsd(s, datatype))
