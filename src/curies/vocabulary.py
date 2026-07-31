@@ -186,6 +186,11 @@ synonym_types: set[NamedReference] = {
     brand_name,
 }
 
+# LinkML
+
+#: See https://github.com/mapping-commons/sssom/pull/560
+linkml_uri_or_curie = _r("linkml", "Uriorcurie", "URI or CURIE")
+
 # Semantic Mappings
 
 ## Mapping Relations
