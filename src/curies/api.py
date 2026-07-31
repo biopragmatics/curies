@@ -329,7 +329,7 @@ class Prefix(str):
         )
 
     @classmethod
-    def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
+    def _validate(cls, /, __input_value: str, info: core_schema.ValidationInfo) -> Self:
         converter = _converter_from_validation_info(info)
         if converter is None:
             return cls(__input_value)
@@ -451,7 +451,7 @@ class Reference(BaseModel):
     def __hash__(self) -> int:
         return hash((self.prefix, self.identifier))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, Reference)
             and self.prefix == other.prefix
@@ -1072,7 +1072,7 @@ class Converter:
         if sr is not None:
             if sr.prefix != record.prefix:
                 raise ValueError(f"this prefix synonym is already taken by record for {sr.prefix}")
-            return None
+            return
 
         self._index_prefix(prefix_synonym, record)
 
@@ -1101,7 +1101,7 @@ class Converter:
                     f"can't add URI prefix synonym {uri_prefix_synonym} to {prefix} becauase "
                     f"it is already taken by record for {sr.prefix}"
                 )
-            return None
+            return
 
         self._index_uri_prefix(uri_prefix_synonym, record)
 
@@ -2446,7 +2446,7 @@ class Converter:
         self,
         df: pandas.DataFrame,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
         ambiguous: bool = False,
@@ -2474,7 +2474,7 @@ class Converter:
         self,
         df: pandas.DataFrame,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
         ambiguous: bool = False,
@@ -2503,7 +2503,7 @@ class Converter:
         df: pandas.DataFrame,
         *,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -2526,7 +2526,7 @@ class Converter:
         df: pandas.DataFrame,
         *,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -2564,7 +2564,7 @@ class Converter:
         df: pandas.DataFrame,
         *,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:

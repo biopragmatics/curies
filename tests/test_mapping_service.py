@@ -143,8 +143,10 @@ class TestMappingService(unittest.TestCase):
             "SELECT ?o WHERE { <http://example.com/1> owl:sameAs ?o }",
             "SELECT ?s WHERE { ?s owl:sameAs <http://example.com/1> }",
             # errors because predicate is given
-            "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
-            "owl:sameAs <http://purl.obolibrary.org/obo/CHEBI_1> }",
+            (
+                "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
+                "owl:sameAs <http://purl.obolibrary.org/obo/CHEBI_1> }"
+            ),
         ]:
             with self.subTest(sparql=sparql):
                 self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))

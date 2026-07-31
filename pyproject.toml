@@ -224,6 +224,7 @@ ignore = [
     "E501", # TODO remove
     "N818", # TODO remove
     "C901", # TODO remove?
+    "DTZ011",
 ]
 
 # See https://docs.astral.sh/ruff/settings/#per-file-ignores
