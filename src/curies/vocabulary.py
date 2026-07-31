@@ -77,7 +77,7 @@ def _parse_xsd_boolean_str(v: str) -> bool:
 
 
 #: A union type for everything that can be parsed based on XSD
-XSDPrimitive: TypeAlias = str | float | int | datetime.date | bool | AnyUrl
+XSDPrimitive: TypeAlias = str | float | int | datetime.datetime | datetime.date | bool | AnyUrl
 
 #: A map of XSD references to parser functions
 XSD_TO_PARSER: dict[Reference, Callable[[str], XSDPrimitive]] = {
