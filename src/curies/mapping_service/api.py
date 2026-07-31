@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     import flask
 
 
-def _prepare_predicates(predicates: None | str | Collection[str] = None) -> set[URIRef]:
+def _prepare_predicates(predicates: str | Collection[str] | None = None) -> set[URIRef]:
     if predicates is None:
         return {OWL.sameAs}
     if isinstance(predicates, str):
@@ -36,7 +36,7 @@ class MappingServiceGraph(Graph):
         self,
         *args: Any,
         converter: Converter,
-        predicates: None | str | list[str] = None,
+        predicates: str | list[str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate the graph.
