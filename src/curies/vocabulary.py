@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import datetime
+from collections.abc import Callable, Sequence
 from typing import Literal, TypeAlias
+
+from pydantic import AnyUrl
 
 from .api import NamedReference, Prefix, Reference
 
@@ -22,17 +25,71 @@ is_a = subclass_of = _r("rdfs", "subClassOf", "subclass of")
 subproperty_of = _r("rdfs", "subPropertyOf", "subproperty of")
 rdf_type = _r("rdf", "type", "instance of")
 
-# XML Schema
+# XML Schema, see https://www.w3.org/TR/xmlschema11-2/
 
 xsd_string = _r("xsd", "string", "string")
+xsd_double = _r("xsd", "double", "double-precision 64-bit floating point datatype")
 xsd_float = _r("xsd", "float", "float")
 xsd_decimal = _r("xsd", "decimal", "decimal")
 xsd_integer = _r("xsd", "integer", "integer")
 xsd_boolean = _r("xsd", "boolean", "boolean")
+xsd_day = _r("xsd", "gDay", "day")
+xsd_month = _r("xsd", "gMonth", "month")
+xsd_month_day = _r("xsd", "gMonthDay", "month and day")
 xsd_year = _r("xsd", "gYear", "year")
+xsd_year_month = _r("xsd", "gYearMonth", "year and month")
 xsd_uri = _r("xsd", "anyURI", "URI")
 xsd_date = _r("xsd", "date", "date")
 xsd_datetime = _r("xsd", "dateTime", "datetime")
+xsd_datetimestamp = _r("xsd", "dateTimeStamp", "datetime stamp")
+xsd_qname = _r("xsd", "QName", "qualified name")
+xsd_ncname = _r("xsd", "NCName", "non-colonized name")
+
+#: A set of common XSD type (note, not exhaustive)
+XSD_TYPES = {
+    xsd_string,
+    xsd_double,
+    xsd_float,
+    xsd_decimal,
+    xsd_integer,
+    xsd_boolean,
+    xsd_day,
+    xsd_month,
+    xsd_month_day,
+    xsd_year,
+    xsd_year_month,
+    xsd_uri,
+    xsd_date,
+    xsd_datetime,
+    xsd_datetimestamp,
+    xsd_qname,
+    xsd_ncname,
+}
+
+
+def _bool(v: str) -> bool:
+    if v == "true":
+        return True
+    elif v == "false":
+        return False
+    else:
+        raise ValueError(f"value is not an XSD-conformant boolean: {v}")
+
+
+#: A union type for everything that can be parsed based on XSD
+XSDPrimitive: TypeAlias = str | float | int | datetime.date | bool | AnyUrl
+
+#: A map of XSD references to parser functions
+XSD_TO_PARSER: dict[Reference, Callable[[str], XSDPrimitive]] = {
+    xsd_string: str,
+    xsd_double: float,
+    xsd_float: float,
+    xsd_integer: int,
+    xsd_uri: AnyUrl,  # TODO check if pydantic is actually implementing URIs here
+    xsd_date: datetime.date.fromisoformat,
+    xsd_datetime: datetime.datetime.fromisoformat,
+    xsd_boolean: _bool,
+}
 
 # DC Terms
 
