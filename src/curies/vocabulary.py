@@ -67,7 +67,7 @@ XSD_TYPES = {
 }
 
 
-def _bool(v: str) -> bool:
+def _parse_xsd_boolean_str(v: str) -> bool:
     if v == "true":
         return True
     elif v == "false":
@@ -88,7 +88,7 @@ XSD_TO_PARSER: dict[Reference, Callable[[str], XSDPrimitive]] = {
     xsd_uri: AnyUrl,  # TODO check if pydantic is actually implementing URIs here
     xsd_date: datetime.date.fromisoformat,
     xsd_datetime: datetime.datetime.fromisoformat,
-    xsd_boolean: _bool,
+    xsd_boolean: _parse_xsd_boolean_str,
 }
 
 # DC Terms
