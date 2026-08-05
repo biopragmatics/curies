@@ -138,6 +138,10 @@ owl_thing = _r("owl", "Thing", "thing")
 owl_deprecated = _r("owl", "deprecated", "is deprecated")
 owl_version_info = _r("owl", "versionInfo", "has version")
 owl_inverse_of = _r("owl", "inverseOf", "inverse of")
+owl_different_from = _r("owl", "differentFrom", "different from")
+owl_disjoint_with = _r("owl", "disjointWith", "disjoint with")
+owl_property_disjoint_with = _r("owl", "propertyDisjointWith", "property disjoint with")
+owl_complement_of = _r("owl", "complementOf", "complement of")
 owl_class = _r("owl", "Class", "class")
 owl_object_property = _r("owl", "ObjectProperty", "object property")
 owl_data_property = _r("owl", "DataProperty", "data property")
@@ -372,6 +376,11 @@ match_typedefs: Sequence[NamedReference] = (
     same_as,  # for instances
     equivalent_class,  # for classes
     equivalent_property,  # for properties
+    owl_disjoint_with,  # for classes
+    owl_property_disjoint_with,  # for properties
+    owl_different_from,  # for instances
+    owl_complement_of,  # for classes
+    owl_inverse_of,  # for properties
     has_dbxref,
     see_also,
     subclass_of,
