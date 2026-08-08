@@ -15,10 +15,10 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
+    Generic,
     Literal,
     NamedTuple,
     TypeAlias,
-    TypeVar,
     cast,
     overload,
 )
@@ -33,7 +33,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import Self
+from typing_extensions import Self, TypeVar
 
 from .utils import NoCURIEDelimiterError, _split
 
@@ -53,6 +53,7 @@ __all__ = [
     "NoCURIEDelimiterError",
     "Prefix",
     "PrefixMap",
+    "PrefixType",
     "Record",
     "Records",
     "Reference",
@@ -383,7 +384,11 @@ class PrefixMap(RootModel[dict[Prefix, str]]):
     """
 
 
-class Reference(BaseModel):
+#: A type variable for prefixes which defaults to the simplest
+PrefixType = TypeVar("PrefixType", bound=Prefix, default=Prefix)
+
+
+class Reference(BaseModel, Generic[PrefixType]):
     """A reference to an entity in a given identifier space.
 
     This class uses Pydantic to make it easier to build other more complex data types
@@ -426,7 +431,7 @@ class Reference(BaseModel):
     """
 
     prefix: Annotated[
-        Prefix,
+        PrefixType,
         Field(
             description="The prefix used in a compact URI (CURIE).",
         ),
@@ -481,7 +486,7 @@ class Reference(BaseModel):
     # note that it's important that this is explicitly
     # Reference and not Self, since all subclasses should
     # return only a reference.
-    def without_name(self) -> Reference:
+    def without_name(self) -> Reference[PrefixType]:
         """Return this reference, since it already has no name."""
         return self
 
