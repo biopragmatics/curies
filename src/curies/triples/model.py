@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import NamedTuple, TypeAlias, TypeVar
+from typing import NamedTuple, Self, TypeAlias, TypeVar
 
 from pydantic import BaseModel, ConfigDict
-from typing_extensions import Self
 
 from ..api import Converter, Reference
 
