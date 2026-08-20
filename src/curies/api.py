@@ -47,7 +47,6 @@ if TYPE_CHECKING:  # pragma: no cover
 
     from .triples import Triple
 
-
 __all__ = [
     "Converter",
     "DuplicatePrefixes",
