@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal, Self, TypeAlias, TypeVar, overload
 
-from pydantic import BaseModel, Field
+from pydantic import AnyUrl, BaseModel, Field
 
 from .api import (
     Converter,
@@ -183,7 +183,9 @@ class BlocklistError(ValueError):
     """An error for block list."""
 
 
-def _identity(x: str) -> str:
+def _identity(x: str | AnyUrl) -> str:
+    if isinstance(x, AnyUrl):
+        return x.encoded_string()
     return x
 
 
@@ -195,7 +197,7 @@ class PreprocessingConverter(Converter):
         *args: Any,
         rules: PreprocessingRules | str | Path,
         reference_cls: type[X] | None = None,
-        preclean: Callable[[str], str] | None = None,
+        preclean: Callable[[str | AnyUrl], str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate a converter with a ruleset for pre-processing.
@@ -356,7 +358,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse_uri(
         self,
-        uri: str,
+        uri: str | AnyUrl,
         *,
         strict: Literal[False] = ...,
         context: str | None = ...,
@@ -367,7 +369,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse_uri(
         self,
-        uri: str,
+        uri: str | AnyUrl,
         *,
         strict: Literal[True] = True,
         context: str | None = ...,
@@ -376,7 +378,7 @@ class PreprocessingConverter(Converter):
 
     def parse_uri(
         self,
-        uri: str,
+        uri: str | AnyUrl,
         *,
         strict: bool = False,
         context: str | None = None,

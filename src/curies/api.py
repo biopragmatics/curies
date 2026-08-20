@@ -25,6 +25,7 @@ from typing import (
 )
 
 from pydantic import (
+    AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
