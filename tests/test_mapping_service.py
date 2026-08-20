@@ -1,14 +1,14 @@
-# -*- coding: utf-8 -*-
-
 """Tests for the identifier mapping service."""
 
 import unittest
-from typing import Iterable, Set, Tuple
 from urllib.parse import quote
 
+import httpx2
+import werkzeug.test
 from fastapi.testclient import TestClient
+from flask.testing import FlaskClient
 from rdflib import OWL, SKOS
-from rdflib.query import ResultRow
+from rdflib.query import Result
 
 from curies import Converter
 from curies.mapping_service import (
@@ -96,8 +96,8 @@ EXPECTED = {
 }
 
 
-def _stm(rows: Iterable[ResultRow]) -> Set[Tuple[str, str]]:
-    return {(str(row.s), str(row.o)) for row in rows}
+def _stm(rows: Result) -> set[tuple[str, str]]:
+    return {(str(row.s), str(row.o)) for row in rows}  # type: ignore
 
 
 class TestMappingService(unittest.TestCase):
@@ -107,9 +107,9 @@ class TestMappingService(unittest.TestCase):
         """Set up the converter."""
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
         self.graph = MappingServiceGraph(converter=self.converter)
-        self.processor = MappingServiceSPARQLProcessor(self.graph)
+        self.processor = MappingServiceSPARQLProcessor(self.graph)  # type:ignore[no-untyped-call]
 
-    def test_parse_header(self):
+    def test_parse_header(self) -> None:
         """Test parsing a rather complex header."""
         example_header = (
             "application/sparql-results+xml;q=0.8,"
@@ -123,7 +123,7 @@ class TestMappingService(unittest.TestCase):
         content_type = handle_header(example_header)
         self.assertEqual("application/sparql-results+xml", content_type)
 
-    def test_prepare_predicates(self):
+    def test_prepare_predicates(self) -> None:
         """Test preparation of predicates."""
         self.assertEqual({OWL.sameAs}, _prepare_predicates())
         self.assertEqual({OWL.sameAs}, _prepare_predicates(OWL.sameAs))
@@ -131,7 +131,7 @@ class TestMappingService(unittest.TestCase):
             {OWL.sameAs, SKOS.exactMatch}, _prepare_predicates({OWL.sameAs, SKOS.exactMatch})
         )
 
-    def test_errors(self):
+    def test_errors(self) -> None:
         """Test errors."""
         for sparql in [
             # errors because of unbound subject
@@ -143,32 +143,34 @@ class TestMappingService(unittest.TestCase):
             "SELECT ?o WHERE { <http://example.com/1> owl:sameAs ?o }",
             "SELECT ?s WHERE { ?s owl:sameAs <http://example.com/1> }",
             # errors because predicate is given
-            "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
-            "owl:sameAs <http://purl.obolibrary.org/obo/CHEBI_1> }",
+            (
+                "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
+                "owl:sameAs <http://purl.obolibrary.org/obo/CHEBI_1> }"
+            ),
         ]:
             with self.subTest(sparql=sparql):
                 self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
 
-    def test_sparql(self):
+    def test_sparql(self) -> None:
         """Test a sparql query on the graph."""
         rows = _stm(self.graph.query(SPARQL_SIMPLE, processor=self.processor))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         self.assertEqual(EXPECTED, rows)
 
-    def test_sparql_backwards(self):
+    def test_sparql_backwards(self) -> None:
         """Test a sparql query on the graph."""
         rows = _stm(self.graph.query(SPARQL_SIMPLE_BACKWARDS, processor=self.processor))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         expected = {(o, s) for s, o in EXPECTED}
         self.assertEqual(expected, rows)
 
-    def test_service_sparql(self):
+    def test_service_sparql(self) -> None:
         """Test the SPARQL that gets sent when using this as a service."""
         rows = _stm(self.graph.query(SPARQL_FROM_SERVICE, processor=self.processor))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         self.assertEqual(EXPECTED, rows)
 
-    def test_missing(self):
+    def test_missing(self) -> None:
         """Test a sparql query on the graph where the URIs can't be parsed."""
         sparql = """\
             SELECT ?s ?o WHERE {
@@ -178,7 +180,7 @@ class TestMappingService(unittest.TestCase):
         """
         self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
 
-    def test_safe_expand(self):
+    def test_safe_expand(self) -> None:
         """Test that expansion to invalid prefixes doesn't happen."""
         ppm = {
             "CHEBI": [
@@ -203,7 +205,9 @@ class ConverterMixin(unittest.TestCase):
         super().setUp()
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
 
-    def assert_mimetype(self, res, content_type):
+    def assert_mimetype(
+        self, res: httpx2.Response | werkzeug.test.TestResponse, content_type: str
+    ) -> None:
         """Assert the correct MIMETYPE."""
         content_type = handle_header(content_type)
         mimetype = getattr(res, "mimetype", None)
@@ -211,10 +215,13 @@ class ConverterMixin(unittest.TestCase):
             self.assertEqual(content_type, mimetype)
         else:  # this is from FastAPI
             actual_content_type = res.headers.get("content-type")
-            self.assertIsNotNone(actual_content_type)
+            if actual_content_type is None:
+                self.fail("content type was none")
             self.assertEqual(content_type, actual_content_type.split(";")[0].strip())
 
-    def assert_parsed(self, res, content_type: str):
+    def assert_parsed(
+        self, res: httpx2.Response | werkzeug.test.TestResponse, content_type: str
+    ) -> None:
         """Test the result has the expected output."""
         content_type = handle_header(content_type)
         parse_func = CONTENT_TYPE_TO_HANDLER[content_type]
@@ -222,7 +229,7 @@ class ConverterMixin(unittest.TestCase):
         pairs = {(record["s"], record["o"]) for record in records}
         self.assertEqual(EXPECTED, pairs)
 
-    def assert_get_sparql_results(self, client, sparql):
+    def assert_get_sparql_results(self, client: TestClient | FlaskClient, sparql: str) -> None:
         """Test a sparql query returns expected values."""
         for content_type in sorted(VALID_CONTENT_TYPES):
             with self.subTest(content_type=content_type):
@@ -231,7 +238,7 @@ class ConverterMixin(unittest.TestCase):
                 self.assert_mimetype(res, content_type)
                 self.assert_parsed(res, content_type)
 
-    def assert_post_sparql_results(self, client, sparql):
+    def assert_post_sparql_results(self, client: TestClient | FlaskClient, sparql: str) -> None:
         """Test a sparql query returns expected values."""
         for content_type in sorted(VALID_CONTENT_TYPES):
             with self.subTest(content_type=content_type):
@@ -259,7 +266,7 @@ class TestFlaskMappingWeb(ConverterMixin):
         super().setUp()
         self.app = get_flask_mapping_app(self.converter)
 
-    def test_get_missing_query(self):
+    def test_get_missing_query(self) -> None:
         """Test error on missing query parameter."""
         with self.app.test_client() as client:
             for content_type in sorted(VALID_CONTENT_TYPES):
@@ -267,7 +274,7 @@ class TestFlaskMappingWeb(ConverterMixin):
                     res = client.get("/sparql", headers={"accept": content_type})
                     self.assertEqual(400, res.status_code, msg=f"Response: {res}")
 
-    def test_post_missing_query(self):
+    def test_post_missing_query(self) -> None:
         """Test error on missing query parameter."""
         with self.app.test_client() as client:
             for content_type in sorted(VALID_CONTENT_TYPES):
@@ -275,22 +282,22 @@ class TestFlaskMappingWeb(ConverterMixin):
                     res = client.post("/sparql", headers={"accept": content_type})
                     self.assertEqual(400, res.status_code, msg=f"Response: {res}")
 
-    def test_get_query(self):
+    def test_get_query(self) -> None:
         """Test querying the app with GET."""
         with self.app.test_client() as client:
             self.assert_get_sparql_results(client, SPARQL_SIMPLE)
 
-    def test_post_query(self):
+    def test_post_query(self) -> None:
         """Test querying the app with POST."""
         with self.app.test_client() as client:
             self.assert_post_sparql_results(client, SPARQL_SIMPLE)
 
-    def test_get_service_query(self):
+    def test_get_service_query(self) -> None:
         """Test sparql generated by a service (that has values outside of where clause) with GET."""
         with self.app.test_client() as client:
             self.assert_get_sparql_results(client, SPARQL_FROM_SERVICE)
 
-    def test_post_service_query(self):
+    def test_post_service_query(self) -> None:
         """Test sparql generated by a service (that has values outside of where clause) with POST."""
         with self.app.test_client() as client:
             self.assert_post_sparql_results(client, SPARQL_FROM_SERVICE)
@@ -305,14 +312,14 @@ class TestFastAPIMappingApp(ConverterMixin):
         self.app = get_fastapi_mapping_app(self.converter)
         self.client = TestClient(self.app)
 
-    def test_get_missing_query(self):
+    def test_get_missing_query(self) -> None:
         """Test error on missing query parameter."""
         for content_type in sorted(VALID_CONTENT_TYPES):
             with self.subTest(content_type=content_type):
                 res = self.client.get("/sparql", headers={"accept": content_type})
                 self.assertEqual(422, res.status_code, msg=f"Response: {res}")
 
-    def test_post_missing_query(self):
+    def test_post_missing_query(self) -> None:
         """Test error on missing query parameter."""
         for content_type in sorted(VALID_CONTENT_TYPES):
             with self.subTest(content_type=content_type):
@@ -320,20 +327,20 @@ class TestFastAPIMappingApp(ConverterMixin):
                 self.assertEqual(422, res.status_code, msg=f"Response: {res}")
 
     @unittest.skip(reason="Weird failures on CI")
-    def test_get_query(self):
+    def test_get_query(self) -> None:
         """Test querying the app with GET."""
         self.assert_get_sparql_results(self.client, SPARQL_SIMPLE)
 
-    def test_post_query(self):
+    def test_post_query(self) -> None:
         """Test querying the app with POST."""
         self.assert_post_sparql_results(self.client, SPARQL_SIMPLE)
 
     @unittest.skip(reason="Weird failures on CI")
-    def test_get_service_query(self):
+    def test_get_service_query(self) -> None:
         """Test sparql generated by a service (that has values outside of where clause) with GET."""
         self.assert_get_sparql_results(self.client, SPARQL_FROM_SERVICE)
 
-    def test_post_service_query(self):
+    def test_post_service_query(self) -> None:
         """Test sparql generated by a service (that has values outside of where clause) with POST."""
         self.assert_post_sparql_results(self.client, SPARQL_FROM_SERVICE)
 
@@ -341,8 +348,9 @@ class TestFastAPIMappingApp(ConverterMixin):
 class TestUtils(unittest.TestCase):
     """Test utilities."""
 
+    @unittest.skip(reason="Wikidata query service is down")
     @SLOW
-    def test_availability(self):
+    def test_availability(self) -> None:
         """Test sparql service availability check."""
         self.assertTrue(
             sparql_service_available("https://query.wikidata.org/bigdata/namespace/wdq/sparql")
