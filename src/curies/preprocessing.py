@@ -13,6 +13,7 @@ from .api import (
     Converter,
     Reference,
     ReferenceTuple,
+    URIType,
 )
 
 __all__ = [
@@ -183,7 +184,7 @@ class BlocklistError(ValueError):
     """An error for block list."""
 
 
-def _identity(x: str | AnyUrl) -> str:
+def _identity(x: URIType) -> str:
     if isinstance(x, AnyUrl):
         return x.encoded_string()
     return x
@@ -197,7 +198,7 @@ class PreprocessingConverter(Converter):
         *args: Any,
         rules: PreprocessingRules | str | Path,
         reference_cls: type[X] | None = None,
-        preclean: Callable[[str | AnyUrl], str] | None = None,
+        preclean: Callable[[URIType], str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate a converter with a ruleset for pre-processing.
@@ -358,7 +359,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse_uri(
         self,
-        uri: str | AnyUrl,
+        uri: URIType,
         *,
         strict: Literal[False] = ...,
         context: str | None = ...,
@@ -369,7 +370,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse_uri(
         self,
-        uri: str | AnyUrl,
+        uri: URIType,
         *,
         strict: Literal[True] = True,
         context: str | None = ...,
@@ -378,7 +379,7 @@ class PreprocessingConverter(Converter):
 
     def parse_uri(
         self,
-        uri: str | AnyUrl,
+        uri: URIType,
         *,
         strict: bool = False,
         context: str | None = None,

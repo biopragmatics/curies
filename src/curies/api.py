@@ -60,6 +60,7 @@ __all__ = [
     "ReferenceTuple",
     "Trie",
     "TrieNode",
+    "URIType",
     "chain",
     "load_extended_prefix_map",
     "load_jsonld_context",
@@ -81,6 +82,10 @@ LocationOr: TypeAlias = str | Path | X
 def _get_field_validator_values(values: Any, key: str) -> str:
     """Get the value for the key from a field validator object."""
     return cast(str, values.data[key])
+
+
+#: A hint for a URL
+URIType: TypeAlias = str | AnyUrl
 
 
 class ReferenceTuple(NamedTuple):
@@ -1780,20 +1785,18 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def parse_uri(
-        self, uri: str | AnyUrl, *, strict: Literal[False] = ...
-    ) -> ReferenceTuple | None: ...
+    def parse_uri(self, uri: URIType, *, strict: Literal[False] = ...) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
         self,
-        uri: str | AnyUrl,
+        uri: URIType,
         *,
         strict: Literal[True] = True,
     ) -> ReferenceTuple: ...
 
-    def parse_uri(self, uri: str | AnyUrl, *, strict: bool = False) -> ReferenceTuple | None:
+    def parse_uri(self, uri: URIType, *, strict: bool = False) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
         :param uri: A string representing a valid uniform resource identifier (URI)
@@ -1816,14 +1819,17 @@ class Converter:
         ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
         """
-        if isinstance(uri, AnyUrl):
-            uri = str(uri)
-        rv = self.trie.parse_uri(uri)
+        rv = self.trie.parse_uri(self._handle_uri(uri))
         if rv is not None:
             return rv
         if strict:
             raise CompressionError(uri) from None
         return None
+
+    def _handle_uri(self, uri: URIType) -> str:
+        if isinstance(uri, AnyUrl):
+            return uri.encoded_string()
+        return uri
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
