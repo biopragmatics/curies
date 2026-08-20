@@ -9,11 +9,7 @@ from typing import Any, Literal, Self, TypeAlias, TypeVar, overload
 
 from pydantic import BaseModel, Field
 
-from .api import (
-    Converter,
-    Reference,
-    ReferenceTuple,
-)
+from .api import Converter, Reference, ReferenceTuple, URIType
 
 __all__ = [
     "BlockAction",
@@ -183,8 +179,8 @@ class BlocklistError(ValueError):
     """An error for block list."""
 
 
-def _identity(x: str) -> str:
-    return x
+def _identity(uri: URIType) -> str:
+    return str(uri)
 
 
 class PreprocessingConverter(Converter):
@@ -195,7 +191,7 @@ class PreprocessingConverter(Converter):
         *args: Any,
         rules: PreprocessingRules | str | Path,
         reference_cls: type[X] | None = None,
-        preclean: Callable[[str], str] | None = None,
+        preclean: Callable[[URIType], str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate a converter with a ruleset for pre-processing.
@@ -243,7 +239,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse(
         self,
-        str_or_uri_or_curie: str,
+        str_or_uri_or_curie: str | URIType,
         *,
         strict: Literal[True] = True,
         context: str | None = ...,
@@ -254,7 +250,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse(
         self,
-        str_or_uri_or_curie: str,
+        str_or_uri_or_curie: str | URIType,
         *,
         strict: Literal[False] = False,
         context: str | None = ...,
@@ -263,7 +259,7 @@ class PreprocessingConverter(Converter):
 
     def parse(
         self,
-        str_or_uri_or_curie: str,
+        str_or_uri_or_curie: str | URIType,
         *,
         strict: bool = False,
         context: str | None = None,
@@ -356,7 +352,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse_uri(
         self,
-        uri: str,
+        uri: URIType,
         *,
         strict: Literal[False] = ...,
         context: str | None = ...,
@@ -367,7 +363,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse_uri(
         self,
-        uri: str,
+        uri: URIType,
         *,
         strict: Literal[True] = True,
         context: str | None = ...,
@@ -376,7 +372,7 @@ class PreprocessingConverter(Converter):
 
     def parse_uri(
         self,
-        uri: str,
+        uri: URIType,
         *,
         strict: bool = False,
         context: str | None = None,

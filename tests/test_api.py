@@ -10,9 +10,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Literal, overload
 
+import httpx
 import pandas as pd
 import rdflib
 from pydantic import AnyUrl
+from rdflib import URIRef
 
 import curies
 from curies import vocabulary as v
@@ -28,6 +30,7 @@ from curies.api import (
     Reference,
     ReferenceTuple,
     URIStandardizationError,
+    URIType,
     chain,
     upgrade_prefix_map,
 )
@@ -947,18 +950,35 @@ class TestConverter(unittest.TestCase):
                 )
             ]
         )
-        uri = "http://purl.obolibrary.org/obo/GO_1234567"
+        expected = ReferenceTuple("GO", "1234567")
+        uri1 = "http://purl.obolibrary.org/obo/GO_1234567"
         uri2 = "https://identifiers.org/GO:1234567"
 
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri, strict=True))
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri, strict=False))
+        uris: list[URIType] = [
+            uri1,
+            uri2,
+            AnyUrl(uri1),
+            rdflib.URIRef(uri1),
+            httpx.URL(uri1),
+        ]
+        for uri in uris:
+            with self.subTest(uri=str(uri)):
+                self.assertEqual(expected, converter.parse_uri(uri))
+                self.assertEqual(expected, converter.parse_uri(uri, strict=True))
+                self.assertEqual(expected, converter.parse_uri(uri, strict=False))
 
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=True))
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=False))
-
-        self.assertIsNone(converter.parse_uri("123345", strict=False))
-        with self.assertRaises(ValueError):
-            converter.parse_uri("123345", strict=True)
+        misses: list[URIType] = [
+            "123345",
+            "https://example.com/12345",
+            AnyUrl("https://example.com/12345"),
+            URIRef("https://example.com/12345"),
+            httpx.URL("https://example.com/12345"),
+        ]
+        for miss in misses:
+            with self.subTest(uri=str(miss)):
+                self.assertIsNone(converter.parse_uri(miss, strict=False))
+                with self.assertRaises(ValueError):
+                    converter.parse_uri(miss, strict=True)
 
     def test_expand(self) -> None:
         """Tests for expand."""

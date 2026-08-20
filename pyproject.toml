@@ -53,6 +53,7 @@ requires-python = ">=3.11"
 dependencies = [
     "pystow>=0.9.0",
     "pydantic>=2.0",
+    "typing-extensions",
 ]
 
 [dependency-groups]
@@ -60,6 +61,8 @@ tests = [
     "pytest",
     "coverage[toml]",
     "requests",
+    "httpx",
+    "httpx2",
 ]
 docs = [
     "sphinx>=8",
@@ -83,6 +86,8 @@ typing = [
     "types-Markdown",
     "types-defusedxml",
     "types-tqdm",
+    "httpx",
+    "httpx2",
 ]
 docs-lint = [
     { include-group = "docs" },
