@@ -30,6 +30,7 @@ from curies.api import (
     Reference,
     ReferenceTuple,
     URIStandardizationError,
+    URIType,
     chain,
     upgrade_prefix_map,
 )
@@ -40,7 +41,6 @@ from curies.sources import (
     get_monarch_converter,
     get_obo_converter,
 )
-from curies.uri_utils import URIType
 from curies.version import get_version
 from curies.vocabulary import parse_xsd
 from tests.constants import SLOW

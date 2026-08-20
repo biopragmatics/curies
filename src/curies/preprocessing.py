@@ -9,8 +9,7 @@ from typing import Any, Literal, Self, TypeAlias, TypeVar, overload
 
 from pydantic import BaseModel, Field
 
-from .api import Converter, Reference, ReferenceTuple
-from .uri_utils import URIType
+from .api import Converter, Reference, ReferenceTuple, URIType
 
 __all__ = [
     "BlockAction",
