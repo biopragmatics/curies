@@ -3,7 +3,7 @@
 import unittest
 from urllib.parse import quote
 
-import httpx
+import httpx2
 import werkzeug.test
 from fastapi.testclient import TestClient
 from flask.testing import FlaskClient
@@ -206,7 +206,7 @@ class ConverterMixin(unittest.TestCase):
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
 
     def assert_mimetype(
-        self, res: httpx.Response | werkzeug.test.TestResponse, content_type: str
+        self, res: httpx2.Response | werkzeug.test.TestResponse, content_type: str
     ) -> None:
         """Assert the correct MIMETYPE."""
         content_type = handle_header(content_type)
@@ -215,11 +215,12 @@ class ConverterMixin(unittest.TestCase):
             self.assertEqual(content_type, mimetype)
         else:  # this is from FastAPI
             actual_content_type = res.headers.get("content-type")
-            self.assertIsNotNone(actual_content_type)
+            if actual_content_type is None:
+                self.fail("content type was none")
             self.assertEqual(content_type, actual_content_type.split(";")[0].strip())
 
     def assert_parsed(
-        self, res: httpx.Response | werkzeug.test.TestResponse, content_type: str
+        self, res: httpx2.Response | werkzeug.test.TestResponse, content_type: str
     ) -> None:
         """Test the result has the expected output."""
         content_type = handle_header(content_type)
