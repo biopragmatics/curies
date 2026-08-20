@@ -60,6 +60,7 @@ tests = [
     "pytest",
     "coverage[toml]",
     "requests",
+    "httpx",
 ]
 docs = [
     "sphinx>=8",
@@ -83,6 +84,7 @@ typing = [
     "types-Markdown",
     "types-defusedxml",
     "types-tqdm",
+    "httpx",
 ]
 docs-lint = [
     { include-group = "docs" },

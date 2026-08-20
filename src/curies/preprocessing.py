@@ -14,6 +14,8 @@ from .api import (
     Reference,
     ReferenceTuple,
     URIType,
+    _check_httpx_url,
+    _check_rdflib_uri,
 )
 
 __all__ = [
@@ -187,7 +189,10 @@ class BlocklistError(ValueError):
 def _identity(x: URIType) -> str:
     if isinstance(x, AnyUrl):
         return x.encoded_string()
-    return x
+    elif _check_rdflib_uri(x) or _check_httpx_url(x):
+        return str(x)
+    else:
+        return x
 
 
 class PreprocessingConverter(Converter):

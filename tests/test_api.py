@@ -10,6 +10,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Literal, overload
 
+import httpx
 import pandas as pd
 import rdflib
 from pydantic import AnyUrl
@@ -952,10 +953,14 @@ class TestConverter(unittest.TestCase):
         expected = ReferenceTuple("GO", "1234567")
         uri1 = "http://purl.obolibrary.org/obo/GO_1234567"
         uri2 = "https://identifiers.org/GO:1234567"
-        uri3 = AnyUrl(uri1)
-        uri4 = rdflib.URIRef(uri1)
 
-        uris: list[URIType] = [uri1, uri2, uri3, uri4]
+        uris: list[URIType] = [
+            uri1,
+            uri2,
+            AnyUrl(uri1),
+            rdflib.URIRef(uri1),
+            httpx.URL(uri1),
+        ]
         for uri in uris:
             with self.subTest(uri=str(uri)):
                 self.assertEqual(expected, converter.parse_uri(uri))
@@ -967,6 +972,7 @@ class TestConverter(unittest.TestCase):
             "https://example.com/12345",
             AnyUrl("https://example.com/12345"),
             URIRef("https://example.com/12345"),
+            httpx.URL("https://example.com/12345"),
         ]
         for miss in misses:
             with self.subTest(uri=str(miss)):

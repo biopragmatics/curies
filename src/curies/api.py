@@ -20,6 +20,7 @@ from typing import (
     NamedTuple,
     Self,
     TypeAlias,
+    TypeIs,
     TypeVar,
     Union,
     cast,
@@ -41,6 +42,7 @@ from pydantic_core import core_schema
 from .utils import NoCURIEDelimiterError, _split
 
 if TYPE_CHECKING:  # pragma: no cover
+    import httpx
     import pandas
     import rdflib
 
@@ -87,17 +89,28 @@ def _get_field_validator_values(values: Any, key: str) -> str:
 
 
 #: A hint for a URL
-URIType: TypeAlias = Union[str, AnyUrl, "rdflib.URIRef"]
+URIType: TypeAlias = Union[str, AnyUrl, "rdflib.URIRef", "httpx.URL"]
 
 if importlib.util.find_spec("rdflib"):
     import rdflib
 
-    def _check_rdflib_uri(x: Any) -> bool:
+    def _check_rdflib_uri(x: Any) -> TypeIs[rdflib.URIRef]:
         return isinstance(x, rdflib.URIRef)
 
 else:
 
-    def _check_rdflib_uri(x: Any) -> bool:
+    def _check_rdflib_uri(x: Any) -> TypeIs[rdflib.URIRef]:
+        return False
+
+
+if importlib.util.find_spec("httpx"):
+    import httpx
+
+    def _check_httpx_url(x: Any) -> TypeIs[httpx.URL]:
+        return isinstance(x, httpx.URL)
+else:
+
+    def _check_httpx_url(x: Any) -> TypeIs[httpx.URL]:
         return False
 
 
@@ -1720,7 +1733,12 @@ class Converter:
         self, str_or_uri_or_curie: str | URIType, *, strict: bool = False
     ) -> ReferenceTuple | None:
         """Parse a string, URI, or CURIE."""
-        if isinstance(str_or_uri_or_curie, AnyUrl) or self.is_uri(str_or_uri_or_curie):
+        if (
+            isinstance(str_or_uri_or_curie, AnyUrl)
+            or _check_httpx_url(str_or_uri_or_curie)
+            or _check_rdflib_uri(str_or_uri_or_curie)
+            or self.is_uri(str_or_uri_or_curie)
+        ):
             return self.parse_uri(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
         if self.is_curie(str_or_uri_or_curie):
             return self.parse_curie(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
@@ -1846,9 +1864,10 @@ class Converter:
     def _handle_uri(self, uri: URIType) -> str:
         if isinstance(uri, AnyUrl):
             return uri.encoded_string()
-        elif _check_rdflib_uri(uri):
+        elif _check_rdflib_uri(uri) or _check_httpx_url(uri):
             return str(uri)
-        return uri
+        else:
+            return uri
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.
