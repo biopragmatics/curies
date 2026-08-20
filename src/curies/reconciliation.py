@@ -48,8 +48,11 @@ def remap_curie_prefixes(
     :param converter: A converter
     :param remapping: A mapping from CURIE prefixes to new CURIE prefixes. Old CURIE
         prefixes become synonyms in the records (i.e., they aren't forgotten).
+    :param intersection_resolution: The policy for resolving intersections
 
     :returns: An upgraded converter
+
+    :raises TypeError: on an invalid intersection resolution mode
     """
     ordering = _order_curie_remapping(converter, remapping)
     intersection = set(remapping).intersection(remapping.values())
