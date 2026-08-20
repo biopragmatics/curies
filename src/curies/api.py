@@ -1779,18 +1779,20 @@ class Converter:
 
     # docstr-coverage:excused `overload`
     @overload
-    def parse_uri(self, uri: str, *, strict: Literal[False] = ...) -> ReferenceTuple | None: ...
+    def parse_uri(
+        self, uri: str | AnyUrl, *, strict: Literal[False] = ...
+    ) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
         self,
-        uri: str,
+        uri: str | AnyUrl,
         *,
         strict: Literal[True] = True,
     ) -> ReferenceTuple: ...
 
-    def parse_uri(self, uri: str, *, strict: bool = False) -> ReferenceTuple | None:
+    def parse_uri(self, uri: str | AnyUrl, *, strict: bool = False) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
         :param uri: A string representing a valid uniform resource identifier (URI)
@@ -1813,6 +1815,8 @@ class Converter:
         ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
         """
+        if isinstance(uri, AnyUrl):
+            uri = str(uri)
         rv = self.trie.parse_uri(uri)
         if rv is not None:
             return rv
