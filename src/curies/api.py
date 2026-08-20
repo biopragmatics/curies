@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import csv
-import importlib.util
 import itertools as itt
 import json
 import logging
@@ -21,7 +20,6 @@ from typing import (
     Self,
     TypeAlias,
     TypeVar,
-    Union,
     cast,
     overload,
 )
@@ -37,12 +35,17 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import TypeIs
 
+from .uri_utils import (
+    URIType,
+    _check_httpx2_url,
+    _check_httpx_url,
+    _check_rdflib_uri,
+    normalize_uri,
+)
 from .utils import NoCURIEDelimiterError, _split
 
 if TYPE_CHECKING:  # pragma: no cover
-    import httpx
     import pandas
     import rdflib
 
@@ -64,7 +67,6 @@ __all__ = [
     "ReferenceTuple",
     "Trie",
     "TrieNode",
-    "URIType",
     "chain",
     "load_extended_prefix_map",
     "load_jsonld_context",
@@ -86,32 +88,6 @@ LocationOr: TypeAlias = str | Path | X
 def _get_field_validator_values(values: Any, key: str) -> str:
     """Get the value for the key from a field validator object."""
     return cast(str, values.data[key])
-
-
-#: A hint for a URL
-URIType: TypeAlias = Union[str, AnyUrl, "rdflib.URIRef", "httpx.URL"]
-
-if importlib.util.find_spec("rdflib"):
-    import rdflib
-
-    def _check_rdflib_uri(x: Any) -> TypeIs[rdflib.URIRef]:
-        return isinstance(x, rdflib.URIRef)
-
-else:
-
-    def _check_rdflib_uri(x: Any) -> TypeIs[rdflib.URIRef]:
-        return False
-
-
-if importlib.util.find_spec("httpx"):
-    import httpx
-
-    def _check_httpx_url(x: Any) -> TypeIs[httpx.URL]:
-        return isinstance(x, httpx.URL)
-else:
-
-    def _check_httpx_url(x: Any) -> TypeIs[httpx.URL]:
-        return False
 
 
 class ReferenceTuple(NamedTuple):
@@ -1736,6 +1712,7 @@ class Converter:
         if (
             isinstance(str_or_uri_or_curie, AnyUrl)
             or _check_httpx_url(str_or_uri_or_curie)
+            or _check_httpx2_url(str_or_uri_or_curie)
             or _check_rdflib_uri(str_or_uri_or_curie)
             or self.is_uri(str_or_uri_or_curie)
         ):
@@ -1815,7 +1792,7 @@ class Converter:
         if strict:
             raise CompressionError(uri)
         if passthrough:
-            return self._handle_uri(uri)
+            return normalize_uri(uri)
         return None
 
     # docstr-coverage:excused `overload`
@@ -1854,20 +1831,12 @@ class Converter:
         ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
         """
-        rv = self.trie.parse_uri(self._handle_uri(uri))
+        rv = self.trie.parse_uri(normalize_uri(uri))
         if rv is not None:
             return rv
         if strict:
             raise CompressionError(uri) from None
         return None
-
-    def _handle_uri(self, uri: URIType) -> str:
-        if isinstance(uri, AnyUrl):
-            return uri.encoded_string()
-        elif _check_rdflib_uri(uri) or _check_httpx_url(uri):
-            return str(uri)
-        else:
-            return uri
 
     def is_curie(self, s: str) -> bool:
         """Check if the string can be parsed as a CURIE by this converter.

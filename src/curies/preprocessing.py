@@ -9,14 +9,8 @@ from typing import Any, Literal, Self, TypeAlias, TypeVar, overload
 
 from pydantic import AnyUrl, BaseModel, Field
 
-from .api import (
-    Converter,
-    Reference,
-    ReferenceTuple,
-    URIType,
-    _check_httpx_url,
-    _check_rdflib_uri,
-)
+from .api import Converter, Reference, ReferenceTuple
+from .uri_utils import URIType, _check_httpx2_url, _check_httpx_url, _check_rdflib_uri
 
 __all__ = [
     "BlockAction",
@@ -186,13 +180,13 @@ class BlocklistError(ValueError):
     """An error for block list."""
 
 
-def _identity(x: URIType) -> str:
-    if isinstance(x, AnyUrl):
-        return x.encoded_string()
-    elif _check_rdflib_uri(x) or _check_httpx_url(x):
-        return str(x)
+def _identity(uri: URIType) -> str:
+    if isinstance(uri, AnyUrl):
+        return uri.encoded_string()
+    elif _check_rdflib_uri(uri) or _check_httpx_url(uri) or _check_httpx2_url(uri):
+        return str(uri)
     else:
-        return x
+        return uri
 
 
 class PreprocessingConverter(Converter):
