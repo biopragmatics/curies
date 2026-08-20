@@ -77,7 +77,7 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(InconsistentMapping):
             _order_curie_remapping(converter, curie_remapping)
 
-    def test_remapping_with_synonym(self):
+    def test_remapping_with_synonym(self) -> None:
         """Test that remapping with synonym prefixes works as expected."""
         r1 = Record(
             prefix="geo",  # also should not survive
@@ -110,7 +110,7 @@ class TestUtils(unittest.TestCase):
         )
         self.assertEqual([r4, r3], c2.records)
 
-    def test_remapping_invalid_mode(self):
+    def test_remapping_invalid_mode(self) -> None:
         """Test that remapping with synonym prefixes works as expected."""
         r1 = Record(
             prefix="geo",  # also should not survive
@@ -128,7 +128,7 @@ class TestUtils(unittest.TestCase):
             "geogeo": "GEO",
         }
         with self.assertRaises(TypeError):
-            remap_curie_prefixes(c1, remapping, intersection_resolution="nope")
+            remap_curie_prefixes(c1, remapping, intersection_resolution="nope")  # type:ignore[arg-type]
 
     def test_cycles(self) -> None:
         """Test detecting bad mapping with cycles."""

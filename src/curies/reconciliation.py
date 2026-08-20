@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 from collections import Counter, defaultdict
 from collections.abc import Collection, Mapping
-
-from typing_extensions import Literal
+from typing import Literal
 
 from .api import Converter, Record
 
