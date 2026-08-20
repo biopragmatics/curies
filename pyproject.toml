@@ -119,7 +119,7 @@ flask = [
 fastapi = [
     "fastapi",
     "python-multipart",
-    "httpx",
+    "httpx2",
     "defusedxml",
     "uvicorn",
 ]
