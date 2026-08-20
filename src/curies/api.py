@@ -1805,7 +1805,10 @@ class Converter:
     def parse_uri(self, uri: URIType, *, strict: bool = False) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
-        :param uri: A string representing a valid uniform resource identifier (URI)
+        :param uri: A string or object representing a valid uniform resource identifier
+            (URI). URIs represented as :class:`rdflib.URIRef`, :class:`pydantic.AnyUrl`,
+            :class:`httpx.URL`, and :class:`httpx2.URL` are accepted in addition to
+            plain strings.
         :param strict: If true and the URI can't be parsed, returns an error. Defaults
             to false.
 

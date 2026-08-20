@@ -243,6 +243,7 @@ intersphinx_mapping = {
     "pandas": ("https://pandas.pydata.org/docs", None),
     "flask": ("https://flask.palletsprojects.com/en/stable", None),
     "pydantic": ("https://docs.pydantic.dev/latest", None),
+    "httpx2": ("https://httpx2.pydantic.dev", None),
     # "fastapi": ("https://fastapi.tiangolo.com/", None),
     # "gunicorn": ("https://docs.gunicorn.org/", None),
     # "uvicorn": ("https://www.uvicorn.org/", None),
