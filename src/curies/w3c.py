@@ -78,7 +78,6 @@ def is_w3c_prefix(prefix: str) -> bool:
 
     Examples
     --------
-
     Strings containig numbers, letters, and underscores are valid prefixes.
 
     >>> is_w3c_prefix("GO")
@@ -126,7 +125,6 @@ def is_w3c_curie(curie: str) -> bool:
 
     Examples
     --------
-
     If no prefix is given, the host language chooses how to assign a default prefix.
 
     >>> is_w3c_curie(":test")
