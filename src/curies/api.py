@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 import itertools as itt
 import json
 import logging
@@ -20,6 +21,7 @@ from typing import (
     Self,
     TypeAlias,
     TypeVar,
+    Union,
     cast,
     overload,
 )
@@ -85,7 +87,18 @@ def _get_field_validator_values(values: Any, key: str) -> str:
 
 
 #: A hint for a URL
-URIType: TypeAlias = str | AnyUrl
+URIType: TypeAlias = Union[str, AnyUrl, "rdflib.URIRef"]
+
+if importlib.util.find_spec("rdflib"):
+    import rdflib
+
+    def _check_rdflib_uri(x: Any) -> bool:
+        return isinstance(x, rdflib.URIRef)
+
+else:
+
+    def _check_rdflib_uri(x: Any) -> bool:
+        return False
 
 
 class ReferenceTuple(NamedTuple):
@@ -1833,6 +1846,8 @@ class Converter:
     def _handle_uri(self, uri: URIType) -> str:
         if isinstance(uri, AnyUrl):
             return uri.encoded_string()
+        elif _check_rdflib_uri(uri):
+            return str(uri)
         return uri
 
     def is_curie(self, s: str) -> bool:
