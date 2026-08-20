@@ -7,10 +7,10 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal, Self, TypeAlias, TypeVar, overload
 
-from pydantic import AnyUrl, BaseModel, Field
+from pydantic import BaseModel, Field
 
 from .api import Converter, Reference, ReferenceTuple
-from .uri_utils import URIType, _check_httpx2_url, _check_httpx_url, _check_rdflib_uri
+from .uri_utils import URIType
 
 __all__ = [
     "BlockAction",
@@ -181,12 +181,7 @@ class BlocklistError(ValueError):
 
 
 def _identity(uri: URIType) -> str:
-    if isinstance(uri, AnyUrl):
-        return uri.encoded_string()
-    elif _check_rdflib_uri(uri) or _check_httpx_url(uri) or _check_httpx2_url(uri):
-        return str(uri)
-    else:
-        return uri
+    return str(uri)
 
 
 class PreprocessingConverter(Converter):

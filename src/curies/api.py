@@ -20,6 +20,7 @@ from typing import (
     Self,
     TypeAlias,
     TypeVar,
+    Union,
     cast,
     overload,
 )
@@ -36,20 +37,16 @@ from pydantic import (
 )
 from pydantic_core import core_schema
 
-from .uri_utils import (
-    URIType,
-    _check_httpx2_url,
-    _check_httpx_url,
-    _check_rdflib_uri,
-    normalize_uri,
-)
 from .utils import NoCURIEDelimiterError, _split
 
 if TYPE_CHECKING:  # pragma: no cover
+    import httpx
+    import httpx2
     import pandas
     import rdflib
 
     from .triples import Triple
+
 
 __all__ = [
     "Converter",
@@ -83,6 +80,10 @@ logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
+
+
+#: A hint for a URI, must include a str() method that does the expected thing
+URIType: TypeAlias = Union[str, AnyUrl, "rdflib.URIRef", "httpx.URL", "httpx2.URL"]
 
 
 def _get_field_validator_values(values: Any, key: str) -> str:
@@ -1709,13 +1710,7 @@ class Converter:
         self, str_or_uri_or_curie: str | URIType, *, strict: bool = False
     ) -> ReferenceTuple | None:
         """Parse a string, URI, or CURIE."""
-        if (
-            isinstance(str_or_uri_or_curie, AnyUrl)
-            or _check_httpx_url(str_or_uri_or_curie)
-            or _check_httpx2_url(str_or_uri_or_curie)
-            or _check_rdflib_uri(str_or_uri_or_curie)
-            or self.is_uri(str_or_uri_or_curie)
-        ):
+        if str_or_uri_or_curie.__class__ is not str or self.is_uri(str_or_uri_or_curie):
             return self.parse_uri(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
         if self.is_curie(str_or_uri_or_curie):
             return self.parse_curie(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
@@ -1792,7 +1787,7 @@ class Converter:
         if strict:
             raise CompressionError(uri)
         if passthrough:
-            return normalize_uri(uri)
+            return str(uri)
         return None
 
     # docstr-coverage:excused `overload`
@@ -1831,7 +1826,7 @@ class Converter:
         ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
         """
-        rv = self.trie.parse_uri(normalize_uri(uri))
+        rv = self.trie.parse_uri(str(uri))
         if rv is not None:
             return rv
         if strict:
