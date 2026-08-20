@@ -1694,18 +1694,20 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse(
-        self, str_or_uri_or_curie: str, *, strict: Literal[True] = True
+        self, str_or_uri_or_curie: str | URIType, *, strict: Literal[True] = True
     ) -> ReferenceTuple: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def parse(
-        self, str_or_uri_or_curie: str, *, strict: Literal[False] = False
+        self, str_or_uri_or_curie: str | URIType, *, strict: Literal[False] = False
     ) -> ReferenceTuple | None: ...
 
-    def parse(self, str_or_uri_or_curie: str, *, strict: bool = False) -> ReferenceTuple | None:
+    def parse(
+        self, str_or_uri_or_curie: str | URIType, *, strict: bool = False
+    ) -> ReferenceTuple | None:
         """Parse a string, URI, or CURIE."""
-        if self.is_uri(str_or_uri_or_curie):
+        if isinstance(str_or_uri_or_curie, AnyUrl) or self.is_uri(str_or_uri_or_curie):
             return self.parse_uri(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
         if self.is_curie(str_or_uri_or_curie):
             return self.parse_curie(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
@@ -1713,29 +1715,31 @@ class Converter:
             raise CompressionError(str_or_uri_or_curie)
         return None
 
-    def compress_strict(self, uri: str) -> str:
+    def compress_strict(self, uri: URIType) -> str:
         """Compress a URI to a CURIE, and raise an error of not possible."""
         return self.compress(uri, strict=True)
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
-        self, uri: str, *, strict: Literal[True] = True, passthrough: bool = ...
+        self, uri: URIType, *, strict: Literal[True] = True, passthrough: bool = ...
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
-        self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
+        self, uri: URIType, *, strict: Literal[False] = False, passthrough: Literal[True] = True
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
-        self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
+        self, uri: URIType, *, strict: Literal[False] = False, passthrough: Literal[False] = False
     ) -> str | None: ...
 
-    def compress(self, uri: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
+    def compress(
+        self, uri: URIType, *, strict: bool = False, passthrough: bool = False
+    ) -> str | None:
         """Compress a URI to a CURIE, if possible.
 
         :param uri: A string representing a valid uniform resource identifier (URI)
@@ -1780,7 +1784,7 @@ class Converter:
         if strict:
             raise CompressionError(uri)
         if passthrough:
-            return uri
+            return self._handle_uri(uri)
         return None
 
     # docstr-coverage:excused `overload`

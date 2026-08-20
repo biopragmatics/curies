@@ -246,7 +246,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse(
         self,
-        str_or_uri_or_curie: str,
+        str_or_uri_or_curie: str | URIType,
         *,
         strict: Literal[True] = True,
         context: str | None = ...,
@@ -257,7 +257,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse(
         self,
-        str_or_uri_or_curie: str,
+        str_or_uri_or_curie: str | URIType,
         *,
         strict: Literal[False] = False,
         context: str | None = ...,
@@ -266,7 +266,7 @@ class PreprocessingConverter(Converter):
 
     def parse(
         self,
-        str_or_uri_or_curie: str,
+        str_or_uri_or_curie: str | URIType,
         *,
         strict: bool = False,
         context: str | None = None,
