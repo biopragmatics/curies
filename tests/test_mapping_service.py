@@ -142,14 +142,30 @@ class TestMappingService(unittest.TestCase):
             # errors because of unknown URI
             "SELECT ?o WHERE { <http://example.com/1> owl:sameAs ?o }",
             "SELECT ?s WHERE { ?s owl:sameAs <http://example.com/1> }",
-            # errors because predicate is given
-            (
-                "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
-                "owl:sameAs <http://purl.obolibrary.org/obo/CHEBI_1> }"
-            ),
         ]:
             with self.subTest(sparql=sparql):
                 self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
+
+    def test_fully_specified_triple(self) -> None:
+        """Test fully specified mapping triples."""
+        matching_query = """\
+ASK WHERE {
+    <http://purl.obolibrary.org/obo/CHEBI_1>
+    owl:sameAs <http://identifiers.org/chebi/1>
+}
+"""
+        non_matching_query = """\
+ASK WHERE {
+    <http://purl.obolibrary.org/obo/CHEBI_1>
+    owl:sameAs <http://purl.obolibrary.org/obo/GO_1>
+}
+"""
+
+        matching_result = self.graph.query(matching_query, processor=self.processor)
+        non_matching_result = self.graph.query(non_matching_query, processor=self.processor)
+
+        self.assertTrue(matching_result.askAnswer)
+        self.assertFalse(non_matching_result.askAnswer)
 
     def test_sparql(self) -> None:
         """Test a sparql query on the graph."""

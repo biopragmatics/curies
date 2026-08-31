@@ -116,6 +116,9 @@ class MappingServiceGraph(Graph):
                 objects = self._expand_pair_all(subj_query)
                 for obj, pred in itt.product(objects, self.query_predicates):
                     yield subj_query, pred, obj
+            elif subj_query is not None and obj_query is not None:
+                if obj_query in self._expand_pair_all(subj_query):
+                    yield subj_query, pred_query, obj_query
 
 
 def get_flask_mapping_blueprint(
