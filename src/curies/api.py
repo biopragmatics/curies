@@ -2560,8 +2560,10 @@ class Converter:
         :param passthrough: If true, strict is false, and any CURIE can't be
             standardized, return the input. Defaults to false.
 
-        :return: A report object
-        :raises ValueError: If strict is enabled and the column contains CURIEs that aren't standardizable
+        :returns: A report object
+
+        :raises ValueError: If strict is enabled and the column contains CURIEs that
+            aren't standardizable
 
         The Disease Ontology curates mappings to other semantic spaces and distributes
         them in the tabular SSSOM format. However, they use a wide variety of
