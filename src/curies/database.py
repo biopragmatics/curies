@@ -1,7 +1,8 @@
 """Database adapters for :mod:`curies`.
 
-Using :mod:`sqlmodel`
-=====================
+#######################
+ Using :mod:`sqlmodel`
+#######################
 
 SQLModel is a joint abstraction over :mod:`pydantic` and :mod:`sqlalchemy`. If you want
 to use :class:`curies.Reference` within a SQLModel class, you can do so by setting the
@@ -60,8 +61,23 @@ using the same column type, such as for the ``author`` field below:
         object: Reference = Field(sa_column=get_reference_sa_column())
         author: Reference | None = Field(sa_column=get_reference_sa_column())
 
-Using :mod:`sqlalchemy`
-=======================
+If you want to have a field with a list of references, you can do it using
+:func:`get_reference_list_sa_column`:
+
+.. code-block:: python
+
+    class Record(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        authors: list[Reference] = Field(
+            default_factory=list, sa_column=get_reference_list_sa_column()
+        )
+
+This also works how you would expect if you don't use a default_factory or if you choose
+to make it optional ``list[Reference] | None``.
+
+#########################
+ Using :mod:`sqlalchemy`
+#########################
 
 SQLAlchemy is a combine high- and mid-level database abstraction layer and
 object-relational mapping. It has more opportunities for configuration over SQLModel.
@@ -168,6 +184,17 @@ column, that exposes an appropriate :class:`curies.Reference` class.
             Edge.subject == Reference(prefix="CHEBI", identifier="135125")
         )
         edges = session.exec(statement).all()
+
+Similarly to above, lists can be constructed using :func:`get_reference_list_sa_column`:
+
+.. code-block:: python
+
+    class Record(Base):
+        __tablename__ = "record"
+
+        id = Column(Integer, primary_key=True)
+
+        authors = get_reference_list_sa_column()
 """
 
 from __future__ import annotations
@@ -178,23 +205,55 @@ import sqlalchemy
 from sqlalchemy import Column
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.orm import Composite, composite
-from sqlalchemy.types import TEXT, TypeDecorator
+from sqlalchemy.sql.type_api import TypeEngine
+from sqlalchemy.types import JSON, TEXT, TypeDecorator
 
-from curies import Reference
+from curies import Prefix, Reference
 
 __all__ = [
+    "SAReferenceListTypeDecorator",
     "SAReferenceTypeDecorator",
+    "get_reference_list_sa_column",
     "get_reference_sa_column",
     "get_reference_sa_composite",
 ]
 
 
+class SAReferenceListTypeDecorator(TypeDecorator[list[Reference]]):
+    """A SQLAlchemy type decorator for a list of :mod:`curies.Reference`."""
+
+    impl: ClassVar[type[TypeEngine[str]]] = JSON  # type:ignore[misc]
+    #: Set SQLAlchemy caching to true
+    cache_ok: ClassVar[bool] = True  # type:ignore[misc]
+
+    def process_bind_param(
+        self, value: str | Reference | list[Reference] | None, dialect: Dialect
+    ) -> list[str] | None:
+        """Convert the Python object into a database value."""
+        if value is None:
+            return None
+        if isinstance(value, str):
+            return [value]
+        elif isinstance(value, Reference):
+            return [value.curie]
+        else:
+            return [v.curie for v in value]
+
+    def process_result_value(
+        self, value: list[str] | None, dialect: Dialect
+    ) -> list[Reference] | None:
+        """Convert the database value into a Python object."""
+        if value is None:
+            return None
+        return [Reference.from_curie(v) for v in value]
+
+
 class SAReferenceTypeDecorator(TypeDecorator[Reference]):
     """A SQLAlchemy type decorator for a :mod:`curies.Reference`."""
 
-    impl = TEXT
+    impl: ClassVar[type[TypeEngine[str]]] = TEXT  # type:ignore[misc]
     #: Set SQLAlchemy caching to true
-    cache_ok: ClassVar[bool] = True  # type:ignore
+    cache_ok: ClassVar[bool] = True  # type:ignore[misc]
 
     def process_bind_param(self, value: str | Reference | None, dialect: Dialect) -> str | None:
         """Convert the Python object into a database value."""
@@ -240,12 +299,38 @@ def get_reference_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column[Refe
     return sqlalchemy.Column(SAReferenceTypeDecorator(), *args, **kwargs)
 
 
+def get_reference_list_sa_column(*args: Any, **kwargs: Any) -> sqlalchemy.Column[list[Reference]]:
+    """Get a SQLAlchemy column with the type decorator for a :list of mod:`curies.Reference`.
+
+    :param args: positional arguments, passed to :class:`sqlalchemy.Column`
+    :param kwargs: keyword arguments, passed to :class:`sqlalchemy.Column`
+
+    :returns: A column object, parametrized with list of :class:`curies.Reference`
+
+    For example, this can be used to model an author list like in the following:
+
+    .. code-block:: python
+
+        from curies import Reference
+        from curies.database import get_reference_list_sa_column
+        from sqlmodel import Field, SQLModel
+
+
+        class Edge(SQLModel, table=True):
+            id: int | None = Field(default=None, primary_key=True)
+            authors: list[Reference] = Field(
+                default_factory=list, sa_column=get_reference_list_sa_column()
+            )
+    """
+    return sqlalchemy.Column(SAReferenceListTypeDecorator(), *args, **kwargs)
+
+
 class _ReferenceAdapter(Reference):
     """A wrapper for SQLAlchemy for usage in composite()."""
 
     def __init__(self, prefix: str, identifier: str) -> None:
         """Initialize the SQLAlchemy model."""
-        super().__init__(prefix=prefix, identifier=identifier)
+        super().__init__(prefix=Prefix(prefix), identifier=identifier)
 
 
 def get_reference_sa_composite(

@@ -1,5 +1,6 @@
-Data Structures
-===============
+#################
+ Data Structures
+#################
 
 A *semantic space* is a collections of identifiers for concepts. For example, the
 Chemical Entities of Biomedical Interest (ChEBI) has a semantic space including
@@ -22,8 +23,9 @@ In many applications, it's important to be able to convert between CURIEs and UR
 Therefore, we need a data structure that connects the CURIE prefixes like ``CHEBI`` to
 the URI prefixes like ``http://purl.obolibrary.org/obo/CHEBI_``.
 
-Prefix Maps
------------
+*************
+ Prefix Maps
+*************
 
 A prefix map is a dictionary data structure where keys represent CURIE prefixes and
 their associated values represent URI prefixes. Ideally, these are constrained to be
@@ -91,8 +93,9 @@ way to address this. Therefore, we're going to introduce a new data structure.
 
 .. _epms:
 
-Extended Prefix Maps
---------------------
+**********************
+ Extended Prefix Maps
+**********************
 
 Extended Prefix Maps (EPMs) address the issues with prefix maps by including explicit
 fields for CURIE prefix synonyms and URI prefix synonyms while maintaining an explicit

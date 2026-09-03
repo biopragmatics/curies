@@ -1,10 +1,9 @@
 """Tests for the identifier mapping service."""
 
 import unittest
-from typing import Union
 from urllib.parse import quote
 
-import httpx
+import httpx2
 import werkzeug.test
 from fastapi.testclient import TestClient
 from flask.testing import FlaskClient
@@ -108,7 +107,7 @@ class TestMappingService(unittest.TestCase):
         """Set up the converter."""
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
         self.graph = MappingServiceGraph(converter=self.converter)
-        self.processor = MappingServiceSPARQLProcessor(self.graph)
+        self.processor = MappingServiceSPARQLProcessor(self.graph)  # type:ignore[no-untyped-call]
 
     def test_parse_header(self) -> None:
         """Test parsing a rather complex header."""
@@ -144,8 +143,10 @@ class TestMappingService(unittest.TestCase):
             "SELECT ?o WHERE { <http://example.com/1> owl:sameAs ?o }",
             "SELECT ?s WHERE { ?s owl:sameAs <http://example.com/1> }",
             # errors because predicate is given
-            "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
-            "owl:sameAs <http://purl.obolibrary.org/obo/CHEBI_1> }",
+            (
+                "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
+                "owl:sameAs <http://purl.obolibrary.org/obo/CHEBI_1> }"
+            ),
         ]:
             with self.subTest(sparql=sparql):
                 self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
@@ -205,7 +206,7 @@ class ConverterMixin(unittest.TestCase):
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
 
     def assert_mimetype(
-        self, res: Union[httpx.Response, werkzeug.test.TestResponse], content_type: str
+        self, res: httpx2.Response | werkzeug.test.TestResponse, content_type: str
     ) -> None:
         """Assert the correct MIMETYPE."""
         content_type = handle_header(content_type)
@@ -214,11 +215,12 @@ class ConverterMixin(unittest.TestCase):
             self.assertEqual(content_type, mimetype)
         else:  # this is from FastAPI
             actual_content_type = res.headers.get("content-type")
-            self.assertIsNotNone(actual_content_type)
+            if actual_content_type is None:
+                self.fail("content type was none")
             self.assertEqual(content_type, actual_content_type.split(";")[0].strip())
 
     def assert_parsed(
-        self, res: Union[httpx.Response, werkzeug.test.TestResponse], content_type: str
+        self, res: httpx2.Response | werkzeug.test.TestResponse, content_type: str
     ) -> None:
         """Test the result has the expected output."""
         content_type = handle_header(content_type)
@@ -227,9 +229,7 @@ class ConverterMixin(unittest.TestCase):
         pairs = {(record["s"], record["o"]) for record in records}
         self.assertEqual(EXPECTED, pairs)
 
-    def assert_get_sparql_results(
-        self, client: Union[TestClient, FlaskClient], sparql: str
-    ) -> None:
+    def assert_get_sparql_results(self, client: TestClient | FlaskClient, sparql: str) -> None:
         """Test a sparql query returns expected values."""
         for content_type in sorted(VALID_CONTENT_TYPES):
             with self.subTest(content_type=content_type):
@@ -238,9 +238,7 @@ class ConverterMixin(unittest.TestCase):
                 self.assert_mimetype(res, content_type)
                 self.assert_parsed(res, content_type)
 
-    def assert_post_sparql_results(
-        self, client: Union[TestClient, FlaskClient], sparql: str
-    ) -> None:
+    def assert_post_sparql_results(self, client: TestClient | FlaskClient, sparql: str) -> None:
         """Test a sparql query returns expected values."""
         for content_type in sorted(VALID_CONTENT_TYPES):
             with self.subTest(content_type=content_type):
@@ -350,6 +348,7 @@ class TestFastAPIMappingApp(ConverterMixin):
 class TestUtils(unittest.TestCase):
     """Test utilities."""
 
+    @unittest.skip(reason="Wikidata query service is down")
     @SLOW
     def test_availability(self) -> None:
         """Test sparql service availability check."""

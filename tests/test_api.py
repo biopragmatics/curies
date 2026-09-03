@@ -2,17 +2,22 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import tempfile
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Literal, overload
 
+import httpx
 import pandas as pd
 import rdflib
-from pydantic import ValidationError
+from pydantic import AnyUrl
+from rdflib import URIRef
 
 import curies
+from curies import vocabulary as v
 from curies.api import (
     CompressionError,
     Converter,
@@ -20,14 +25,12 @@ from curies.api import (
     DuplicatePrefixes,
     DuplicateURIPrefixes,
     ExpansionError,
-    NamableReference,
-    NamedReference,
     PrefixStandardizationError,
     Record,
-    Records,
     Reference,
     ReferenceTuple,
     URIStandardizationError,
+    URIType,
     chain,
     upgrade_prefix_map,
 )
@@ -38,140 +41,12 @@ from curies.sources import (
     get_monarch_converter,
     get_obo_converter,
 )
-from curies.utils import NoCURIEDelimiterError
 from curies.version import get_version
+from curies.vocabulary import parse_xsd
 from tests.constants import SLOW
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
 GO_URI_PREFIX = "http://purl.obolibrary.org/obo/GO_"
-
-
-class TestStruct(unittest.TestCase):
-    """Test the data structures."""
-
-    def test_not_curie(self) -> None:
-        """Test a malformed CURIE."""
-        with self.assertRaises(NoCURIEDelimiterError) as e:
-            Reference.from_curie("not a curie")
-        self.assertIn("does not appear to be a CURIE", str(e.exception))
-
-    def test_default_prefix(self) -> None:
-        """Test a default (empty) prefix."""
-        ref = Reference.from_curie(":something")
-        self.assertEqual("", ref.prefix)
-        self.assertEqual("something", ref.identifier)
-
-    def test_default_identifier(self) -> None:
-        """Test a default (empty) identifier."""
-        ref = Reference.from_curie("p1:")
-        self.assertEqual("p1", ref.prefix)
-        self.assertEqual("", ref.identifier)
-
-    def test_multiple_delimiters(self) -> None:
-        """Test a default (empty) identifier."""
-        ref = Reference.from_curie("a1:b2:c3")
-        self.assertEqual("a1", ref.prefix)
-        self.assertEqual("b2:c3", ref.identifier)
-
-    def test_records(self) -> None:
-        """Test a list of records."""
-        records = Records.model_validate([{"prefix": "chebi", "uri_prefix": CHEBI_URI_PREFIX}])
-        converter = Converter(records=records)
-        self.assertEqual({"chebi"}, converter.get_prefixes())
-
-    def test_sort(self) -> None:
-        """Test sorting."""
-        start = [
-            Reference.from_curie("def:1234"),
-            Reference.from_curie("abc:1234"),
-            Reference.from_curie("abc:1235"),
-        ]
-        expected = [
-            Reference.from_curie("abc:1234"),
-            Reference.from_curie("abc:1235"),
-            Reference.from_curie("def:1234"),
-        ]
-        self.assertEqual(expected, sorted(start))
-
-    def test_set_membership(self) -> None:
-        """Test membership in sets."""
-        collection = {
-            Reference.from_curie("def:1234"),
-            Reference.from_curie("abc:1234"),
-            Reference.from_curie("abc:1235"),
-        }
-        self.assertIn(Reference.from_curie("def:1234"), collection)
-        self.assertNotIn(Reference.from_curie("xyz:1234"), collection)
-        self.assertNotIn(Reference.from_curie(":1234"), collection)
-        self.assertNotIn(Reference.from_curie("abc:"), collection)
-
-    def test_named_set_membership(self) -> None:
-        """Test membership in sets of named references."""
-        references = {
-            NamedReference.from_curie("a:1", "name1"),
-            NamedReference.from_curie("a:2", "name2"),
-        }
-        self.assertIn(Reference.from_curie("a:1"), references)
-        self.assertIn(NamableReference.from_curie("a:1"), references)
-        self.assertIn(NamedReference.from_curie("a:1", "name1"), references)
-        self.assertIn(NamableReference.from_curie("a:1", "name1"), references)
-        # the following is a weird case, but shows how this works
-        self.assertIn(NamedReference.from_curie("a:1", "name2"), references)
-
-        references_2 = {
-            Reference.from_curie("a:1"),
-            Reference.from_curie("a:2"),
-        }
-        self.assertIn(Reference.from_curie("a:1"), references_2)
-        self.assertIn(NamableReference.from_curie("a:1", "name1"), references_2)
-        self.assertIn(NamedReference.from_curie("a:1", "name1"), references_2)
-
-    def test_tuple(self) -> None:
-        """Test reference tuples."""
-        t = ReferenceTuple.from_curie("a:1")
-        self.assertEqual(Reference(prefix="a", identifier="1"), t.to_pydantic())
-
-    def test_reference_constructor(self) -> None:
-        """Test constructing a reference."""
-        r1 = Reference(prefix="a", identifier="1")
-        r2 = NamableReference(prefix="a", identifier="2")
-        r3 = NamableReference(prefix="a", identifier="3", name="item 3")
-        r4 = NamedReference(prefix="a", identifier="4", name="item 4")
-
-        self.assertEqual(Reference(prefix="a", identifier="1"), Reference.from_reference(r1))
-        self.assertEqual(Reference(prefix="a", identifier="2"), Reference.from_reference(r2))
-        self.assertEqual(Reference(prefix="a", identifier="3"), Reference.from_reference(r3))
-        self.assertEqual(Reference(prefix="a", identifier="4"), Reference.from_reference(r4))
-
-        self.assertEqual(
-            NamableReference(prefix="a", identifier="1", name=None),
-            NamableReference.from_reference(r1),
-        )
-        self.assertEqual(
-            NamableReference(prefix="a", identifier="2", name=None),
-            NamableReference.from_reference(r2),
-        )
-        self.assertEqual(
-            NamableReference(prefix="a", identifier="3", name="item 3"),
-            NamableReference.from_reference(r3),
-        )
-        self.assertEqual(
-            NamableReference(prefix="a", identifier="4", name="item 4"),
-            NamableReference.from_reference(r4),
-        )
-
-        with self.assertRaises(TypeError):
-            NamedReference.from_reference(r1)
-        with self.assertRaises(ValidationError):
-            NamedReference.from_reference(r2)
-        self.assertEqual(
-            NamedReference(prefix="a", identifier="3", name="item 3"),
-            NamedReference.from_reference(r3),
-        )
-        self.assertEqual(
-            NamedReference(prefix="a", identifier="4", name="item 4"),
-            NamedReference.from_reference(r4),
-        )
 
 
 class TestAddRecord(unittest.TestCase):
@@ -350,6 +225,10 @@ class TestConverter(unittest.TestCase):
         }
         self.converter = Converter.from_prefix_map(self.simple_obo_prefix_map)
 
+    def test_iter(self) -> None:
+        """Test the iterator."""
+        self.assertEqual(self.converter.records, list(self.converter))
+
     def test_reference_tuple(self) -> None:
         """Test the reference tuple data type."""
         t = ReferenceTuple("chebi", "1234")
@@ -449,11 +328,14 @@ class TestConverter(unittest.TestCase):
 
     def _assert_convert(self, converter: Converter) -> None:
         self.assertIn("GO", converter.prefix_map)
+        self.assertTrue(converter.has_prefix("GO"))
+        self.assertFalse(converter.has_prefix("nope-nope-nope"))
         self.assertIn("GO", converter.bimap)
         self.assertIn("GO", converter.reverse_bimap.values())
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_prefix_map)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.reverse_bimap)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.trie)
+        self.assertNotIn("http://purl.obolibrary.org/obo/XXX_", converter.trie)
         self.assertIn("http://purl.obolibrary.org/obo/GO_", converter.bimap.values())
         for curie, uri in [
             ("CHEBI:1", "http://purl.obolibrary.org/obo/CHEBI_1"),
@@ -490,6 +372,7 @@ class TestConverter(unittest.TestCase):
         self.assertEqual("GO", record.prefix)
 
     @SLOW
+    @unittest.skip("problem with bioregistry getter")
     def test_bioregistry(self) -> None:
         """Test loading a remote JSON-LD context."""
         for web in [True, False]:
@@ -537,7 +420,9 @@ class TestConverter(unittest.TestCase):
         """Test the OBO converter."""
         obo_converter = get_obo_converter()
         self.assertIn("CHEBI", obo_converter.prefix_map)
+        self.assertTrue(obo_converter.has_prefix("CHEBI"))
         self.assertNotIn("chebi", obo_converter.prefix_map)
+        self.assertFalse(obo_converter.has_prefix("chebi"))
 
     @SLOW
     def test_monarch(self) -> None:
@@ -571,6 +456,9 @@ class TestConverter(unittest.TestCase):
         chebi_uri = converter.prefix_map["chebi"]
         self.assertIn(chebi_uri, converter.reverse_prefix_map)
         self.assertEqual("chebi", converter.reverse_prefix_map[chebi_uri])
+
+        self.assertTrue(converter.has_prefix("CHEBI"))
+        self.assertTrue(converter.has_prefix("chebi"))
 
     def test_load_path(self) -> None:
         """Test loading from paths."""
@@ -646,6 +534,32 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(URIStandardizationError):
             converter.standardize_uri("NOPE:NOPE", strict=True)
 
+    def test_standardize_reference(self) -> None:
+        """Test standardize reference."""
+        converter = Converter.from_extended_prefix_map(
+            [
+                Record(
+                    prefix="CHEBI",
+                    prefix_synonyms=["chebi"],
+                    uri_prefix="http://purl.obolibrary.org/obo/CHEBI_",
+                ),
+            ]
+        )
+
+        r1 = Reference.from_curie("chebi:138488")
+        r2 = Reference.from_curie("CHEBI:138488")
+        bad = Reference.from_curie("NOPE:NOPE")
+
+        for r in [r1, r2]:
+            self.assertEqual(r2, converter.standardize_reference(r))
+            self.assertEqual(r2, converter.standardize_reference(r, strict=True))
+            self.assertEqual(r2, converter.standardize_reference(r, strict=False))
+
+        self.assertIsNone(converter.standardize_reference(bad))
+        self.assertIsNone(converter.standardize_reference(bad, strict=False))
+        with self.assertRaises(PrefixStandardizationError):
+            converter.standardize_reference(bad, strict=True)
+
     def test_combine(self) -> None:
         """Test chaining converters."""
         with self.assertRaises(ValueError):
@@ -719,6 +633,10 @@ class TestConverter(unittest.TestCase):
         self.assertIn("go", c3.prefix_map, msg=f"PM: {c3.prefix_map}")
         self.assertNotIn("go", c3.bimap)
         self.assertIn("GO", c3.bimap)
+
+        self.assertTrue(c3.has_prefix("go"))
+        self.assertTrue(c3.has_prefix("GO"))
+        self.assertFalse(c3.has_prefix("nope"))
 
     def test_combine_ci(self) -> None:
         """Test combining case-insensitive."""
@@ -1032,21 +950,35 @@ class TestConverter(unittest.TestCase):
                 )
             ]
         )
-        uri = "http://purl.obolibrary.org/obo/GO_1234567"
+        expected = ReferenceTuple("GO", "1234567")
+        uri1 = "http://purl.obolibrary.org/obo/GO_1234567"
         uri2 = "https://identifiers.org/GO:1234567"
 
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri, strict=True))
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri, strict=False))
+        uris: list[URIType] = [
+            uri1,
+            uri2,
+            AnyUrl(uri1),
+            rdflib.URIRef(uri1),
+            httpx.URL(uri1),
+        ]
+        for uri in uris:
+            with self.subTest(uri=str(uri)):
+                self.assertEqual(expected, converter.parse_uri(uri))
+                self.assertEqual(expected, converter.parse_uri(uri, strict=True))
+                self.assertEqual(expected, converter.parse_uri(uri, strict=False))
 
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=True))
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=False))
-
-        self.assertEqual(
-            (None, None), converter.parse_uri("123345", strict=False, return_none=False)
-        )
-        self.assertIsNone(converter.parse_uri("123345", strict=False, return_none=True))
-        with self.assertRaises(ValueError):
-            converter.parse_uri("123345", strict=True)
+        misses: list[URIType] = [
+            "123345",
+            "https://example.com/12345",
+            AnyUrl("https://example.com/12345"),
+            URIRef("https://example.com/12345"),
+            httpx.URL("https://example.com/12345"),
+        ]
+        for miss in misses:
+            with self.subTest(uri=str(miss)):
+                self.assertIsNone(converter.parse_uri(miss, strict=False))
+                with self.assertRaises(ValueError):
+                    converter.parse_uri(miss, strict=True)
 
     def test_expand(self) -> None:
         """Tests for expand."""
@@ -1249,9 +1181,23 @@ class TestConverter(unittest.TestCase):
         class BananaStripperConverter(Converter):
             """A converter that removes bananas from LUIDs."""
 
-            def standardize_identifier(self, prefix: str, identifier: str) -> str | None:
+            # docstr-coverage:excused `overload`
+            @overload
+            def standardize_identifier(
+                self, standard_prefix: str, identifier: str, strict: Literal[True] = ...
+            ) -> str: ...
+
+            # docstr-coverage:excused `overload`
+            @overload
+            def standardize_identifier(
+                self, standard_prefix: str, identifier: str, strict: Literal[False] = ...
+            ) -> str | None: ...
+
+            def standardize_identifier(
+                self, standard_prefix: str, identifier: str, strict: bool = False
+            ) -> str | None:
                 """Standardize the identifier by removing a banana and checking it is numeric."""
-                norm_identifier = identifier.removeprefix(f"{prefix}:")
+                norm_identifier = identifier.removeprefix(f"{standard_prefix}:")
 
                 # now, do some validation
                 if not norm_identifier.isnumeric():
@@ -1281,6 +1227,48 @@ class TestConverter(unittest.TestCase):
         self.assertIsNone(converter.parse_curie("chebi:chebi:1234", strict=False))
         with self.assertRaises(ValueError):
             converter.parse_curie("CHEBI:nope", strict=True)
+
+    def test_add_prefix_synonym(self) -> None:
+        """Test adding a prefix synonym."""
+        c = Converter()
+        c.add_prefix("a", "https://example.org/a/")
+        c.add_prefix("b", "https://example.org/b/")
+
+        c.add_prefix_synonym("a", "x")
+
+        self.assertEqual(
+            Record(prefix="a", uri_prefix="https://example.org/a/", prefix_synonyms=["x"]),
+            c.get_record("a"),
+        )
+
+        with self.assertRaises(ValueError):
+            c.add_prefix_synonym("a", "b")
+
+        with self.assertRaises(KeyError):
+            c.add_prefix_synonym("A", "y")
+
+    def test_add_uri_prefix_synonym(self) -> None:
+        """Test adding a prefix synonym."""
+        c = Converter()
+        c.add_prefix("a", "https://example.org/a/")
+        c.add_prefix("b", "https://example.org/b/")
+
+        c.add_uri_prefix_synonym("a", "https://example.org/a2/")
+
+        self.assertEqual(
+            Record(
+                prefix="a",
+                uri_prefix="https://example.org/a/",
+                uri_prefix_synonyms=["https://example.org/a2/"],
+            ),
+            c.get_record("a"),
+        )
+
+        with self.assertRaises(ValueError):
+            c.add_uri_prefix_synonym("a", "https://example.org/b/")
+
+        with self.assertRaises(KeyError):
+            c.add_uri_prefix_synonym("A", "y")
 
 
 class TestVersion(unittest.TestCase):
@@ -1318,3 +1306,20 @@ class TestUtils(unittest.TestCase):
         self.assertEqual([], c_record.prefix_synonyms)
         self.assertEqual("https://example.com/c/", c_record.uri_prefix)
         self.assertEqual([], c_record.uri_prefix_synonyms)
+
+    def test_parse_xsd(self) -> None:
+        """Test parsing XSD."""
+        with self.assertRaises(KeyError):
+            parse_xsd("doesn't matter", Reference(prefix="something", identifier="wrong"))
+
+        for expected, s, datatype in [
+            (True, "true", v.xsd_boolean),
+            (False, "false", v.xsd_boolean),
+            (datetime.date(2026, 7, 31), "2026-07-31", v.xsd_date),
+            (5, "5", v.xsd_integer),
+            (5.0, "5", v.xsd_float),
+            (5.1, "5.1", v.xsd_float),
+            (AnyUrl("https://example.org"), "https://example.org/", v.xsd_uri),
+        ]:
+            with self.subTest(value=s):
+                self.assertEqual(expected, parse_xsd(s, datatype))

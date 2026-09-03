@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from rdflib import OWL, Graph, URIRef
 from rdflib.term import _is_valid_uri
 
-from .rdflib_custom import MappingServiceSPARQLProcessor  # type: ignore
+from .rdflib_custom import MappingServiceSPARQLProcessor
 from .utils import CONTENT_TYPE_TO_RDFLIB_FORMAT, handle_header
 from ..api import Converter
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     import flask
 
 
-def _prepare_predicates(predicates: None | str | Collection[str] = None) -> set[URIRef]:
+def _prepare_predicates(predicates: str | Collection[str] | None = None) -> set[URIRef]:
     if predicates is None:
         return {OWL.sameAs}
     if isinstance(predicates, str):
@@ -36,7 +36,7 @@ class MappingServiceGraph(Graph):
         self,
         *args: Any,
         converter: Converter,
-        predicates: None | str | list[str] = None,
+        predicates: str | list[str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate the graph.
@@ -65,19 +65,20 @@ class MappingServiceGraph(Graph):
                     ],
                     "GO": ["http://purl.obolibrary.org/obo/GO_"],
                     "OBO": ["http://purl.obolibrary.org/obo/"],
-                    ...,
+                    # ...
                 }
             )
             graph = MappingServiceGraph(converter=converter)
 
-            res = graph.query('''
-                SELECT ?o WHERE {
-                    VALUES ?s {
-                        <http://purl.obolibrary.org/obo/CHEBI_1>
-                    }
-                    ?s owl:sameAs ?o
-                }
-            ''')
+            sparql = (
+                "SELECT ?o WHERE {"
+                "    VALUES ?s {"
+                "        <http://purl.obolibrary.org/obo/CHEBI_1>"
+                "    }"
+                "    ?s owl:sameAs ?o"
+                "}"
+            )
+            res = graph.query(sparql)
 
         The results of this are:
 
@@ -93,7 +94,7 @@ class MappingServiceGraph(Graph):
         super().__init__(*args, **kwargs)
 
     def _expand_pair_all(self, uri_in: str) -> list[URIRef]:
-        reference = self.converter.parse_uri(uri_in, return_none=True)
+        reference = self.converter.parse_uri(uri_in)
         if reference is None:
             return []
         uris = self.converter.expand_pair_all(reference.prefix, reference.identifier, strict=True)
@@ -133,7 +134,7 @@ def get_flask_mapping_blueprint(
 
     blueprint = Blueprint("mapping", __name__, **kwargs)
     graph = MappingServiceGraph(converter=converter)
-    processor = MappingServiceSPARQLProcessor(graph=graph)
+    processor = MappingServiceSPARQLProcessor(graph=graph)  # type:ignore[no-untyped-call]
 
     @blueprint.route(route, methods=["GET", "POST"])
     def serve_sparql() -> Response:
@@ -167,7 +168,7 @@ def get_fastapi_router(
 
     api_router = APIRouter(**kwargs)
     graph = MappingServiceGraph(converter=converter)
-    processor = MappingServiceSPARQLProcessor(graph=graph)
+    processor = MappingServiceSPARQLProcessor(graph=graph)  # type:ignore[no-untyped-call]
 
     def _resolve(accept: str, sparql: str) -> Response:
         content_type = handle_header(accept)

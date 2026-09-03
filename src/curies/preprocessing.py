@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Literal, TypeVar, overload
+from typing import Any, Literal, Self, TypeAlias, TypeVar, overload
 
 from pydantic import BaseModel, Field
-from typing_extensions import Never, Self, TypeAlias
 
-from .api import Converter, Reference, ReferenceTuple
+from .api import Converter, Reference, ReferenceTuple, URIType
 
 __all__ = [
     "BlockAction",
@@ -179,8 +179,8 @@ class BlocklistError(ValueError):
     """An error for block list."""
 
 
-def _identity(x: str) -> str:
-    return x
+def _identity(uri: URIType) -> str:
+    return str(uri)
 
 
 class PreprocessingConverter(Converter):
@@ -191,7 +191,7 @@ class PreprocessingConverter(Converter):
         *args: Any,
         rules: PreprocessingRules | str | Path,
         reference_cls: type[X] | None = None,
-        preclean: Callable[[str], str] | None = None,
+        preclean: Callable[[URIType], str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate a converter with a ruleset for pre-processing.
@@ -239,7 +239,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse(
         self,
-        str_or_uri_or_curie: str,
+        str_or_uri_or_curie: str | URIType,
         *,
         strict: Literal[True] = True,
         context: str | None = ...,
@@ -250,7 +250,7 @@ class PreprocessingConverter(Converter):
     @overload
     def parse(
         self,
-        str_or_uri_or_curie: str,
+        str_or_uri_or_curie: str | URIType,
         *,
         strict: Literal[False] = False,
         context: str | None = ...,
@@ -259,7 +259,7 @@ class PreprocessingConverter(Converter):
 
     def parse(
         self,
-        str_or_uri_or_curie: str,
+        str_or_uri_or_curie: str | URIType,
         *,
         strict: bool = False,
         context: str | None = None,
@@ -352,22 +352,9 @@ class PreprocessingConverter(Converter):
     @overload
     def parse_uri(
         self,
-        uri: str,
+        uri: URIType,
         *,
-        strict: Literal[False] = False,
-        return_none: Literal[False] = False,
-        context: str | None = ...,
-        block_action: BlockAction = ...,
-    ) -> Never: ...
-
-    # docstr-coverage:excused `overload`
-    @overload
-    def parse_uri(
-        self,
-        uri: str,
-        *,
-        strict: Literal[False] = False,
-        return_none: Literal[True] = True,
+        strict: Literal[False] = ...,
         context: str | None = ...,
         block_action: BlockAction = ...,
     ) -> ReferenceTuple | None: ...
@@ -376,30 +363,26 @@ class PreprocessingConverter(Converter):
     @overload
     def parse_uri(
         self,
-        uri: str,
+        uri: URIType,
         *,
         strict: Literal[True] = True,
-        return_none: bool = False,
         context: str | None = ...,
         block_action: BlockAction = ...,
     ) -> ReferenceTuple: ...
 
     def parse_uri(
         self,
-        uri: str,
+        uri: URIType,
         *,
         strict: bool = False,
-        return_none: bool = True,
         context: str | None = None,
         block_action: BlockAction = "raise",
-    ) -> ReferenceTuple | tuple[None, None] | None:
+    ) -> ReferenceTuple | None:
         """Parse and standardize a URI.
 
         :param uri: The URI to parse and standardize
         :param strict: If the URI can't be parsed, should an error be thrown? Defaults
             to false.
-        :param return_none: A dummy value, do not use. If given as False, will raise a
-            not implemented error
         :param context: Is there a context, e.g., an ontology prefix that should be
             applied to the remapping and blocklist rules?
         :param block_action: What action should be taken when the blocklist is invoked?
@@ -410,11 +393,7 @@ class PreprocessingConverter(Converter):
         :returns: A tuple representing a parsed and standardized URI
 
         :raises BlocklistError: If the URI is blocked
-        :raises NotImplementedError: If return_none is given as False
         """
-        if not return_none:
-            raise NotImplementedError
-
         uri = self._preclean(uri)
 
         if r1 := self.rules.remap_full(uri, reference_cls=self._reference_cls, context=context):
@@ -426,8 +405,8 @@ class PreprocessingConverter(Converter):
         if self.rules.str_is_blocked(uri, context=context):
             if block_action == "raise":
                 raise BlocklistError
-            elif return_none:
+            else:
                 return None
 
-        rv = super().parse_uri(uri, strict=strict, return_none=True)  # type:ignore[call-overload]
+        rv: ReferenceTuple | None = super().parse_uri(uri, strict=strict)  # type:ignore[call-overload]
         return self._post_process(rv)

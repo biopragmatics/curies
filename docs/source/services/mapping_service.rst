@@ -1,5 +1,6 @@
-Identifier Mapping Service
-==========================
+############################
+ Identifier Mapping Service
+############################
 
 .. automodapi:: curies.mapping_service
     :no-inheritance-diagram:

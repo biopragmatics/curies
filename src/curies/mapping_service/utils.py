@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import json.decoder
 import unittest
-from collections.abc import Mapping
-from typing import Callable
+from collections.abc import Callable, Iterable, Mapping
+from xml.etree.ElementTree import Element
 
 from defusedxml import ElementTree
 
@@ -64,19 +65,22 @@ def handle_xml(text: str) -> Records:
     """Parse bindings encoded in an XML string."""
     root = ElementTree.fromstring(text)
     results = root.find("{http://www.w3.org/2005/sparql-results#}results")
-    return [
-        {
-            binding.attrib["name"]: binding.find("{http://www.w3.org/2005/sparql-results#}uri").text
-            for binding in result
-        }
-        for result in results
-    ]
+    if results is None:
+        raise ValueError
+    return [_handle_result(result) for result in results]
+
+
+def _handle_result(result: Iterable[Element]) -> Record:
+    return {
+        binding.attrib["name"]: value
+        for binding in result
+        if (value := binding.findtext("{http://www.w3.org/2005/sparql-results#}uri"))
+    }
 
 
 def handle_csv(text: str) -> Records:
     """Parse bindings encoded in a CSV string."""
-    header, *lines = (line.strip().split(",") for line in text.splitlines())
-    return [dict(zip(header, line)) for line in lines]
+    return list(csv.DictReader(text.splitlines()))
 
 
 #: A mapping from canonical content types to functions for parsing them
@@ -144,7 +148,9 @@ def handle_header(header: str | None, default: str = DEFAULT_CONTENT_TYPE) -> st
     return default
 
 
-def require_service(url: str, name: str):  # type:ignore
+def require_service(
+    url: str, name: str
+) -> Callable[[type[unittest.TestCase]], type[unittest.TestCase]]:
     """Skip a test unless the service is available."""
     return unittest.skipUnless(
         sparql_service_available(url), reason=f"No {name} service is running on {url}"

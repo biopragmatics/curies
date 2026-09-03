@@ -123,7 +123,7 @@ class TestWrapped(unittest.TestCase):
             self.assertIsNone(converter.compress(DECOY_1_URI))
             self.assertIsNone(converter.expand(DECOY_1_CURIE))
             self.assertIsNone(converter.parse_curie(DECOY_1_CURIE))
-            self.assertIsNone(converter.parse_uri(DECOY_1_URI, return_none=True))
+            self.assertIsNone(converter.parse_uri(DECOY_1_URI))
             self.assertIsNone(converter.parse(DECOY_1_URI))
             self.assertIsNone(converter.parse(DECOY_1_CURIE))
 

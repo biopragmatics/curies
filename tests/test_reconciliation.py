@@ -116,7 +116,7 @@ class TestCURIERemapping(unittest.TestCase):
         converter = Converter(records)
         curie_remapping = {"a": "a1"}
         converter = remap_curie_prefixes(converter, curie_remapping)
-        self.assertEqual(1, len(converter.records))
+        self.assertEqual(1, len(converter))
         self.assertEqual(
             Record(prefix="a1", prefix_synonyms=["a", "x"], uri_prefix=f"{P}/a/"),
             converter.records[0],
@@ -130,7 +130,7 @@ class TestCURIERemapping(unittest.TestCase):
         converter = Converter(records)
         curie_remapping = {"a": "x"}
         converter = remap_curie_prefixes(converter, curie_remapping)
-        self.assertEqual(1, len(converter.records))
+        self.assertEqual(1, len(converter))
         self.assertEqual(
             Record(prefix="x", prefix_synonyms=["a"], uri_prefix=f"{P}/a/"),
             converter.records[0],
@@ -145,7 +145,7 @@ class TestCURIERemapping(unittest.TestCase):
         converter = Converter(records)
         curie_remapping = {"a": "b"}
         converter = remap_curie_prefixes(converter, curie_remapping)
-        self.assertEqual(2, len(converter.records))
+        self.assertEqual(2, len(converter))
         self.assertEqual(records, converter.records)
 
     def test_clash_synonym(self) -> None:
@@ -157,7 +157,7 @@ class TestCURIERemapping(unittest.TestCase):
         converter = Converter(records)
         curie_remapping = {"a": "y"}
         converter = remap_curie_prefixes(converter, curie_remapping)
-        self.assertEqual(2, len(converter.records))
+        self.assertEqual(2, len(converter))
         self.assertEqual(records, converter.records)
 
     def test_simultaneous(self) -> None:
@@ -231,7 +231,7 @@ class TestURIRemapping(unittest.TestCase):
         converter = Converter(records)
         uri_remapping = {f"{P}/a/": f"{P}/a2/"}
         converter = remap_uri_prefixes(converter, uri_remapping)
-        self.assertEqual(1, len(converter.records))
+        self.assertEqual(1, len(converter))
         self.assertEqual(
             Record(
                 prefix="a",
@@ -249,7 +249,7 @@ class TestURIRemapping(unittest.TestCase):
         converter = Converter(records)
         uri_remapping = {f"{P}/a1/": f"{P}/a2/"}
         converter = remap_uri_prefixes(converter, uri_remapping)
-        self.assertEqual(1, len(converter.records))
+        self.assertEqual(1, len(converter))
         self.assertEqual(
             Record(prefix="a", uri_prefix=f"{P}/a2/", uri_prefix_synonyms=[f"{P}/a/", f"{P}/a1/"]),
             converter.records[0],
@@ -264,7 +264,7 @@ class TestURIRemapping(unittest.TestCase):
         converter = Converter(records)
         upgrades = {f"{P}/a/": f"{P}/b/"}
         converter = remap_uri_prefixes(converter, upgrades)
-        self.assertEqual(2, len(converter.records))
+        self.assertEqual(2, len(converter))
         self.assertEqual(records, converter.records)
 
     def test_clash_synonym(self) -> None:
@@ -276,7 +276,7 @@ class TestURIRemapping(unittest.TestCase):
         converter = Converter(records)
         upgrades = {f"{P}/a/": f"{P}/b1/"}
         converter = remap_uri_prefixes(converter, upgrades)
-        self.assertEqual(2, len(converter.records))
+        self.assertEqual(2, len(converter))
         self.assertEqual(records, converter.records)
 
 
@@ -301,7 +301,7 @@ class TestRewire(unittest.TestCase):
         converter = Converter(records)
         rewiring = {"a": f"{P}/a1/"}
         converter = rewire(converter, rewiring)
-        self.assertEqual(1, len(converter.records))
+        self.assertEqual(1, len(converter))
         self.assertEqual(
             Record(
                 prefix="a", uri_prefix=f"{P}/a1/", uri_prefix_synonyms=["https://a.org/", f"{P}/a/"]
@@ -317,7 +317,7 @@ class TestRewire(unittest.TestCase):
     #     converter = Converter(records)
     #     rewiring = {"b": f"{P}/b/"}
     #     converter = rewire(converter, rewiring)
-    #     self.assertEqual(2, len(converter.records))
+    #     self.assertEqual(2, len(converter))
     #     self.assertEqual(
     #         [
     #             Record(prefix="a", uri_prefix=f"{P}/a/"),
@@ -335,7 +335,7 @@ class TestRewire(unittest.TestCase):
         converter = Converter(records)
         rewiring = {"b": f"{P}/a/"}
         converter = rewire(converter, rewiring)
-        self.assertEqual(2, len(converter.records))
+        self.assertEqual(2, len(converter))
         self.assertEqual(
             [
                 Record(prefix="a", uri_prefix=f"{P}/a/"),
@@ -352,7 +352,7 @@ class TestRewire(unittest.TestCase):
         converter = Converter(records)
         rewiring = {"a": f"{P}/a1/"}
         converter = rewire(converter, rewiring)
-        self.assertEqual(1, len(converter.records))
+        self.assertEqual(1, len(converter))
         self.assertEqual(
             [
                 Record(
@@ -377,7 +377,7 @@ class TestRewire(unittest.TestCase):
         converter = Converter(records)
         rewiring = {"a1": f"{P}/a1/"}
         converter = rewire(converter, rewiring)
-        self.assertEqual(1, len(converter.records))
+        self.assertEqual(1, len(converter))
         self.assertEqual(
             [
                 Record(

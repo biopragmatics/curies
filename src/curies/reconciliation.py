@@ -51,7 +51,8 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
 
     modified_records = []
     for old, new_prefix in ordering:
-        _old = converter.synonym_to_prefix.get(old)
+        _old_record = converter.get_record(old)
+        _old = _old_record.prefix if _old_record else None
         if _old is None:
             logger.debug(
                 "Remapping %s->%s can not be applied because %s does not appear in the converter. Skipping.",
