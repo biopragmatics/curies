@@ -4,7 +4,7 @@
 
 from typing import Any
 
-from .api import Converter, Record
+from .api import Converter
 
 __all__ = [
     "get_obo_converter",
