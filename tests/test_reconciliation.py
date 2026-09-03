@@ -110,6 +110,11 @@ class TestUtils(unittest.TestCase):
         )
         self.assertEqual([r4, r3], c2.records)
 
+        # this test needs to be with live data otherwise the check for intersection
+        # resolution being the right value never happens
+        with self.assertRaises(TypeError):
+            remap_curie_prefixes(c1, remapping, intersection_resolution="nope")  # type:ignore[arg-type]
+
         remap_curie_prefixes(c1, remapping, intersection_resolution="overwrite")
         # TODO test this one
 
@@ -131,11 +136,6 @@ class TestUtils(unittest.TestCase):
             "geogeo": "GEO",
         }
         remap_curie_prefixes(c1, remapping)
-
-    def test_remapping_invalid_mode(self) -> None:
-        """Test an invalid resolution mode."""
-        with self.assertRaises(TypeError):
-            remap_curie_prefixes(Converter([]), {}, intersection_resolution="nope")  # type:ignore[arg-type]
 
     def test_cycles(self) -> None:
         """Test detecting bad mapping with cycles."""
