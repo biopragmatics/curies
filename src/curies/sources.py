@@ -64,13 +64,3 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
             return Converter.from_extended_prefix_map(epm)  # pragma: no cover
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
     return Converter.from_extended_prefix_map(url, **kwargs)
-
-
-def _augment_curie_prefix_synonyms(record: Record) -> None:
-    new_prefix_synonyms = set()
-    for s in record._all_prefixes:
-        new_prefix_synonyms.add(s)
-        new_prefix_synonyms.add(s.lower())
-        new_prefix_synonyms.add(s.upper())
-    new_prefix_synonyms.difference_update(record.prefix)
-    record.prefix_synonyms = sorted(new_prefix_synonyms)
