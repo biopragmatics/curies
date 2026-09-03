@@ -45,8 +45,7 @@ if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import rdflib
 
-    import curies
-
+    from .report import Report
     from .triples import Triple
 
 __all__ = [
@@ -2549,7 +2548,7 @@ class Converter:
         target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
-    ) -> curies.Report:
+    ) -> Report:
         r"""Standardize all CURIEs in the given column.
 
         :param df: A pandas DataFrame
