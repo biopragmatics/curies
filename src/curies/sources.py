@@ -61,9 +61,6 @@ def get_bioregistry_converter(web: bool = False, **kwargs: Any) -> Converter:
             pass
         else:
             epm = bioregistry.manager.get_curies_records()  # pragma: no cover
-            for record in epm:  # pragma: no cover
-                # Remove this after https://github.com/biopragmatics/bioregistry/issues/935 is fixed
-                _augment_curie_prefix_synonyms(record)  # pragma: no cover
             return Converter.from_extended_prefix_map(epm)  # pragma: no cover
     url = f"{BIOREGISTRY_CONTEXTS}/bioregistry.epm.json"
     return Converter.from_extended_prefix_map(url, **kwargs)
