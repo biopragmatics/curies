@@ -96,7 +96,7 @@ class TestUtils(unittest.TestCase):
             "GEO": "ncbi.geo",
             "geogeo": "GEO",
         }
-        c2 = remap_curie_prefixes(c1, remapping)
+        c2 = remap_curie_prefixes(c1, remapping, intersection_resolution="drop")
         r3 = Record(
             prefix="ncbi.geo",
             uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
@@ -110,7 +110,10 @@ class TestUtils(unittest.TestCase):
         )
         self.assertEqual([r4, r3], c2.records)
 
-    def test_remapping_invalid_mode(self) -> None:
+        remap_curie_prefixes(c1, remapping, intersection_resolution="overwrite")
+        # TODO test this one
+
+    def test_remapping_2(self) -> None:
         """Test that remapping with synonym prefixes works as expected."""
         r1 = Record(
             prefix="geo",  # also should not survive
@@ -127,8 +130,12 @@ class TestUtils(unittest.TestCase):
             "GEO": "ncbi.geo",
             "geogeo": "GEO",
         }
+        remap_curie_prefixes(c1, remapping)
+
+    def test_remapping_invalid_mode(self) -> None:
+        """Test an invalid resolution mode."""
         with self.assertRaises(TypeError):
-            remap_curie_prefixes(c1, remapping, intersection_resolution="nope")  # type:ignore[arg-type]
+            remap_curie_prefixes(Converter([]), {}, intersection_resolution="nope")  # type:ignore[arg-type]
 
     def test_cycles(self) -> None:
         """Test detecting bad mapping with cycles."""
