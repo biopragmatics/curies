@@ -1,7 +1,10 @@
 """Reconciliation."""
 
+from __future__ import annotations
+
+import logging
 from collections import Counter, defaultdict
-from typing import Collection, List, Mapping, Optional, Tuple
+from collections.abc import Collection, Mapping
 
 from .api import Converter, Record
 
@@ -11,6 +14,8 @@ __all__ = [
     "rewire",
 ]
 
+logger = logging.getLogger(__name__)
+
 
 class TransitiveError(NotImplementedError):
     """An error when transitive mappings appear."""
@@ -18,8 +23,8 @@ class TransitiveError(NotImplementedError):
     def __init__(self, intersection: Collection[str]) -> None:
         """Initialize the exception.
 
-        :param intersection: The strings that appeared both as keys and values
-            in a remapping dictionary (either for CURIEs or URIs)
+        :param intersection: The strings that appeared both as keys and values in a
+            remapping dictionary (either for CURIEs or URIs)
         """
         self.intersection = intersection
 
@@ -35,8 +40,9 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
     """Apply CURIE prefix remappings.
 
     :param converter: A converter
-    :param remapping: A mapping from CURIE prefixes to new CURIE prefixes.
-        Old CURIE prefixes become synonyms in the records (i.e., they aren't forgotten).
+    :param remapping: A mapping from CURIE prefixes to new CURIE prefixes. Old CURIE
+        prefixes become synonyms in the records (i.e., they aren't forgotten).
+
     :returns: An upgraded converter
     """
     ordering = _order_curie_remapping(converter, remapping)
@@ -45,14 +51,26 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
 
     modified_records = []
     for old, new_prefix in ordering:
-        _old = converter.synonym_to_prefix.get(old)
+        _old_record = converter.get_record(old)
+        _old = _old_record.prefix if _old_record else None
         if _old is None:
-            continue  # nothing to upgrade
+            logger.debug(
+                "Remapping %s->%s can not be applied because %s does not appear in the converter. Skipping.",
+                old,
+                new_prefix,
+                old,
+            )
+            continue
 
         record = records.pop(_old)
         new_record = converter.get_record(new_prefix)
         if new_record is not None and record != new_record:
-            pass  # would create a clash, don't do anything
+            logger.debug(
+                "Remapping %s->%s would create a clash because of the existing record %r. Skipping.",
+                old,
+                new_prefix,
+                new_record,
+            )
         elif old in intersection:
             record.prefix_synonyms = sorted(
                 set(record.prefix_synonyms).difference({old, new_prefix})
@@ -72,11 +90,13 @@ def remap_uri_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Co
     """Apply URI prefix remappings.
 
     :param converter: A converter
-    :param remapping: A mapping from URI prefixes to new URI prefixes.
-        Old URI prefixes become synonyms in the records (i.e., they aren't forgotten)
+    :param remapping: A mapping from URI prefixes to new URI prefixes. Old URI prefixes
+        become synonyms in the records (i.e., they aren't forgotten)
+
     :returns: An upgraded converter
-    :raises TransitiveError: If there are any strings that appear in both
-        the key and values of the remapping
+
+    :raises TransitiveError: If there are any strings that appear in both the key and
+        values of the remapping
     """
     intersection = set(remapping).intersection(remapping.values())
     if intersection:
@@ -107,9 +127,10 @@ def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
     """Apply URI prefix upgrades.
 
     :param converter: A converter
-    :param rewiring: A mapping from CURIE prefixes to new URI prefixes.
-        If CURIE prefixes are not already in the converter, new records are created.
-        If new URI prefixes clash with any existing ones, they are not added.
+    :param rewiring: A mapping from CURIE prefixes to new URI prefixes. If CURIE
+        prefixes are not already in the converter, new records are created. If new URI
+        prefixes clash with any existing ones, they are not added.
+
     :returns: An upgraded converter
     """
     records = []
@@ -117,11 +138,18 @@ def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
         new_uri_prefix = _get_curie_preferred_or_synonym(record, rewiring)
         if new_uri_prefix is None:
             pass  # nothing to upgrade
+        elif new_uri_prefix == record.uri_prefix:
+            pass  # it's already the preferred prefix, nothing to do
         elif (
             new_uri_prefix in converter.reverse_prefix_map
             and new_uri_prefix not in record.uri_prefix_synonyms
         ):
-            pass  # would create a clash, don't do anything
+            logger.debug(
+                "Rewiring %r to %s would create a clash because of the existing record %s. Skipping.",
+                record,
+                new_uri_prefix,
+                converter.reverse_prefix_map[new_uri_prefix],
+            )
         else:
             record.uri_prefix_synonyms = sorted(
                 set(record.uri_prefix_synonyms)
@@ -139,7 +167,7 @@ def rewire(converter: Converter, rewiring: Mapping[str, str]) -> Converter:
     return Converter(records)
 
 
-def _get_curie_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> Optional[str]:
+def _get_curie_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> str | None:
     if record.prefix in upgrades:
         return upgrades[record.prefix]
     for s in record.prefix_synonyms:
@@ -148,7 +176,7 @@ def _get_curie_preferred_or_synonym(record: Record, upgrades: Mapping[str, str])
     return None
 
 
-def _get_uri_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> Optional[str]:
+def _get_uri_preferred_or_synonym(record: Record, upgrades: Mapping[str, str]) -> str | None:
     if record.uri_prefix in upgrades:
         return upgrades[record.uri_prefix]
     for s in record.uri_prefix_synonyms:
@@ -175,7 +203,7 @@ class CycleDetected(ValueError):
 
 def _order_curie_remapping(
     converter: Converter, curie_remapping: Mapping[str, str]
-) -> List[Tuple[str, str]]:
+) -> list[tuple[str, str]]:
     # Check that no keys of the remapping actually correspond to the same primary prefix
     key_counter = defaultdict(list)
     for key in curie_remapping:

@@ -1,12 +1,15 @@
 """Implementation of mapping service."""
 
+from __future__ import annotations
+
 import itertools as itt
-from typing import TYPE_CHECKING, Any, Collection, Iterable, List, Set, Tuple, Union, cast
+from collections.abc import Collection, Iterable
+from typing import TYPE_CHECKING, Any
 
 from rdflib import OWL, Graph, URIRef
 from rdflib.term import _is_valid_uri
 
-from .rdflib_custom import MappingServiceSPARQLProcessor  # type: ignore
+from .rdflib_custom import MappingServiceSPARQLProcessor
 from .utils import CONTENT_TYPE_TO_RDFLIB_FORMAT, handle_header
 from ..api import Converter
 
@@ -15,7 +18,7 @@ if TYPE_CHECKING:
     import flask
 
 
-def _prepare_predicates(predicates: Union[None, str, Collection[str]] = None) -> Set[URIRef]:
+def _prepare_predicates(predicates: str | Collection[str] | None = None) -> set[URIRef]:
     if predicates is None:
         return {OWL.sameAs}
     if isinstance(predicates, str):
@@ -23,17 +26,17 @@ def _prepare_predicates(predicates: Union[None, str, Collection[str]] = None) ->
     return {URIRef(predicate) for predicate in predicates}
 
 
-class MappingServiceGraph(Graph):  # type:ignore
+class MappingServiceGraph(Graph):
     """A service that implements identifier mapping based on a converter."""
 
     converter: Converter
-    predicates: Set[URIRef]
+    query_predicates: set[URIRef]
 
     def __init__(
         self,
         *args: Any,
         converter: Converter,
-        predicates: Union[None, str, List[str]] = None,
+        predicates: str | list[str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Instantiate the graph.
@@ -62,78 +65,79 @@ class MappingServiceGraph(Graph):  # type:ignore
                     ],
                     "GO": ["http://purl.obolibrary.org/obo/GO_"],
                     "OBO": ["http://purl.obolibrary.org/obo/"],
-                    ...,
+                    # ...
                 }
             )
             graph = MappingServiceGraph(converter=converter)
 
-            res = graph.query('''
-                SELECT ?o WHERE {
-                    VALUES ?s {
-                        <http://purl.obolibrary.org/obo/CHEBI_1>
-                    }
-                    ?s owl:sameAs ?o
-                }
-            ''')
-
+            sparql = (
+                "SELECT ?o WHERE {"
+                "    VALUES ?s {"
+                "        <http://purl.obolibrary.org/obo/CHEBI_1>"
+                "    }"
+                "    ?s owl:sameAs ?o"
+                "}"
+            )
+            res = graph.query(sparql)
 
         The results of this are:
 
-        ======================================  =================================================
-        subject                                 object
-        --------------------------------------  -------------------------------------------------
-        http://purl.obolibrary.org/obo/CHEBI_1  http://purl.obolibrary.org/obo/CHEBI_1
-        http://purl.obolibrary.org/obo/CHEBI_1  http://identifiers.org/chebi/1
-        http://purl.obolibrary.org/obo/CHEBI_1  https://www.ebi.ac.uk/chebi/searchId.do?chebiId=1
-        ======================================  =================================================
+        ====================================== =================================================
+        subject                                object
+        http://purl.obolibrary.org/obo/CHEBI_1 http://purl.obolibrary.org/obo/CHEBI_1
+        http://purl.obolibrary.org/obo/CHEBI_1 http://identifiers.org/chebi/1
+        http://purl.obolibrary.org/obo/CHEBI_1 https://www.ebi.ac.uk/chebi/searchId.do?chebiId=1
+        ====================================== =================================================
         """
         self.converter = converter
-        self.predicates = _prepare_predicates(predicates)
+        self.query_predicates = _prepare_predicates(predicates)
         super().__init__(*args, **kwargs)
 
-    def _expand_pair_all(self, uri_in: str) -> List[URIRef]:
-        prefix, identifier = self.converter.parse_uri(uri_in)
-        if prefix is None or identifier is None:
+    def _expand_pair_all(self, uri_in: str) -> list[URIRef]:
+        reference = self.converter.parse_uri(uri_in)
+        if reference is None:
             return []
-        uris = cast(Collection[str], self.converter.expand_pair_all(prefix, identifier))
+        uris = self.converter.expand_pair_all(reference.prefix, reference.identifier, strict=True)
         # do _is_valid_uri check because some configurations e.g. from Bioregistry might
         # produce invalid URIs e.g., containing spaces
         return [URIRef(uri) for uri in uris if _is_valid_uri(uri)]
 
-    def triples(
-        self, triple: Tuple[URIRef, URIRef, URIRef]
-    ) -> Iterable[Tuple[URIRef, URIRef, URIRef]]:
+    def triples(  # type:ignore
+        self, triple: tuple[URIRef, URIRef, URIRef]
+    ) -> Iterable[tuple[URIRef, URIRef, URIRef]]:
         """Generate triples, overriden to dynamically generate mappings based on this graph's converter."""
         subj_query, pred_query, obj_query = triple
-        if pred_query in self.predicates:
+        if pred_query in self.query_predicates:
             if subj_query is None and obj_query is not None:
                 subjects = self._expand_pair_all(obj_query)
-                for subj, pred in itt.product(subjects, self.predicates):
+                for subj, pred in itt.product(subjects, self.query_predicates):
                     yield subj, pred, obj_query
             elif subj_query is not None and obj_query is None:
                 objects = self._expand_pair_all(subj_query)
-                for obj, pred in itt.product(objects, self.predicates):
+                for obj, pred in itt.product(objects, self.query_predicates):
                     yield subj_query, pred, obj
 
 
 def get_flask_mapping_blueprint(
     converter: Converter, route: str = "/sparql", **kwargs: Any
-) -> "flask.Blueprint":
+) -> flask.Blueprint:
     """Get a blueprint for :class:`flask.Flask`.
 
     :param converter: A converter
-    :param route: The route of the SPARQL service (relative to the base of the Blueprint)
+    :param route: The route of the SPARQL service (relative to the base of the
+        Blueprint)
     :param kwargs: Keyword arguments passed through to :class:`flask.Blueprint`
-    :return: A blueprint
+
+    :returns: A blueprint
     """
     from flask import Blueprint, Response, request
 
     blueprint = Blueprint("mapping", __name__, **kwargs)
     graph = MappingServiceGraph(converter=converter)
-    processor = MappingServiceSPARQLProcessor(graph=graph)
+    processor = MappingServiceSPARQLProcessor(graph=graph)  # type:ignore[no-untyped-call]
 
-    @blueprint.route(route, methods=["GET", "POST"])  # type:ignore
-    def serve_sparql() -> "Response":
+    @blueprint.route(route, methods=["GET", "POST"])
+    def serve_sparql() -> Response:
         """Run a SPARQL query and serve the results."""
         sparql = request.values.get("query")
         if not sparql:
@@ -150,38 +154,40 @@ def get_flask_mapping_blueprint(
 
 def get_fastapi_router(
     converter: Converter, route: str = "/sparql", **kwargs: Any
-) -> "fastapi.APIRouter":
+) -> fastapi.APIRouter:
     """Get a router for :class:`fastapi.FastAPI`.
 
     :param converter: A converter
-    :param route: The route of the SPARQL service (relative to the base of the API router)
+    :param route: The route of the SPARQL service (relative to the base of the API
+        router)
     :param kwargs: Keyword arguments passed through to :class:`fastapi.APIRouter`
-    :return: A router
+
+    :returns: A router
     """
     from fastapi import APIRouter, Form, Header, Query, Response
 
     api_router = APIRouter(**kwargs)
     graph = MappingServiceGraph(converter=converter)
-    processor = MappingServiceSPARQLProcessor(graph=graph)
+    processor = MappingServiceSPARQLProcessor(graph=graph)  # type:ignore[no-untyped-call]
 
-    def _resolve(accept: Header, sparql: str) -> Response:
+    def _resolve(accept: str, sparql: str) -> Response:
         content_type = handle_header(accept)
         results = graph.query(sparql, processor=processor)
         response = results.serialize(format=CONTENT_TYPE_TO_RDFLIB_FORMAT[content_type])
         return Response(response, media_type=content_type)
 
-    @api_router.get(route)  # type:ignore
+    @api_router.get(route)
     def resolve_get(
-        query: str = Query(description="The SPARQL query to run"),  # noqa:B008
-        accept: str = Header(),  # noqa:B008
+        query: str = Query(description="The SPARQL query to run"),
+        accept: str = Header(),
     ) -> Response:
         """Run a SPARQL query and serve the results."""
         return _resolve(accept, query)
 
-    @api_router.post(route)  # type:ignore
+    @api_router.post(route)
     def resolve_post(
-        query: str = Form(description="The SPARQL query to run"),  # noqa:B008
-        accept: str = Header(),  # noqa:B008
+        query: str = Form(description="The SPARQL query to run"),
+        accept: str = Header(),
     ) -> Response:
         """Run a SPARQL query and serve the results."""
         return _resolve(accept, query)
@@ -189,7 +195,7 @@ def get_fastapi_router(
     return api_router
 
 
-def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
+def get_flask_mapping_app(converter: Converter) -> flask.Flask:
     """Get a Flask app for the mapping service."""
     from flask import Flask
 
@@ -199,11 +205,12 @@ def get_flask_mapping_app(converter: Converter) -> "flask.Flask":
     return app
 
 
-def get_fastapi_mapping_app(converter: Converter) -> "fastapi.FastAPI":
+def get_fastapi_mapping_app(converter: Converter) -> fastapi.FastAPI:
     """Get a FastAPI app.
 
     :param converter: A converter
-    :return: A FastAPI app
+
+    :returns: A FastAPI app
     """
     from fastapi import FastAPI
 

@@ -1,0 +1,16 @@
+pfx:abc
+:
+pfx:
+abc
+:abc
+_:abc
+pfx:/abc
+pfx:/
+:/
+bioregistry:bioregistry
+GO:0000012
+go:0123456
+home:#start
+joseki:
+google:xforms+or+'xml+forms'
+isbn:0321154991

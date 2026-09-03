@@ -1,0 +1,5 @@
+
+smiles:CC(=O)NC([H])(C)C(=O)O
+4cdn:test
+#nope:nope
+?nope:nope

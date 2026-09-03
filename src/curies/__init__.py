@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """Idiomatic conversion between URIs and compact URIs (CURIEs)."""
 
 from .api import (
@@ -7,13 +5,34 @@ from .api import (
     DuplicatePrefixes,
     DuplicateURIPrefixes,
     DuplicateValueError,
+    NamableReference,
+    NamedReference,
+    Prefix,
+    PrefixMap,
     Record,
+    Records,
     Reference,
     ReferenceTuple,
     chain,
     load_extended_prefix_map,
     load_jsonld_context,
     load_prefix_map,
+    load_shacl,
+    upgrade_prefix_map,
+    write_extended_prefix_map,
+    write_jsonld_context,
+    write_shacl,
+    write_tsv,
+)
+from .dataframe import filter_df_by_curies, filter_df_by_prefixes
+from .discovery import discover, discover_from_rdf
+from .mixins import SemanticallyProcessable, SemanticallyStandardizable, process, standardize
+from .preprocessing import (
+    PostprocessingRewrites,
+    PreprocessingBlocklists,
+    PreprocessingConverter,
+    PreprocessingRewrites,
+    PreprocessingRules,
 )
 from .reconciliation import remap_curie_prefixes, remap_uri_prefixes, rewire
 from .report import Report
@@ -24,30 +43,54 @@ from .sources import (
     get_obo_converter,
     get_prefixcommons_converter,
 )
+from .triples import Triple
 from .version import get_version
 
 __all__ = [
     "Converter",
-    "Record",
-    "Report",
-    "ReferenceTuple",
-    "Reference",
-    "DuplicateValueError",
-    "DuplicateURIPrefixes",
     "DuplicatePrefixes",
+    "DuplicateURIPrefixes",
+    "DuplicateValueError",
+    "NamableReference",
+    "NamedReference",
+    "PostprocessingRewrites",
+    "Prefix",
+    "PrefixMap",
+    "PreprocessingBlocklists",
+    "PreprocessingConverter",
+    "PreprocessingRewrites",
+    "PreprocessingRules",
+    "Record",
+    "Records",
+    "Reference",
+    "ReferenceTuple",
+    "Report",
+    "SemanticallyProcessable",
+    "SemanticallyStandardizable",
+    "Triple",
     "chain",
+    "discover",
+    "discover_from_rdf",
+    "filter_df_by_curies",
+    "filter_df_by_prefixes",
+    "get_bioregistry_converter",
+    "get_go_converter",
+    "get_monarch_converter",
+    "get_obo_converter",
+    "get_prefixcommons_converter",
+    "get_version",
+    "load_extended_prefix_map",
+    "load_jsonld_context",
+    "load_prefix_map",
+    "load_shacl",
+    "process",
     "remap_curie_prefixes",
     "remap_uri_prefixes",
     "rewire",
-    "get_version",
-    # i/o
-    "load_prefix_map",
-    "load_extended_prefix_map",
-    "load_jsonld_context",
-    # sources
-    "get_obo_converter",
-    "get_prefixcommons_converter",
-    "get_monarch_converter",
-    "get_go_converter",
-    "get_bioregistry_converter",
+    "standardize",
+    "upgrade_prefix_map",
+    "write_extended_prefix_map",
+    "write_jsonld_context",
+    "write_shacl",
+    "write_tsv",
 ]
