@@ -24,8 +24,9 @@ include some or all of the following steps:
 Finally, you should save the prefix map that you create in a persistent place (i.e.,
 inside a JSON file) such that it can be reused.
 
-Algorithm
-=========
+###########
+ Algorithm
+###########
 
 The :func:`curies.discover` function implements the following algorithm that does the
 following for each URI:
@@ -54,21 +55,22 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import PurePath
-from typing import IO, TYPE_CHECKING, Any, Literal, TextIO, Union
+from typing import IO, TYPE_CHECKING, Any, Literal, TextIO
 
 from curies import Converter, Record
 
 if TYPE_CHECKING:
     import rdflib
+    import rdflib.parser
+
+    GraphInput = IO[bytes] | TextIO | rdflib.parser.InputSource | str | bytes | PurePath
 
 __all__ = [
     "discover",
     "discover_from_rdf",
 ]
 
-
 GraphFormats = Literal["turtle", "xml", "n3", "nt", "trix"]
-GraphInput = Union[IO[bytes], TextIO, "rdflib.parser.InputSource", str, bytes, PurePath]
 
 
 def discover_from_rdf(
@@ -195,12 +197,10 @@ def discover(
     :returns: A converter with dummy prefixes
 
     >>> import curies
-    >>> # Generate some example URIs
     >>> uris = [f"http://ran.dom/{i:03}" for i in range(30)]
     >>> discovered_converter = curies.discover(uris)
     >>> discovered_converter.records
-    [Record(prefix="ns1", uri_prefix="http://ran.dom/")]
-    >>> # Now, you can compress the URIs to dummy CURIEs
+    [Record(prefix="ns1", uri_prefix="http://ran.dom/", prefix_synonyms=[], uri_prefix_synonyms=[], pattern=None)]
     >>> discovered_converter.compress("http://ran.dom/002")
     'ns1:002'
     """

@@ -1,8 +1,10 @@
-Working with Dataframes
-=======================
+#########################
+ Working with Dataframes
+#########################
 
-Filtering
----------
+***********
+ Filtering
+***********
 
 In the following examples, we'll use a dataframe representing semantic mappings between
 disease ontologies in the SSSOM format:

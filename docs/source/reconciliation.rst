@@ -1,5 +1,6 @@
-Reconciliation
-==============
+################
+ Reconciliation
+################
 
 Reconciliation is the high-level process of modifying an (extended) prefix map with
 domain-specific rules. This is important as it allows for building on existing
@@ -38,14 +39,15 @@ example to illustrate how these operations work from a high level.
         {"prefix": "b", "uri_prefix": "https://example.org/b/"}
     ]
 
-CURIE Prefix Remapping
-----------------------
+************************
+ CURIE Prefix Remapping
+************************
 
 CURIE prefix remapping is configured by a dictionary from existing CURIE prefixes to new
 CURIE prefixes. The following rules are applied for each pair of old/new prefixes:
 
 1. New prefix exists
-~~~~~~~~~~~~~~~~~~~~
+====================
 
 If the new prefix appears as a prefix synonym in the record corresponding to the old
 prefix, they are swapped. This means applying the CURIE prefix remapping ``{"a": "a1"}``
@@ -68,7 +70,7 @@ This means applying the CURIE prefix remapping ``{"a": "b"}`` results in either 
 change or an exception being raised.
 
 2. New prefix doesn't exist, old prefix exists
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+==============================================
 
 If the old prefix appears in a record in the extended prefix map as a preferred prefix:
 
@@ -96,7 +98,7 @@ results in the following
     ]
 
 3. New prefix doesn't exist, old prefix doesn't exist
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=====================================================
 
 If neither the old prefix nor new prefix appear in the extended prefix maps, one of two
 things can happen:
@@ -104,8 +106,9 @@ things can happen:
 1. Do nothing (lenient)
 2. Raise an exception (strict)
 
-Transitive CURIE Prefix Remapping
----------------------------------
+***********************************
+ Transitive CURIE Prefix Remapping
+***********************************
 
 There's a special case of CURIE prefix remapping where one prefix is supposed to
 overwrite another. For example, in the Bioregistry, the `Gene Expression Omnibus
@@ -178,21 +181,23 @@ Ontology's record. Synonyms of Gene Expression Omnibus would also be retained.
         ])
         curie_remapping = {"ggg": "ncbi.geo", "geogeo": "geo"}
 
-URI Prefix Remapping
---------------------
+**********************
+ URI Prefix Remapping
+**********************
 
 URI prefix remapping is configured by a mapping from existing URI prefixes to new URI
 prefixes. The rules work exactly the same as with CURIE prefix remapping, but for the
 :data:`curies.Record.uri_prefix` and :data:`curies.Record.uri_prefix_synonyms` fields.
 
-Rewiring
---------
+**********
+ Rewiring
+**********
 
 Rewiring is configured by a dictionary from existing CURIE prefixes to new URI prefixes.
 The following rules are applied for each pair of CURIE prefix/URI prefix:
 
 CURIE prefix exists, URI prefix doesn't exist
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=============================================
 
 If the CURIE prefix appears as either the preferred prefix or a prefix synonym, do the
 following
@@ -211,7 +216,7 @@ following
     ]
 
 CURIE prefix exists, URI prefix exists
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+======================================
 
 If the CURIE prefix and URI prefix both appear in the extended prefix map, there are
 three possibilities.
@@ -241,7 +246,7 @@ three possibilities.
    exception (strict)
 
 CURIE prefix doesn't exist, URI prefix doesn't exist
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+====================================================
 
 If the CURIE prefix doesn't appear in the extended prefix map, then nothing is done.
 Adding fully novel content to the extended prefix map can be done with other operations
@@ -266,7 +271,7 @@ such as :meth`:curies.Converter.add_record` or :func:`curies.chain`.
     "rewiring" with appending to the extended prefix map
 
 CURIE prefix doesn't exist, URI prefix exists
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=============================================
 
 If the URI prefix appears as either a preferred URI prefix or as a URI prefix synonym in
 any record in the extended prefix map, do one of the following:

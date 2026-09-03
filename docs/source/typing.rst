@@ -1,10 +1,12 @@
-Typing
-======
+########
+ Typing
+########
 
 This package comes with utilities for better typing other resources.
 
-Prefix Parsing
---------------
+****************
+ Prefix Parsing
+****************
 
 Let's say you have a table like this:
 
@@ -57,8 +59,9 @@ Note that :meth:`pydantic.BaseModel.model_validate` allows for passing a "contex
 :class:`curies.Prefix` class implements custom context handling, so if you pass a
 converter, it knows how to check using prefixes in the converter.
 
-CURIE Parsing
--------------
+***************
+ CURIE Parsing
+***************
 
 Let's use a similar table, now with the prefix and identifier combine into CURIEs.
 

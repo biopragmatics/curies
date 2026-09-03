@@ -1,5 +1,6 @@
-Database
-========
+##########
+ Database
+##########
 
 .. automodapi:: curies.database
     :no-inheritance-diagram:

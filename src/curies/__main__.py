@@ -1,5 +1,3 @@
-# type:ignore
-
 """Command line interface for ``curies``."""
 
 from .cli import main

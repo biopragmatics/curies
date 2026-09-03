@@ -1,5 +1,6 @@
-API Reference
-=============
+###############
+ API Reference
+###############
 
 .. automodapi:: curies
     :no-heading:
