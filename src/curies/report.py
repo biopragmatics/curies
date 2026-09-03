@@ -5,7 +5,8 @@ import enum
 import random
 import typing
 from collections import Counter, defaultdict
-from typing import TYPE_CHECKING, Dict, Mapping, Optional, Tuple
+from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 from .api import Converter
 
@@ -27,7 +28,7 @@ def _list(correct: typing.Sequence[str]) -> str:
 
 
 class Suggestion(enum.Enum):
-    """"""
+    """Suggestion."""
 
     x1 = "means data is encoded using URNs, which isn't explicitly handled by this package."
     x2 = "entries are not CURIEs, try and compressing your data first."
@@ -36,7 +37,7 @@ class Suggestion(enum.Enum):
     x5 = "is a case/punctuation variant"
     x6 = "is an incorrect way of encoding a URI"
     x7 = (
-        f"appears in Bioregistry under. Consider chaining your converter with the Bioregistry using "
+        "appears in Bioregistry under. Consider chaining your converter with the Bioregistry using "
         "[`curies.chain()`](https://curies.readthedocs.io/en/latest/api/curies.chain.html)."
     )
     xx = (
@@ -74,7 +75,7 @@ class Report:
         ]
         return pd.DataFrame(rows, columns=["prefix", "count", "examples"])
 
-    def get_suggestions(self) -> Dict[str, Tuple[Suggestion, Optional[str]]]:
+    def get_suggestions(self) -> dict[str, tuple[Suggestion, str | None]]:
         """Get a mapping from missing prefix to suggestion text."""
         try:
             import bioregistry
@@ -104,7 +105,7 @@ class Report:
                 rv[prefix] = Suggestion.x2, None
                 continue
             if len(c) == 1:
-                first = list(c)[0]
+                first = next(iter(c))
                 if first == prefix:
                     rv[prefix] = Suggestion.x3, None
                     continue
@@ -146,17 +147,17 @@ class Report:
                     f"{self.updated:,} CURIEs in column `{self.column}`."
                 )
             return (
-                f"Standardization was not necessary for {self.stayed:,} ({self.stayed/total:.1%}) CURIEs "
-                f"and resulted in updates for {self.updated:,} ({self.updated/total:.1%}) CURIEs "
+                f"Standardization was not necessary for {self.stayed:,} ({self.stayed / total:.1%}) CURIEs "
+                f"and resulted in updates for {self.updated:,} ({self.updated / total:.1%}) CURIEs "
                 f"in column `{self.column}`"
             )
 
         if bioregistry is None:
             text += "\nInstall the Bioregistry with `pip install bioregistry` for more detailed suggestions\n\n"
         text += (
-            f"Standardization was not necessary for {self.stayed:,} ({self.stayed/total:.1%}), "
-            f"resulted in {self.updated:,} updates ({self.updated/total:.1%}), and {failures:,} failures "
-            f"({failures/total:.1%})  in column `{self.column}`. Here's a breakdown of the prefixes that "
+            f"Standardization was not necessary for {self.stayed:,} ({self.stayed / total:.1%}), "
+            f"resulted in {self.updated:,} updates ({self.updated / total:.1%}), and {failures:,} failures "
+            f"({failures / total:.1%})  in column `{self.column}`. Here's a breakdown of the prefixes that "
             f"weren't possible to standardize:\n\n"
         )
         text += df.to_markdown(index=False)

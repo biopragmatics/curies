@@ -10,7 +10,7 @@ import curies
 class TestDataScience(unittest.TestCase):
     """Test case for data science utilities."""
 
-    def test_case_mismatch(self):
+    def test_case_mismatch(self) -> None:
         """Test case mismatch on CURIE standardizations."""
         data = ["EFO:1", "nope:nope"]
         df = pd.DataFrame([(row,) for row in data], columns=["curie"])

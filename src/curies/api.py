@@ -2493,7 +2493,6 @@ class Converter:
     def pd_expand(
         self,
         df: pandas.DataFrame,
-        *,
         column: str | int,
         target_column: str | int | None = None,
         strict: bool = False,
@@ -2584,8 +2583,8 @@ class Converter:
 
         from .report import Report
 
-        norm_curies: List[str | None] = []
-        failures: DefaultDict[str, Counter[str]] = defaultdict(Counter)
+        norm_curies: list[str | None] = []
+        failures: defaultdict[str, Counter[str]] = defaultdict(Counter)
         stayed = 0
         updated = 0
         nones = 0
