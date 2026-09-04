@@ -6,7 +6,7 @@ import csv
 import itertools as itt
 import json
 import logging
-from collections import UserDict, defaultdict
+from collections import Counter, UserDict, defaultdict
 from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from functools import partial
 from pathlib import Path
@@ -45,6 +45,7 @@ if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import rdflib
 
+    from .report import Report
     from .triples import Triple
 
 __all__ = [
@@ -2547,7 +2548,7 @@ class Converter:
         target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
-    ) -> None:
+    ) -> Report:
         r"""Standardize all CURIEs in the given column.
 
         :param df: A pandas DataFrame
@@ -2558,6 +2559,11 @@ class Converter:
             Defaults to false.
         :param passthrough: If true, strict is false, and any CURIE can't be
             standardized, return the input. Defaults to false.
+
+        :returns: A report object
+
+        :raises ValueError: If strict is enabled and the column contains CURIEs that
+            aren't standardizable
 
         The Disease Ontology curates mappings to other semantic spaces and distributes
         them in the tabular SSSOM format. However, they use a wide variety of
@@ -2574,8 +2580,50 @@ class Converter:
         >>> converter = curies.get_bioregistry_converter()
         >>> converter.pd_standardize_curie(df, column="object_id")
         """
-        func = partial(self.standardize_curie, strict=strict, passthrough=passthrough)
-        df[column if target_column is None else target_column] = df[column].map(func)
+        import pandas as pd
+
+        from .report import Report
+
+        norm_curies: list[str | None] = []
+        failures: defaultdict[str, Counter[str]] = defaultdict(Counter)
+        stayed = 0
+        updated = 0
+        nones = 0
+        invalid = 0
+        for curie in df[column]:
+            if pd.isna(curie):
+                nones += 1
+                norm_curies.append(None)
+                continue
+            try:
+                norm_curie = self.standardize_curie(curie)
+            except ValueError:
+                # happens on an invalid curie, i.e., without a :
+                invalid += 1
+                norm_curie = None
+            if norm_curie is None:
+                failures[curie.split(":")[0]][curie] += 1
+            elif curie == norm_curie:
+                stayed += 1
+            else:
+                updated += 1
+            norm_curies.append(norm_curie)
+        report = Report(
+            converter=self,
+            failures=failures,
+            nones=nones,
+            stayed=stayed,
+            updated=updated,
+            column=column,
+        )
+        if strict and failures:
+            raise ValueError(
+                f"Some CURIEs couldn't be standardized and strict mode is enabled. Either set "
+                f"`strict=False`, and entries that can't be parsed will be given `None`, or try "
+                f"and improve your context to better cover your data. Here's the report:\n\n{report.get_markdown()}"
+            )
+        df[column if target_column is None else target_column] = norm_curies
+        return report
 
     def pd_standardize_uri(
         self,
@@ -2784,7 +2832,7 @@ class Converter:
         return hash_triple(self, triple, negate=negate)
 
 
-def chain(converters: Sequence[Converter], *, case_sensitive: bool = True) -> Converter:
+def chain(converters: Iterable[Converter], *, case_sensitive: bool = True) -> Converter:
     """Chain several converters.
 
     :param converters: A list or tuple of converters
