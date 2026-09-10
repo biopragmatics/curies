@@ -115,6 +115,9 @@ class TestMappingService(unittest.TestCase):
         self.graph = MappingServiceGraph(converter=self.converter)
         self.processor = MappingServiceSPARQLProcessor(self.graph)  # type:ignore[no-untyped-call]
 
+    def _query(self, sparql: str) -> Result:
+        return self.graph.query(sparql, processor=self.processor)
+
     def test_parse_header(self) -> None:
         """Test parsing a rather complex header."""
         example_header = (
@@ -155,30 +158,46 @@ class TestMappingService(unittest.TestCase):
             ),
         ]:
             with self.subTest(sparql=sparql):
-                self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
+                self.assertEqual([], list(self._query(sparql)))
 
     def test_sparql(self) -> None:
         """Test a sparql query on the graph."""
-        rows = _stm(self.graph.query(SPARQL_SIMPLE, processor=self.processor))
+        rows = _stm(self._query(SPARQL_SIMPLE))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         self.assertEqual(EXPECTED, rows)
 
+    def test_ask(self) -> None:
+        """Test fully specified mapping triples."""
+        qq = [
+            (
+                True,
+                "ASK WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> owl:sameAs <http://identifiers.org/chebi/1> }",
+            ),
+            (
+                False,
+                "ASK WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> owl:sameAs <http://example.org/nope> }",
+            ),
+        ]
+        for answer, sparql in qq:
+            with self.subTest(sparql=sparql):
+                self.assertEqual(answer, self._query(sparql).askAnswer)
+
     def test_sparql_backwards(self) -> None:
         """Test a sparql query on the graph."""
-        rows = _stm(self.graph.query(SPARQL_SIMPLE_BACKWARDS, processor=self.processor))
+        rows = _stm(self._query(SPARQL_SIMPLE_BACKWARDS))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         expected = {(o, s) for s, o in EXPECTED}
         self.assertEqual(expected, rows)
 
     def test_service_sparql(self) -> None:
         """Test the SPARQL that gets sent when using this as a service."""
-        rows = _stm(self.graph.query(SPARQL_FROM_SERVICE, processor=self.processor))
+        rows = _stm(self._query(SPARQL_FROM_SERVICE))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         self.assertEqual(EXPECTED, rows)
 
     def test_fully_specified_nope(self) -> None:
         """Test the SPARQL that gets sent when using this as a service."""
-        rows = list(self.graph.query(SPARQL_FULLY_SPECIFIED_NOPE, processor=self.processor))
+        rows = list(self._query(SPARQL_FULLY_SPECIFIED_NOPE))
         self.assertEqual(0, len(rows), msg="No results were returned")
 
     def test_missing(self) -> None:
@@ -189,7 +208,7 @@ class TestMappingService(unittest.TestCase):
                 ?s owl:sameAs ?o
             }
         """
-        self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
+        self.assertEqual([], list(self._query(sparql)))
 
     def test_safe_expand(self) -> None:
         """Test that expansion to invalid prefixes doesn't happen."""
