@@ -103,7 +103,7 @@ class MappingServiceGraph(Graph):
         return [URIRef(uri) for uri in uris if _is_valid_uri(uri)]
 
     def triples(  # type:ignore
-        self, triple: tuple[URIRef, URIRef, URIRef]
+        self, triple: tuple[URIRef | None, URIRef | None, URIRef | None]
     ) -> Iterable[tuple[URIRef, URIRef, URIRef]]:
         """Generate triples, overriden to dynamically generate mappings based on this graph's converter."""
         subj_query, pred_query, obj_query = triple
@@ -112,10 +112,13 @@ class MappingServiceGraph(Graph):
                 subjects = self._expand_pair_all(obj_query)
                 for subj, pred in itt.product(subjects, self.query_predicates):
                     yield subj, pred, obj_query
-            elif subj_query is not None and obj_query is None:
+            elif subj_query is not None:
                 objects = self._expand_pair_all(subj_query)
-                for obj, pred in itt.product(objects, self.query_predicates):
-                    yield subj_query, pred, obj
+                if obj_query is None:
+                    for obj, pred in itt.product(objects, self.query_predicates):
+                        yield subj_query, pred, obj
+                elif obj_query in objects:
+                    yield subj_query, pred_query, obj_query
 
 
 def get_flask_mapping_blueprint(
