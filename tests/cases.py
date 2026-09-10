@@ -2,8 +2,9 @@
 
 import itertools as itt
 import unittest
+from collections.abc import Collection
 from textwrap import dedent
-from typing import Collection, NamedTuple, Set, Tuple
+from typing import NamedTuple
 
 from curies.mapping_service.utils import (
     get_sparql_record_so_tuples,
@@ -42,7 +43,7 @@ class TripleStoreConfiguation(NamedTuple):
     service_query_fmts: Collection[str]
 
 
-def get_pairs(endpoint: str, sparql: str, accept: str) -> Set[Tuple[str, str]]:
+def get_pairs(endpoint: str, sparql: str, accept: str) -> set[tuple[str, str]]:
     """Get a response from a given SPARQL query."""
     records = get_sparql_records(endpoint=endpoint, sparql=sparql, accept=accept)
     return get_sparql_record_so_tuples(records)
@@ -110,7 +111,7 @@ class FederationMixin(unittest.TestCase):
     #: The URL for the mapping service
     mapping_service: str
 
-    def assert_endpoint(self, endpoint: str, query: str, *, accept: str):
+    def assert_endpoint(self, endpoint: str, query: str, *, accept: str) -> None:
         """Assert the endpoint returns favorable results."""
         records = get_pairs(endpoint, query, accept=accept)
         self.assertIn(
@@ -118,7 +119,7 @@ class FederationMixin(unittest.TestCase):
             records,
         )
 
-    def test_from_triplestore(self):
+    def test_from_triplestore(self) -> None:
         """Test federated queries from various triples stores to the CURIEs service."""
         for name, config in configurations.items():
             self.assertTrue(sparql_service_available(config.local_endpoint))
@@ -127,7 +128,7 @@ class FederationMixin(unittest.TestCase):
                 with self.subTest(name=name, mimetype=mimetype, sparql=sparql):
                     self.assert_endpoint(config.local_endpoint, sparql, accept=mimetype)
 
-    def test_to_triplestore(self):
+    def test_to_triplestore(self) -> None:
         """Test a federated query from the CURIEs service to various triple stores."""
         for name, config in configurations.items():
             self.assertTrue(sparql_service_available(config.local_endpoint))

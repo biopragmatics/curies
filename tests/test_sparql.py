@@ -4,6 +4,7 @@ import time
 from multiprocessing import Process
 from typing import ClassVar
 
+import fastapi
 import uvicorn
 
 from curies import Converter
@@ -29,7 +30,7 @@ class TestDockerFederation(cases.FederationMixin):
             self.skipTest(f"Mapping service is not available: {self.mapping_service}")
 
 
-def _get_app():
+def _get_app() -> fastapi.FastAPI:
     converter = Converter.from_priority_prefix_map(PREFIX_MAP)
     app = get_fastapi_mapping_app(converter)
     return app
@@ -42,7 +43,7 @@ class TestLocalFederation(cases.FederationMixin):
     port: ClassVar[int] = 8000
     mapping_service_process: Process
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up the test case."""
         # Start the curies mapping service SPARQL endpoint
         self.mapping_service_process = Process(
