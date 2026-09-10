@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://w3id.org/biopragmatics/schema/epm.json",
+  "$defs": {
+    "Record": {
+      "description": "A record of some prefixes and their associated URI prefixes.\n\n.. seealso:: https://github.com/cthoyt/curies/issues/70",
+      "properties": {
+        "prefix": {
+          "description": "The canonical CURIE prefix, used in the reverse prefix map",
+          "title": "CURIE prefix",
+          "type": "string"
+        },
+        "uri_prefix": {
+          "description": "The canonical URI prefix, used in the forward prefix map",
+          "title": "URI prefix",
+          "type": "string"
+        },
+        "prefix_synonyms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "CURIE prefix synonyms",
+          "type": "array"
+        },
+        "uri_prefix_synonyms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "URI prefix synonyms",
+          "type": "array"
+        },
+        "pattern": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The regular expression pattern for entries in this semantic space. Warning: this is an experimental feature.",
+          "title": "Pattern"
+        }
+      },
+      "required": [
+        "prefix",
+        "uri_prefix"
+      ],
+      "title": "Record",
+      "type": "object"
+    },
+    "Records": {
+      "description": "A list of records.",
+      "items": {
+        "$ref": "#/$defs/Record"
+      },
+      "title": "Records",
+      "type": "array"
+    }
+  },
+  "title": "Extended Prefix Map",
+  "description": "An extended prefix map is a generalization of a prefix map that includes synonyms for URI prefixes and CURIE prefixes."
+}

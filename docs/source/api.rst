@@ -1,5 +1,9 @@
-API Reference
--------------
+###############
+ API Reference
+###############
+
 .. automodapi:: curies
-   :no-inheritance-diagram:
-   :no-heading:
+    :no-heading:
+
+.. automodapi:: curies.dataframe
+    :no-heading:
