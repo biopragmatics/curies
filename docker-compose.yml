@@ -1,0 +1,37 @@
+version: "3"
+services:
+
+  mapping-service:
+    build:
+      context: .
+      dockerfile: tests/resources/Dockerfile
+    ports:
+      - 8888:8888
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+
+  blazegraph:
+    image: metaphacts/blazegraph-basic:2.2.0-20160908.003514-6-jetty9.4.44-jre8-45dbfff
+    ports:
+      - 8889:8080
+
+  virtuoso:
+    image: openlink/virtuoso-opensource-7:latest
+    ports:
+      - 8890:8890
+    environment:
+      - DBA_PASSWORD=dba
+      - SPARQL_UPDATE=true
+      - VIRT_Database_ErrorLogLevel=7  # 7 is maximum logs
+      - VIRT_HTTPServer_HTTPLogFile=/http.log
+      # https://docs.openlinksw.com/virtuoso/loggingandrecording/
+
+  fuseki:
+    image: stain/jena-fuseki:4.0.0
+    ports:
+      - 8891:3030
+    environment:
+      - ADMIN_PASSWORD=dba  # Admin user: admin
+      # - FUSEKI_DATASET_1=mapping  # Not working with 4.0.0
+      # - JVM_ARGS=-Xmx2g

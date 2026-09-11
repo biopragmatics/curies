@@ -153,26 +153,17 @@ $ cd curies
 $ uv --preview pip install -e .
 ```
 
-Alternatively, install using legacy pip with `UV_PREVIEW` mode enabled until the
-uv build backend becomes a stable feature:
+To test the `curies` mapping service SPARQL endpoint federated queries properly work with popular triplestore you will need to start the triplestores locally with `docker` (otherwise the tests defined in `tests/test_sparql.py` will be skipped):
 
-```console
-$ UV_PREVIEW=1 python3 -m pip install -e .
+```bash
+$ docker compose up -d
 ```
 
-### Updating Package Boilerplate
+The first time you start the triple stores, you will need to initialize them by running a script:
 
-This project uses `cruft` to keep boilerplate (i.e., configuration, contribution
-guidelines, documentation configuration) up-to-date with the upstream
-cookiecutter package. Update with the following:
-
-```console
-python3 -m pip install cruft
-cruft update
+```bash
+$ ./tests/resources/init_triplestores.sh
 ```
-
-More info on Cruft's update command is available
-[here](https://github.com/cruft/cruft?tab=readme-ov-file#updating-a-project).
 
 ### 🥼 Testing
 
