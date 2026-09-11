@@ -29,6 +29,19 @@ class TestStruct(unittest.TestCase):
             Reference.from_curie("not a curie")
         self.assertIn("does not appear to be a CURIE", str(e.exception))
 
+    def test_curie_with_space(self) -> None:
+        """Test a malformed CURIE."""
+        with self.assertRaises(ValidationError) as e:
+            Reference(prefix="test", identifier="not a curie")
+        self.assertIn(
+            "local identifiers can not",
+            str(e.exception),
+        )
+
+        with self.assertRaises(ValidationError) as e:
+            Reference.from_curie("test:not a curie")
+        self.assertIn("local identifiers can not", str(e.exception))
+
     def test_default_prefix(self) -> None:
         """Test a default (empty) prefix."""
         ref = Reference.from_curie(":something")
