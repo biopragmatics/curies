@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.14
 
 # Dockerfile used to spawn a mapping service SPARQL endpoint for testing
 
