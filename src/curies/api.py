@@ -26,6 +26,7 @@ from typing import (
 )
 
 from pydantic import (
+    AfterValidator,
     AnyUrl,
     BaseModel,
     ConfigDict,
@@ -391,6 +392,12 @@ class PrefixMap(RootModel[dict[Prefix, str]]):
     """
 
 
+def _validate_identifier(s: str) -> str:
+    if " " in s:
+        raise ValueError(f"local identifiers can not contain spaces: {s}")
+    return s
+
+
 class Reference(BaseModel):
     """A reference to an entity in a given identifier space.
 
@@ -440,7 +447,9 @@ class Reference(BaseModel):
         ),
     ]
     identifier: Annotated[
-        str, Field(description="The local unique identifier used in a compact URI (CURIE).")
+        str,
+        AfterValidator(_validate_identifier),
+        Field(description="The local unique identifier used in a compact URI (CURIE)."),
     ]
 
     model_config = ConfigDict(frozen=True)
