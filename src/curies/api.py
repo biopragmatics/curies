@@ -392,9 +392,13 @@ class PrefixMap(RootModel[dict[Prefix, str]]):
     """
 
 
+class MalformedIdentifierError(ValueError):
+    """Raise for malformed local unique identifiers."""
+
+
 def _validate_identifier(s: str) -> str:
     if " " in s:
-        raise ValueError(f"local identifiers can not contain spaces: {s}")
+        raise MalformedIdentifierError(f"local identifiers can not contain spaces: {s}")
     return s
 
 
