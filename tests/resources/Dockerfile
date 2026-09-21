@@ -6,6 +6,7 @@ WORKDIR /app
 
 ADD . .
 
-RUN pip install -e ".[fastapi,rdflib,bioregistry]"
+RUN pip install -e ".[fastapi,rdflib]"
+RUN pip install bioregistry
 
 CMD [ "bioregistry", "web", "--port", "8888", "--host", "0.0.0.0" ]
