@@ -124,7 +124,9 @@ class TestDatabase(unittest.TestCase):
 
             id: int | None = Field(default=None, primary_key=True)
             reference: Reference = Field(sa_column=get_reference_sa_column())
-            optional_reference: Reference | None = Field(default=None, sa_column=get_reference_sa_column())
+            optional_reference: Reference | None = Field(
+                default=None, sa_column=get_reference_sa_column()
+            )
             listed_references: list[Reference] = Field(
                 sa_column=get_reference_list_sa_column(), default_factory=list
             )
@@ -280,7 +282,9 @@ class TestDatabase(unittest.TestCase):
             """A class with a reference."""
 
             id: int | None = Field(default=None, primary_key=True)
-            authors: list[Reference] | None = Field(default=None, sa_column=get_reference_list_sa_column())
+            authors: list[Reference] | None = Field(
+                default=None, sa_column=get_reference_list_sa_column()
+            )
 
         model_1 = ModelOptionalReferenceList(
             id=1, authors=[Reference(prefix=prefix, identifier=id_1)]
