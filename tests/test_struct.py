@@ -197,6 +197,7 @@ class TestStruct(unittest.TestCase):
 
             @classmethod
             def validate(cls, /, value: str, info: core_schema.ValidationInfo) -> Self:
+                """Validate that the prefix is lowercase."""
                 if value != value.lower():
                     raise ValueError
                 return super().validate(value, info)
