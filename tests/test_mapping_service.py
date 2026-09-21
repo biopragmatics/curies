@@ -3,7 +3,7 @@
 import unittest
 from urllib.parse import quote
 
-import httpx
+import httpx2
 import werkzeug.test
 from fastapi.testclient import TestClient
 from flask.testing import FlaskClient
@@ -74,6 +74,12 @@ VALUES (?s) {
 }
 """
 
+SPARQL_FULLY_SPECIFIED_NOPE = """\
+SELECT * WHERE {
+    <http://purl.obolibrary.org/obo/CHEBI:1> owl:sameAs <http://example.org/nope>
+}
+"""
+
 EXPECTED = {
     (
         "http://purl.obolibrary.org/obo/CHEBI_1",
@@ -109,6 +115,9 @@ class TestMappingService(unittest.TestCase):
         self.graph = MappingServiceGraph(converter=self.converter)
         self.processor = MappingServiceSPARQLProcessor(self.graph)  # type:ignore[no-untyped-call]
 
+    def _query(self, sparql: str) -> Result:
+        return self.graph.query(sparql, processor=self.processor)
+
     def test_parse_header(self) -> None:
         """Test parsing a rather complex header."""
         example_header = (
@@ -143,30 +152,53 @@ class TestMappingService(unittest.TestCase):
             "SELECT ?o WHERE { <http://example.com/1> owl:sameAs ?o }",
             "SELECT ?s WHERE { ?s owl:sameAs <http://example.com/1> }",
             # errors because predicate is given
-            "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
-            "owl:sameAs <http://purl.obolibrary.org/obo/CHEBI_1> }",
+            (
+                "SELECT * WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> "
+                "owl:sameAs <http://purl.obolibrary.org/obo/CHEBI_1> }"
+            ),
         ]:
             with self.subTest(sparql=sparql):
-                self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
+                self.assertEqual([], list(self._query(sparql)))
 
     def test_sparql(self) -> None:
         """Test a sparql query on the graph."""
-        rows = _stm(self.graph.query(SPARQL_SIMPLE, processor=self.processor))
+        rows = _stm(self._query(SPARQL_SIMPLE))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         self.assertEqual(EXPECTED, rows)
 
+    def test_ask(self) -> None:
+        """Test fully specified mapping triples."""
+        qq = [
+            (
+                True,
+                "ASK WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> owl:sameAs <http://identifiers.org/chebi/1> }",
+            ),
+            (
+                False,
+                "ASK WHERE { <http://purl.obolibrary.org/obo/CHEBI_1> owl:sameAs <http://example.org/nope> }",
+            ),
+        ]
+        for answer, sparql in qq:
+            with self.subTest(sparql=sparql):
+                self.assertEqual(answer, self._query(sparql).askAnswer)
+
     def test_sparql_backwards(self) -> None:
         """Test a sparql query on the graph."""
-        rows = _stm(self.graph.query(SPARQL_SIMPLE_BACKWARDS, processor=self.processor))
+        rows = _stm(self._query(SPARQL_SIMPLE_BACKWARDS))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         expected = {(o, s) for s, o in EXPECTED}
         self.assertEqual(expected, rows)
 
     def test_service_sparql(self) -> None:
         """Test the SPARQL that gets sent when using this as a service."""
-        rows = _stm(self.graph.query(SPARQL_FROM_SERVICE, processor=self.processor))
+        rows = _stm(self._query(SPARQL_FROM_SERVICE))
         self.assertNotEqual(0, len(rows), msg="No results were returned")
         self.assertEqual(EXPECTED, rows)
+
+    def test_fully_specified_nope(self) -> None:
+        """Test the SPARQL that gets sent when using this as a service."""
+        rows = list(self._query(SPARQL_FULLY_SPECIFIED_NOPE))
+        self.assertEqual(0, len(rows), msg="No results were returned")
 
     def test_missing(self) -> None:
         """Test a sparql query on the graph where the URIs can't be parsed."""
@@ -176,7 +208,7 @@ class TestMappingService(unittest.TestCase):
                 ?s owl:sameAs ?o
             }
         """
-        self.assertEqual([], list(self.graph.query(sparql, processor=self.processor)))
+        self.assertEqual([], list(self._query(sparql)))
 
     def test_safe_expand(self) -> None:
         """Test that expansion to invalid prefixes doesn't happen."""
@@ -204,7 +236,7 @@ class ConverterMixin(unittest.TestCase):
         self.converter = Converter.from_priority_prefix_map(PREFIX_MAP)
 
     def assert_mimetype(
-        self, res: httpx.Response | werkzeug.test.TestResponse, content_type: str
+        self, res: httpx2.Response | werkzeug.test.TestResponse, content_type: str
     ) -> None:
         """Assert the correct MIMETYPE."""
         content_type = handle_header(content_type)
@@ -213,11 +245,12 @@ class ConverterMixin(unittest.TestCase):
             self.assertEqual(content_type, mimetype)
         else:  # this is from FastAPI
             actual_content_type = res.headers.get("content-type")
-            self.assertIsNotNone(actual_content_type)
+            if actual_content_type is None:
+                self.fail("content type was none")
             self.assertEqual(content_type, actual_content_type.split(";")[0].strip())
 
     def assert_parsed(
-        self, res: httpx.Response | werkzeug.test.TestResponse, content_type: str
+        self, res: httpx2.Response | werkzeug.test.TestResponse, content_type: str
     ) -> None:
         """Test the result has the expected output."""
         content_type = handle_header(content_type)
@@ -323,7 +356,6 @@ class TestFastAPIMappingApp(ConverterMixin):
                 res = self.client.post("/sparql", headers={"accept": content_type})
                 self.assertEqual(422, res.status_code, msg=f"Response: {res}")
 
-    @unittest.skip(reason="Weird failures on CI")
     def test_get_query(self) -> None:
         """Test querying the app with GET."""
         self.assert_get_sparql_results(self.client, SPARQL_SIMPLE)
@@ -332,7 +364,6 @@ class TestFastAPIMappingApp(ConverterMixin):
         """Test querying the app with POST."""
         self.assert_post_sparql_results(self.client, SPARQL_SIMPLE)
 
-    @unittest.skip(reason="Weird failures on CI")
     def test_get_service_query(self) -> None:
         """Test sparql generated by a service (that has values outside of where clause) with GET."""
         self.assert_get_sparql_results(self.client, SPARQL_FROM_SERVICE)

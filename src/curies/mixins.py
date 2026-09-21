@@ -4,9 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import Generic, Literal, TypeVar, overload
-
-from typing_extensions import Self
+from typing import Generic, Literal, Self, TypeVar, overload
 
 from .api import Converter
 
@@ -137,7 +135,7 @@ class SemanticallyStandardizable(ABC):
 
     .. code-block:: python
 
-        from typing_extensions import Self
+        from typing import Self
         from curies import Converter, Reference, SemanticallyStandardizable
 
 
@@ -153,7 +151,7 @@ class SemanticallyStandardizable(ABC):
 
     .. code-block:: python
 
-        from typing_extensions import Self
+        from typing import Self
         from curies import Converter, Reference, SemanticallyStandardizable
 
 
@@ -172,7 +170,7 @@ class SemanticallyStandardizable(ABC):
     .. code-block:: python
 
         import datetime
-        from typing_extensions import Self
+        from typing import Self
         from curies import Converter, Reference, SemanticallyStandardizable
         from pydantic import BaseModel
 

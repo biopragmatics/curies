@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "curies"
-version = "0.13.14-dev"
+version = "0.15.2-dev"
 description = "Idiomatic conversion between URIs and compact URIs (CURIEs)"
 readme = "README.md"
 authors = [
@@ -26,10 +26,10 @@ classifiers = [
     "Framework :: Sphinx",
     "Natural Language :: English",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Typing :: Typed",
 ]
@@ -49,9 +49,9 @@ keywords = [
 license = "MIT"
 license-files = ["LICENSE"]
 
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "pystow>=0.8.0",
+    "pystow>=0.9.0",
     "pydantic>=2.0",
     "typing-extensions",
 ]
@@ -61,6 +61,8 @@ tests = [
     "pytest",
     "coverage[toml]",
     "requests",
+    "httpx",
+    "httpx2",
 ]
 docs = [
     "sphinx>=8",
@@ -84,6 +86,8 @@ typing = [
     "types-Markdown",
     "types-defusedxml",
     "types-tqdm",
+    "httpx",
+    "httpx2",
 ]
 docs-lint = [
     { include-group = "docs" },
@@ -120,7 +124,7 @@ flask = [
 fastapi = [
     "fastapi",
     "python-multipart",
-    "httpx",
+    "httpx2",
     "defusedxml",
     "uvicorn",
 ]
@@ -160,6 +164,9 @@ max-line-length = 120
 [tool.pytest.ini_options]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+filterwarnings = [
+    "ignore::pyparsing.PyparsingDeprecationWarning",
 ]
 
 # Coverage, see https://coverage.readthedocs.io/en/latest/config.html
@@ -224,6 +231,7 @@ ignore = [
     "E501", # TODO remove
     "N818", # TODO remove
     "C901", # TODO remove?
+    "DTZ011",
 ]
 
 # See https://docs.astral.sh/ruff/settings/#per-file-ignores
@@ -253,7 +261,7 @@ known-first-party = [
 docstring-code-format = true
 
 [tool.bumpversion]
-current_version = "0.13.14-dev"
+current_version = "0.15.2-dev"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?:-(?P<release>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+(?P<build>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?"
 serialize = [
     "{major}.{minor}.{patch}-{release}+{build}",

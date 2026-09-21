@@ -18,12 +18,16 @@ from typing import (
     Generic,
     Literal,
     NamedTuple,
+    Self,
     TypeAlias,
+    Union,
     cast,
     overload,
 )
 
 from pydantic import (
+    AfterValidator,
+    AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
@@ -38,6 +42,8 @@ from typing_extensions import Self, TypeVar
 from .utils import NoCURIEDelimiterError, _split
 
 if TYPE_CHECKING:  # pragma: no cover
+    import httpx
+    import httpx2
     import pandas
     import rdflib
 
@@ -76,6 +82,10 @@ logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
+
+
+#: A hint for a URI, must include a str() method that does the expected thing
+URIType: TypeAlias = Union[str, AnyUrl, "rdflib.URIRef", "httpx.URL", "httpx2.URL"]
 
 
 def _get_field_validator_values(values: Any, key: str) -> str:
@@ -330,7 +340,7 @@ class Prefix(str):
         )
 
     @classmethod
-    def _validate(cls, __input_value: str, info: core_schema.ValidationInfo) -> Self:
+    def _validate(cls, /, __input_value: str, info: core_schema.ValidationInfo) -> Self:
         converter = _converter_from_validation_info(info)
         if converter is None:
             return cls(__input_value)
@@ -388,6 +398,16 @@ class PrefixMap(RootModel[dict[Prefix, str]]):
 PrefixType = TypeVar("PrefixType", bound=Prefix, default=Prefix)
 
 
+class MalformedIdentifierError(ValueError):
+    """Raise for malformed local unique identifiers."""
+
+
+def _validate_identifier(s: str) -> str:
+    if " " in s:
+        raise MalformedIdentifierError(f"local identifiers can not contain spaces: {s}")
+    return s
+
+
 class Reference(BaseModel, Generic[PrefixType]):
     """A reference to an entity in a given identifier space.
 
@@ -437,7 +457,9 @@ class Reference(BaseModel, Generic[PrefixType]):
         ),
     ]
     identifier: Annotated[
-        str, Field(description="The local unique identifier used in a compact URI (CURIE).")
+        str,
+        AfterValidator(_validate_identifier),
+        Field(description="The local unique identifier used in a compact URI (CURIE)."),
     ]
 
     model_config = ConfigDict(frozen=True)
@@ -456,7 +478,7 @@ class Reference(BaseModel, Generic[PrefixType]):
     def __hash__(self) -> int:
         return hash((self.prefix, self.identifier))
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, Reference)
             and self.prefix == other.prefix
@@ -578,9 +600,12 @@ class NamableReference(Reference[PrefixType], Generic[PrefixType]):
 
         :returns: A reference object
         """
-        name = reference.name if isinstance(reference, NamableReference) else None
         return cls.model_validate(
-            {"prefix": reference.prefix, "identifier": reference.identifier, "name": name},
+            {
+                "prefix": reference.prefix,
+                "identifier": reference.identifier,
+                "name": getattr(reference, "name", None),
+            },
             context=converter,
         )
 
@@ -1077,7 +1102,7 @@ class Converter:
         if sr is not None:
             if sr.prefix != record.prefix:
                 raise ValueError(f"this prefix synonym is already taken by record for {sr.prefix}")
-            return None
+            return
 
         self._index_prefix(prefix_synonym, record)
 
@@ -1106,7 +1131,7 @@ class Converter:
                     f"can't add URI prefix synonym {uri_prefix_synonym} to {prefix} becauase "
                     f"it is already taken by record for {sr.prefix}"
                 )
-            return None
+            return
 
         self._index_uri_prefix(uri_prefix_synonym, record)
 
@@ -1693,18 +1718,20 @@ class Converter:
     # docstr-coverage:excused `overload`
     @overload
     def parse(
-        self, str_or_uri_or_curie: str, *, strict: Literal[True] = True
+        self, str_or_uri_or_curie: str | URIType, *, strict: Literal[True] = True
     ) -> ReferenceTuple: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def parse(
-        self, str_or_uri_or_curie: str, *, strict: Literal[False] = False
+        self, str_or_uri_or_curie: str | URIType, *, strict: Literal[False] = False
     ) -> ReferenceTuple | None: ...
 
-    def parse(self, str_or_uri_or_curie: str, *, strict: bool = False) -> ReferenceTuple | None:
+    def parse(
+        self, str_or_uri_or_curie: str | URIType, *, strict: bool = False
+    ) -> ReferenceTuple | None:
         """Parse a string, URI, or CURIE."""
-        if self.is_uri(str_or_uri_or_curie):
+        if str_or_uri_or_curie.__class__ is not str or self.is_uri(str_or_uri_or_curie):
             return self.parse_uri(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
         if self.is_curie(str_or_uri_or_curie):
             return self.parse_curie(str_or_uri_or_curie, strict=strict)  # type:ignore[no-any-return,call-overload]
@@ -1712,29 +1739,31 @@ class Converter:
             raise CompressionError(str_or_uri_or_curie)
         return None
 
-    def compress_strict(self, uri: str) -> str:
+    def compress_strict(self, uri: URIType) -> str:
         """Compress a URI to a CURIE, and raise an error of not possible."""
         return self.compress(uri, strict=True)
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
-        self, uri: str, *, strict: Literal[True] = True, passthrough: bool = ...
+        self, uri: URIType, *, strict: Literal[True] = True, passthrough: bool = ...
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
-        self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[True] = True
+        self, uri: URIType, *, strict: Literal[False] = False, passthrough: Literal[True] = True
     ) -> str: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def compress(
-        self, uri: str, *, strict: Literal[False] = False, passthrough: Literal[False] = False
+        self, uri: URIType, *, strict: Literal[False] = False, passthrough: Literal[False] = False
     ) -> str | None: ...
 
-    def compress(self, uri: str, *, strict: bool = False, passthrough: bool = False) -> str | None:
+    def compress(
+        self, uri: URIType, *, strict: bool = False, passthrough: bool = False
+    ) -> str | None:
         """Compress a URI to a CURIE, if possible.
 
         :param uri: A string representing a valid uniform resource identifier (URI)
@@ -1779,26 +1808,29 @@ class Converter:
         if strict:
             raise CompressionError(uri)
         if passthrough:
-            return uri
+            return str(uri)
         return None
 
     # docstr-coverage:excused `overload`
     @overload
-    def parse_uri(self, uri: str, *, strict: Literal[False] = ...) -> ReferenceTuple | None: ...
+    def parse_uri(self, uri: URIType, *, strict: Literal[False] = ...) -> ReferenceTuple | None: ...
 
     # docstr-coverage:excused `overload`
     @overload
     def parse_uri(
         self,
-        uri: str,
+        uri: URIType,
         *,
         strict: Literal[True] = True,
     ) -> ReferenceTuple: ...
 
-    def parse_uri(self, uri: str, *, strict: bool = False) -> ReferenceTuple | None:
+    def parse_uri(self, uri: URIType, *, strict: bool = False) -> ReferenceTuple | None:
         """Compress a URI to a CURIE pair.
 
-        :param uri: A string representing a valid uniform resource identifier (URI)
+        :param uri: A string or object representing a valid uniform resource identifier
+            (URI). URIs represented as :class:`rdflib.URIRef`, :class:`pydantic.AnyUrl`,
+            :class:`httpx.URL`, and :class:`httpx2.URL` are accepted in addition to
+            plain strings.
         :param strict: If true and the URI can't be parsed, returns an error. Defaults
             to false.
 
@@ -1818,7 +1850,7 @@ class Converter:
         ReferenceTuple(prefix='CHEBI', identifier='138488')
         >>> converter.parse_uri("http://example.org/missing:0000000")
         """
-        rv = self.trie.parse_uri(uri)
+        rv = self.trie.parse_uri(str(uri))
         if rv is not None:
             return rv
         if strict:
@@ -2451,7 +2483,7 @@ class Converter:
         self,
         df: pandas.DataFrame,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
         ambiguous: bool = False,
@@ -2479,7 +2511,7 @@ class Converter:
         self,
         df: pandas.DataFrame,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
         ambiguous: bool = False,
@@ -2508,7 +2540,7 @@ class Converter:
         df: pandas.DataFrame,
         *,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -2531,7 +2563,7 @@ class Converter:
         df: pandas.DataFrame,
         *,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:
@@ -2569,7 +2601,7 @@ class Converter:
         df: pandas.DataFrame,
         *,
         column: str | int,
-        target_column: None | str | int = None,
+        target_column: str | int | None = None,
         strict: bool = False,
         passthrough: bool = False,
     ) -> None:

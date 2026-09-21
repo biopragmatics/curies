@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import json
 import tempfile
 import unittest
@@ -9,10 +10,14 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Literal, overload
 
+import httpx
 import pandas as pd
 import rdflib
+from pydantic import AnyUrl
+from rdflib import URIRef
 
 import curies
+from curies import vocabulary as v
 from curies.api import (
     CompressionError,
     Converter,
@@ -25,6 +30,7 @@ from curies.api import (
     Reference,
     ReferenceTuple,
     URIStandardizationError,
+    URIType,
     chain,
     upgrade_prefix_map,
 )
@@ -36,6 +42,7 @@ from curies.sources import (
     get_obo_converter,
 )
 from curies.version import get_version
+from curies.vocabulary import parse_xsd
 from tests.constants import SLOW
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
@@ -943,18 +950,35 @@ class TestConverter(unittest.TestCase):
                 )
             ]
         )
-        uri = "http://purl.obolibrary.org/obo/GO_1234567"
+        expected = ReferenceTuple("GO", "1234567")
+        uri1 = "http://purl.obolibrary.org/obo/GO_1234567"
         uri2 = "https://identifiers.org/GO:1234567"
 
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri, strict=True))
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri, strict=False))
+        uris: list[URIType] = [
+            uri1,
+            uri2,
+            AnyUrl(uri1),
+            rdflib.URIRef(uri1),
+            httpx.URL(uri1),
+        ]
+        for uri in uris:
+            with self.subTest(uri=str(uri)):
+                self.assertEqual(expected, converter.parse_uri(uri))
+                self.assertEqual(expected, converter.parse_uri(uri, strict=True))
+                self.assertEqual(expected, converter.parse_uri(uri, strict=False))
 
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=True))
-        self.assertEqual(ReferenceTuple("GO", "1234567"), converter.parse_uri(uri2, strict=False))
-
-        self.assertIsNone(converter.parse_uri("123345", strict=False))
-        with self.assertRaises(ValueError):
-            converter.parse_uri("123345", strict=True)
+        misses: list[URIType] = [
+            "123345",
+            "https://example.com/12345",
+            AnyUrl("https://example.com/12345"),
+            URIRef("https://example.com/12345"),
+            httpx.URL("https://example.com/12345"),
+        ]
+        for miss in misses:
+            with self.subTest(uri=str(miss)):
+                self.assertIsNone(converter.parse_uri(miss, strict=False))
+                with self.assertRaises(ValueError):
+                    converter.parse_uri(miss, strict=True)
 
     def test_expand(self) -> None:
         """Tests for expand."""
@@ -1282,3 +1306,20 @@ class TestUtils(unittest.TestCase):
         self.assertEqual([], c_record.prefix_synonyms)
         self.assertEqual("https://example.com/c/", c_record.uri_prefix)
         self.assertEqual([], c_record.uri_prefix_synonyms)
+
+    def test_parse_xsd(self) -> None:
+        """Test parsing XSD."""
+        with self.assertRaises(KeyError):
+            parse_xsd("doesn't matter", Reference(prefix="something", identifier="wrong"))
+
+        for expected, s, datatype in [
+            (True, "true", v.xsd_boolean),
+            (False, "false", v.xsd_boolean),
+            (datetime.date(2026, 7, 31), "2026-07-31", v.xsd_date),
+            (5, "5", v.xsd_integer),
+            (5.0, "5", v.xsd_float),
+            (5.1, "5.1", v.xsd_float),
+            (AnyUrl("https://example.org"), "https://example.org/", v.xsd_uri),
+        ]:
+            with self.subTest(value=s):
+                self.assertEqual(expected, parse_xsd(s, datatype))
