@@ -37,7 +37,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
-from typing_extensions import Self, TypeVar
+from typing_extensions import TypeVar
 
 from .utils import NoCURIEDelimiterError, _split
 
