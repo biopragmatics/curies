@@ -115,7 +115,7 @@ sqlalchemy = [
     "sqlalchemy",
 ]
 sqlmodel = [
-    "sqlmodel",
+    "sqlmodel>=0.0.44",
 ]
 flask = [
     "flask",
