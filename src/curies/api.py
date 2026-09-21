@@ -512,7 +512,7 @@ class Reference(BaseModel, Generic[PrefixType]):
         """Return this reference, since it already has no name."""
         return self
 
-    def with_name(self, name: str) -> NamableReference:
+    def with_name(self, name: str) -> NamableReference[PrefixType]:
         """Return this reference, with a name."""
         return NamedReference(prefix=self.prefix, identifier=self.identifier, name=name)
 
