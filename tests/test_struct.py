@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import unittest
-from typing import Self
 
 from pydantic import ValidationError
-from pydantic_core import core_schema
+from pydantic_core.core_schema import ValidationInfo
 
 import curies
 from curies.api import (
@@ -196,11 +195,11 @@ class TestStruct(unittest.TestCase):
             """A prefix that fails for non-lowercase values."""
 
             @classmethod
-            def validate(cls, /, value: str, info: core_schema.ValidationInfo) -> Self:
+            def validate(cls, value: str, info: ValidationInfo) -> str:
                 """Validate that the prefix is lowercase."""
                 if value != value.lower():
                     raise ValueError
-                return super().validate(value, info)
+                return value
 
         class LowercaseReference(Reference[LowercasePrefix]):
             """A reference that auto-lowercases."""

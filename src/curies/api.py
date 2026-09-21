@@ -37,6 +37,7 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
+from pydantic_core.core_schema import ValidationInfo
 from typing_extensions import TypeVar
 
 from .utils import NoCURIEDelimiterError, _split
@@ -82,7 +83,6 @@ logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
-
 
 #: A hint for a URI, must include a str() method that does the expected thing
 URIType: TypeAlias = Union[str, AnyUrl, "rdflib.URIRef", "httpx.URL", "httpx2.URL"]
@@ -340,12 +340,16 @@ class Prefix(str):
         )
 
     @classmethod
-    def validate(cls, /, value: str, info: core_schema.ValidationInfo) -> Self:
+    def _wrap_validate(cls, value: str, info: ValidationInfo) -> Self:
+        return cls(cls.validate(value, info))
+
+    @classmethod
+    def validate(cls, value: str, info: ValidationInfo) -> str:
         """Mutate and validate the input value, then return an instance."""
         converter = _converter_from_validation_info(info)
         if converter is None:
-            return cls(value)
-        return cls(converter.standardize_prefix(value, strict=True))
+            return value
+        return converter.standardize_prefix(value, strict=True)
 
 
 #: A type variable for prefixes which defaults to the simplest
@@ -396,6 +400,28 @@ class PrefixMap(RootModel[dict[PrefixType, str]]):
 
         # note that you have to unpack the resulting prefix map
         prefix_map = rdf_content.prefix_map.root
+
+    If you want to inject a non-standard :class:`Prefix` type, then you can annotate the
+    prefix map with an optional generic. In the following example, the derived prefix
+    checks that it's always lowercase.
+
+    .. code-block:: python
+
+        from curies import Prefix, PrefixMap
+        from pydantic import BaseModel
+        from pydantic_core.core_schema import ValidationInfo
+
+
+        class DerivedPrefix(Prefix):
+            @classmethod
+            def validate(cls, value: str, info: ValidationInfo) -> str:
+                if value != value.lower():
+                    raise ValueError
+                return value
+
+
+        class PrefixMapContainer(BaseModel):
+            prefix_map: PrefixMap[DerivedPrefix]
     """
 
 
@@ -449,6 +475,27 @@ class Reference(BaseModel, Generic[PrefixType]):
     >>> reference = Reference.from_curie("chebi:1234")
     >>> reference.pair
     ReferenceTuple(prefix='chebi', identifier='1234')
+
+    If you want to extend the reference class with your own custom prefix, then it can
+    be done with generics
+
+    .. code-block:: python
+
+        from curies import Reference, Prefix
+        from pydantic import BaseModel
+        from pydantic_core.core_schema import ValidationInfo
+
+
+        class DerivedPrefix(Prefix):
+            @classmethod
+            def validate(cls, value: str, info: ValidationInfo) -> str:
+                if value != value.lower():
+                    raise ValueError
+                return value
+
+
+        class DerivedReference(Reference[DerivedPrefix]):
+            pass
     """
 
     prefix: Annotated[
