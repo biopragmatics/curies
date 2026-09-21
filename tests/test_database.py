@@ -124,7 +124,7 @@ class TestDatabase(unittest.TestCase):
 
             id: int | None = Field(default=None, primary_key=True)
             reference: Reference = Field(sa_column=get_reference_sa_column())
-            optional_reference: Reference | None = Field(sa_column=get_reference_sa_column())
+            optional_reference: Reference | None = Field(None, sa_column=get_reference_sa_column())
             listed_references: list[Reference] = Field(
                 sa_column=get_reference_list_sa_column(), default_factory=list
             )
