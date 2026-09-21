@@ -332,7 +332,7 @@ class Prefix(str):
         cls, source: type[Any], handler: GetCoreSchemaHandler
     ) -> core_schema.AfterValidatorFunctionSchema:
         return core_schema.with_info_after_validator_function(
-            cls.validate,
+            cls._wrap_validate,
             # TODO consider if we should use strict NCNAME pattern
             #  here like ^$|^[a-zA-Z_][\w.-]*$. See also
             #  https://cthoyt.com/2023/01/11/bioregistry-w3c-compliance.html
