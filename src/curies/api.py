@@ -526,7 +526,7 @@ class Reference(BaseModel, Generic[PrefixType]):
         )
 
 
-class NamableReference(Reference):
+class NamableReference(Reference[PrefixType], Generic[PrefixType]):
     """A reference, maybe with a name."""
 
     name: Annotated[
@@ -584,7 +584,7 @@ class NamableReference(Reference):
             context=converter,
         )
 
-    def without_name(self) -> Reference:
+    def without_name(self) -> Reference[PrefixType]:
         """Return this reference without a name."""
         return Reference(prefix=self.prefix, identifier=self.identifier)
 
@@ -593,7 +593,7 @@ class NamableReference(Reference):
         return self.model_copy(update={"name": name})
 
 
-class NamedReference(NamableReference):
+class NamedReference(NamableReference[PrefixType], Generic[PrefixType]):
     """A reference with a name."""
 
     name: Annotated[
