@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import unittest
+from typing import Self
 
 from pydantic import ValidationError
+from pydantic_core import core_schema
 
 import curies
 from curies.api import (
     Converter,
     NamableReference,
     NamedReference,
+    Prefix,
     Records,
     Reference,
     ReferenceTuple,
@@ -185,3 +188,24 @@ class TestStruct(unittest.TestCase):
         r3 = r2.without_name()
         self.assertIsInstance(r3, Reference)
         self.assertNotIsInstance(r3, NamableReference)
+
+    def test_derived_reference(self) -> None:
+        """Test reference with non-standard prefix type."""
+
+        class LowercasePrefix(Prefix):
+            """A prefix that fails for non-lowercase values."""
+
+            @classmethod
+            def validate(cls, /, value: str, info: core_schema.ValidationInfo) -> Self:
+                if value != value.lower():
+                    raise ValueError
+                return super().validate(value, info)
+
+        class LowercaseReference(Reference[LowercasePrefix]):
+            """A reference that auto-lowercases."""
+
+        r = LowercaseReference.from_curie("chebi:1234")
+        self.assertEqual("chebi", r.prefix)
+
+        with self.assertRaises(ValidationError):
+            LowercaseReference.from_curie("CHEBI:1234")

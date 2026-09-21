@@ -332,7 +332,7 @@ class Prefix(str):
         cls, source: type[Any], handler: GetCoreSchemaHandler
     ) -> core_schema.AfterValidatorFunctionSchema:
         return core_schema.with_info_after_validator_function(
-            cls._validate,
+            cls.validate,
             # TODO consider if we should use strict NCNAME pattern
             #  here like ^$|^[a-zA-Z_][\w.-]*$. See also
             #  https://cthoyt.com/2023/01/11/bioregistry-w3c-compliance.html
@@ -340,14 +340,19 @@ class Prefix(str):
         )
 
     @classmethod
-    def _validate(cls, /, __input_value: str, info: core_schema.ValidationInfo) -> Self:
+    def validate(cls, /, value: str, info: core_schema.ValidationInfo) -> Self:
+        """Mutate and validate the input value, then return an instance."""
         converter = _converter_from_validation_info(info)
         if converter is None:
-            return cls(__input_value)
-        return cls(converter.standardize_prefix(__input_value, strict=True))
+            return cls(value)
+        return cls(converter.standardize_prefix(value, strict=True))
 
 
-class PrefixMap(RootModel[dict[Prefix, str]]):
+#: A type variable for prefixes which defaults to the simplest
+PrefixType = TypeVar("PrefixType", bound=Prefix, default=Prefix)
+
+
+class PrefixMap(RootModel[dict[PrefixType, str]]):
     """A simple prefix map.
 
     This can be used to validate dictionaries:
@@ -392,10 +397,6 @@ class PrefixMap(RootModel[dict[Prefix, str]]):
         # note that you have to unpack the resulting prefix map
         prefix_map = rdf_content.prefix_map.root
     """
-
-
-#: A type variable for prefixes which defaults to the simplest
-PrefixType = TypeVar("PrefixType", bound=Prefix, default=Prefix)
 
 
 class MalformedIdentifierError(ValueError):
