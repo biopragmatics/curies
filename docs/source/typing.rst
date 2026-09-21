@@ -108,3 +108,37 @@ show where the error shows up:
         except ValidationError as e:
             print(f"Issue parsing record {record}: {e}")
             continue
+
+***************************
+ Modifying Prefix Behavior
+***************************
+
+The :class:`Reference` class is generic on a type variable that's constrained to
+subclasses of :class:`Prefix`. It uses a new "default" feature so if the class is given
+bare, then it assumes the default class.
+
+However, it's possible to extend the functionality of :class:`Prefix` to create custom
+behavior. For example, if you want to enforce prefixes are always lowercased, then it
+could be done like this:
+
+.. code-block:: python
+
+    from curies import Reference, Prefix
+    from pydantic import BaseModel
+    from pydantic_core.core_schema import ValidationInfo
+
+
+    class DerivedPrefix(Prefix):
+        @classmethod
+        def validate(cls, value: str, info: ValidationInfo) -> str:
+            if value != value.lower():
+                raise ValueError
+            return value
+
+
+    class DerivedReference(Reference[DerivedPrefix]):
+        pass
+
+
+    r1 = DerivedReference.from_curie("chebi:1234")  # works
+    r2 = DerivedReference.from_curie("CHEBI:1234")  # raises ValidationError

@@ -15,11 +15,11 @@ from typing import (
     TYPE_CHECKING,
     Annotated,
     Any,
+    Generic,
     Literal,
     NamedTuple,
     Self,
     TypeAlias,
-    TypeVar,
     Union,
     cast,
     overload,
@@ -37,6 +37,8 @@ from pydantic import (
     model_validator,
 )
 from pydantic_core import core_schema
+from pydantic_core.core_schema import ValidationInfo
+from typing_extensions import TypeVar
 
 from .utils import NoCURIEDelimiterError, _split
 
@@ -58,6 +60,7 @@ __all__ = [
     "NoCURIEDelimiterError",
     "Prefix",
     "PrefixMap",
+    "PrefixType",
     "Record",
     "Records",
     "Reference",
@@ -80,7 +83,6 @@ logger = logging.getLogger(__name__)
 
 X = TypeVar("X")
 LocationOr: TypeAlias = str | Path | X
-
 
 #: A hint for a URI, must include a str() method that does the expected thing
 URIType: TypeAlias = Union[str, AnyUrl, "rdflib.URIRef", "httpx.URL", "httpx2.URL"]
@@ -330,7 +332,7 @@ class Prefix(str):
         cls, source: type[Any], handler: GetCoreSchemaHandler
     ) -> core_schema.AfterValidatorFunctionSchema:
         return core_schema.with_info_after_validator_function(
-            cls._validate,
+            cls._wrap_validate,
             # TODO consider if we should use strict NCNAME pattern
             #  here like ^$|^[a-zA-Z_][\w.-]*$. See also
             #  https://cthoyt.com/2023/01/11/bioregistry-w3c-compliance.html
@@ -338,14 +340,23 @@ class Prefix(str):
         )
 
     @classmethod
-    def _validate(cls, /, __input_value: str, info: core_schema.ValidationInfo) -> Self:
+    def _wrap_validate(cls, value: str, info: ValidationInfo) -> Self:
+        return cls(cls.validate(value, info))
+
+    @classmethod
+    def validate(cls, value: str, info: ValidationInfo) -> str:
+        """Mutate and validate the input value, then return an instance."""
         converter = _converter_from_validation_info(info)
         if converter is None:
-            return cls(__input_value)
-        return cls(converter.standardize_prefix(__input_value, strict=True))
+            return value
+        return converter.standardize_prefix(value, strict=True)
 
 
-class PrefixMap(RootModel[dict[Prefix, str]]):
+#: A type variable for prefixes which defaults to the simplest
+PrefixType = TypeVar("PrefixType", bound=Prefix, default=Prefix)
+
+
+class PrefixMap(RootModel[dict[PrefixType, str]]):
     """A simple prefix map.
 
     This can be used to validate dictionaries:
@@ -389,6 +400,28 @@ class PrefixMap(RootModel[dict[Prefix, str]]):
 
         # note that you have to unpack the resulting prefix map
         prefix_map = rdf_content.prefix_map.root
+
+    If you want to inject a non-standard :class:`Prefix` type, then you can annotate the
+    prefix map with an optional generic. In the following example, the derived prefix
+    checks that it's always lowercase.
+
+    .. code-block:: python
+
+        from curies import Prefix, PrefixMap
+        from pydantic import BaseModel
+        from pydantic_core.core_schema import ValidationInfo
+
+
+        class DerivedPrefix(Prefix):
+            @classmethod
+            def validate(cls, value: str, info: ValidationInfo) -> str:
+                if value != value.lower():
+                    raise ValueError
+                return value
+
+
+        class PrefixMapContainer(BaseModel):
+            prefix_map: PrefixMap[DerivedPrefix]
     """
 
 
@@ -402,7 +435,7 @@ def _validate_identifier(s: str) -> str:
     return s
 
 
-class Reference(BaseModel):
+class Reference(BaseModel, Generic[PrefixType]):
     """A reference to an entity in a given identifier space.
 
     This class uses Pydantic to make it easier to build other more complex data types
@@ -442,10 +475,31 @@ class Reference(BaseModel):
     >>> reference = Reference.from_curie("chebi:1234")
     >>> reference.pair
     ReferenceTuple(prefix='chebi', identifier='1234')
+
+    If you want to extend the reference class with your own custom prefix, then it can
+    be done with generics
+
+    .. code-block:: python
+
+        from curies import Reference, Prefix
+        from pydantic import BaseModel
+        from pydantic_core.core_schema import ValidationInfo
+
+
+        class DerivedPrefix(Prefix):
+            @classmethod
+            def validate(cls, value: str, info: ValidationInfo) -> str:
+                if value != value.lower():
+                    raise ValueError
+                return value
+
+
+        class DerivedReference(Reference[DerivedPrefix]):
+            pass
     """
 
     prefix: Annotated[
-        Prefix,
+        PrefixType,
         Field(
             description="The prefix used in a compact URI (CURIE).",
         ),
@@ -502,11 +556,11 @@ class Reference(BaseModel):
     # note that it's important that this is explicitly
     # Reference and not Self, since all subclasses should
     # return only a reference.
-    def without_name(self) -> Reference:
+    def without_name(self) -> Reference[PrefixType]:
         """Return this reference, since it already has no name."""
         return self
 
-    def with_name(self, name: str) -> NamableReference:
+    def with_name(self, name: str) -> NamableReference[PrefixType]:
         """Return this reference, with a name."""
         return NamedReference(prefix=self.prefix, identifier=self.identifier, name=name)
 
@@ -542,7 +596,7 @@ class Reference(BaseModel):
         )
 
 
-class NamableReference(Reference):
+class NamableReference(Reference[PrefixType], Generic[PrefixType]):
     """A reference, maybe with a name."""
 
     name: Annotated[
@@ -603,7 +657,7 @@ class NamableReference(Reference):
             context=converter,
         )
 
-    def without_name(self) -> Reference:
+    def without_name(self) -> Reference[PrefixType]:
         """Return this reference without a name."""
         return Reference(prefix=self.prefix, identifier=self.identifier)
 
@@ -612,7 +666,7 @@ class NamableReference(Reference):
         return self.model_copy(update={"name": name})
 
 
-class NamedReference(NamableReference):
+class NamedReference(NamableReference[PrefixType], Generic[PrefixType]):
     """A reference with a name."""
 
     name: Annotated[
