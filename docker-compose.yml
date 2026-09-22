@@ -1,6 +1,4 @@
-version: "3"
 services:
-
   mapping-service:
     build:
       context: .
