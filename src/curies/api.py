@@ -60,7 +60,7 @@ __all__ = [
     "NoCURIEDelimiterError",
     "Prefix",
     "PrefixMap",
-    "PrefixType",
+    "PrefixType_co",
     "Record",
     "Records",
     "Reference",
@@ -353,10 +353,10 @@ class Prefix(str):
 
 
 #: A type variable for prefixes which defaults to the simplest
-PrefixType = TypeVar("PrefixType", bound=Prefix, default=Prefix)
+PrefixType_co = TypeVar("PrefixType_co", bound=Prefix, default=Prefix, covariant=True)
 
 
-class PrefixMap(RootModel[dict[PrefixType, str]]):
+class PrefixMap(RootModel[dict[PrefixType_co, str]]):
     """A simple prefix map.
 
     This can be used to validate dictionaries:
@@ -435,7 +435,7 @@ def _validate_identifier(s: str) -> str:
     return s
 
 
-class Reference(BaseModel, Generic[PrefixType]):
+class Reference(BaseModel, Generic[PrefixType_co]):
     """A reference to an entity in a given identifier space.
 
     This class uses Pydantic to make it easier to build other more complex data types
@@ -499,7 +499,7 @@ class Reference(BaseModel, Generic[PrefixType]):
     """
 
     prefix: Annotated[
-        PrefixType,
+        PrefixType_co,
         Field(
             description="The prefix used in a compact URI (CURIE).",
         ),
@@ -556,11 +556,11 @@ class Reference(BaseModel, Generic[PrefixType]):
     # note that it's important that this is explicitly
     # Reference and not Self, since all subclasses should
     # return only a reference.
-    def without_name(self) -> Reference[PrefixType]:
+    def without_name(self) -> Reference[PrefixType_co]:
         """Return this reference, since it already has no name."""
         return self
 
-    def with_name(self, name: str) -> NamableReference[PrefixType]:
+    def with_name(self, name: str) -> NamableReference[PrefixType_co]:
         """Return this reference, with a name."""
         return NamedReference(prefix=self.prefix, identifier=self.identifier, name=name)
 
@@ -596,7 +596,7 @@ class Reference(BaseModel, Generic[PrefixType]):
         )
 
 
-class NamableReference(Reference[PrefixType], Generic[PrefixType]):
+class NamableReference(Reference[PrefixType_co], Generic[PrefixType_co]):
     """A reference, maybe with a name."""
 
     name: Annotated[
@@ -657,7 +657,7 @@ class NamableReference(Reference[PrefixType], Generic[PrefixType]):
             context=converter,
         )
 
-    def without_name(self) -> Reference[PrefixType]:
+    def without_name(self) -> Reference[PrefixType_co]:
         """Return this reference without a name."""
         return Reference(prefix=self.prefix, identifier=self.identifier)
 
@@ -666,7 +666,7 @@ class NamableReference(Reference[PrefixType], Generic[PrefixType]):
         return self.model_copy(update={"name": name})
 
 
-class NamedReference(NamableReference[PrefixType], Generic[PrefixType]):
+class NamedReference(NamableReference[PrefixType_co], Generic[PrefixType_co]):
     """A reference with a name."""
 
     name: Annotated[
