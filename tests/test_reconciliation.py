@@ -77,6 +77,66 @@ class TestUtils(unittest.TestCase):
         with self.assertRaises(InconsistentMapping):
             _order_curie_remapping(converter, curie_remapping)
 
+    def test_remapping_with_synonym(self) -> None:
+        """Test that remapping with synonym prefixes works as expected."""
+        r1 = Record(
+            prefix="geo",  # also should not survive
+            prefix_synonyms=["GEO", "should_not_survive"],
+            uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+            pattern="^G(PL|SM|SE|DS)\\d+$",
+        )
+        r2 = Record(
+            prefix="geogeo",
+            prefix_synonyms=["GEOGEO"],
+            uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+            pattern="^\\d{9}$",
+        )
+        c1 = Converter([r1, r2])
+        remapping = {
+            "GEO": "ncbi.geo",
+            "geogeo": "GEO",
+        }
+        c2 = remap_curie_prefixes(c1, remapping, intersection_resolution="drop")
+        r3 = Record(
+            prefix="ncbi.geo",
+            uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+            pattern="^G(PL|SM|SE|DS)\\d+$",
+        )
+        r4 = Record(
+            prefix="GEO",
+            prefix_synonyms=["GEOGEO", "geogeo"],
+            uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+            pattern="^\\d{9}$",
+        )
+        self.assertEqual([r4, r3], c2.records)
+
+        # this test needs to be with live data otherwise the check for intersection
+        # resolution being the right value never happens
+        with self.assertRaises(TypeError):
+            remap_curie_prefixes(c1, remapping, intersection_resolution="nope")  # type:ignore[arg-type]
+
+        remap_curie_prefixes(c1, remapping, intersection_resolution="overwrite")
+        # TODO test this one
+
+    def test_remapping_2(self) -> None:
+        """Test that remapping with synonym prefixes works as expected."""
+        r1 = Record(
+            prefix="geo",  # also should not survive
+            prefix_synonyms=["GEO", "should_not_survive"],
+            uri_prefix="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=",
+        )
+        r2 = Record(
+            prefix="geogeo",
+            prefix_synonyms=["GEOGEO"],
+            uri_prefix="http://purl.obolibrary.org/obo/GEO_",
+        )
+        c1 = Converter([r1, r2])
+        remapping = {
+            "GEO": "ncbi.geo",
+            "geogeo": "GEO",
+        }
+        remap_curie_prefixes(c1, remapping)
+
     def test_cycles(self) -> None:
         """Test detecting bad mapping with cycles."""
         converter = Converter(
