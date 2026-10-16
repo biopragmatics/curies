@@ -36,6 +36,7 @@ from .preprocessing import (
     PreprocessingRules,
 )
 from .reconciliation import remap_curie_prefixes, remap_uri_prefixes, rewire
+from .report import Report
 from .sources import (
     get_bioregistry_converter,
     get_go_converter,
@@ -65,6 +66,7 @@ __all__ = [
     "Records",
     "Reference",
     "ReferenceTuple",
+    "Report",
     "SemanticallyProcessable",
     "SemanticallyStandardizable",
     "Triple",
