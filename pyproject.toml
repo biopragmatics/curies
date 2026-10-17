@@ -88,7 +88,6 @@ typing = [
     "types-tqdm",
     "httpx",
     "httpx2",
-    "zuban",
 ]
 docs-lint = [
     { include-group = "docs" },
