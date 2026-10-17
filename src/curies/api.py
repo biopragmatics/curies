@@ -351,6 +351,11 @@ class Prefix(str):
             return value
         return converter.standardize_prefix(value, strict=True)
 
+    @classmethod
+    def from_str(cls, value: str) -> Self:
+        """Construct a prefix with validation."""
+        return cls(cls.validate(value))
+
 
 #: A type variable for prefixes which defaults to the simplest
 PrefixType_co = TypeVar("PrefixType_co", bound=Prefix, default=Prefix, covariant=True)
