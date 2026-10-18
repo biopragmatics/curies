@@ -349,6 +349,7 @@ class TestConverter(unittest.TestCase):
             self.assertEqual(curie, converter.compress_strict(uri))
             self.assertEqual(uri, converter.expand(curie))
             self.assertEqual(uri, converter.expand_strict(curie))
+            self.assertEqual(URIRef(uri), converter.expand_rdflib(curie))
 
         self.assertIsNone(converter.compress("http://example.org/missing:00000"))
         self.assertEqual(

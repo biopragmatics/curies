@@ -2013,6 +2013,11 @@ class Converter:
         """Expand a CURIE to a URI, and raise an error of not possible."""
         return self.expand(curie, strict=True)
 
+    def expand_rdflib(self, curie: str) -> rdflib.URIRef:
+        """Expand a CURIE to a URI for use with :mod:`rdflib`."""
+        from rdflib import URIRef
+        return URIRef(self.expand(curie, strict=True))
+
     # docstr-coverage:excused `overload`
     @overload
     def expand(
