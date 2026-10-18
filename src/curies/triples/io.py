@@ -6,8 +6,6 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import TextIO
 
-from pystow.utils import safe_open_reader, safe_open_writer
-
 from .model import Triple
 from ..api import Reference
 
@@ -25,6 +23,8 @@ def write_triples(
     triples: Iterable[Triple], path: str | Path | TextIO, *, header: Sequence[str] | None = None
 ) -> None:
     """Write triples as a three-column TSV file."""
+    from pystow.utils import safe_open_writer
+
     if header is None:
         header = HEADER
     with safe_open_writer(path) as writer:
@@ -39,6 +39,9 @@ def read_triples(
     path: str | Path | TextIO, *, reference_cls: type[Reference] | None = None
 ) -> list[Triple]:
     """Read triples from a three-column TSV file."""
+    from pystow.utils import safe_open_reader
+    # TODO isn't there a better way in pystow?
+
     if reference_cls is None:
         reference_cls = Reference
     with safe_open_reader(path) as reader:
