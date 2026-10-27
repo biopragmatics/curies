@@ -1,0 +1,18 @@
+curie	prefix	identifier	description
+pfx:abc	pfx	abc	a fully qualified CURIE with no strange characters
+GO:0000012	GO	0000012	a fully qualified CURIE with uppercase letters in the NCName and numbers in the local unique identifier
+go:0123456	go	0123456	a fully qualified CURIE with lowercase letters in the NCName and numbers in the local unique identifier
+isbn:0321154991	isbn	0321154991	a fully qualified CURIE
+_pfx:abc	_pfx	abc	a fully qualified CURIE starting with an underscore
+pfx_1:abc	pfx_1	abc	a fully qualified CURIE whose NCName contains an underscore
+pfx-1:abc	pfx-1	abc	a fully qualified CURIE whose NCName contains a dash
+:			a unqualified CURIE with neither a NCName and an empty identifier
+pfx:	pfx		a CURIE whose local unique identifier is an empty string
+abc		abc	a CURIE with an unqualified local unique identifier
+:abc		abc	a CURIE from the default namespace
+_:abc	_	abc	a CURIE from the undescore namespace, which is allowed, but suggested only used internally by implementations
+pfx:/abc	pfx	/abc	a CURIE starting with a slash
+pfx:/	pfx	/	a CURIE whose local unique identifier is only a slash
+:/		/	a CURIE from the default namespace whose local unique identifier is only a slash
+home:#start	home	#start	a CURIE whose local unique identifier starts with a #
+google:xforms+or+'xml+forms'	google	xforms+or+'xml+forms'	a fully qualified CURIE whose local unique identifier contains plus's and single quotes
