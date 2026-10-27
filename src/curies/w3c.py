@@ -49,7 +49,10 @@ implements RFC3987,
 
 LOCAL_UNIQUE_IDENTIFIER_RE = re.compile(LOCAL_UNIQUE_IDENTIFIER_PATTERN)
 
-CURIE_PATTERN = rf"^({NCNAME_PATTERN}?:)?{LOCAL_UNIQUE_IDENTIFIER_PATTERN}$"
+CURIE_PATTERN = (
+    rf"^(?:(?P<prefix>{NCNAME_PATTERN})?:)?"
+    rf"(?P<identifier>{LOCAL_UNIQUE_IDENTIFIER_PATTERN})$"
+)
 """A regex for CURIEs, based on https://www.w3.org/TR/2010/NOTE-curie-20101216.
 
 .. code-block::
