@@ -42,17 +42,18 @@ class TestValidators(unittest.TestCase):
                         is_w3c_curie(curie), msg="CURIE should test as valid, but did not"
                     )
 
-                    match = CURIE_RE.match(curie)
-                    self.assertIsNotNone(match)
+                    curie_match = CURIE_RE.match(curie)
+                    if curie_match is None:
+                        self.fail(f"match was none on {curie=}")
                     self.assertEqual(
                         record["prefix"] or None,
-                        match.group("prefix"),
-                        msg=f"{row=} failed to parse prefix in {curie=}. {match.groupdict()=}",
+                        curie_match.group("prefix"),
+                        msg=f"{row=} failed to parse prefix in {curie=}. {curie_match.groupdict()=}",
                     )
                     self.assertEqual(
                         record["identifier"],
-                        match.group("identifier"),
-                        msg=f"{row=} failed to parse ID in {curie=}. {match=}",
+                        curie_match.group("identifier"),
+                        msg=f"{row=} failed to parse ID in {curie=}. {curie_match=}",
                     )
 
         for curie in _read(INVALID_CURIES_PATH):
