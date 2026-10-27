@@ -20,6 +20,8 @@ import re
 __all__ = [
     "CURIE_PATTERN",
     "CURIE_RE",
+    "QUALIFIED_CURIE_PATTERN",
+    "QUALIFIED_CURIE_RE",
     "LOCAL_UNIQUE_IDENTIFIER_PATTERN",
     "LOCAL_UNIQUE_IDENTIFIER_RE",
     "NCNAME_PATTERN",
@@ -66,6 +68,11 @@ CURIE_PATTERN = (
 """
 
 CURIE_RE = re.compile(CURIE_PATTERN)
+
+QUALIFIED_CURIE_PATTERN = rf"^(?P<prefix>{NCNAME_PATTERN}):(?P<identifier>{LOCAL_UNIQUE_IDENTIFIER_PATTERN})$"
+"""A fully qualified CURIE, which requires both a NCName and reference."""
+
+QUALIFIED_CURIE_RE = re.compile(QUALIFIED_CURIE_PATTERN)
 
 
 def is_w3c_prefix(prefix: str) -> bool:
