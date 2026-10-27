@@ -69,11 +69,13 @@ CURIE_PATTERN = (
 
 CURIE_RE = re.compile(CURIE_PATTERN)
 
-QUALIFIED_CURIE_PATTERN = rf"^(?P<prefix>{NCNAME_PATTERN}):(?P<identifier>{LOCAL_UNIQUE_IDENTIFIER_PATTERN})$"
+QUALIFIED_CURIE_PATTERN = (
+    rf"^(?P<prefix>{NCNAME_PATTERN}):(?P<identifier>{LOCAL_UNIQUE_IDENTIFIER_PATTERN})$"
+)
 """A fully qualified CURIE, which requires both a NCName and reference.
 
-This is similar to :data:`CURIE_PATTERN`, except it requires a prefix instead
-of allowing it optional, as prescribed by https://www.w3.org/TR/2010/NOTE-curie-20101216.
+This is similar to :data:`CURIE_PATTERN`, except it requires a prefix instead of
+allowing it optional, as prescribed by https://www.w3.org/TR/2010/NOTE-curie-20101216.
 """
 
 QUALIFIED_CURIE_RE = re.compile(QUALIFIED_CURIE_PATTERN)
