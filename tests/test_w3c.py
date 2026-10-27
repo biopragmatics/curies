@@ -4,7 +4,7 @@ import csv
 import unittest
 from pathlib import Path
 
-from curies.w3c import CURIE_RE, is_w3c_curie, is_w3c_prefix
+from curies.w3c import CURIE_RE, QUALIFIED_CURIE_RE, is_w3c_curie, is_w3c_prefix
 
 HERE = Path(__file__).parent.resolve()
 DIRECTORY = HERE.joinpath("resources")
@@ -55,6 +55,11 @@ class TestValidators(unittest.TestCase):
                         curie_match.group("identifier"),
                         msg=f"{row=} failed to parse ID in {curie=}. {curie_match=}",
                     )
+
+                    if record["prefix"]:
+                        self.assertRegex(curie, QUALIFIED_CURIE_RE)
+                    else:
+                        self.assertNotRegex(curie, QUALIFIED_CURIE_RE)
 
         for curie in _read(INVALID_CURIES_PATH):
             with self.subTest(curie=curie):

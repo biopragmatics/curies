@@ -24,6 +24,8 @@ __all__ = [
     "LOCAL_UNIQUE_IDENTIFIER_RE",
     "NCNAME_PATTERN",
     "NCNAME_RE",
+    "QUALIFIED_CURIE_PATTERN",
+    "QUALIFIED_CURIE_RE",
     "is_w3c_curie",
     "is_w3c_prefix",
 ]
@@ -66,6 +68,17 @@ CURIE_PATTERN = (
 """
 
 CURIE_RE = re.compile(CURIE_PATTERN)
+
+QUALIFIED_CURIE_PATTERN = (
+    rf"^(?P<prefix>{NCNAME_PATTERN}):(?P<identifier>{LOCAL_UNIQUE_IDENTIFIER_PATTERN})$"
+)
+"""A fully qualified CURIE, which requires both a NCName and reference.
+
+This is similar to :data:`CURIE_PATTERN`, except it requires a prefix instead of
+allowing it optional, as prescribed by https://www.w3.org/TR/2010/NOTE-curie-20101216.
+"""
+
+QUALIFIED_CURIE_RE = re.compile(QUALIFIED_CURIE_PATTERN)
 
 
 def is_w3c_prefix(prefix: str) -> bool:
