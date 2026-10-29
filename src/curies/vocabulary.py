@@ -25,6 +25,11 @@ is_a = subclass_of = _r("rdfs", "subClassOf", "subclass of")
 subproperty_of = _r("rdfs", "subPropertyOf", "subproperty of")
 rdf_type = _r("rdf", "type", "instance of")
 
+# LinkML, see https://github.com/linkml/linkml-model/blob/main/linkml_model/model/schema/types.yaml
+
+linkml_uri_or_curie = _r("linkml", "Uriorcurie", "URI or CURIE")
+linkml_curie = _r("linkml", "curie", "CURIE")
+
 # XHTML Datatypes, see https://www.w3.org/TR/rdfa-core/#h-s_datatypes
 
 xh11d_curie = _r("xh11d", "CURIE", "CURIE")
@@ -117,13 +122,31 @@ def _parse_curies(s: str) -> list[Reference]:
     return [Reference.from_curie(c_strip) for c in s.split() if (c_strip := c.strip())]
 
 
-ExtendedPrimitives = XSDPrimitive | Reference | list[Reference]
+#: A generic type for primitives
+Primitive: TypeAlias = XSDPrimitive | Reference | list[Reference]
 
-EXTENDED_XSD_TO_PARSER: dict[Reference, Callable[[str], ExtendedPrimitives]] = {
+#: A generic map from standard datatypes to parser functions
+DATATYPE_TO_PARSER: dict[Reference, Callable[[str], Primitive]] = {
     **XSD_TO_PARSER,
+    linkml_curie: Reference.from_curie,
     xh11d_curie: Reference.from_curie,
     xh11d_curies: _parse_curies,
 }
+
+
+def parse_by_datatype(value: str, datatype: Reference) -> Primitive:
+    """Parse a string into a primitive type.
+
+    :param value: The XSD-, xh11d-, or other conformant string to parse, CURIE, or CURIE
+        list
+    :param datatype: A reference to an ``XSD``, ``xh11d``, or other reference for a
+        datatype appearing in :data:`DATATYPE_TO_PARSER`
+
+    :returns: An integer, float, date, datetime, boolean, URL, string, CURIE, or CURIE
+        list depending on the datatype
+    """
+    parser = DATATYPE_TO_PARSER[datatype]
+    return parser(value)
 
 
 # DC Terms
@@ -293,10 +316,6 @@ synonym_types: set[NamedReference] = {
     brand_name,
 }
 
-# LinkML
-
-#: See https://github.com/mapping-commons/sssom/pull/560
-linkml_uri_or_curie = _r("linkml", "Uriorcurie", "URI or CURIE")
 
 # Semantic Mappings
 
