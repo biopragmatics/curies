@@ -42,7 +42,7 @@ from curies.sources import (
     get_obo_converter,
 )
 from curies.version import get_version
-from curies.vocabulary import parse_xsd
+from curies.vocabulary import parse_by_datatype, parse_xsd
 from tests.constants import SLOW
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
@@ -1327,3 +1327,18 @@ class TestUtils(unittest.TestCase):
         ]:
             with self.subTest(value=s):
                 self.assertEqual(expected, parse_xsd(s, datatype))
+                self.assertEqual(expected, parse_by_datatype(s, datatype))
+
+        for expected, s, datatype in [
+            (Reference.from_curie("CHEBI:1234"), "CHEBI:1234", v.linkml_curie),
+            (Reference.from_curie("CHEBI:1234"), "CHEBI:1234", v.xh11d_curie),
+            (
+                [Reference.from_curie("CHEBI:1"), Reference.from_curie("CHEBI:2")],
+                "CHEBI:1 CHEBI:2",
+                v.xh11d_curies,
+            ),
+        ]:
+            with self.subTest(value=s):
+                with self.assertRaises(KeyError):
+                    parse_xsd(s, datatype)
+                self.assertEqual(expected, parse_by_datatype(s, datatype))
