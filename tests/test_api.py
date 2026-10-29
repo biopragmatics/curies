@@ -1330,7 +1330,13 @@ class TestUtils(unittest.TestCase):
                 self.assertEqual(expected, parse_by_datatype(s, datatype))
 
         for expected, s, datatype in [
+            (Reference.from_curie("CHEBI:1234"), "CHEBI:1234", v.linkml_curie),
             (Reference.from_curie("CHEBI:1234"), "CHEBI:1234", v.xh11d_curie),
+            (
+                [Reference.from_curie("CHEBI:1"), Reference.from_curie("CHEBI:2")],
+                "CHEBI:1 CHEBI:2",
+                v.xh11d_curies,
+            ),
         ]:
             with self.subTest(value=s):
                 with self.assertRaises(KeyError):
