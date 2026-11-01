@@ -44,16 +44,20 @@ corresponds to cell types:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Annotated, Generic, Literal, Self
+from typing import TYPE_CHECKING, Annotated, Generic, Literal, Self
 
 from pydantic import BaseModel, Field
 
 from .api import Prefix, Reference, ReferenceType
 
+if TYPE_CHECKING:
+    import networkx
+
 __all__ = [
     "Descendants",
     "Difference",
     "Expression",
+    "GraphSubsetEvaluator",
     "Intersection",
     "SubsetEvaluator",
     "Union",
@@ -173,3 +177,27 @@ class SubsetEvaluator(ABC, Generic[ReferenceType]):
                 return self.evaluate(expr.left) - self.evaluate(expr.right)
             case _:
                 raise TypeError
+
+
+class GraphSubsetEvaluator(SubsetEvaluator):
+    """A directed graph-based subset evaluator."""
+
+    def __init__(self, graphs: dict[Prefix, networkx.DiGraph]) -> None:
+        """Initialize the evaluator with directed graphs.
+
+        :param graphs: A mapping from prefixes to directed graphs with the hierarchies
+            for the corresponding resources
+        """
+        self.graphs = graphs
+
+    def get_descendants(self, descendants: Descendants) -> set[ReferenceType]:
+        """Get descendants via a directed graph."""
+        import networkx as nx
+
+        graph = self.graphs.get(descendants.get_source())
+        if graph is None:
+            return set()
+        rv = set(nx.ancestors(graph, descendants.reference))
+        if descendants.inclusive:
+            rv.add(descendants.reference)
+        return rv

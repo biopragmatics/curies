@@ -63,6 +63,7 @@ tests = [
     "httpx",
     "httpx2",
     "pystow>=0.10.2",
+    "networkx",
 ]
 docs = [
     "sphinx>=8",
