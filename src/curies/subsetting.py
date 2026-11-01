@@ -6,7 +6,7 @@ Semantic Types Ontology (STY) <https://semantic.farm/sty>`_ identifiers:
 
 .. code-block:: python
 
-    from curies.subsetting import Union, Descendants, SubsetEvaluator
+    from curies.subsetting import Union, Descendants, Subsetter
 
     expression = Union.from_args(
         Descendants(reference="sty:T049", source="umls"),  # cell or molecular dysfunction
@@ -19,7 +19,7 @@ Semantic Types Ontology (STY) <https://semantic.farm/sty>`_ identifiers:
     # The curies package doesn't implement a concrete evaluation
     # protocol for expressions, but gives an abstract class, e.g.,
     # that PyOBO implements
-    evaluator: SubsetEvaluator = ...
+    evaluator: Subsetter = ...
     references: set[Reference] = evaluator.evaluate(expression)
 
 Retrieve all anatomical terms from the ``A`` branch in the `Medical Subject Headings
@@ -57,9 +57,9 @@ __all__ = [
     "Descendants",
     "Difference",
     "Expression",
-    "GraphSubsetEvaluator",
+    "GraphSubsetter",
     "Intersection",
-    "SubsetEvaluator",
+    "Subsetter",
     "Union",
 ]
 
@@ -151,7 +151,7 @@ class Difference(Expression):
     right: Annotated[Expression, Field(discriminator="type")]
 
 
-class SubsetEvaluator(ABC, Generic[ReferenceType]):
+class Subsetter(ABC, Generic[ReferenceType]):
     """An implementation for hydrating an expression."""
 
     @abstractmethod
@@ -179,7 +179,7 @@ class SubsetEvaluator(ABC, Generic[ReferenceType]):
                 raise TypeError
 
 
-class GraphSubsetEvaluator(SubsetEvaluator):
+class GraphSubsetter(Subsetter):
     """A directed graph-based subset evaluator."""
 
     def __init__(self, graphs: dict[Prefix, networkx.DiGraph]) -> None:
