@@ -9,11 +9,11 @@ Semantic Types Ontology (STY) <https://semantic.farm/sty>`_ identifiers:
     from curies.subsetting import Union, Descendants, SubsetEvaluator
 
     expression = Union.from_args(
-        Descendants(reference="sty:T049"),  # cell or molecular dysfunction
-        Descendants(reference="sty:T047"),  # disease or syndrome
-        Descendants(reference="sty:T191"),  # neoplastic process
-        Descendants(reference="sty:T050"),  # experimental model of disease
-        Descendants(reference="sty:T048"),  # mental or behavioral dysfunction
+        Descendants(reference="sty:T049", source="umls"),  # cell or molecular dysfunction
+        Descendants(reference="sty:T047", source="umls"),  # disease or syndrome
+        Descendants(reference="sty:T191", source="umls"),  # neoplastic process
+        Descendants(reference="sty:T050", source="umls"),  # experimental model of disease
+        Descendants(reference="sty:T048", source="umls"),  # mental or behavioral dysfunction
     )
 
     # The curies package doesn't implement a concrete evaluation
@@ -30,7 +30,9 @@ corresponds to cell types:
 
     from curies.subsetting import Descendants
 
-    expression = Descendants(reference="obo:mesh#A") - Descendants(reference="obo:mesh#A11")
+    expression = Descendants(reference="obo:mesh#A", source="mesh") - Descendants(
+        reference="obo:mesh#A11", source="mesh"
+    )
 
     # The curies package doesn't implement a concrete evaluation
     # protocol for expressions, but gives an abstract class, e.g.,
@@ -42,11 +44,11 @@ corresponds to cell types:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Annotated, Literal, Self
+from typing import Annotated, Generic, Literal, Self
 
 from pydantic import BaseModel, Field
 
-from curies import Reference
+from .api import Prefix, Reference, ReferenceType
 
 __all__ = [
     "Descendants",
@@ -100,6 +102,17 @@ class Descendants(Expression):
     type: Literal["descendants"] = "descendants"
     reference: Reference
     inclusive: bool = True
+    source: Annotated[
+        Prefix | None,
+        Field(
+            default=None,
+            description="An optional source. If not given, assume the prefix from the reference",
+        ),
+    ] = None
+
+    def get_source(self) -> Prefix:
+        """Get the effective source."""
+        return self.source or self.reference.prefix
 
 
 class Intersection(Expression):
@@ -134,14 +147,14 @@ class Difference(Expression):
     right: Annotated[Expression, Field(discriminator="type")]
 
 
-class SubsetEvaluator(ABC):
+class SubsetEvaluator(ABC, Generic[ReferenceType]):
     """An implementation for hydrating an expression."""
 
     @abstractmethod
-    def get_descendants(self, descendants: Descendants) -> set[Reference]:
+    def get_descendants(self, descendants: Descendants) -> set[ReferenceType]:
         """Get descendants."""
 
-    def evaluate(self, expr: Expression) -> set[Reference]:
+    def evaluate(self, expr: Expression) -> set[ReferenceType]:
         """Get subset."""
         match expr:
             case Descendants():
