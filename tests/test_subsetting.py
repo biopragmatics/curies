@@ -5,7 +5,7 @@ import unittest
 import networkx as nx
 
 from curies import Prefix, Reference
-from curies.subsetting import Descendants, GraphSubsetEvaluator, Intersection, Union
+from curies.subsetting import Descendants, GraphSubsetter, Intersection, Union
 
 A1 = Reference.from_curie("A:1")
 A2 = Reference.from_curie("A:2")
@@ -79,7 +79,7 @@ class TestSubsetting(unittest.TestCase):
         graph_alpha.add_edge(alphas[6], alphas[7])
 
         graphs = {alpha: graph_alpha}
-        evaluator = GraphSubsetEvaluator(graphs)
+        evaluator = GraphSubsetter(graphs)
 
         with self.assertRaises(TypeError):
             evaluator.evaluate(None)  # type:ignore
