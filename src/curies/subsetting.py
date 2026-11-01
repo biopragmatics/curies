@@ -179,10 +179,12 @@ class Subsetter(ABC, Generic[ReferenceType]):
                 raise TypeError
 
 
-class GraphSubsetter(Subsetter):
+class GraphSubsetter(Subsetter[ReferenceType], Generic[ReferenceType]):
+    """An implementation for hydrating an expression."""
+
     """A directed graph-based subset evaluator."""
 
-    def __init__(self, graphs: dict[Prefix, networkx.DiGraph]) -> None:
+    def __init__(self, graphs: dict[Prefix, networkx.DiGraph[ReferenceType]]) -> None:
         """Initialize the evaluator with directed graphs.
 
         :param graphs: A mapping from prefixes to directed graphs with the hierarchies
