@@ -19,8 +19,8 @@ Semantic Types Ontology (STY) <https://semantic.farm/sty>`_ identifiers:
     # The curies package doesn't implement a concrete evaluation
     # protocol for expressions, but gives an abstract class, e.g.,
     # that PyOBO implements
-    evaluator: Subsetter = ...
-    references: set[Reference] = evaluator.evaluate(expression)
+    subsetter: Subsetter = ...
+    references: set[Reference] = subsetter.query(expression)
 
 Retrieve all anatomical terms from the ``A`` branch in the `Medical Subject Headings
 (MeSH) <https://semantic.farm/mesh>`_, while skipping the ``A11`` branch, which
@@ -28,7 +28,7 @@ corresponds to cell types:
 
 .. code-block:: python
 
-    from curies.subsetting import Descendants
+    from curies.subsetting import Descendants, Subsetter
 
     expression = Descendants(reference="obo:mesh#A", source="mesh") - Descendants(
         reference="obo:mesh#A11", source="mesh"
@@ -37,8 +37,8 @@ corresponds to cell types:
     # The curies package doesn't implement a concrete evaluation
     # protocol for expressions, but gives an abstract class, e.g.,
     # that PyOBO implements
-    evaluator: Evaluator = ...
-    references: set[Reference] = evaluator.evaluate(expression)
+    subsetter: Subsetter = ...
+    references: set[Reference] = subsetter.query(expression)
 """
 
 from __future__ import annotations
@@ -158,23 +158,23 @@ class Subsetter(ABC, Generic[ReferenceType]):
     def get_descendants(self, descendants: Descendants) -> set[ReferenceType]:
         """Get descendants."""
 
-    def evaluate(self, expr: Expression) -> set[ReferenceType]:
+    def query(self, expr: Expression) -> set[ReferenceType]:
         """Get subset."""
         match expr:
             case Descendants():
                 return self.get_descendants(expr)
             case Union():
-                union_rv = self.evaluate(expr.args[0])
+                union_rv = self.query(expr.args[0])
                 for arg in expr.args[1:]:
-                    union_rv.update(self.evaluate(arg))
+                    union_rv.update(self.query(arg))
                 return union_rv
             case Intersection():
-                intersection_rv = self.evaluate(expr.args[0])
+                intersection_rv = self.query(expr.args[0])
                 for arg in expr.args[1:]:
-                    intersection_rv.intersection_update(self.evaluate(arg))
+                    intersection_rv.intersection_update(self.query(arg))
                 return intersection_rv
             case Difference():
-                return self.evaluate(expr.left) - self.evaluate(expr.right)
+                return self.query(expr.left) - self.query(expr.right)
             case _:
                 raise TypeError
 

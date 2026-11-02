@@ -82,32 +82,30 @@ class TestSubsetting(unittest.TestCase):
         evaluator = GraphSubsetter(graphs)
 
         with self.assertRaises(TypeError):
-            evaluator.evaluate(None)  # type:ignore
+            evaluator.query(None)  # type:ignore
 
         self.assertEqual(
-            set(), evaluator.evaluate(Descendants(reference=Reference.from_curie("NOPE:NOPE")))
+            set(), evaluator.query(Descendants(reference=Reference.from_curie("NOPE:NOPE")))
         )
+        self.assertEqual(set(), evaluator.query(Descendants(reference=alphas[0], inclusive=False)))
         self.assertEqual(
-            set(), evaluator.evaluate(Descendants(reference=alphas[0], inclusive=False))
-        )
-        self.assertEqual(
-            {alphas[0]}, evaluator.evaluate(Descendants(reference=alphas[0], inclusive=True))
+            {alphas[0]}, evaluator.query(Descendants(reference=alphas[0], inclusive=True))
         )
         self.assertEqual(
             {alphas[0], alphas[1]},
-            evaluator.evaluate(Descendants(reference=alphas[1], inclusive=True)),
+            evaluator.query(Descendants(reference=alphas[1], inclusive=True)),
         )
         self.assertEqual(
             {alphas[0]},
-            evaluator.evaluate(Descendants(reference=alphas[1], inclusive=False)),
+            evaluator.query(Descendants(reference=alphas[1], inclusive=False)),
         )
         self.assertEqual(
             {alphas[0], alphas[1], alphas[2]},
-            evaluator.evaluate(Descendants(reference=alphas[2], inclusive=True)),
+            evaluator.query(Descendants(reference=alphas[2], inclusive=True)),
         )
         self.assertEqual(
             {alphas[0], alphas[1], alphas[2], alphas[3], alphas[4]},
-            evaluator.evaluate(Descendants(reference=alphas[3], inclusive=True)),
+            evaluator.query(Descendants(reference=alphas[3], inclusive=True)),
         )
         self.assertEqual(
             {
@@ -120,18 +118,18 @@ class TestSubsetting(unittest.TestCase):
                 alphas[6],
                 alphas[7],
             },
-            evaluator.evaluate(Descendants(reference=alphas[3]) | Descendants(reference=alphas[7])),
+            evaluator.query(Descendants(reference=alphas[3]) | Descendants(reference=alphas[7])),
         )
         self.assertEqual(
             {alphas[2], alphas[3], alphas[4]},
-            evaluator.evaluate(Descendants(reference=alphas[3]) - Descendants(reference=alphas[1])),
+            evaluator.query(Descendants(reference=alphas[3]) - Descendants(reference=alphas[1])),
         )
 
         self.assertEqual(
             set(),
-            evaluator.evaluate(Descendants(reference=alphas[3]) & Descendants(reference=alphas[7])),
+            evaluator.query(Descendants(reference=alphas[3]) & Descendants(reference=alphas[7])),
         )
         self.assertEqual(
             {alphas[0], alphas[1]},
-            evaluator.evaluate(Descendants(reference=alphas[3]) & Descendants(reference=alphas[1])),
+            evaluator.query(Descendants(reference=alphas[3]) & Descendants(reference=alphas[1])),
         )
