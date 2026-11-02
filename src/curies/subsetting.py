@@ -105,7 +105,7 @@ class Descendants(Expression):
 
     type: Literal["descendants"] = "descendants"
     reference: Reference
-    inclusive: bool = True
+    inclusive: bool = False
     source: Annotated[
         Prefix | None,
         Field(

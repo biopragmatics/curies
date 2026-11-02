@@ -118,18 +118,30 @@ class TestSubsetting(unittest.TestCase):
                 alphas[6],
                 alphas[7],
             },
-            evaluator.query(Descendants(reference=alphas[3]) | Descendants(reference=alphas[7])),
+            evaluator.query(
+                Descendants(reference=alphas[3], inclusive=True)
+                | Descendants(reference=alphas[7], inclusive=True)
+            ),
         )
         self.assertEqual(
             {alphas[2], alphas[3], alphas[4]},
-            evaluator.query(Descendants(reference=alphas[3]) - Descendants(reference=alphas[1])),
+            evaluator.query(
+                Descendants(reference=alphas[3], inclusive=True)
+                - Descendants(reference=alphas[1], inclusive=True)
+            ),
         )
 
         self.assertEqual(
             set(),
-            evaluator.query(Descendants(reference=alphas[3]) & Descendants(reference=alphas[7])),
+            evaluator.query(
+                Descendants(reference=alphas[3], inclusive=True)
+                & Descendants(reference=alphas[7], inclusive=True)
+            ),
         )
         self.assertEqual(
             {alphas[0], alphas[1]},
-            evaluator.query(Descendants(reference=alphas[3]) & Descendants(reference=alphas[1])),
+            evaluator.query(
+                Descendants(reference=alphas[3], inclusive=True)
+                & Descendants(reference=alphas[1], inclusive=True)
+            ),
         )
