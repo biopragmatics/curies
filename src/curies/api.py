@@ -65,6 +65,7 @@ __all__ = [
     "Records",
     "Reference",
     "ReferenceTuple",
+    "ReferenceType",
     "Trie",
     "TrieNode",
     "chain",
@@ -594,6 +595,10 @@ class Reference(BaseModel, Generic[PrefixType_co]):
         return cls.model_validate(
             {"prefix": reference.prefix, "identifier": reference.identifier}, context=converter
         )
+
+
+#: A type for a reference
+ReferenceType = TypeVar("ReferenceType", bound=Reference, default=Reference)
 
 
 class NamableReference(Reference[PrefixType_co], Generic[PrefixType_co]):

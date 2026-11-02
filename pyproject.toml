@@ -132,6 +132,7 @@ rdflib = [
     "rdflib"
 ]
 triples-io = ["pystow>=0.10.2"]
+networkx = ["networkx"]
 
 # See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#urls
 # and also https://packaging.python.org/en/latest/specifications/well-known-project-urls/
