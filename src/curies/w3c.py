@@ -94,7 +94,7 @@ def is_w3c_prefix(prefix: str) -> bool:
 
     Examples
     --------
-    Strings containig numbers, letters, and underscores are valid prefixes.
+    Strings containing numbers, letters, and underscores are valid prefixes.
 
     >>> is_w3c_prefix("GO")
     True
