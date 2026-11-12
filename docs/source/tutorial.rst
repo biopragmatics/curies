@@ -632,7 +632,7 @@ skos:exactMatch
 =============== =========================================
 
 Note that since ``skos`` is not in the OBO Foundry extended prefix map, no results are
-placed in the ``uri`` column. If you wan to pass through elements that can't be
+placed in the ``uri`` column. If you want to pass through elements that can't be
 expanded, you can use ``passthrough=True`` like in:
 
 .. code-block:: python
