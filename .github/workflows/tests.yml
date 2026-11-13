@@ -25,10 +25,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.14", "3.11"]
+        python-version: ["3.15", "3.11"]
         tox-command: ["lint", "mypy"]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: "Install uv"
         uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
         with:
@@ -45,12 +47,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # We only test documentation on the latest version
-        # sphinx 8.0 / sphinx-rtd-theme 3.0 discontinued Python 3.9 support
-        # a year early, which prompted re-thinking about this.
-        python-version: ["3.14"]
+        python-version: ["3.15"]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: "Install uv"
         uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
         with:
@@ -73,13 +74,15 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.14", "3.11"]
+        python-version: ["3.15", "3.11"]
         pandas: ["pandas2", "pandas3"]
         exclude:
           - python-version: "3.11"
             pandas: "pandas3"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - name: "Install uv"
         uses: astral-sh/setup-uv@5a095e7a2014a4212f075830d4f7277575a9d098 # v7.3.1
         with:
