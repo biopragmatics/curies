@@ -1257,8 +1257,8 @@ class Converter:
             - An iterable of :class:`curies.Record` objects or dictionaries that will
               get converted into record objects that together constitute an extended
               prefix map
-            - A string containing a remote location of a JSON file containing an extended
-              prefix map
+            - A string containing a remote location of a JSON file containing an
+              extended prefix map
             - A string or :class:`pathlib.Path` object corresponding to a local file
               path to a JSON file containing an extended prefix map
         :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
@@ -1373,7 +1373,8 @@ class Converter:
 
             - A mapping whose keys represent CURIE prefixes and values represent URI
               prefixes
-            - A string containing a remote location of a JSON file containing a prefix map
+            - A string containing a remote location of a JSON file containing a prefix
+              map
             - A string or :class:`pathlib.Path` object corresponding to a local file
               path to a JSON file containing a prefix map
         :param kwargs: Keyword arguments to pass to :meth:`curies.Converter.__init__`
