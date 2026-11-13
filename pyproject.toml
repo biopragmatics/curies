@@ -299,7 +299,7 @@ replace = "VERSION = \"{new_version}\""
 
 [tool.codespell]
 # Ref: https://github.com/codespell-project/codespell#using-a-config-file
-skip = '.git,.gitignore,.gitattributes,*.svg'
+skip = '.git,.gitignore,.gitattributes,*.svg,docs/build'
 check-hidden = true
 # ignore-regex = ''
 # ignore-words-list = ''
