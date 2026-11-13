@@ -300,4 +300,3 @@ replace = "release = \"{new_version}\""
 filename = "src/curies/version.py"
 search = "VERSION = \"{current_version}\""
 replace = "VERSION = \"{new_version}\""
-
