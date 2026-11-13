@@ -262,6 +262,10 @@ known-first-party = [
 # see https://docs.astral.sh/ruff/settings/#format_docstring-code-format
 docstring-code-format = true
 
+[tool.codespell]
+# Ref: https://github.com/codespell-project/codespell#using-a-config-file
+skip = '.git,.gitignore,.gitattributes,*.svg,docs/build'
+
 [tool.bumpversion]
 current_version = "0.15.9-dev"
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(?:-(?P<release>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+(?P<build>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?"
@@ -297,9 +301,3 @@ filename = "src/curies/version.py"
 search = "VERSION = \"{current_version}\""
 replace = "VERSION = \"{new_version}\""
 
-[tool.codespell]
-# Ref: https://github.com/codespell-project/codespell#using-a-config-file
-skip = '.git,.gitignore,.gitattributes,*.svg,docs/build'
-check-hidden = true
-# ignore-regex = ''
-# ignore-words-list = ''
