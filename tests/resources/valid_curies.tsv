@@ -10,7 +10,7 @@ pfx-1:abc	pfx-1	abc	a fully qualified CURIE whose NCName contains a dash
 pfx:	pfx		a CURIE whose local unique identifier is an empty string
 abc		abc	a CURIE with an unqualified local unique identifier
 :abc		abc	a CURIE from the default namespace
-_:abc	_	abc	a CURIE from the undescore namespace, which is allowed, but suggested only used internally by implementations
+_:abc	_	abc	a CURIE from the underscore namespace, which is allowed, but suggested only used internally by implementations
 pfx:/abc	pfx	/abc	a CURIE starting with a slash
 pfx:/	pfx	/	a CURIE whose local unique identifier is only a slash
 :/		/	a CURIE from the default namespace whose local unique identifier is only a slash

@@ -345,7 +345,7 @@ def keep_triples_by_hash(
 
     :param triples: An iterable of triples
     :param converter: A converter
-    :param triple_hashes: A hash or hashs to check triples for
+    :param triple_hashes: A hash or hashes to check triples for
     :param progress: Should a progress bar be shown?
 
     :returns: A sub-iterable of triples whose triple hash under the given constructor

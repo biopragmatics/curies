@@ -105,7 +105,7 @@ class MappingServiceGraph(Graph):
     def triples(  # type:ignore
         self, triple: tuple[URIRef | None, URIRef | None, URIRef | None]
     ) -> Iterable[tuple[URIRef, URIRef, URIRef]]:
-        """Generate triples, overriden to dynamically generate mappings based on this graph's converter."""
+        """Generate triples, overridden to dynamically generate mappings based on this graph's converter."""
         subj_query, pred_query, obj_query = triple
         if pred_query in self.query_predicates:
             if subj_query is None and obj_query is not None:
