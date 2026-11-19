@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from collections import Counter, defaultdict
 from collections.abc import Collection, Mapping
+from typing import Literal
 
 from .api import Converter, Record
 
@@ -36,14 +37,22 @@ class TransitiveError(NotImplementedError):
         )
 
 
-def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> Converter:
+def remap_curie_prefixes(
+    converter: Converter,
+    remapping: Mapping[str, str],
+    *,
+    intersection_resolution: Literal["overwrite", "drop"] = "drop",
+) -> Converter:
     """Apply CURIE prefix remappings.
 
     :param converter: A converter
     :param remapping: A mapping from CURIE prefixes to new CURIE prefixes. Old CURIE
         prefixes become synonyms in the records (i.e., they aren't forgotten).
+    :param intersection_resolution: The policy for resolving intersections
 
     :returns: An upgraded converter
+
+    :raises TypeError: on an invalid intersection resolution mode
     """
     ordering = _order_curie_remapping(converter, remapping)
     intersection = set(remapping).intersection(remapping.values())
@@ -72,9 +81,16 @@ def remap_curie_prefixes(converter: Converter, remapping: Mapping[str, str]) -> 
                 new_record,
             )
         elif old in intersection:
-            record.prefix_synonyms = sorted(
-                set(record.prefix_synonyms).difference({old, new_prefix})
-            )
+            if intersection_resolution == "drop":
+                # throw away all synonyms from intersections,
+                # since there can be non-trivial overlaps
+                record.prefix_synonyms = []
+            elif intersection_resolution == "overwrite":
+                record.prefix_synonyms = sorted(
+                    set(record.prefix_synonyms).difference({old, new_prefix})
+                )
+            else:
+                raise TypeError(f"invalid intersection resolution mode: {intersection_resolution}")
             record.prefix = new_prefix
         else:
             record.prefix_synonyms = sorted(
