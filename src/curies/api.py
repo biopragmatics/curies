@@ -3128,11 +3128,34 @@ def write_jsonld_context(
     :param path: The path to a file to write to
     :param include_synonyms: If true, includes CURIE prefix synonyms. URI prefix
         synonyms are not output.
-    :param expand: If False, output a dictionary-like ``@context`` element. If True, use
-        ``@prefix`` and ``@id`` as keys for the CURIE prefix and URI prefix,
-        respectively, to maximize compatibility.
+    :param expand: If True, always create objects with ``@prefix`` and ``@id`` as keys
+        for the CURIE prefix and URI prefix, respectively, to maximize compatibility.
 
     The following example shows writing a JSON-LD context:
+
+    .. code-block:: python
+
+        import curies
+
+        converter = curies.load_prefix_map(
+            {
+                "pubmed": "https://pubmed.ncbi.nlm.nih.gov/",
+            }
+        )
+        curies.write_jsonld_context(converter, "example_context.json")
+
+    .. code-block:: json
+
+        {
+          "@context": {
+            "pubmed": "https://pubmed.ncbi.nlm.nih.gov/"
+          }
+        }
+
+    If you have URI prefixes that don't end in one of the six delimiter characters
+    defined in `RFC 3986 <https://www.rfc-editor.org/info/rfc3986/#section-2.2>`, then
+    it will automatically get expanded into an object with a ``@prefix`` and ``@id``
+    key:
 
     .. code-block:: python
 
@@ -3144,29 +3167,6 @@ def write_jsonld_context(
             }
         )
         curies.write_jsonld_context(converter, "example_context.json")
-
-    .. code-block:: json
-
-        {
-          "@context": {
-            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"
-          }
-        }
-
-    Because some implementations of JSON-LD do not like URI prefixes that end with an
-    underscore ``_``, we can use the ``expand`` keyword to turn on more verbose JSON-LD
-    context output that contains explicit ``@prefix`` and ``@id`` annotations
-
-    .. code-block:: python
-
-        import curies
-
-        converter = curies.load_prefix_map(
-            {
-                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-            }
-        )
-        curies.write_jsonld_context(converter, "example_context.json", expand=True)
 
     .. code-block:: json
 
@@ -3188,7 +3188,8 @@ def write_jsonld_context(
 
 
 #: If a URI prefix ends with one of these characters, then it shouldn't
-#: require explicit annotation
+#: require explicit annotation as defined in `RFC 3986
+#: <https://www.rfc-editor.org/info/rfc3986/#section-2.2>`_
 GEN_DELIM_CHARACTER = ":/?#[]@"
 
 
