@@ -759,6 +759,7 @@ class Record(BaseModel):
         Field(
             title="URI prefix",
             description="The canonical URI prefix, used in the forward prefix map",
+            min_length=1,
         ),
     ]
     prefix_synonyms: list[str] = Field(default_factory=list, title="CURIE prefix synonyms")

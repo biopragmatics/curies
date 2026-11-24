@@ -225,6 +225,11 @@ class TestConverter(unittest.TestCase):
         }
         self.converter = Converter.from_prefix_map(self.simple_obo_prefix_map)
 
+    def test_record_uri_prefix_nonempty(self) -> None:
+        """Test an error is raised on an empty URI prefix."""
+        with self.assertRaises(ValueError):
+            Record(prefix="GO", uri_prefix="")
+
     def test_iter(self) -> None:
         """Test the iterator."""
         self.assertEqual(self.converter.records, list(self.converter))
