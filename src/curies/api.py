@@ -3101,7 +3101,7 @@ def _ensure_path(path: str | Path) -> Path:
     return path
 
 
-def _get_jsonld_context(
+def get_jsonld_context(
     converter: Converter, *, expand: bool = False, include_synonyms: bool = False
 ) -> dict[str, Any]:
     """Get a JSON-LD context based on the converter."""
@@ -3112,7 +3112,7 @@ def _get_jsonld_context(
         if include_synonyms:
             for prefix_synonym in record.prefix_synonyms:
                 context[prefix_synonym] = term
-    return {"@context": context}
+    return context
 
 
 def write_jsonld_context(
@@ -3180,7 +3180,9 @@ def write_jsonld_context(
         }
     """
     path = _ensure_path(path)
-    obj = _get_jsonld_context(converter, include_synonyms=include_synonyms, expand=expand)
+    obj = {
+        "@context": get_jsonld_context(converter, expand=expand, include_synonyms=include_synonyms)
+    }
     with path.open("w") as file:
         json.dump(obj, file, indent=4, sort_keys=True)
 
