@@ -1,5 +1,6 @@
 """Test writing I/O."""
 
+import importlib.util
 import json
 import unittest
 from collections.abc import Iterable
@@ -73,6 +74,23 @@ class TestIO(unittest.TestCase):
         self.assertEqual(
             {"CHMO": {"@prefix": True, "@id": "http://purl.obolibrary.org/obo/CHMO_"}},
             curies.get_jsonld_context(c2),
+        )
+
+    @unittest.skipUnless(importlib.util.find_spec("pyld"), "PyLD not installed")
+    def test_pyld(self) -> None:
+        """Test PyLD correctly reads."""
+        from pyld import jsonld
+
+        converter = Converter.from_prefix_map(
+            {
+                "CHMO": "http://purl.obolibrary.org/obo/CHMO_",
+            }
+        )
+        context = curies.get_jsonld_context(converter)
+
+        doc = {"@context": context, "@id": "http://example.org/x", "@type": "CHMO:0000595"}
+        self.assertEqual(
+            ["http://purl.obolibrary.org/obo/CHMO_0000595"], jsonld.expand(doc)[0]["@type"]
         )
 
     def test_write_jsonld_with_bimap(self) -> None:
