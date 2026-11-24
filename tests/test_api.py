@@ -230,6 +230,11 @@ class TestConverter(unittest.TestCase):
         with self.assertRaises(ValueError):
             Record(prefix="GO", uri_prefix="")
 
+    def test_record_uri_prefix_synonym_empty(self) -> None:
+        """Test an error is raised on an empty URI prefix synonym."""
+        with self.assertRaises(ValueError):
+            Record(prefix="CHEBI", uri_prefix=CHEBI_URI_PREFIX, uri_prefix_synonyms=[""])
+
     def test_iter(self) -> None:
         """Test the iterator."""
         self.assertEqual(self.converter.records, list(self.converter))

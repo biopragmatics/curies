@@ -786,6 +786,9 @@ class Record(BaseModel):
     def uri_prefix_not_in_synonyms(cls, v: str, values: Mapping[str, Any]) -> str:
         """Check that the canonical URI prefix does not apper in the URI prefix synonym list."""
         uri_prefix = _get_field_validator_values(values, "uri_prefix")
+        for value in v:
+            if not value.strip():
+                raise ValueError("empty URI prefix synonym")
         if uri_prefix in v:
             raise ValueError(
                 f"Duplicate of canonical URI prefix `{uri_prefix}` in URI prefix synonyms"
