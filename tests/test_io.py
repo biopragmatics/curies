@@ -46,6 +46,35 @@ class TestIO(unittest.TestCase):
         self.assertEqual(self.converter.records, nc.records)
         self.assertEqual({self.prefix: self.pattern}, nc.pattern_map)
 
+    def test_get_jsonld_context(self) -> None:
+        """Test getting a JSON-LD context."""
+        # This example ends in a non-gen-delim character
+        c1 = Converter.from_prefix_map(
+            {
+                "pubmed": "https://pubmed.ncbi.nlm.nih.gov/",
+            }
+        )
+        self.assertEqual(
+            {"pubmed": "https://pubmed.ncbi.nlm.nih.gov/"},
+            curies.get_jsonld_context(c1),
+        )
+
+        self.assertEqual(
+            {"pubmed": {"@prefix": True, "@id": "https://pubmed.ncbi.nlm.nih.gov/"}},
+            curies.get_jsonld_context(c1, expand=True),
+        )
+
+        # This example ends in a non-gen-delim character
+        c2 = Converter.from_prefix_map(
+            {
+                "CHMO": "http://purl.obolibrary.org/obo/CHMO_",
+            }
+        )
+        self.assertEqual(
+            {"CHMO": {"@prefix": True, "@id": "http://purl.obolibrary.org/obo/CHMO_"}},
+            curies.get_jsonld_context(c2),
+        )
+
     def test_write_jsonld_with_bimap(self) -> None:
         """Test writing and reading a prefix map via JSON-LD."""
         with TemporaryDirectory() as d:
