@@ -3187,8 +3187,13 @@ def write_jsonld_context(
         json.dump(obj, file, indent=4, sort_keys=True)
 
 
+#: If a URI prefix ends with one of these characters, then it shouldn't
+#: require explicit annotation
+GEN_DELIM_CHARACTER = ":/?#[]@"
+
+
 def _get_expanded_term(record: Record, *, expand: bool) -> str | dict[str, Any]:
-    if not expand:
+    if not expand and record.uri_prefix[-1] in GEN_DELIM_CHARACTER:
         return record.uri_prefix
 
     # Use expanded term definition described in https://www.w3.org/TR/json-ld11/#expanded-term-definition
