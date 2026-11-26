@@ -3194,7 +3194,7 @@ def write_jsonld_context(
                 }
               }
             }
-        """
+    """
     path = _ensure_path(path)
     obj = {
         "@context": get_jsonld_context(
