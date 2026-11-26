@@ -197,6 +197,9 @@ owl_named_individual = _r("owl", "NamedIndividual", "named individual")
 # SKOS
 
 skos_concept = _r("skos", "Concept", "concept")
+skos_pref_label = _r("skos", "prefLabel", "preferred label")
+skos_alt_label = _r("skos", "altLabel", "alternative label")
+skos_hidden_label = _r("skos", "hiddenLabel", "hidden label")
 
 # RDFS
 
