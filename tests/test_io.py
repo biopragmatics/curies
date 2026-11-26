@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import typing
 import unittest
 from collections.abc import Iterable
 from pathlib import Path
@@ -11,7 +12,7 @@ from typing import cast
 import rdflib
 
 import curies
-from curies import Converter
+from curies import Converter, JSONLDVersion
 
 CHEBI_URI_PREFIX = "http://purl.obolibrary.org/obo/CHEBI_"
 
@@ -80,18 +81,30 @@ class TestIO(unittest.TestCase):
     def test_pyld(self) -> None:
         """Test PyLD correctly reads."""
         from pyld import jsonld
+        from pyld.options import ExpandOptions
 
         converter = Converter.from_prefix_map(
             {
                 "CHMO": "http://purl.obolibrary.org/obo/CHMO_",
             }
         )
-        context = curies.get_jsonld_context(converter)
 
-        doc = {"@context": context, "@id": "http://example.org/x", "@type": "CHMO:0000595"}
-        self.assertEqual(
-            ["http://purl.obolibrary.org/obo/CHMO_0000595"], jsonld.expand(doc)[0]["@type"]
-        )
+        for jsonld_version in typing.get_args(JSONLDVersion):
+            with self.subTest(jsonld_version=jsonld_version):
+                context = curies.get_jsonld_context(converter, jsonld_version=jsonld_version)
+
+                doc = {
+                    "@context": context,
+                    "@id": "http://example.org/x",
+                    "@type": "CHMO:0000595",
+                }
+                expand_options = cast(
+                    ExpandOptions, {"processingMode": f"json-ld-{jsonld_version}"}
+                )
+                results = jsonld.expand(doc, options=expand_options)
+                self.assertEqual(
+                    ["http://purl.obolibrary.org/obo/CHMO_0000595"], results[0]["@type"]
+                )
 
     def test_write_jsonld_with_bimap(self) -> None:
         """Test writing and reading a prefix map via JSON-LD."""
