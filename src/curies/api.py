@@ -55,6 +55,7 @@ __all__ = [
     "DuplicatePrefixes",
     "DuplicateURIPrefixes",
     "DuplicateValueError",
+    "JSONLDVersion",
     "NamableReference",
     "NamedReference",
     "NoCURIEDelimiterError",
@@ -3105,13 +3106,21 @@ def _ensure_path(path: str | Path) -> Path:
     return path
 
 
+#: Permissible JSON-LD version strings
+JSONLDVersion = Literal["1.0", "1.1"]
+
+
 def get_jsonld_context(
-    converter: Converter, *, expand: bool = False, include_synonyms: bool = False
+    converter: Converter,
+    *,
+    expand: bool = False,
+    include_synonyms: bool = False,
+    jsonld_version: JSONLDVersion | None = None,
 ) -> dict[str, Any]:
     """Get a JSON-LD context based on the converter."""
     context = {}
     for record in converter.records:
-        term = _get_expanded_term(record, expand=expand)
+        term = _get_expanded_term(record, expand=expand, jsonld_version=jsonld_version)
         context[record.prefix] = term
         if include_synonyms:
             for prefix_synonym in record.prefix_synonyms:
@@ -3125,6 +3134,7 @@ def write_jsonld_context(
     *,
     include_synonyms: bool = False,
     expand: bool = False,
+    jsonld_version: JSONLDVersion | None = None,
 ) -> None:
     """Write the converter's bijective map as a JSON-LD context to a file.
 
@@ -3132,9 +3142,10 @@ def write_jsonld_context(
     :param path: The path to a file to write to
     :param include_synonyms: If true, includes CURIE prefix synonyms. URI prefix
         synonyms are not output.
-    :param expand: If False, output a dictionary-like ``@context`` element. If True, use
-        ``@prefix`` and ``@id`` as keys for the CURIE prefix and URI prefix,
-        respectively, to maximize compatibility.
+    :param expand: If True, always create objects with ``@prefix`` and ``@id`` as keys
+        for the CURIE prefix and URI prefix, respectively, to maximize compatibility.
+    :param jsonld_version: The JSON-LD version to use. If not given, defaults to the
+        latest, JSON-LD 1.1.
 
     The following example shows writing a JSON-LD context:
 
@@ -3142,57 +3153,71 @@ def write_jsonld_context(
 
         import curies
 
-        converter = curies.load_prefix_map(
-            {
-                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-            }
-        )
-        curies.write_jsonld_context(converter, "example_context.json")
-
-    .. code-block:: json
-
+    converter = curies.load_prefix_map(
         {
-          "@context": {
-            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_"
-          }
+            "pubmed": "https://pubmed.ncbi.nlm.nih.gov/",
         }
+    )
+    curies.write_jsonld_context(converter, "example_context.json")
 
-    Because some implementations of JSON-LD do not like URI prefixes that end with an
-    underscore ``_``, we can use the ``expand`` keyword to turn on more verbose JSON-LD
-    context output that contains explicit ``@prefix`` and ``@id`` annotations
+        .. code-block:: json
 
-    .. code-block:: python
+            {
+              "@context": {
+                "pubmed": "https://pubmed.ncbi.nlm.nih.gov/"
+              }
+            }
+
+        If you have URI prefixes that don't end in one of the six delimiter characters
+        defined in `RFC 3986 <https://www.rfc-editor.org/info/rfc3986/#section-2.2>`, then
+        it will automatically get expanded into an object with a ``@prefix`` and ``@id``
+        key:
+
+        .. code-block:: python
 
         import curies
 
-        converter = curies.load_prefix_map(
-            {
-                "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
-            }
-        )
-        curies.write_jsonld_context(converter, "example_context.json", expand=True)
-
-    .. code-block:: json
-
+    converter = curies.load_prefix_map(
         {
-          "@context": {
-            "CHEBI": {
-              "@id": "http://purl.obolibrary.org/obo/CHEBI_",
-              "@prefix": true
-            }
-          }
+            "CHEBI": "http://purl.obolibrary.org/obo/CHEBI_",
         }
+    )
+    curies.write_jsonld_context(converter, "example_context.json")
+
+        .. code-block:: json
+
+            {
+              "@context": {
+                "CHEBI": {
+                  "@id": "http://purl.obolibrary.org/obo/CHEBI_",
+                  "@prefix": true
+                }
+              }
+            }
     """
     path = _ensure_path(path)
     obj = {
-        "@context": get_jsonld_context(converter, expand=expand, include_synonyms=include_synonyms)
+        "@context": get_jsonld_context(
+            converter,
+            expand=expand,
+            include_synonyms=include_synonyms,
+            jsonld_version=jsonld_version,
+        )
     }
     with path.open("w") as file:
         json.dump(obj, file, indent=4, sort_keys=True)
 
 
-def _get_expanded_term(record: Record, *, expand: bool) -> str | dict[str, Any]:
-    if not expand:
+#: If a URI prefix ends with one of these characters, then it shouldn't
+#: require explicit annotation as defined in `RFC 3986
+#: <https://www.rfc-editor.org/info/rfc3986/#section-2.2>`_
+GEN_DELIM_CHARACTER = ":/?#[]@"
+
+
+def _get_expanded_term(
+    record: Record, *, expand: bool, jsonld_version: JSONLDVersion | None = None
+) -> str | dict[str, Any]:
+    if jsonld_version == "1.0" or (not expand and record.uri_prefix[-1] in GEN_DELIM_CHARACTER):
         return record.uri_prefix
 
     # Use expanded term definition described in https://www.w3.org/TR/json-ld11/#expanded-term-definition
